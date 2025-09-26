@@ -1,21 +1,21 @@
+
 import 'package:filevo/views/auth/components/my_clipper.dart';
 import 'package:flutter/material.dart';
 
-class HeaderBackground extends StatelessWidget {
-  const HeaderBackground({
-    super.key,
-  });
+
+class SideBackground extends StatelessWidget {
+  const SideBackground({super.key});
 
   @override
   Widget build(BuildContext context) {
     return ClipPath(
-      clipper: MyClipper(),
+      clipper: SideShapeClipper(),
       child: Container(
-        height: 150,
-        width: double.infinity,
+        width: 250,   // ممكن تتحكم بالحجم حسب التصميم
+        height: 400,
         decoration: const BoxDecoration(
           gradient: LinearGradient(
-            colors: [Color(0xFF28336F), Color(0xFF225878)],
+            colors: [Color(0xff33BCB9), Color(0xff28336F)],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),

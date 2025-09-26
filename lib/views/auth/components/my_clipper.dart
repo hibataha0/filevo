@@ -21,3 +21,40 @@ class MyClipper extends CustomClipper<Path> {
   @override
   bool shouldReclip(covariant CustomClipper<Path> oldClipper) => true;
 }
+class SideShapeClipper extends CustomClipper<Path> {
+  @override
+  Path getClip(Size size) {
+    Path path_0 = Path();
+    path_0.moveTo(-258.968, 170.541);
+    path_0.cubicTo(
+        -259.874, 204.334, -241.675, 251.123, -204.212, 242.675);
+    path_0.cubicTo(
+        -175.895, 236.29, -201.661, 204.154, -166.84, 185.981);
+    path_0.cubicTo(
+        -132.019, 167.807, -86.5901, 173.269, -64.8614, 203.192);
+    path_0.cubicTo(
+        -48.8608, 225.226, -77.2195, 246.254, -64.8614, 270.01);
+    path_0.cubicTo(
+        -36.4556, 324.615, 104.444, 312.594, 109.834, 252.799);
+    path_0.cubicTo(
+        113.407, 213.164, 58.2306, 207.401, 41.1728, 170.541);
+    path_0.cubicTo(
+        20.4472, 125.757, 62.936, 85.6182, 29.2946, 47.2812);
+    path_0.cubicTo(
+        3.85339, 18.2889, -25.2008, -8.84112, -64.8614, 2.73538);
+    path_0.cubicTo(
+        -116.369, 17.77, -15.6103, 104.234, -64.8614, 124.224);
+    path_0.cubicTo(
+        -87.7427, 133.511, -104.512, 127.469, -129.467, 124.224);
+    path_0.cubicTo(
+        -159.972, 120.257, -174.289, 95.4283, -204.212, 101.951);
+    path_0.cubicTo(
+        -240.481, 109.857, -258.092, 137.893, -258.968, 170.541);
+    path_0.close();
+
+    return path_0;
+  }
+
+  @override
+  bool shouldReclip(covariant CustomClipper<Path> oldClipper) => true;
+}

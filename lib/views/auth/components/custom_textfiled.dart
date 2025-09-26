@@ -1,22 +1,18 @@
 import 'package:flutter/material.dart';
 
 class CustomTextField extends StatefulWidget {
-  const CustomTextField({
-    super.key,
-    this.hintText,
-    this.controller,
-    this.validator,
-    this.isPassword = false,
-    this.fontSize = 16,
-    this.prefixIcon,
-  });
-
-  final String? hintText;
-  final TextEditingController? controller;
-  final String? Function(String?)? validator;
+  final String hintText;
+  final IconData icon;
   final bool isPassword;
-  final double fontSize;
-  final IconData? prefixIcon;
+  final TextEditingController? controller;
+
+  const CustomTextField({
+    Key? key,
+    required this.hintText,
+    required this.icon,
+    this.isPassword = false,
+    this.controller,
+  }) : super(key: key);
 
   @override
   State<CustomTextField> createState() => _CustomTextFieldState();
@@ -27,66 +23,135 @@ class _CustomTextFieldState extends State<CustomTextField> {
 
   @override
   Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
-
-    // حجم الخط مع حد أقصى
-    double actualFontSize = widget.fontSize;
-    if (actualFontSize > 24) actualFontSize = 24;
-
-    return Padding(
-      padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.05, vertical: 10),
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(30),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.grey.withOpacity(0.3),
-              blurRadius: 8,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: TextFormField(
-          controller: widget.controller,
-          validator: widget.validator,
-          obscureText: widget.isPassword ? _obscureText : false,
-          style: TextStyle(fontSize: actualFontSize),
-          enableInteractiveSelection: widget.isPassword ? false : true,
-          contextMenuBuilder: widget.isPassword
-              ? (context, editableTextState) => const SizedBox.shrink()
-              : null,
-          decoration: InputDecoration(
-            hintText: widget.hintText,
-            hintStyle: TextStyle(
-              color: Colors.grey[600],
-              fontSize: actualFontSize * 0.9,
-            ),
-            border: InputBorder.none,
-            contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
-
-            // أيقونة على الشمال
-            prefixIcon: widget.prefixIcon != null
-                ? Icon(widget.prefixIcon, color: Colors.grey[600])
-                : null,
-
-            // زر إظهار/إخفاء الباسورد
-            suffixIcon: widget.isPassword
-                ? IconButton(
-                    icon: Icon(
-                      _obscureText ? Icons.visibility_off : Icons.visibility,
-                      color: Colors.grey[600],
-                    ),
-                    onPressed: () {
-                      setState(() {
-                        _obscureText = !_obscureText;
-                      });
-                    },
-                  )
-                : null,
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 35, vertical: 10),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(30),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.2),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
           ),
+        ],
+      ),
+      child: TextField(
+        controller: widget.controller,
+        obscureText: widget.isPassword ? _obscureText : false,
+        decoration: InputDecoration(
+          hintText: widget.hintText,
+          hintStyle: TextStyle(color: Colors.grey[500]),
+          prefixIcon: Icon(widget.icon, color: Colors.grey),
+          border: InputBorder.none,
+          contentPadding: const EdgeInsets.symmetric(vertical: 10),
+          // إذا كان Password ضيف زر 👁
+          suffixIcon: widget.isPassword
+              ? IconButton(
+                  icon: Icon(
+                    _obscureText ? Icons.visibility_off : Icons.visibility,
+                    color: Colors.grey,
+                  ),
+                  onPressed: () {
+                    setState(() {
+                      _obscureText = !_obscureText;
+                    });
+                  },
+                )
+              : null,
         ),
       ),
     );
   }
 }
+
+
+
+
+
+
+// import 'package:flutter/material.dart';
+
+// class CustomTextField extends StatefulWidget {
+//   final String hintText;
+//   final IconData icon;
+//   final bool isPassword;
+//   final TextEditingController? controller;
+
+//   const CustomTextField({
+//     Key? key,
+//     required this.hintText,
+//     required this.icon,
+//     this.isPassword = false,
+//     this.controller,
+//   }) : super(key: key);
+
+//   @override
+//   State<CustomTextField> createState() => _CustomTextFieldState();
+// }
+
+// class _CustomTextFieldState extends State<CustomTextField> {
+//   bool _obscureText = true;
+
+//   @override
+//   Widget build(BuildContext context) {
+//     final screenWidth = MediaQuery.of(context).size.width;
+
+//     // responsive max width
+//     double fieldWidth;
+//     if (screenWidth > 1000) {
+//       fieldWidth = 500; // حد أقصى بالويب الكبير
+//     } else if (screenWidth > 600) {
+//       fieldWidth = screenWidth * 0.6; // تابلت
+//     } else {
+//       fieldWidth = screenWidth * 0.85; // موبايل
+//     }
+
+//     return Center( // يخليهم بالنص عالويب
+//       child: ConstrainedBox(
+//         constraints: BoxConstraints(
+//           maxWidth: fieldWidth,
+//         ),
+//         child: Container(
+//           margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+//           decoration: BoxDecoration(
+//             color: Colors.white,
+//             borderRadius: BorderRadius.circular(30),
+//             boxShadow: [
+//               BoxShadow(
+//                 color: Colors.grey.withOpacity(0.2),
+//                 blurRadius: 10,
+//                 offset: const Offset(0, 4),
+//               ),
+//             ],
+//           ),
+//           child: TextField(
+//             controller: widget.controller,
+//             obscureText: widget.isPassword ? _obscureText : false,
+//             decoration: InputDecoration(
+//               hintText: widget.hintText,
+//               hintStyle: TextStyle(color: Colors.grey[500]),
+//               prefixIcon: Icon(widget.icon, color: Colors.grey),
+//               border: InputBorder.none,
+//               contentPadding: const EdgeInsets.symmetric(vertical: 18),
+//               // زر 👁 إذا كان Password
+//               suffixIcon: widget.isPassword
+//                   ? IconButton(
+//                       icon: Icon(
+//                         _obscureText ? Icons.visibility_off : Icons.visibility,
+//                         color: Colors.grey,
+//                       ),
+//                       onPressed: () {
+//                         setState(() {
+//                           _obscureText = !_obscureText;
+//                         });
+//                       },
+//                     )
+//                   : null,
+//             ),
+//           ),
+//         ),
+//       ),
+//     );
+//   }
+// }
