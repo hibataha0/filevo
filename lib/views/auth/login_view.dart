@@ -25,57 +25,57 @@ class _LoginPageState extends State<LoginPage> {
   String? _passwordError;
 
   // دالة التحقق من صحة النموذج
-  Future<void> _validateAndSubmit() async {
-    // استخدام الـ Validators للتحقق
-    final emailError = Validators.validateEmailOrUsername(_emailController.text);
-    final passwordError = Validators.validatePassword(_passwordController.text);
+ Future<void> _validateAndSubmit() async {
+  // استخدام الـ Validators للتحقق
+  final emailError = Validators.validateEmailOrUsername(_emailController.text);
+  final passwordError = Validators.validatePassword(_passwordController.text);
 
+  setState(() {
+    _emailError = emailError;
+    _passwordError = passwordError;
+  });
+
+  // إذا لم يكن هناك أخطاء
+  if (emailError == null && passwordError == null) {
     setState(() {
-      _emailError = emailError;
-      _passwordError = passwordError;
+      _isLoading = true;
     });
 
-    // إذا لم يكن هناك أخطاء
-    if (emailError == null && passwordError == null) {
-      setState(() {
-        _isLoading = true;
-      });
+    // محاكاة عملية تسجيل الدخول (استبدل هذا بالاتصال الحقيقي بالAPI)
+    await Future.delayed(const Duration(seconds: 2));
+    
+    // هنا يمكنك إضافة الاتصال بالخادم الحقيقي
+    print('Login attempt with:');
+    print('Username/Email: ${_emailController.text}');
+    print('Password: ${_passwordController.text}');
 
-      // محاكاة عملية تسجيل الدخول (استبدل هذا بالاتصال الحقيقي بالAPI)
-      await Future.delayed(const Duration(seconds: 2));
+    // محاكاة نجاح التسجيل (غير هذا بالاستجابة الحقيقية من الخادم)
+    final isSuccess = _emailController.text.isNotEmpty && _passwordController.text.isNotEmpty;
+    
+    if (isSuccess) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Login successful!'),
+          backgroundColor: Colors.green,
+        ),
+      );
       
-      // هنا يمكنك إضافة الاتصال بالخادم الحقيقي
-      print('Login attempt with:');
-      print('Username/Email: ${_emailController.text}');
-      print('Password: ${_passwordController.text}');
-
-      // محاكاة نجاح التسجيل (غير هذا بالاستجابة الحقيقية من الخادم)
-      final isSuccess = _emailController.text.isNotEmpty && _passwordController.text.isNotEmpty;
-      
-      if (isSuccess) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Login successful!'),
-            backgroundColor: Colors.green,
-          ),
-        );
-        
-        // الانتقال للصفحة الرئيسية بعد تسجيل الدخول الناجح
-        // Navigator.pushReplacementNamed(context, '/home');
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Invalid credentials'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-
-      setState(() {
-        _isLoading = false;
-      });
+      // الانتقال للصفحة الرئيسية بعد تسجيل الدخول الناجح
+      Navigator.pushReplacementNamed(context, 'Home');
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Invalid credentials'),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
+
+    setState(() {
+      _isLoading = false;
+    });
   }
+}
 
   // ويدجت خاصة لعرض CustomTextField مع رسالة الخطأ
   Widget _buildValidatedTextField({
@@ -152,24 +152,11 @@ class _LoginPageState extends State<LoginPage> {
 
   
 
-  double getBigFontSize(BuildContext context) {
-    double width = MediaQuery.of(context).size.width;
-    double size;
-    if (Responsive.isDesktop(context)) {
-      size = width * 0.03;
-    } else if (Responsive.isTablet(context)) {
-      size = width * 0.04;
-    } else {
-      size = width * 0.08;
-    }
-    return size.clamp(14, 24);
-  }
+  
 
  
 
-  double getFieldFontSize() {
-    return 16;
-  }
+  
 
   @override
   void dispose() {

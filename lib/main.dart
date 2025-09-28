@@ -1,10 +1,18 @@
+import 'package:device_preview/device_preview.dart';
 import 'package:filevo/views/auth/login_view.dart';
 import 'package:filevo/views/auth/signup_view.dart';
+import 'package:filevo/views/home/home_view.dart';
+import 'package:filevo/views/main/main_view.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 void main()
 {
-  runApp(MyApp( ));
+  runApp(DevicePreview(
+    enabled: !kReleaseMode,
+    builder: (context) => MyApp(), // Wrap your app
+  ),);
+  
 }
 
 class MyApp extends StatelessWidget {
@@ -17,8 +25,10 @@ class MyApp extends StatelessWidget {
       routes: {
         'LogInPage': (context) => const LoginPage(),
         'SignUpPage': (context) => const SignUpPage(),
+        'Home': (context) =>  HomeView(),
+        'Main': (context) =>  MainPage(),
       },
-      home: LoginPage()
+      home:   MainPage()
       
     );
   }
