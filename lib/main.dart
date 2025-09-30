@@ -28,7 +28,7 @@ class MyApp extends StatelessWidget {
         'Home': (context) =>  HomeView(),
         'Main': (context) =>  MainPage(),
       },
-      home:   MainPage()
+      initialRoute: 'LogInPage', // الصفحة الرئيسية اللي بتفتح أول ما بتشغل التطبيق
       
     );
   }

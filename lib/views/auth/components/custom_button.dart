@@ -11,37 +11,29 @@ class IconButtonGradient extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
-
     // Responsive width
-    double buttonWidth;
-    if (Responsive.isDesktop(context)) {
-      buttonWidth = 60;
-    } else if (Responsive.isTablet(context)) {
-      buttonWidth = 50;
-    } else {
-      buttonWidth = 45;
-    }
+    final buttonWidth = ResponsiveUtils.getResponsiveValue(
+      context,
+      mobile: 45.0,
+      tablet: 50.0,
+      desktop: 60.0,
+    );
 
     // Responsive height
-    double buttonHeight;
-    if (Responsive.isDesktop(context)) {
-      buttonHeight = 60;
-    } else if (Responsive.isTablet(context)) {
-      buttonHeight = 50;
-    } else {
-      buttonHeight = 35;
-    }
+    final buttonHeight = ResponsiveUtils.getResponsiveValue(
+      context,
+      mobile: 35.0,
+      tablet: 50.0,
+      desktop: 60.0,
+    );
 
     // Icon size responsive
-    double iconSize;
-    if (Responsive.isDesktop(context)) {
-      iconSize = 28;
-    } else if (Responsive.isTablet(context)) {
-      iconSize = 24;
-    } else {
-      iconSize = 20;
-    }
+    final iconSize = ResponsiveUtils.getResponsiveValue(
+      context,
+      mobile: 20.0,
+      tablet: 24.0,
+      desktop: 28.0,
+    );
 
     return SizedBox(
       width: buttonWidth,

@@ -1,10 +1,9 @@
 import 'dart:ui' as ui;
+import 'package:filevo/responsive.dart';
 import 'package:filevo/views/auth/components/divider_with_text.dart';
 import 'package:filevo/views/auth/components/responsive.dart';
 import 'package:filevo/views/auth/components/social_login_buttons.dart';
 import 'package:filevo/views/auth/components/validators.dart';
-import 'package:flutter/gestures.dart';
-import 'package:filevo/responsive.dart';
 import 'package:filevo/views/auth/components/custom_button.dart';
 import 'package:filevo/views/auth/components/custom_textfiled.dart';
 import 'package:filevo/views/auth/components/header_background.dart';
@@ -31,7 +30,6 @@ class _SignUpPageState extends State<SignUpPage> {
 
   // دالة التحقق من صحة النموذج
   Future<void> _validateAndSubmit() async {
-    // استخدام الـ Validators للتحقق
     final usernameError = Validators.validateUsername(_usernameController.text);
     final emailError = Validators.validateEmail(_emailController.text);
     final passwordError = Validators.validatePassword(_passwordController.text);
@@ -44,14 +42,12 @@ class _SignUpPageState extends State<SignUpPage> {
       _mobileError = mobileError;
     });
 
-    // إذا لم يكن هناك أخطاء
     if (usernameError == null && emailError == null && 
         passwordError == null && mobileError == null) {
       setState(() {
         _isLoading = true;
       });
 
-      // محاكاة عملية التسجيل (استبدل هذا بالاتصال الحقيقي بالAPI)
       await Future.delayed(const Duration(seconds: 2));
       
       print('Signup attempt with:');
@@ -60,7 +56,6 @@ class _SignUpPageState extends State<SignUpPage> {
       print('Password: ${_passwordController.text}');
       print('Mobile: ${_mobileController.text}');
 
-      // محاكاة نجاح التسجيل
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Account created successfully!'),
@@ -72,12 +67,10 @@ class _SignUpPageState extends State<SignUpPage> {
         _isLoading = false;
       });
       
-      // الانتقال للصفحة الرئيسية بعد التسجيل الناجح
       // Navigator.pushReplacementNamed(context, '/home');
     }
   }
 
-  // ويدجت خاصة لعرض CustomTextField مع رسالة الخطأ
   Widget _buildValidatedTextField({
     required TextEditingController controller,
     required String hintText,
@@ -139,17 +132,6 @@ class _SignUpPageState extends State<SignUpPage> {
     );
   }
 
-  
-
- 
- 
-
- 
-
-  double getFieldFontSize() {
-    return 16;
-  }
-
   @override
   void dispose() {
     _usernameController.dispose();
@@ -175,7 +157,7 @@ class _SignUpPageState extends State<SignUpPage> {
                 'Flievo',
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  fontSize: getTitleFontSize(context),
+                  fontSize: ResponsiveHelpers.getTitleFontSize(context),
                   fontWeight: FontWeight.bold,
                   color: const ui.Color.fromARGB(255, 0, 0, 0),
                   shadows: [
@@ -189,106 +171,124 @@ class _SignUpPageState extends State<SignUpPage> {
               ),
               
               SizedBox(
-                height: Responsive.isDesktop(context)
-                    ? 40
-                    : Responsive.isTablet(context)
-                        ? 30
-                        : 20,
+                height: ResponsiveUtils.getResponsiveValue(
+                  context,
+                  mobile: 20.0,
+                  tablet: 30.0,
+                  desktop: 40.0,
+                ),
               ),
               
               // عنوان إنشاء الحساب
               Text( 
                 'Create account',
                 style: TextStyle(
-                  fontSize: getBigFontSize(context),
+                  fontSize: ResponsiveHelpers.getBigFontSize(context),
                   color: Colors.grey[1000],
                   fontWeight: FontWeight.bold,
                 ),
               ),
 
               SizedBox(
-                height: Responsive.isDesktop(context)
-                    ? 30
-                    : Responsive.isTablet(context)
-                        ? 20
-                        : 10,
+                height: ResponsiveUtils.getResponsiveValue(
+                  context,
+                  mobile: 10.0,
+                  tablet: 20.0,
+                  desktop: 30.0,
+                ),
               ),
            
               // حقل اسم المستخدم
-              _buildValidatedTextField(
-                controller: _usernameController,
-                hintText: "Username",
-                icon: Icons.person,
-                errorText: _usernameError,
+              Padding(
+                padding: ResponsiveHelpers.getHorizontalPadding(context),
+                child: _buildValidatedTextField(
+                  controller: _usernameController,
+                  hintText: "Username",
+                  icon: Icons.person,
+                  errorText: _usernameError,
+                ),
               ),
               
               SizedBox(
-                height: Responsive.isDesktop(context)
-                    ? 30
-                    : Responsive.isTablet(context)
-                        ? 20
-                        : 10,
+                height: ResponsiveUtils.getResponsiveValue(
+                  context,
+                  mobile: 10.0,
+                  tablet: 20.0,
+                  desktop: 30.0,
+                ),
               ),
               
               // حقل البريد الإلكتروني
-              _buildValidatedTextField(
-                controller: _emailController,
-                hintText: "Email",
-                icon: Icons.email,
-                errorText: _emailError,
+              Padding(
+                padding: ResponsiveHelpers.getHorizontalPadding(context),
+                child: _buildValidatedTextField(
+                  controller: _emailController,
+                  hintText: "Email",
+                  icon: Icons.email,
+                  errorText: _emailError,
+                ),
               ),
               
               SizedBox(
-                height: Responsive.isDesktop(context)
-                    ? 30
-                    : Responsive.isTablet(context)
-                        ? 20
-                        : 10,
+                height: ResponsiveUtils.getResponsiveValue(
+                  context,
+                  mobile: 10.0,
+                  tablet: 20.0,
+                  desktop: 30.0,
+                ),
               ),
               
               // حقل كلمة المرور
-              _buildValidatedTextField(
-                controller: _passwordController,
-                hintText: "Password",
-                icon: Icons.lock,
-                isPassword: true,
-                errorText: _passwordError,
+              Padding(
+                padding: ResponsiveHelpers.getHorizontalPadding(context),
+                child: _buildValidatedTextField(
+                  controller: _passwordController,
+                  hintText: "Password",
+                  icon: Icons.lock,
+                  isPassword: true,
+                  errorText: _passwordError,
+                ),
               ),
               
               SizedBox(
-                height: Responsive.isDesktop(context)
-                    ? 40
-                    : Responsive.isTablet(context)
-                        ? 20
-                        : 10,
+                height: ResponsiveUtils.getResponsiveValue(
+                  context,
+                  mobile: 10.0,
+                  tablet: 20.0,
+                  desktop: 40.0,
+                ),
               ),
               
               // حقل رقم الهاتف
-              _buildValidatedTextField(
-                controller: _mobileController,
-                hintText: "Mobile",
-                icon: Icons.phone,
-                errorText: _mobileError,
+              Padding(
+                padding: ResponsiveHelpers.getHorizontalPadding(context),
+                child: _buildValidatedTextField(
+                  controller: _mobileController,
+                  hintText: "Mobile",
+                  icon: Icons.phone,
+                  errorText: _mobileError,
+                ),
               ),
               
               SizedBox(
-                height: Responsive.isDesktop(context)
-                    ? 60
-                    : Responsive.isTablet(context)
-                        ? 50
-                        : 20,
+                height: ResponsiveUtils.getResponsiveValue(
+                  context,
+                  mobile: 20.0,
+                  tablet: 50.0,
+                  desktop: 60.0,
+                ),
               ),
 
               // زر إنشاء الحساب
               Padding(
-                padding: getResponsivePadding(context),
+                padding: ResponsiveHelpers.getResponsivePadding(context),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
                     Text(
                       'Create',
                       style: TextStyle(
-                        fontSize: getBigFontSize(context),
+                        fontSize: ResponsiveHelpers.getBigFontSize(context),
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -303,40 +303,44 @@ class _SignUpPageState extends State<SignUpPage> {
               ),
               
               SizedBox(
-                height: Responsive.isDesktop(context)
-                    ? 50
-                    : Responsive.isTablet(context)
-                        ? 40
-                        : 30,
+                height: ResponsiveUtils.getResponsiveValue(
+                  context,
+                  mobile: 30.0,
+                  tablet: 40.0,
+                  desktop: 50.0,
+                ),
               ),
- DividerWithText(
-  text: 'Sign up with',
-),
- const SizedBox(height: 25.0),
-// أيقونات التواصل الاجتماعي
-              const SocialLoginButtons(),
-              // رابط تسجيل الدخول
               
+              // قسم Sign up with
+              const DividerWithText(
+                text: 'Sign up with',
+              ),
+              
+              const SizedBox(height: 25.0),
+              
+              // أيقونات التواصل الاجتماعي
+              const SocialLoginButtons(),
               
               SizedBox(
-                height: Responsive.isDesktop(context)
-                    ? 50
-                    : Responsive.isTablet(context)
-                        ? 40
-                        : 20,
+                height: ResponsiveUtils.getResponsiveValue(
+                  context,
+                  mobile: 20.0,
+                  tablet: 40.0,
+                  desktop: 50.0,
+                ),
               ),
 
-              // نص الوسائط الاجتماعية
-              // Text('Or create account using social media',
-              //     style: TextStyle(
-              //       color: Colors.grey[600],
-              //     )),
-        
-              // SizedBox(height: Responsive.isDesktop(context) ? 25 : 20),
-
+              // رابط تسجيل الدخول
               _buildLoginSection(context),
 
-              SizedBox(height: Responsive.isDesktop(context) ? 40 : 20),
+              SizedBox(
+                height: ResponsiveUtils.getResponsiveValue(
+                  context,
+                  mobile: 20.0,
+                  tablet: 30.0,
+                  desktop: 40.0,
+                ),
+              ),
             ],
           ),
         ),
