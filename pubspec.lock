@@ -149,6 +149,14 @@ packages:
     description: flutter
     source: sdk
     version: "0.0.0"
+  flutterzilla_fixed_grid:
+    dependency: "direct main"
+    description:
+      name: flutterzilla_fixed_grid
+      sha256: d99b6a3eb84edddb2fcd61af44f18e91e6fa85190fcb3cdcc54db68b9cc884be
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.0.4"
   font_awesome_flutter:
     dependency: "direct main"
     description:

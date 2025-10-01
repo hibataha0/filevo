@@ -11,7 +11,8 @@ class MyBottomBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final width = MediaQuery.of(context).size.width;
     
-    return SizedBox(
+    return Container(
+      color: Colors.transparent, // خلفية شفافة
       height: 80,
       child: Stack(
         children: [
@@ -43,40 +44,6 @@ class MyBottomBar extends StatelessWidget {
               ),
             ),
           ),
-          
-          // // الزر العائم في المنتصف
-          // Positioned(
-          //   top: 10,
-          //   left: width / 2 - 30,
-          //   child: Container(
-          //     width: 60,
-          //     height: 60,
-          //     decoration: BoxDecoration(
-          //       color: Color(0xFF00BFA5), // نفس لون الأيقونات المحددة
-          //       shape: BoxShape.circle,
-          //       boxShadow: [
-          //         BoxShadow(
-          //           color: Color(0xFF00BFA5).withOpacity(0.3),
-          //           spreadRadius: 1,
-          //           blurRadius: 8,
-          //           offset: Offset(0, 3),
-          //         ),
-          //       ],
-          //     ),
-          //     child: Material(
-          //       color: Colors.transparent,
-          //       child: InkWell(
-          //         borderRadius: BorderRadius.circular(30),
-          //         onTap: () => onTap(4), // فهرس الزر العائم
-          //         child: Icon(
-          //           Icons.add,
-          //           color: Colors.white,
-          //           size: 30,
-          //         ),
-          //       ),
-          //     ),
-          //   ),
-          // ),
         ],
       ),
     );
@@ -94,7 +61,6 @@ class MyBottomBar extends StatelessWidget {
   }
 }
 
-//Copy this CustomPainter code to the Bottom of the File
 class RPSCustomPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {

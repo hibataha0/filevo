@@ -6,6 +6,7 @@ class FolderFileCard extends StatelessWidget {
   final String size;
   final Color color;
   final VoidCallback? onTap;
+  final bool showFileCount;
 
   const FolderFileCard({
     Key? key,
@@ -14,14 +15,15 @@ class FolderFileCard extends StatelessWidget {
     required this.size,
     this.color = const Color(0xFF00BFA5),
     this.onTap,
+    this.showFileCount = true,
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final w = constraints.maxWidth;   // عرض الكارد
-        final h = constraints.maxHeight;  // ارتفاع الكارد
+        final w = constraints.maxWidth;
+        final h = constraints.maxHeight;
 
         return GestureDetector(
           onTap: onTap,
@@ -41,7 +43,7 @@ class FolderFileCard extends StatelessWidget {
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min, // مهم! يخلي الكارد صغير حسب المحتوى
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -50,7 +52,7 @@ class FolderFileCard extends StatelessWidget {
                     Icon(Icons.more_vert, color: Colors.grey, size: w * 0.12),
                   ],
                 ),
-                SizedBox(height: h * 0.02), // بدل Spacer
+
                 Text(
                   title,
                   style: TextStyle(
@@ -60,17 +62,20 @@ class FolderFileCard extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
-                SizedBox(height: h * 0.03), // مسافة صغيرة بدل Spacer
+
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
-                      "$fileCount Files",
-                      style: TextStyle(
-                        fontSize: w * 0.10,
-                        color: Colors.grey[600],
+                    if (showFileCount)
+                      Text(
+                        "$fileCount Files",
+                        style: TextStyle(
+                          fontSize: w * 0.10,
+                          color: Colors.grey[600],
+                        ),
                       ),
-                    ),
+                    if (!showFileCount)
+                      SizedBox.shrink(),
                     Text(
                       size,
                       style: TextStyle(

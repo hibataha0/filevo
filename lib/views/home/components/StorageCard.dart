@@ -73,7 +73,9 @@ class StorageCard extends StatelessWidget {
     );
 
     return Center(
+      
       child: Container(
+        
         width: cardWidth,
         margin: EdgeInsets.all(margin),
         padding: EdgeInsets.all(padding),

@@ -1,4 +1,4 @@
-import 'package:filevo/components/NavigationBar%20.dart';
+import 'package:filevo/components/NavigationBar .dart';
 import 'package:filevo/views/home/home_view.dart';
 import 'package:flutter/material.dart';
 
@@ -13,11 +13,12 @@ class _MainPageState extends State<MainPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      // backgroundColor: Color(0xFFE9E9E9), // نفس لون الخلفية
       extendBody: true,
       body: HomeView(),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       floatingActionButton: Container(
-        margin: EdgeInsets.only(bottom: 1),
+        margin: EdgeInsets.only(bottom: 10),
         width: 56,
         height: 56,
         decoration: BoxDecoration(
@@ -48,15 +49,18 @@ class _MainPageState extends State<MainPage> {
           ),
         ),
       ),
-      bottomNavigationBar: SizedBox(
-        height: 80, // 👈 هون بتحكم بالارتفاع
-        child: MyBottomBar(
-          selectedIndex: selected,
-          onTap: (index) {
-            setState(() {
-              selected = index;
-            });
-          },
+      bottomNavigationBar: Container(
+        color: Colors.transparent, // شفاف تماماً
+        child: SizedBox(
+          height: 80,
+          child: MyBottomBar(
+            selectedIndex: selected,
+            onTap: (index) {
+              setState(() {
+                selected: index;
+              });
+            },
+          ),
         ),
       ),
     );
