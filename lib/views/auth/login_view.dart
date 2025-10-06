@@ -8,6 +8,7 @@ import 'package:filevo/views/auth/components/custom_button.dart';
 import 'package:filevo/views/auth/components/custom_textfiled.dart';
 import 'package:filevo/views/auth/components/header_background.dart';
 import 'package:flutter/material.dart';
+import 'package:filevo/generated/l10n.dart'; // ✅ استدعاء الترجمة
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -23,7 +24,6 @@ class _LoginPageState extends State<LoginPage> {
   String? _emailError;
   String? _passwordError;
 
-  // دالة التحقق من صحة النموذج
   Future<void> _validateAndSubmit() async {
     final emailError = Validators.validateEmailOrUsername(_emailController.text);
     final passwordError = Validators.validatePassword(_passwordController.text);
@@ -39,27 +39,23 @@ class _LoginPageState extends State<LoginPage> {
       });
 
       await Future.delayed(const Duration(seconds: 2));
-      
-      print('Login attempt with:');
-      print('Username/Email: ${_emailController.text}');
-      print('Password: ${_passwordController.text}');
 
-      final isSuccess = _emailController.text.isNotEmpty && 
-                       _passwordController.text.isNotEmpty;
-      
+      final isSuccess = _emailController.text.isNotEmpty &&
+          _passwordController.text.isNotEmpty;
+
       if (isSuccess) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Login successful!'),
+          SnackBar(
+            content: Text(S.of(context).loginSuccessful),
             backgroundColor: Colors.green,
           ),
         );
-        
+
         Navigator.pushReplacementNamed(context, 'Main');
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Invalid credentials'),
+          SnackBar(
+            content: Text(S.of(context).invalidCredentials),
             backgroundColor: Colors.red,
           ),
         );
@@ -108,9 +104,9 @@ class _LoginPageState extends State<LoginPage> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        const Text(
-          'Don\'t have an account? ',
-          style: TextStyle(
+        Text(
+          S.of(context).dontHaveAccount,
+          style: const TextStyle(
             color: Colors.black45,
           ),
         ),
@@ -124,7 +120,7 @@ class _LoginPageState extends State<LoginPage> {
             );
           },
           child: Text(
-            'Sign up',
+            S.of(context).signUp,
             style: TextStyle(
               fontWeight: FontWeight.bold,
               color: Theme.of(context).colorScheme.primary,
@@ -155,10 +151,10 @@ class _LoginPageState extends State<LoginPage> {
           child: Column(
             children: [
               const HeaderBackground(),
-              
+
               // العنوان الرئيسي
               Text(
-                'Flievo',
+                S.of(context).appTitle,
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: ResponsiveUtils.getResponsiveValue(
@@ -178,12 +174,12 @@ class _LoginPageState extends State<LoginPage> {
                   ],
                 ),
               ),
-              
+
               SizedBox(height: isSmallScreen ? 5 : 10),
-              
+
               // العنوان الفرعي
               Text(
-                'Login to your account',
+                S.of(context).loginSubtitle,
                 style: TextStyle(
                   fontSize: ResponsiveUtils.getResponsiveValue(
                     context,
@@ -194,7 +190,7 @@ class _LoginPageState extends State<LoginPage> {
                   color: Colors.grey[1000],
                 ),
               ),
-              
+
               SizedBox(
                 height: ResponsiveUtils.getResponsiveValue(
                   context,
@@ -216,12 +212,12 @@ class _LoginPageState extends State<LoginPage> {
                 ),
                 child: _buildValidatedTextField(
                   controller: _emailController,
-                  hintText: "Username or Email",
+                  hintText: S.of(context).usernameOrEmail,
                   icon: Icons.person,
                   errorText: _emailError,
                 ),
               ),
-              
+
               SizedBox(
                 height: ResponsiveUtils.getResponsiveValue(
                   context,
@@ -243,13 +239,13 @@ class _LoginPageState extends State<LoginPage> {
                 ),
                 child: _buildValidatedTextField(
                   controller: _passwordController,
-                  hintText: "Password",
+                  hintText: S.of(context).password,
                   icon: Icons.lock,
                   isPassword: true,
                   errorText: _passwordError,
                 ),
               ),
-              
+
               SizedBox(
                 height: ResponsiveUtils.getResponsiveValue(
                   context,
@@ -258,7 +254,7 @@ class _LoginPageState extends State<LoginPage> {
                   desktop: 40.0,
                 ),
               ),
-              
+
               // نسيت كلمة المرور
               Padding(
                 padding: EdgeInsets.symmetric(
@@ -272,7 +268,7 @@ class _LoginPageState extends State<LoginPage> {
                 child: Align(
                   alignment: Alignment.centerRight,
                   child: Text(
-                    'Forgot Password?',
+                    S.of(context).forgotPassword,
                     style: TextStyle(
                       fontSize: ResponsiveUtils.getResponsiveValue(
                         context,
@@ -285,7 +281,7 @@ class _LoginPageState extends State<LoginPage> {
                   ),
                 ),
               ),
-              
+
               SizedBox(
                 height: ResponsiveUtils.getResponsiveValue(
                   context,
@@ -294,7 +290,7 @@ class _LoginPageState extends State<LoginPage> {
                   desktop: 60.0,
                 ),
               ),
-              
+
               // زر تسجيل الدخول
               Padding(
                 padding: EdgeInsets.symmetric(
@@ -309,7 +305,7 @@ class _LoginPageState extends State<LoginPage> {
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
                     Text(
-                      'Sign In',
+                      S.of(context).signIn,
                       style: TextStyle(
                         fontSize: ResponsiveUtils.getResponsiveValue(
                           context,
@@ -329,7 +325,7 @@ class _LoginPageState extends State<LoginPage> {
                   ],
                 ),
               ),
-              
+
               SizedBox(
                 height: ResponsiveUtils.getResponsiveValue(
                   context,
@@ -338,22 +334,22 @@ class _LoginPageState extends State<LoginPage> {
                   desktop: 40.0,
                 ),
               ),
-              
+
               // قسم Sign in with
-              const DividerWithText(
-                text: 'Sign in with',
+              DividerWithText(
+                text: S.of(context).signInWith,
               ),
-              
+
               const SizedBox(height: 25.0),
-              
+
               // أيقونات التواصل الاجتماعي
               const SocialLoginButtons(),
-              
+
               const SizedBox(height: 25.0),
-              
+
               // رابط إنشاء حساب جديد
               _buildSignUpSection(context),
-              
+
               SizedBox(
                 height: ResponsiveUtils.getResponsiveValue(
                   context,

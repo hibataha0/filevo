@@ -8,6 +8,7 @@ import 'package:filevo/views/auth/components/custom_button.dart';
 import 'package:filevo/views/auth/components/custom_textfiled.dart';
 import 'package:filevo/views/auth/components/header_background.dart';
 import 'package:flutter/material.dart';
+import 'package:filevo/generated/l10n.dart'; // ✅ استدعاء intl
 
 class SignUpPage extends StatefulWidget {
   const SignUpPage({super.key});
@@ -28,7 +29,6 @@ class _SignUpPageState extends State<SignUpPage> {
   String? _passwordError;
   String? _mobileError;
 
-  // دالة التحقق من صحة النموذج
   Future<void> _validateAndSubmit() async {
     final usernameError = Validators.validateUsername(_usernameController.text);
     final emailError = Validators.validateEmail(_emailController.text);
@@ -49,16 +49,10 @@ class _SignUpPageState extends State<SignUpPage> {
       });
 
       await Future.delayed(const Duration(seconds: 2));
-      
-      print('Signup attempt with:');
-      print('Username: ${_usernameController.text}');
-      print('Email: ${_emailController.text}');
-      print('Password: ${_passwordController.text}');
-      print('Mobile: ${_mobileController.text}');
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Account created successfully!'),
+        SnackBar(
+          content: Text(S.of(context).accountCreatedSuccessfully),
           backgroundColor: Colors.green,
         ),
       );
@@ -66,8 +60,6 @@ class _SignUpPageState extends State<SignUpPage> {
       setState(() {
         _isLoading = false;
       });
-      
-      // Navigator.pushReplacementNamed(context, '/home');
     }
   }
 
@@ -109,7 +101,7 @@ class _SignUpPageState extends State<SignUpPage> {
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         Text(
-          "Already have an account? ",
+          S.of(context).alreadyHaveAccount,
           style: TextStyle(
             color: Colors.grey[600],
             fontSize: 16,
@@ -119,9 +111,9 @@ class _SignUpPageState extends State<SignUpPage> {
           onTap: () {
             Navigator.pop(context);
           },
-          child: const Text(
-            'Log In',
-            style: TextStyle(
+          child: Text(
+            S.of(context).logIn,
+            style: const TextStyle(
               color: Colors.blue,
               fontWeight: FontWeight.bold,
               decoration: TextDecoration.underline,
@@ -151,10 +143,10 @@ class _SignUpPageState extends State<SignUpPage> {
           child: Column(
             children: [
               const HeaderBackground(),
-              
+
               // العنوان الرئيسي
               Text(
-                'Flievo',
+                S.of(context).appTitle,
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: ResponsiveHelpers.getTitleFontSize(context),
@@ -169,7 +161,7 @@ class _SignUpPageState extends State<SignUpPage> {
                   ],
                 ),
               ),
-              
+
               SizedBox(
                 height: ResponsiveUtils.getResponsiveValue(
                   context,
@@ -178,10 +170,10 @@ class _SignUpPageState extends State<SignUpPage> {
                   desktop: 40.0,
                 ),
               ),
-              
+
               // عنوان إنشاء الحساب
               Text( 
-                'Create account',
+                S.of(context).createAccount,
                 style: TextStyle(
                   fontSize: ResponsiveHelpers.getBigFontSize(context),
                   color: Colors.grey[1000],
@@ -203,12 +195,12 @@ class _SignUpPageState extends State<SignUpPage> {
                 padding: ResponsiveHelpers.getHorizontalPadding(context),
                 child: _buildValidatedTextField(
                   controller: _usernameController,
-                  hintText: "Username",
+                  hintText: S.of(context).username,
                   icon: Icons.person,
                   errorText: _usernameError,
                 ),
               ),
-              
+
               SizedBox(
                 height: ResponsiveUtils.getResponsiveValue(
                   context,
@@ -217,18 +209,18 @@ class _SignUpPageState extends State<SignUpPage> {
                   desktop: 30.0,
                 ),
               ),
-              
+
               // حقل البريد الإلكتروني
               Padding(
                 padding: ResponsiveHelpers.getHorizontalPadding(context),
                 child: _buildValidatedTextField(
                   controller: _emailController,
-                  hintText: "Email",
+                  hintText: S.of(context).email,
                   icon: Icons.email,
                   errorText: _emailError,
                 ),
               ),
-              
+
               SizedBox(
                 height: ResponsiveUtils.getResponsiveValue(
                   context,
@@ -237,19 +229,19 @@ class _SignUpPageState extends State<SignUpPage> {
                   desktop: 30.0,
                 ),
               ),
-              
+
               // حقل كلمة المرور
               Padding(
                 padding: ResponsiveHelpers.getHorizontalPadding(context),
                 child: _buildValidatedTextField(
                   controller: _passwordController,
-                  hintText: "Password",
+                  hintText: S.of(context).password,
                   icon: Icons.lock,
                   isPassword: true,
                   errorText: _passwordError,
                 ),
               ),
-              
+
               SizedBox(
                 height: ResponsiveUtils.getResponsiveValue(
                   context,
@@ -258,18 +250,18 @@ class _SignUpPageState extends State<SignUpPage> {
                   desktop: 40.0,
                 ),
               ),
-              
+
               // حقل رقم الهاتف
               Padding(
                 padding: ResponsiveHelpers.getHorizontalPadding(context),
                 child: _buildValidatedTextField(
                   controller: _mobileController,
-                  hintText: "Mobile",
+                  hintText: S.of(context).mobile,
                   icon: Icons.phone,
                   errorText: _mobileError,
                 ),
               ),
-              
+
               SizedBox(
                 height: ResponsiveUtils.getResponsiveValue(
                   context,
@@ -286,7 +278,7 @@ class _SignUpPageState extends State<SignUpPage> {
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
                     Text(
-                      'Create',
+                      S.of(context).create,
                       style: TextStyle(
                         fontSize: ResponsiveHelpers.getBigFontSize(context),
                         fontWeight: FontWeight.bold,
@@ -301,7 +293,7 @@ class _SignUpPageState extends State<SignUpPage> {
                   ],
                 ),
               ),
-              
+
               SizedBox(
                 height: ResponsiveUtils.getResponsiveValue(
                   context,
@@ -310,17 +302,17 @@ class _SignUpPageState extends State<SignUpPage> {
                   desktop: 50.0,
                 ),
               ),
-              
+
               // قسم Sign up with
-              const DividerWithText(
-                text: 'Sign up with',
+              DividerWithText(
+                text: S.of(context).signUpWith,
               ),
-              
+
               const SizedBox(height: 25.0),
-              
+
               // أيقونات التواصل الاجتماعي
               const SocialLoginButtons(),
-              
+
               SizedBox(
                 height: ResponsiveUtils.getResponsiveValue(
                   context,
