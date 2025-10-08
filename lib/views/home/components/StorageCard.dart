@@ -1,3 +1,4 @@
+import 'package:filevo/generated/l10n.dart';
 import 'package:flutter/material.dart';
 import 'package:filevo/responsive.dart';
 import 'package:filevo/views/home/components/StorageChartPainter.dart';
@@ -121,7 +122,7 @@ class StorageCard extends StatelessWidget {
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Text(
-                            'Used',
+                             S.of(context).storageUsed,
                             style: TextStyle(
                               color: Colors.white,
                               fontSize: textSizeLabel,
@@ -129,7 +130,7 @@ class StorageCard extends StatelessWidget {
                             ),
                           ),
                           Text(
-                            '60%',
+                            S.of(context).storageUsedValue,
                             style: TextStyle(
                               color: Colors.white,
                               fontSize: textSizeValue,
@@ -165,7 +166,7 @@ class StorageCard extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Free Internal',
+                          S.of(context).freeInternal,
                           style: TextStyle(
                             color: Colors.white.withOpacity(0.8),
                             fontSize: textSizeLabel,
@@ -173,7 +174,7 @@ class StorageCard extends StatelessWidget {
                           ),
                         ),
                         Text(
-                          '120.5 GB',
+                          S.of(context).freeInternalValue,
                           style: TextStyle(
                             color: Colors.white,
                             fontSize: textSizeValue,
@@ -200,7 +201,7 @@ class StorageCard extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Used',
+                          S.of(context).storageUsed,
                           style: TextStyle(
                             color: Colors.white.withOpacity(0.8),
                             fontSize: textSizeLabel,
@@ -208,7 +209,7 @@ class StorageCard extends StatelessWidget {
                           ),
                         ),
                         Text(
-                          '149.5 GB',
+                          S.of(context).usedStorageValue,
                           style: TextStyle(
                             color: Colors.white,
                             fontSize: textSizeValue,

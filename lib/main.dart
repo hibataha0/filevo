@@ -11,13 +11,11 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
-void main()
-{
+void main() {
   runApp(DevicePreview(
     enabled: !kReleaseMode,
-    builder: (context) => MyApp(), // Wrap your app
-  ),);
-  
+    builder: (context) => const MyApp(),
+  ));
 }
 
 class MyApp extends StatefulWidget {
@@ -25,42 +23,56 @@ class MyApp extends StatefulWidget {
 
   @override
   State<MyApp> createState() => _MyAppState();
+
+  // دالة لتغيير اللغة من أي صفحة
+  static void setLocale(BuildContext context, Locale newLocale) {
+    _MyAppState? state = context.findAncestorStateOfType<_MyAppState>();
+    state?.setLocale(newLocale);
+  }
 }
 
 class _MyAppState extends State<MyApp> {
   bool isDarkMode = false; // الوضع الافتراضي: Light
+  Locale? _locale; // اللغة الحالية
 
   void toggleTheme(bool value) {
     setState(() {
       isDarkMode = value;
     });
   }
-    @override
+
+  void setLocale(Locale locale) {
+    setState(() {
+      _locale = locale;
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      locale: Locale('en'),
-      localizationsDelegates: [
-        
-                S.delegate,
-                GlobalMaterialLocalizations.delegate,
-                GlobalWidgetsLocalizations.delegate,
-                GlobalCupertinoLocalizations.delegate,
-            ],
-            supportedLocales: S.delegate.supportedLocales,
+      locale: _locale ?? const Locale('en'), // اللغة الحالية
+      localizationsDelegates: const [
+        S.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: S.delegate.supportedLocales,
       debugShowCheckedModeBanner: false,
+      theme: ThemeData(
+        brightness: isDarkMode ? Brightness.dark : Brightness.light,
+        primarySwatch: Colors.blue,
+      ),
       routes: {
         'LogInPage': (context) => const LoginPage(),
         'SignUpPage': (context) => const SignUpPage(),
-        'Home': (context) =>  HomeView(),
-        'Main': (context) =>  MainPage(),
-        'Folders': (context) =>  FoldersPage(),
-        'Profile': (context) =>  ProfilePage(),
-        'Settings': (context) =>  SettingsPage(),
-
+        'Home': (context) => HomeView(),
+        'Main': (context) => MainPage(),
+        'Folders': (context) => FoldersPage(),
+        'Profile': (context) => ProfilePage(),
+        'Settings': (context) => SettingsPage(),
       },
-      initialRoute: 'LogInPage', // الصفحة الرئيسية اللي بتفتح أول ما بتشغل التطبيق
-      
+      initialRoute: 'LogInPage',
     );
   }
 }
-

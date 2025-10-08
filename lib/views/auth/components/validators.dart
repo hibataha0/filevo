@@ -1,84 +1,85 @@
+import 'package:flutter/material.dart';
+import 'package:filevo/generated/l10n.dart'; // استيراد ملف الترجمة
+
 class Validators {
   // التحقق من البريد الإلكتروني أو اسم المستخدم
-  static String? validateEmailOrUsername(String? value) {
+  static String? validateEmailOrUsername(BuildContext context, String? value) {
     if (value == null || value.isEmpty) {
-      return 'Please enter your username or email';
+      return S.of(context).enterUsernameOrEmail;
     }
-    
+
     // إذا كان يحتوي على @ فهو بريد إلكتروني
     if (value.contains('@')) {
-      return validateEmail(value);
+      return validateEmail(context, value);
     } else {
-      return validateUsername(value);
+      return validateUsername(context, value);
     }
   }
 
   // التحقق من البريد الإلكتروني
-  static String? validateEmail(String? value) {
+  static String? validateEmail(BuildContext context, String? value) {
     if (value == null || value.isEmpty) {
-      return 'Please enter your email address';
+      return S.of(context).enterEmail;
     }
-    
-    final emailRegex = RegExp(
-      r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
-    );
-    
+
+    final emailRegex =
+        RegExp(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$');
+
     if (!emailRegex.hasMatch(value)) {
-      return 'Please enter a valid email address';
+      return S.of(context).invalidEmail;
     }
-    
+
     return null;
   }
 
   // التحقق من اسم المستخدم
-  static String? validateUsername(String? value) {
+  static String? validateUsername(BuildContext context, String? value) {
     if (value == null || value.isEmpty) {
-      return 'Please enter your username';
+      return S.of(context).enterUsername;
     }
-    
+
     if (value.length < 3) {
-      return 'Username must be at least 3 characters';
+      return S.of(context).usernameMin;
     }
-    
+
     if (value.length > 20) {
-      return 'Username cannot exceed 20 characters';
+      return S.of(context).usernameMax;
     }
-    
+
     final usernameRegex = RegExp(r'^[a-zA-Z0-9_]+$');
     if (!usernameRegex.hasMatch(value)) {
-      return 'Username can only contain letters, numbers and underscore';
+      return S.of(context).usernameAllowedChars;
     }
-    
+
     return null;
   }
 
   // التحقق من كلمة المرور
-  static String? validatePassword(String? value) {
+  static String? validatePassword(BuildContext context, String? value) {
     if (value == null || value.isEmpty) {
-      return 'Please enter your password';
+      return S.of(context).enterPassword;
     }
-    
+
     if (value.length < 6) {
-      return 'Password must be at least 6 characters';
+      return S.of(context).passwordMin;
     }
-    
+
     return null;
   }
 
   // التحقق من رقم الهاتف
-  static String? validatePhone(String? value) {
+  static String? validatePhone(BuildContext context, String? value) {
     if (value == null || value.isEmpty) {
-      return 'Please enter your phone number';
+      return S.of(context).enterPhone;
     }
-    
-    // تحقق من صيغة رقم الهاتف (أرقام فقط، من 10 إلى 15 رقم)
+
     final phoneRegex = RegExp(r'^[0-9]{10,15}$');
     final cleanedValue = value.replaceAll(RegExp(r'[-\s()]'), '');
-    
+
     if (!phoneRegex.hasMatch(cleanedValue)) {
-      return 'Please enter a valid phone number (10-15 digits)';
+      return S.of(context).invalidPhone;
     }
-    
+
     return null;
   }
 }

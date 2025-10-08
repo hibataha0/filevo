@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:filevo/components/FilesGridView.dart';
 import 'package:filevo/components/FilesListView.dart';
 import 'package:filevo/components/FolderFileCard.dart';
@@ -5,7 +6,7 @@ import 'package:filevo/components/ViewToggleButtons.dart';
 import 'package:filevo/responsive.dart';
 import 'package:filevo/views/folders/components/filter_section.dart';
 import 'package:filevo/views/folders/components/tab_bar.dart';
-import 'package:flutter/material.dart';
+import 'package:filevo/generated/l10n.dart';
 
 class FoldersPage extends StatefulWidget {
   @override
@@ -31,15 +32,64 @@ class _FoldersPageState extends State<FoldersPage> {
   @override
   Widget build(BuildContext context) {
     final folders = [
-      {"title": "Images", "fileCount": 156, "size": "2.3 GB", "icon": Icons.image, "color": Colors.blue},
-      {"title": "Videos", "fileCount": 89, "size": "15.7 GB", "icon": Icons.videocam, "color": Colors.red},
-      {"title": "Audio", "fileCount": 234, "size": "3.1 GB", "icon": Icons.audiotrack, "color": Colors.green},
-      {"title": "Compressed", "fileCount": 45, "size": "8.2 GB", "icon": Icons.folder_zip, "color": Colors.orange},
-      {"title": "Applications", "fileCount": 23, "size": "12.5 GB", "icon": Icons.apps, "color": Colors.purple},
-      {"title": "Documents", "fileCount": 312, "size": "1.8 GB", "icon": Icons.description, "color": Colors.brown},
-      {"title": "Code", "fileCount": 67, "size": "856 MB", "icon": Icons.code, "color": Colors.teal},
-      {"title": "Other", "fileCount": 78, "size": "4.3 GB", "icon": Icons.more_horiz, "color": Colors.grey},
-    ];
+  {
+    "title": S.of(context).images,
+    "fileCount": 156,
+    "size": "2.3 GB",
+    "icon": Icons.image,
+    "color": Colors.blue
+  },
+  {
+    "title": S.of(context).videos,
+    "fileCount": 89,
+    "size": "15.7 GB",
+    "icon": Icons.videocam,
+    "color": Colors.red
+  },
+  {
+    "title": S.of(context).audio,
+    "fileCount": 234,
+    "size": "3.1 GB",
+    "icon": Icons.audiotrack,
+    "color": Colors.green
+  },
+  {
+    "title": S.of(context).compressed,
+    "fileCount": 45,
+    "size": "8.2 GB",
+    "icon": Icons.folder_zip,
+    "color": Colors.orange
+  },
+  {
+    "title": S.of(context).applications,
+    "fileCount": 23,
+    "size": "12.5 GB",
+    "icon": Icons.apps,
+    "color": Colors.purple
+  },
+  {
+    "title": S.of(context).documents,
+    "fileCount": 312,
+    "size": "1.8 GB",
+    "icon": Icons.description,
+    "color": Colors.brown
+  },
+  {
+    "title": S.of(context).code,
+    "fileCount": 67,
+    "size": "856 MB",
+    "icon": Icons.code,
+    "color": Colors.teal
+  },
+  {
+    "title": S.of(context).other,
+    "fileCount": 78,
+    "size": "4.3 GB",
+    "icon": Icons.more_horiz,
+    "color": Colors.grey
+  },
+];
+
 
     return DefaultTabController(
       length: 3,
@@ -82,7 +132,7 @@ class _FoldersPageState extends State<FoldersPage> {
                         child: TextField(
                           controller: _searchController,
                           decoration: InputDecoration(
-                            hintText: 'Search anything here',
+                            hintText: S.of(context).searchHint,
                             hintStyle: TextStyle(
                               color: Colors.grey[500],
                               fontSize: 16,
@@ -175,7 +225,11 @@ class _FoldersPageState extends State<FoldersPage> {
               
               // استخدام الـ Custom Tab Bar من الملف المنفصل
               CustomTabBar(
-                tabs: ['All', 'My Files', 'Shared'],
+                tabs: [
+                  S.of(context).all,
+                  S.of(context).myFiles,
+                  S.of(context).shared
+                ],
                 backgroundColor: Colors.white,
                 indicatorColor: Color(0xFF00BFA5),
                 labelColor: Colors.white,
@@ -242,8 +296,11 @@ class _FoldersPageState extends State<FoldersPage> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    showFolders && showFiles ? 'All Items' : 
-                    showFolders ? 'My Folders' : 'Shared Files',
+                    showFolders && showFiles
+                        ? S.of(context).allItems
+                        : showFolders
+                            ? S.of(context).myFolders
+                            : S.of(context).sharedFiles,
                     style: TextStyle(
                       fontSize: ResponsiveUtils.getResponsiveValue(
                         context,
@@ -287,7 +344,7 @@ class _FoldersPageState extends State<FoldersPage> {
               if (showFiles && !showFolders) ...[
                 Center(
                   child: Text(
-                    'Shared files content will be here',
+                    S.of(context).sharedFilesContent,
                     style: TextStyle(
                       fontSize: 16,
                       color: Colors.grey[600],

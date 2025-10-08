@@ -308,6 +308,441 @@ class S {
       args: [],
     );
   }
+
+  /// `Recent Folders`
+  String get recentFolders {
+    return Intl.message(
+      'Recent Folders',
+      name: 'recentFolders',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `See all`
+  String get seeAll {
+    return Intl.message('See all', name: 'seeAll', desc: '', args: []);
+  }
+
+  /// `Recent Files`
+  String get recentFiles {
+    return Intl.message(
+      'Recent Files',
+      name: 'recentFiles',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Used`
+  String get storageUsed {
+    return Intl.message('Used', name: 'storageUsed', desc: '', args: []);
+  }
+
+  /// `60%`
+  String get storageUsedValue {
+    return Intl.message('60%', name: 'storageUsedValue', desc: '', args: []);
+  }
+
+  /// `Free Internal`
+  String get freeInternal {
+    return Intl.message(
+      'Free Internal',
+      name: 'freeInternal',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `120.5 GB`
+  String get freeInternalValue {
+    return Intl.message(
+      '120.5 GB',
+      name: 'freeInternalValue',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `149.5 GB`
+  String get usedStorageValue {
+    return Intl.message(
+      '149.5 GB',
+      name: 'usedStorageValue',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Search anything here`
+  String get searchHint {
+    return Intl.message(
+      'Search anything here',
+      name: 'searchHint',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `All`
+  String get all {
+    return Intl.message('All', name: 'all', desc: '', args: []);
+  }
+
+  /// `My Files`
+  String get myFiles {
+    return Intl.message('My Files', name: 'myFiles', desc: '', args: []);
+  }
+
+  /// `Shared`
+  String get shared {
+    return Intl.message('Shared', name: 'shared', desc: '', args: []);
+  }
+
+  /// `All Items`
+  String get allItems {
+    return Intl.message('All Items', name: 'allItems', desc: '', args: []);
+  }
+
+  /// `My Folders`
+  String get myFolders {
+    return Intl.message('My Folders', name: 'myFolders', desc: '', args: []);
+  }
+
+  /// `Shared Files`
+  String get sharedFiles {
+    return Intl.message(
+      'Shared Files',
+      name: 'sharedFiles',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Shared files content will be here`
+  String get sharedFilesContent {
+    return Intl.message(
+      'Shared files content will be here',
+      name: 'sharedFilesContent',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Filter`
+  String get filter {
+    return Intl.message('Filter', name: 'filter', desc: '', args: []);
+  }
+
+  /// `Images`
+  String get images {
+    return Intl.message('Images', name: 'images', desc: '', args: []);
+  }
+
+  /// `Videos`
+  String get videos {
+    return Intl.message('Videos', name: 'videos', desc: '', args: []);
+  }
+
+  /// `Audio`
+  String get audio {
+    return Intl.message('Audio', name: 'audio', desc: '', args: []);
+  }
+
+  /// `Compressed`
+  String get compressed {
+    return Intl.message('Compressed', name: 'compressed', desc: '', args: []);
+  }
+
+  /// `Applications`
+  String get applications {
+    return Intl.message(
+      'Applications',
+      name: 'applications',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Documents`
+  String get documents {
+    return Intl.message('Documents', name: 'documents', desc: '', args: []);
+  }
+
+  /// `Code`
+  String get code {
+    return Intl.message('Code', name: 'code', desc: '', args: []);
+  }
+
+  /// `Other`
+  String get other {
+    return Intl.message('Other', name: 'other', desc: '', args: []);
+  }
+
+  /// `Type`
+  String get type {
+    return Intl.message('Type', name: 'type', desc: '', args: []);
+  }
+
+  /// `Time & Date`
+  String get timeAndDate {
+    return Intl.message('Time & Date', name: 'timeAndDate', desc: '', args: []);
+  }
+
+  /// `Yesterday`
+  String get yesterday {
+    return Intl.message('Yesterday', name: 'yesterday', desc: '', args: []);
+  }
+
+  /// `Last 7 days`
+  String get last7Days {
+    return Intl.message('Last 7 days', name: 'last7Days', desc: '', args: []);
+  }
+
+  /// `Last 30 days`
+  String get last30Days {
+    return Intl.message('Last 30 days', name: 'last30Days', desc: '', args: []);
+  }
+
+  /// `Last year`
+  String get lastYear {
+    return Intl.message('Last year', name: 'lastYear', desc: '', args: []);
+  }
+
+  /// `Custom`
+  String get custom {
+    return Intl.message('Custom', name: 'custom', desc: '', args: []);
+  }
+
+  /// `Used`
+  String get used {
+    return Intl.message('Used', name: 'used', desc: '', args: []);
+  }
+
+  /// `Storage Overview`
+  String get storageOverview {
+    return Intl.message(
+      'Storage Overview',
+      name: 'storageOverview',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Used storage:`
+  String get usedStorage {
+    return Intl.message(
+      'Used storage:',
+      name: 'usedStorage',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Settings`
+  String get settings {
+    return Intl.message('Settings', name: 'settings', desc: '', args: []);
+  }
+
+  /// `Choose Language`
+  String get chooseLanguage {
+    return Intl.message(
+      'Choose Language',
+      name: 'chooseLanguage',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `English`
+  String get english {
+    return Intl.message('English', name: 'english', desc: '', args: []);
+  }
+
+  /// `Arabic`
+  String get arabic {
+    return Intl.message('Arabic', name: 'arabic', desc: '', args: []);
+  }
+
+  /// `General`
+  String get general {
+    return Intl.message('General', name: 'general', desc: '', args: []);
+  }
+
+  /// `General Settings`
+  String get generalSettings {
+    return Intl.message(
+      'General Settings',
+      name: 'generalSettings',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Basic app settings`
+  String get basicAppSettings {
+    return Intl.message(
+      'Basic app settings',
+      name: 'basicAppSettings',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Dark Mode`
+  String get darkMode {
+    return Intl.message('Dark Mode', name: 'darkMode', desc: '', args: []);
+  }
+
+  /// `Switch between themes`
+  String get switchThemes {
+    return Intl.message(
+      'Switch between themes',
+      name: 'switchThemes',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Language`
+  String get language {
+    return Intl.message('Language', name: 'language', desc: '', args: []);
+  }
+
+  /// `Preferences`
+  String get preferences {
+    return Intl.message('Preferences', name: 'preferences', desc: '', args: []);
+  }
+
+  /// `Notifications`
+  String get notifications {
+    return Intl.message(
+      'Notifications',
+      name: 'notifications',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Manage notifications`
+  String get manageNotifications {
+    return Intl.message(
+      'Manage notifications',
+      name: 'manageNotifications',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Storage`
+  String get storage {
+    return Intl.message('Storage', name: 'storage', desc: '', args: []);
+  }
+
+  /// `Manage storage settings`
+  String get manageStorageSettings {
+    return Intl.message(
+      'Manage storage settings',
+      name: 'manageStorageSettings',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Privacy & Security`
+  String get privacySecurity {
+    return Intl.message(
+      'Privacy & Security',
+      name: 'privacySecurity',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Privacy settings`
+  String get privacySettings {
+    return Intl.message(
+      'Privacy settings',
+      name: 'privacySettings',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Support`
+  String get support {
+    return Intl.message('Support', name: 'support', desc: '', args: []);
+  }
+
+  /// `Legal & Policies`
+  String get legalPolicies {
+    return Intl.message(
+      'Legal & Policies',
+      name: 'legalPolicies',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Terms of service & privacy policy`
+  String get termsPrivacyPolicy {
+    return Intl.message(
+      'Terms of service & privacy policy',
+      name: 'termsPrivacyPolicy',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Help & Support`
+  String get helpSupport {
+    return Intl.message(
+      'Help & Support',
+      name: 'helpSupport',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Get help and support`
+  String get getHelpSupport {
+    return Intl.message(
+      'Get help and support',
+      name: 'getHelpSupport',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `About`
+  String get about {
+    return Intl.message('About', name: 'about', desc: '', args: []);
+  }
+
+  /// `App version {version}`
+  String appVersion(Object version) {
+    return Intl.message(
+      'App version $version',
+      name: 'appVersion',
+      desc: '',
+      args: [version],
+    );
+  }
+
+  /// `Logout`
+  String get logout {
+    return Intl.message('Logout', name: 'logout', desc: '', args: []);
+  }
+
+  /// `Sign out from your account`
+  String get signOut {
+    return Intl.message(
+      'Sign out from your account',
+      name: 'signOut',
+      desc: '',
+      args: [],
+    );
+  }
 }
 
 class AppLocalizationDelegate extends LocalizationsDelegate<S> {

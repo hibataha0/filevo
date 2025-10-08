@@ -1,3 +1,4 @@
+import 'package:filevo/generated/l10n.dart';
 import 'package:filevo/responsive.dart';
 import 'package:flutter/material.dart';
 import 'dart:math' as math;
@@ -91,7 +92,7 @@ class StorageCard extends StatelessWidget {
                           ),
                         ),
                         Text(
-                          'Used',
+                          S.of(context).used,
                           style: TextStyle(
                             fontSize: ResponsiveUtils.getResponsiveValue(
                               context,
@@ -123,13 +124,13 @@ class StorageCard extends StatelessWidget {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              _buildLegendItem('Images', Color(0xFF4285F4), Icons.image),
+                              _buildLegendItem(S.of(context).images, Color(0xFF4285F4), Icons.image),
                               SizedBox(height: 6),
-                              _buildLegendItem('Videos', Color(0xFFEA4335), Icons.videocam),
+                              _buildLegendItem(S.of(context).videos, Color(0xFFEA4335), Icons.videocam),
                               SizedBox(height: 6),
-                              _buildLegendItem('Audio', Color(0xFF34A853), Icons.audiotrack),
+                              _buildLegendItem(S.of(context).audio, Color(0xFF34A853), Icons.audiotrack),
                               SizedBox(height: 6),
-                              _buildLegendItem('Compressed', Color(0xFFFF6D00), Icons.folder_zip),
+                              _buildLegendItem(S.of(context).compressed, Color(0xFFFF6D00), Icons.folder_zip),
                             ],
                           ),
                         ),
@@ -138,13 +139,13 @@ class StorageCard extends StatelessWidget {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              _buildLegendItem('Applications', Color(0xFF9C27B0), Icons.apps),
+                              _buildLegendItem(S.of(context).applications, Color(0xFF9C27B0), Icons.apps),
                               SizedBox(height: 6),
-                              _buildLegendItem('Documents', Color(0xFF795548), Icons.description),
+                              _buildLegendItem(S.of(context).documents, Color(0xFF795548), Icons.description),
                               SizedBox(height: 6),
-                              _buildLegendItem('Code', Color(0xFF009688), Icons.code),
+                              _buildLegendItem(S.of(context).code, Color(0xFF009688), Icons.code),
                               SizedBox(height: 6),
-                              _buildLegendItem('Other', Color(0xFF607D8B), Icons.more_horiz),
+                              _buildLegendItem(S.of(context).other, Color(0xFF607D8B), Icons.more_horiz),
                             ],
                           ),
                         ),
@@ -159,7 +160,7 @@ class StorageCard extends StatelessWidget {
           SizedBox(height: 24),
 
           Text(
-            'Storage Overview',
+            S.of(context).storageOverview,
             style: TextStyle(
               fontSize: ResponsiveUtils.getResponsiveValue(
                 context,
@@ -174,7 +175,7 @@ class StorageCard extends StatelessWidget {
 
           SizedBox(height: 16),
           Text(
-            'Used storage: ',
+            S.of(context).usedStorage,
             style: TextStyle(
               fontSize: ResponsiveUtils.getResponsiveValue(
                 context,

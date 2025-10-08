@@ -1,17 +1,79 @@
+import 'package:filevo/main.dart';
+import 'package:filevo/views/settings/components/settings_item.dart';
+import 'package:filevo/views/settings/components/settings_section.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-// import model
-import 'package:filevo/models/settings/settings_model.dart';
-// import controller
-import 'package:filevo/controllers/settings/settings_controller.dart';
+import 'package:filevo/generated/l10n.dart';
 
-class SettingsPage extends StatelessWidget {
+class SettingsPage extends StatefulWidget {
+  @override
+  State<SettingsPage> createState() => _SettingsPageState();
+}
+
+class _SettingsPageState extends State<SettingsPage> {
+  Locale _selectedLocale = const Locale('en'); // 🔹 اللغة الحالية
+
+  void _showLanguageMenu(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(25.0)),
+      ),
+      builder: (BuildContext context) {
+        return Padding(
+          padding: const EdgeInsets.symmetric(vertical: 20.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                S.of(context).chooseLanguage,
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const Divider(),
+              ListTile(
+                leading: const Icon(Icons.language),
+                title: Text(S.of(context).english),
+                trailing: _selectedLocale.languageCode == 'en'
+                    ? const Icon(Icons.check, color: Colors.blue)
+                    : null,
+                onTap: () {
+                  setState(() {
+                    _selectedLocale = const Locale('en');
+                  });
+                  MyApp.setLocale(context, const Locale('en'));
+                  Navigator.pop(context);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.language),
+                title: Text(S.of(context).arabic),
+                trailing: _selectedLocale.languageCode == 'ar'
+                    ? const Icon(Icons.check, color: Colors.blue)
+                    : null,
+                onTap: () {
+                  setState(() {
+                    _selectedLocale = const Locale('ar');
+                  });
+                  MyApp.setLocale(context, const Locale('ar'));
+                  Navigator.pop(context);
+                },
+              ),
+              const SizedBox(height: 10),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xff28336f),
       body: Padding(
-        // 🔹 نفس اللي في HomeView: يمنع اللون الأزرق من الظهور خلف البار
         padding: EdgeInsets.only(
           top: MediaQuery.of(context).padding.top,
         ),
@@ -22,9 +84,9 @@ class SettingsPage extends StatelessWidget {
               padding: const EdgeInsets.symmetric(vertical: 20),
               width: double.infinity,
               alignment: Alignment.center,
-              child: const Text(
-                "Settings",
-                style: TextStyle(
+              child: Text(
+                S.of(context).settings,
+                style: const TextStyle(
                   fontSize: 22,
                   color: Colors.white,
                   fontWeight: FontWeight.bold,
@@ -52,19 +114,19 @@ class SettingsPage extends StatelessWidget {
                     children: [
                       const SizedBox(height: 10),
 
-                      _buildSettingsSection(
-                        title: "General",
+                      SettingsSection(
+                        title: S.of(context).general,
                         items: [
-                          _buildSettingsItem(
+                          SettingsItem(
                             icon: Icons.settings_outlined,
-                            title: "General Settings",
-                            subtitle: "Basic app settings",
+                            title: S.of(context).generalSettings,
+                            subtitle: S.of(context).basicAppSettings,
                             onTap: () {},
                           ),
-                          _buildSettingsItem(
+                          SettingsItem(
                             icon: Icons.dark_mode_outlined,
-                            title: "Dark Mode",
-                            subtitle: "Switch between themes",
+                            title: S.of(context).darkMode,
+                            subtitle: S.of(context).switchThemes,
                             trailing: Switch(
                               value: false,
                               onChanged: (value) {},
@@ -72,36 +134,39 @@ class SettingsPage extends StatelessWidget {
                             ),
                             onTap: () {},
                           ),
-                          _buildSettingsItem(
+                          // 🔹 خيار اللغة المعدّل
+                          SettingsItem(
                             icon: Icons.language,
-                            title: "Language",
-                            subtitle: "English",
-                            onTap: () {},
+                            title: S.of(context).language,
+                            subtitle: _selectedLocale.languageCode == 'en'
+                                ? S.of(context).english
+                                : S.of(context).arabic,
+                            onTap: () => _showLanguageMenu(context),
                           ),
                         ],
                       ),
 
                       const SizedBox(height: 24),
 
-                      _buildSettingsSection(
-                        title: "Preferences",
+                      SettingsSection(
+                        title: S.of(context).preferences,
                         items: [
-                          _buildSettingsItem(
+                          SettingsItem(
                             icon: Icons.notifications_outlined,
-                            title: "Notifications",
-                            subtitle: "Manage notifications",
+                            title: S.of(context).notifications,
+                            subtitle: S.of(context).manageNotifications,
                             onTap: () {},
                           ),
-                          _buildSettingsItem(
+                          SettingsItem(
                             icon: Icons.storage,
-                            title: "Storage",
-                            subtitle: "Manage storage settings",
+                            title: S.of(context).storage,
+                            subtitle: S.of(context).manageStorageSettings,
                             onTap: () {},
                           ),
-                          _buildSettingsItem(
+                          SettingsItem(
                             icon: Icons.security,
-                            title: "Privacy & Security",
-                            subtitle: "Privacy settings",
+                            title: S.of(context).privacySecurity,
+                            subtitle: S.of(context).privacySettings,
                             onTap: () {},
                           ),
                         ],
@@ -109,25 +174,25 @@ class SettingsPage extends StatelessWidget {
 
                       const SizedBox(height: 24),
 
-                      _buildSettingsSection(
-                        title: "Support",
+                      SettingsSection(
+                        title: S.of(context).support,
                         items: [
-                          _buildSettingsItem(
+                          SettingsItem(
                             icon: Icons.description_outlined,
-                            title: "Legal & Policies",
-                            subtitle: "Terms of service & privacy policy",
+                            title: S.of(context).legalPolicies,
+                            subtitle: S.of(context).termsPrivacyPolicy,
                             onTap: () {},
                           ),
-                          _buildSettingsItem(
+                          SettingsItem(
                             icon: Icons.help_outline,
-                            title: "Help & Support",
-                            subtitle: "Get help and support",
+                            title: S.of(context).helpSupport,
+                            subtitle: S.of(context).getHelpSupport,
                             onTap: () {},
                           ),
-                          _buildSettingsItem(
+                          SettingsItem(
                             icon: Icons.info_outline,
-                            title: "About",
-                            subtitle: "App version 1.0.0",
+                            title: S.of(context).about,
+                            subtitle: S.of(context).appVersion("1.0.0"),
                             onTap: () {},
                           ),
                         ],
@@ -160,16 +225,16 @@ class SettingsPage extends StatelessWidget {
                               size: 20,
                             ),
                           ),
-                          title: const Text(
-                            "Logout",
-                            style: TextStyle(
+                          title: Text(
+                            S.of(context).logout,
+                            style: const TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w500,
                               color: Colors.red,
                             ),
                           ),
                           subtitle: Text(
-                            "Sign out from your account",
+                            S.of(context).signOut,
                             style: TextStyle(
                               fontSize: 12,
                               color: Colors.red.withOpacity(0.7),
@@ -188,7 +253,8 @@ class SettingsPage extends StatelessWidget {
                         ),
                       ),
 
- SizedBox(height: 100),                    ],
+                      const SizedBox(height: 100),
+                    ],
                   ),
                 ),
               ),
@@ -197,96 +263,5 @@ class SettingsPage extends StatelessWidget {
         ),
       ),
     );
-  }
-
-  // ====== الدوال المساعدة ======
-
-  Widget _buildSettingsSection({
-    required String title,
-    required List<Widget> items,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          title,
-          style: const TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: Color(0xff28336f),
-          ),
-        ),
-        const SizedBox(height: 12),
-        ...items,
-      ],
-    );
-  }
-
-  Widget _buildSettingsItem({
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    Widget? trailing,
-    required VoidCallback onTap,
-  }) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: Colors.grey[200]!,
-          width: 1,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 5,
-            offset: const Offset(0, 3),
-          ),
-        ],
-      ),
-      child: ListTile(
-        leading: Container(
-          width: 40,
-          height: 40,
-          decoration: BoxDecoration(
-            color: const Color(0xff28336f).withOpacity(0.1),
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: Icon(
-            icon,
-            color: const Color(0xff28336f),
-            size: 20,
-          ),
-        ),
-        title: Text(
-          title,
-          style: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w500,
-            color: Colors.black87,
-          ),
-        ),
-        subtitle: Text(
-          subtitle,
-          style: TextStyle(
-            fontSize: 12,
-            color: Colors.grey[600],
-          ),
-        ),
-        trailing: trailing ??
-            Icon(
-              Icons.arrow_forward_ios,
-              color: Colors.grey[600],
-              size: 16,
-            ),
-        onTap: onTap,
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      ),
-      
-    );
-    
   }
 }

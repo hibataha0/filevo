@@ -1,6 +1,7 @@
 import 'package:filevo/components/FilesGridView.dart';
 import 'package:filevo/components/FilesListView.dart';
 import 'package:filevo/components/ViewToggleButtons.dart';
+import 'package:filevo/generated/l10n.dart';
 import 'package:filevo/responsive.dart';
 import 'package:filevo/views/home/components/StorageCard.dart';
 import 'package:flutter/material.dart';
@@ -90,7 +91,7 @@ class _HomeViewState extends State<HomeView> {
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               Text(
-                                'Recent Folders',
+                                S.of(context).recentFolders,
                                 style: TextStyle(
                                   fontSize: ResponsiveUtils.getResponsiveValue(
                                     context,
@@ -104,7 +105,7 @@ class _HomeViewState extends State<HomeView> {
                               TextButton(
                                 onPressed: () {},
                                 child: Text(
-                                  "See all",
+                                  S.of(context).seeAll,
                                   style: TextStyle(
                                     color: Color(0xFF00BFA5),
                                     fontSize: ResponsiveUtils.getResponsiveValue(
@@ -149,7 +150,7 @@ class _HomeViewState extends State<HomeView> {
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               Text(
-                                'Recent Files',
+                                S.of(context).recentFiles,
                                 style: TextStyle(
                                   fontSize: ResponsiveUtils.getResponsiveValue(
                                     context,
