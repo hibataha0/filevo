@@ -3,6 +3,8 @@ import 'package:filevo/views/settings/components/settings_item.dart';
 import 'package:filevo/views/settings/components/settings_section.dart';
 import 'package:flutter/material.dart';
 import 'package:filevo/generated/l10n.dart';
+import 'package:provider/provider.dart';
+import 'package:filevo/controllers/auth/auth_controller.dart';
 
 class SettingsPage extends StatefulWidget {
   @override
@@ -11,6 +13,57 @@ class SettingsPage extends StatefulWidget {
 
 class _SettingsPageState extends State<SettingsPage> {
   Locale _selectedLocale = const Locale('en'); // 🔹 اللغة الحالية
+
+  Future<void> _handleLogout(BuildContext context) async {
+    // عرض تأكيد قبل تسجيل الخروج
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text(S.of(context).logout),
+          content: Text(S.of(context).signOut),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: Text(
+                'إلغاء',
+                style: TextStyle(color: Colors.grey[600]),
+              ),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: const Text(
+                'تسجيل الخروج',
+                style: TextStyle(color: Colors.red),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirm == true) {
+      // تسجيل الخروج
+      final authController = context.read<AuthController>();
+      await authController.logout();
+      
+      // عرض رسالة نجاح
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('تم تسجيل الخروج بنجاح'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        
+        // العودة لصفحة تسجيل الدخول
+        Navigator.of(context).pushNamedAndRemoveUntil(
+          'LogInPage',
+          (route) => false,
+        );
+      }
+    }
+  }
 
   void _showLanguageMenu(BuildContext context) {
     showModalBottomSheet(
@@ -245,7 +298,7 @@ class _SettingsPageState extends State<SettingsPage> {
                             color: Colors.red,
                             size: 16,
                           ),
-                          onTap: () {},
+                          onTap: () => _handleLogout(context),
                           contentPadding: const EdgeInsets.symmetric(
                             horizontal: 16,
                             vertical: 8,

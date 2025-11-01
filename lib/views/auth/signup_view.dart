@@ -9,6 +9,8 @@ import 'package:filevo/views/auth/components/custom_textfiled.dart';
 import 'package:filevo/views/auth/components/header_background.dart';
 import 'package:flutter/material.dart';
 import 'package:filevo/generated/l10n.dart'; // ✅ استدعاء intl
+import 'package:provider/provider.dart';
+import 'package:filevo/controllers/auth/auth_controller.dart';
 
 class SignUpPage extends StatefulWidget {
   const SignUpPage({super.key});
@@ -21,46 +23,66 @@ class _SignUpPageState extends State<SignUpPage> {
   final _usernameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-  final _mobileController = TextEditingController();
+  final _confirmPasswordController = TextEditingController();
   
   bool _isLoading = false;
   String? _usernameError;
   String? _emailError;
   String? _passwordError;
-  String? _mobileError;
+  String? _confirmPasswordError;
 
   Future<void> _validateAndSubmit() async {
     final usernameError = Validators.validateUsername(context, _usernameController.text);
 final emailError = Validators.validateEmail(context, _emailController.text);
 final passwordError = Validators.validatePassword(context, _passwordController.text);
-final mobileError = Validators.validatePhone(context, _mobileController.text);
+final confirmPasswordError = (_confirmPasswordController.text.trim().isEmpty)
+    ? S.of(context).enterConfirmPassword
+    : (_confirmPasswordController.text.trim() != _passwordController.text.trim())
+        ? S.of(context).passwordsDoNotMatch
+        : null;
 
 
     setState(() {
       _usernameError = usernameError;
       _emailError = emailError;
       _passwordError = passwordError;
-      _mobileError = mobileError;
+      _confirmPasswordError = confirmPasswordError;
     });
 
     if (usernameError == null && emailError == null && 
-        passwordError == null && mobileError == null) {
+        passwordError == null && confirmPasswordError == null) {
       setState(() {
         _isLoading = true;
       });
-
-      await Future.delayed(const Duration(seconds: 2));
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(S.of(context).accountCreatedSuccessfully),
-          backgroundColor: Colors.green,
-        ),
+      final auth = context.read<AuthController>();
+      final ok = await auth.register(
+        username: _usernameController.text.trim(),
+        email: _emailController.text.trim(),
+        password: _passwordController.text.trim(),
+        confirmPassword: _confirmPasswordController.text.trim(),
       );
-
       setState(() {
         _isLoading = false;
       });
+      if (ok) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(S.of(context).accountCreatedSuccessfully),
+            backgroundColor: Colors.green,
+          ),
+        );
+        Navigator.pop(context);
+      } else {
+        final errorMsg = auth.errorMessage ?? 'Registration failed';
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(errorMsg),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 4),
+          ),
+        );
+        print('Register UI Error: $errorMsg');
+      }
     }
   }
 
@@ -130,7 +152,7 @@ final mobileError = Validators.validatePhone(context, _mobileController.text);
     _usernameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
-    _mobileController.dispose();
+    _confirmPasswordController.dispose();
     super.dispose();
   }
 
@@ -200,7 +222,7 @@ final mobileError = Validators.validatePhone(context, _mobileController.text);
                 errorText: _usernameError,
               ),
             ),
-      
+
             SizedBox(
               height: ResponsiveUtils.getResponsiveValue(
                 context,
@@ -251,14 +273,15 @@ final mobileError = Validators.validatePhone(context, _mobileController.text);
               ),
             ),
       
-            // حقل رقم الهاتف
+            // حقل تأكيد كلمة المرور
             Padding(
               padding: ResponsiveHelpers.getHorizontalPadding(context),
               child: _buildValidatedTextField(
-                controller: _mobileController,
-                hintText: S.of(context).mobile,
-                icon: Icons.phone,
-                errorText: _mobileError,
+                controller: _confirmPasswordController,
+                hintText: S.of(context).confirmPassword,
+                icon: Icons.lock_outline,
+                isPassword: true,
+                errorText: _confirmPasswordError,
               ),
             ),
       

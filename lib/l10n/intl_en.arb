@@ -16,6 +16,7 @@
   "username": "Username",
   "email": "Email",
   "mobile": "Mobile",
+  "confirmPassword": "Confirm Password",
   "create": "Create",
   "signUpWith": "Sign up with",
   "alreadyHaveAccount": "Already have an account? ",
@@ -31,6 +32,8 @@
   "usernameAllowedChars": "Username can only contain letters, numbers and underscore",
   "enterPassword": "Please enter your password",
   "passwordMin": "Password must be at least 6 characters",
+  "enterConfirmPassword": "Please confirm your password",
+  "passwordsDoNotMatch": "Passwords do not match",
   "enterPhone": "Please enter your phone number",
   "invalidPhone": "Please enter a valid phone number (10-15 digits)",
 

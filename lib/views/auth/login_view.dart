@@ -9,6 +9,8 @@ import 'package:filevo/views/auth/components/custom_textfiled.dart';
 import 'package:filevo/views/auth/components/header_background.dart';
 import 'package:flutter/material.dart';
 import 'package:filevo/generated/l10n.dart'; // ✅ استدعاء الترجمة
+import 'package:provider/provider.dart';
+import 'package:filevo/controllers/auth/auth_controller.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -40,33 +42,33 @@ class _LoginPageState extends State<LoginPage> {
       setState(() {
         _isLoading = true;
       });
-
-      await Future.delayed(const Duration(seconds: 2));
-
-      final isSuccess = _emailController.text.isNotEmpty &&
-          _passwordController.text.isNotEmpty;
-
-      if (isSuccess) {
+      final auth = context.read<AuthController>();
+      final ok = await auth.login(
+        emailOrUsername: _emailController.text.trim(),
+        password: _passwordController.text,
+      );
+      setState(() {
+        _isLoading = false;
+      });
+      if (ok) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(S.of(context).loginSuccessful),
             backgroundColor: Colors.green,
           ),
         );
-
         Navigator.pushReplacementNamed(context, 'Main');
       } else {
+        final errorMsg = auth.errorMessage ?? S.of(context).invalidCredentials;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(S.of(context).invalidCredentials),
+            content: Text(errorMsg),
             backgroundColor: Colors.red,
+            duration: const Duration(seconds: 4),
           ),
         );
+        print('Login UI Error: $errorMsg');
       }
-
-      setState(() {
-        _isLoading = false;
-      });
     }
   }
 

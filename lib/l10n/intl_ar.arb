@@ -16,6 +16,7 @@
   "username": "اسم المستخدم",
   "email": "البريد الإلكتروني",
   "mobile": "رقم الهاتف",
+  "confirmPassword": "تأكيد كلمة المرور",
   "create": "إنشاء",
   "signUpWith": "إنشاء حساب باستخدام",
   "alreadyHaveAccount": "هل لديك حساب بالفعل؟ ",
@@ -31,6 +32,8 @@
   "usernameAllowedChars": "يمكن أن يحتوي اسم المستخدم على أحرف وأرقام وشرطة سفلية فقط",
   "enterPassword": "الرجاء إدخال كلمة المرور",
   "passwordMin": "يجب أن تكون كلمة المرور 6 أحرف على الأقل",
+  "enterConfirmPassword": "يرجى تأكيد كلمة المرور",
+  "passwordsDoNotMatch": "كلمتا المرور غير متطابقتين",
   "enterPhone": "الرجاء إدخال رقم الهاتف",
   "invalidPhone": "الرجاء إدخال رقم هاتف صالح (10-15 رقمًا)",
 

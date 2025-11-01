@@ -10,6 +10,8 @@ import 'package:filevo/views/settings/settings_view.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:provider/provider.dart';
+import 'package:filevo/controllers/auth/auth_controller.dart';
 
 void main() {
   runApp(DevicePreview(
@@ -49,7 +51,13 @@ class _MyAppState extends State<MyApp> {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider<AuthController>(
+          create: (_) => AuthController(),
+        ),
+      ],
+      child: MaterialApp(
       locale: _locale ?? const Locale('en'), // اللغة الحالية
       localizationsDelegates: const [
         S.delegate,
@@ -73,6 +81,7 @@ class _MyAppState extends State<MyApp> {
         'Settings': (context) => SettingsPage(),
       },
       initialRoute: 'LogInPage',
+      ),
     );
   }
 }
