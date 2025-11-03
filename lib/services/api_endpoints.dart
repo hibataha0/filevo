@@ -1,5 +1,4 @@
-/// ملف يحتوي على جميع endpoints للـ API
-/// يمكنك إضافة المزيد حسب احتياجك
+/// endpoints للـ API
 
 class ApiEndpoints {
   // Auth endpoints
@@ -30,6 +29,5 @@ class ApiEndpoints {
   // Search endpoints
   static const String search = '/search';
   
-  // يمكنك إضافة المزيد حسب احتياجك
 }
 

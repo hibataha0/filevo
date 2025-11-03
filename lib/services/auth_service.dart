@@ -2,30 +2,11 @@ import 'package:filevo/services/api_service.dart';
 import 'package:filevo/services/api_endpoints.dart';
 import 'package:filevo/services/storage_service.dart';
 
-/// خدمة للتعامل مع عمليات المصادقة (Auth)
-/// مثال على كيفية استخدام ApiService
+
 class AuthService {
   final ApiService _apiService = ApiService();
 
-  /// تسجيل الدخول
-  /// 
-  /// مثال:
-  /// ```dart
-  /// final authService = AuthService();
-  /// final result = await authService.login(
-  ///   email: 'user@example.com',
-  ///   password: 'password123',
-  /// );
-  /// 
-  /// if (result['success']) {
-  ///   // تسجيل الدخول نجح
-  ///   final token = result['data']['token'];
-  ///   await StorageService.saveToken(token);
-  /// } else {
-  ///   // فشل تسجيل الدخول
-  ///   print('Error: ${result['error']}');
-  /// }
-  /// ```
+  
   Future<Map<String, dynamic>> login({
     required String email,
     required String password,

@@ -3,6 +3,7 @@ import 'package:filevo/responsive.dart';
 import 'package:filevo/views/auth/components/divider_with_text.dart';
 import 'package:filevo/views/auth/components/social_login_buttons.dart';
 import 'package:filevo/views/auth/components/validators.dart';
+import 'package:filevo/views/auth/forgetPassword.dart';
 import 'package:filevo/views/auth/signup_view.dart';
 import 'package:filevo/views/auth/components/custom_button.dart';
 import 'package:filevo/views/auth/components/custom_textfiled.dart';
@@ -260,31 +261,46 @@ class _LoginPageState extends State<LoginPage> {
             ),
       
             // نسيت كلمة المرور
-            Padding(
-              padding: EdgeInsets.symmetric(
-                horizontal: ResponsiveUtils.getResponsiveValue(
-                  context,
-                  mobile: 20.0,
-                  tablet: 40.0,
-                  desktop: 60.0,
-                ),
-              ),
-              child: Align(
-                alignment: Alignment.centerRight,
-                child: Text(
-                  S.of(context).forgotPassword,
-                  style: TextStyle(
-                    fontSize: ResponsiveUtils.getResponsiveValue(
-                      context,
-                      mobile: 14.0,
-                      tablet: 15.0,
-                      desktop: 16.0,
-                    ),
-                    color: Colors.grey[500],
-                  ),
-                ),
-              ),
-            ),
+          Padding(
+  padding: EdgeInsets.symmetric(
+    horizontal: ResponsiveUtils.getResponsiveValue(
+      context,
+      mobile: 20.0,
+      tablet: 40.0,
+      desktop: 60.0,
+    ),
+  ),
+  child: Align(
+    alignment: Alignment.centerRight,
+
+    child: GestureDetector(
+      onTap: () {
+       
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => ForgotPasswordPage(),
+          ),
+        );
+      },
+      child: Text(
+        S.of(context).forgotPassword,
+        style: TextStyle(
+          fontWeight: FontWeight.bold,
+          fontSize: ResponsiveUtils.getResponsiveValue(
+            context,
+            mobile: 14.0,
+            tablet: 15.0,
+            desktop: 16.0,
+          ),
+          color: Colors.blue, // خلي اللون أزرق ليوضح إنه رابط
+          decoration: TextDecoration.underline, // خط تحت النص
+        ),
+      ),
+    ),
+  ),
+),
+
       
             SizedBox(
               height: ResponsiveUtils.getResponsiveValue(
