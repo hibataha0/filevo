@@ -24,7 +24,6 @@
   "accountCreatedSuccessfully": "تم إنشاء الحساب بنجاح!",
 
   "enterUsernameOrEmail": "الرجاء إدخال اسم المستخدم أو البريد الإلكتروني",
-  "enterEmail": "الرجاء إدخال البريد الإلكتروني",
   "invalidEmail": "الرجاء إدخال بريد إلكتروني صالح",
   "enterUsername": "الرجاء إدخال اسم المستخدم",
   "usernameMin": "يجب أن يكون اسم المستخدم 3 أحرف على الأقل",
@@ -47,7 +46,7 @@
   "freeInternalValue": "120.5 جيجابايت",
   "usedStorageValue": "149.5 جيجابايت",
 
-   "searchHint": "ابحث هنا عن أي شيء",
+  "searchHint": "ابحث هنا عن أي شيء",
   "all": "الكل",
   "myFiles": "ملفاتي",
   "shared": "مشتركة",
@@ -57,7 +56,7 @@
   "sharedFilesContent": "سيتم عرض الملفات المشتركة هنا",
   "filter": "تصفية",
 
-   "images": "صور",
+  "images": "صور",
   "videos": "فيديوهات",
   "audio": "صوتيات",
   "compressed": "مضغوط",
@@ -66,7 +65,7 @@
   "code": "رمز/كود",
   "other": "أخرى",
 
-   "type": "النوع",
+  "type": "النوع",
   "timeAndDate": "الوقت والتاريخ",
   "yesterday": "أمس",
   "last7Days": "آخر 7 أيام",
@@ -78,7 +77,7 @@
   "storageOverview": "نظرة عامة على التخزين",
   "usedStorage": "التخزين المستخدم:",
 
-   "settings": "الإعدادات",
+  "settings": "الإعدادات",
   "chooseLanguage": "اختر اللغة",
   "english": "الإنجليزية",
   "arabic": "العربية",
@@ -103,5 +102,33 @@
   "about": "حول",
   "appVersion": "إصدار التطبيق {version}",
   "logout": "تسجيل الخروج",
-  "signOut": "تسجيل الخروج من حسابك"
+  "signOut": "تسجيل الخروج من حسابك",
+  "resetPassword": "إعادة تعيين كلمة المرور",
+  "forgotPasswordTitle": "هل نسيت كلمة المرور؟",
+  "forgotPasswordSubtitle": "أدخل بريدك الإلكتروني وسنرسل لك رمزًا لإعادة تعيين كلمة المرور.",
+  "sendCode": "إرسال الرمز",
+  "enterEmail": "يرجى إدخال بريدك الإلكتروني",
+  "validEmail": "يرجى إدخال بريد إلكتروني صالح",
+  "codeSent": "تم إرسال الرمز بنجاح",
+  "failedSendCode": "فشل في إرسال الرمز",
+  "backToLogin": "العودة لتسجيل الدخول",
+  "verifyCodeTitle": "التحقق من الرمز",
+"enter6DigitCode": "الرجاء إدخال رمز مكون من 6 أرقام",
+"enterCodeToEmail": "أدخل الرمز المكون من 6 أرقام المرسل إلى {email}",
+"verify": "تحقق",
+"resendCode": "إعادة إرسال الرمز",
+"codeVerified": "تم التحقق من الرمز بنجاح",
+"invalidOrExpiredCode": "الرمز غير صالح أو منتهي الصلاحية",
+"codeResent": "تم إعادة إرسال الرمز بنجاح",
+"failedResendCode": "فشل في إعادة إرسال الرمز",
+"mustLogin": "يجب تسجيل الدخول أولاً",
+ "errorFetchingData": "خطأ في جلب البيانات",
+  "loginRequiredToAccessFiles": "يجب تسجيل الدخول للوصول إلى الملفات",
+   "retry": "إعادة المحاولة",
+    "noFilesInCategory": "لا توجد ملفات في هذا التصنيف.",
+    "updated": " تحديث",
+      "numberOfFiles": "عدد الملفات:",
+      "upload_success": "تم رفع الملف بنجاح"
+
+
 }

@@ -6,6 +6,9 @@ class ApiEndpoints {
   static const String register = '/auth/registerUser';
   static const String logout = '/auth/logout';
   static const String refreshToken = '/auth/refresh';
+  static const String forgotPassword = '/auth/forgotPassword';
+  static const String verifyResetCode = '/auth/verifyResetCode';
+  static const String resetPassword = '/auth/resetPassword';
   
   // Folders endpoints
   static const String folders = '/folders';
@@ -16,7 +19,22 @@ class ApiEndpoints {
   static const String files = '/files';
   static String fileById(String id) => '/files/$id';
   static const String uploadFile = '/files/upload';
-  
+  static const String uploadSingleFile = '/files/upload-single';
+  static const String uploadMultipleFiles = '/files/upload-multiple';
+  static String filesByCategory(String category) => '/files/category/$category';
+   static String getFileDetails(String fileId) => "/files/$fileId";
+  static String updateFile(String fileId) => "/files/$fileId";
+  static String deleteFile(String fileId) => "/files/$fileId";
+  static String downloadFile(String fileId) => "/files/$fileId/download";
+ static const String starredFiles = '/files/starred'; 
+  static String toggleStarFile(String fileId) => "/files/$fileId/star";
+  static const String trashFiles = '/files/trash';
+  static String restoreTrashFile(String fileId) => "/files/$fileId/restore";
+  static String deleteFilePermanent(String fileId) => "/files/$fileId/permanent";
+  static const String emptyTrash = '/files/trash/empty';
+
+
+
   // User endpoints
   static const String profile = '/user/profile';
   static const String updateProfile = '/user/profile';

@@ -5,6 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:filevo/generated/l10n.dart';
 import 'package:provider/provider.dart';
 import 'package:filevo/controllers/auth/auth_controller.dart';
+import 'package:filevo/views/settings/trash_files_page.dart';
+import 'package:filevo/services/storage_service.dart';
 
 class SettingsPage extends StatefulWidget {
   @override
@@ -12,10 +14,9 @@ class SettingsPage extends StatefulWidget {
 }
 
 class _SettingsPageState extends State<SettingsPage> {
-  Locale _selectedLocale = const Locale('en'); // 🔹 اللغة الحالية
+  Locale _selectedLocale = const Locale('en');
 
   Future<void> _handleLogout(BuildContext context) async {
-    // عرض تأكيد قبل تسجيل الخروج
     final confirm = await showDialog<bool>(
       context: context,
       builder: (BuildContext context) {
@@ -43,11 +44,9 @@ class _SettingsPageState extends State<SettingsPage> {
     );
 
     if (confirm == true) {
-      // تسجيل الخروج
       final authController = context.read<AuthController>();
       await authController.logout();
-      
-      // عرض رسالة نجاح
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -55,8 +54,7 @@ class _SettingsPageState extends State<SettingsPage> {
             backgroundColor: Colors.green,
           ),
         );
-        
-        // العودة لصفحة تسجيل الدخول
+
         Navigator.of(context).pushNamedAndRemoveUntil(
           'LogInPage',
           (route) => false,
@@ -93,9 +91,7 @@ class _SettingsPageState extends State<SettingsPage> {
                     ? const Icon(Icons.check, color: Colors.blue)
                     : null,
                 onTap: () {
-                  setState(() {
-                    _selectedLocale = const Locale('en');
-                  });
+                  setState(() => _selectedLocale = const Locale('en'));
                   MyApp.setLocale(context, const Locale('en'));
                   Navigator.pop(context);
                 },
@@ -107,9 +103,7 @@ class _SettingsPageState extends State<SettingsPage> {
                     ? const Icon(Icons.check, color: Colors.blue)
                     : null,
                 onTap: () {
-                  setState(() {
-                    _selectedLocale = const Locale('ar');
-                  });
+                  setState(() => _selectedLocale = const Locale('ar'));
                   MyApp.setLocale(context, const Locale('ar'));
                   Navigator.pop(context);
                 },
@@ -127,12 +121,9 @@ class _SettingsPageState extends State<SettingsPage> {
     return Scaffold(
       backgroundColor: const Color(0xff28336f),
       body: Padding(
-        padding: EdgeInsets.only(
-          top: MediaQuery.of(context).padding.top,
-        ),
+        padding: EdgeInsets.only(top: MediaQuery.of(context).padding.top),
         child: Column(
           children: [
-            // 🔹 العنوان العلوي
             Container(
               padding: const EdgeInsets.symmetric(vertical: 20),
               width: double.infinity,
@@ -147,16 +138,13 @@ class _SettingsPageState extends State<SettingsPage> {
               ),
             ),
 
-            // 🔹 المحتوى الأبيض السفلي القابل للسكرول
             Expanded(
               child: Card(
                 elevation: 4,
                 margin: EdgeInsets.zero,
                 clipBehavior: Clip.antiAlias,
                 shape: const RoundedRectangleBorder(
-                  borderRadius: BorderRadius.vertical(
-                    top: Radius.circular(30),
-                  ),
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
                 ),
                 color: const Color(0xFFE9E9E9),
                 child: SingleChildScrollView(
@@ -187,7 +175,6 @@ class _SettingsPageState extends State<SettingsPage> {
                             ),
                             onTap: () {},
                           ),
-                          // 🔹 خيار اللغة المعدّل
                           SettingsItem(
                             icon: Icons.language,
                             title: S.of(context).language,
@@ -222,6 +209,32 @@ class _SettingsPageState extends State<SettingsPage> {
                             subtitle: S.of(context).privacySettings,
                             onTap: () {},
                           ),
+
+                          /// 🔥 خيار المحذوفات هنا
+                          SettingsItem(
+                            icon: Icons.delete_outline,
+                            title: 'المحذوفات',
+                            subtitle: 'عرض الملفات المحذوفة وإدارتها',
+                            onTap: () async {
+                              final token = await StorageService.getToken();
+
+                              if (token == null) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text("لم يتم العثور على التوكن"),
+                                  ),
+                                );
+                                return;
+                              }
+
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => TrashFilesPage(token: token),
+                                ),
+                              );
+                            },
+                          ),
                         ],
                       ),
 
@@ -253,7 +266,6 @@ class _SettingsPageState extends State<SettingsPage> {
 
                       const SizedBox(height: 60),
 
-                      // 🔹 زر تسجيل الخروج
                       Container(
                         width: double.infinity,
                         decoration: BoxDecoration(

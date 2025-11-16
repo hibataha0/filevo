@@ -5,12 +5,14 @@ class FilesListView extends StatelessWidget {
   final List<Map<String, dynamic>> items;
   final EdgeInsetsGeometry? itemMargin;
   final bool showMoreOptions;
+  final void Function(Map<String, dynamic>)? onItemTap; // <--- أضفنا
 
   const FilesListView({
     Key? key,
     required this.items,
     this.itemMargin,
     this.showMoreOptions = true,
+    this.onItemTap, // <--- أضفنا
   }) : super(key: key);
 
   @override
@@ -49,6 +51,11 @@ class FilesListView extends StatelessWidget {
               ),
             ),
             trailing: showMoreOptions ? Icon(Icons.more_vert) : null,
+            onTap: () {
+              if (onItemTap != null) {
+                onItemTap!(file); // <--- هنا يستدعي الكولباك
+              }
+            },
           ),
         );
       },

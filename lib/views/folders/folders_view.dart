@@ -1,3 +1,4 @@
+import 'package:filevo/views/folders/CategoryFiles.dart';
 import 'package:flutter/material.dart';
 import 'package:filevo/components/FilesGridView.dart';
 import 'package:filevo/components/FilesListView.dart';
@@ -27,7 +28,7 @@ class _FoldersPageState extends State<FoldersPage> {
   void dispose() {
     _searchController.dispose();
     super.dispose();
-  }
+  }//dispose controller to free resources
 
   @override
   Widget build(BuildContext context) {
@@ -331,12 +332,44 @@ class _FoldersPageState extends State<FoldersPage> {
                   FilesGridView(
                     items: folders,
                     showFileCount: true,
+                    onItemTap: (item) {
+                      // هنا يمكنك إضافة ما يحدث عند النقر على مجلد
+                      print('تم النقر على المجلد: ${item['title']}');
+                       Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => CategoryPage(
+                            category: item['title'] as String,
+                            color: item['color'] as Color,
+                            icon: item['icon'] as IconData,
+                          ),
+                        ),
+                      );
+                      
+
+                    },
                   ),
                 if (!isFilesGridView)
                   FilesListView(
                     items: folders,
                     itemMargin: EdgeInsets.only(bottom: 10),
                     showMoreOptions: true,
+                    onItemTap: (item) {
+                      // هنا يمكنك إضافة ما يحدث عند النقر على مجلد
+                      print('تم النقر على المجلد: ${item['title']}');
+                       Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => CategoryPage(
+                            category: item['title'] as String,
+                            color: item['color'] as Color,
+                            icon: item['icon'] as IconData,
+                          ),
+                        ),
+                      );
+                      
+
+                    },
                   ),
               ],
 

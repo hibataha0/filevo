@@ -22,6 +22,8 @@ class MessageLookup extends MessageLookupByLibrary {
 
   static String m0(version) => "App version ${version}";
 
+  static String m1(email) => "Enter the 6-digit code sent to ${email}";
+
   final messages = _notInlinedMessages(_notInlinedMessages);
   static Map<String, Function> _notInlinedMessages(_) => <String, Function>{
         "about": MessageLookupByLibrary.simpleMessage("About"),
@@ -36,11 +38,18 @@ class MessageLookup extends MessageLookupByLibrary {
         "applications": MessageLookupByLibrary.simpleMessage("Applications"),
         "arabic": MessageLookupByLibrary.simpleMessage("Arabic"),
         "audio": MessageLookupByLibrary.simpleMessage("Audio"),
+        "backToLogin": MessageLookupByLibrary.simpleMessage("Back to Login"),
         "basicAppSettings":
             MessageLookupByLibrary.simpleMessage("Basic app settings"),
         "chooseLanguage":
             MessageLookupByLibrary.simpleMessage("Choose Language"),
         "code": MessageLookupByLibrary.simpleMessage("Code"),
+        "codeResent":
+            MessageLookupByLibrary.simpleMessage("Code resent successfully"),
+        "codeSent":
+            MessageLookupByLibrary.simpleMessage("Code sent successfully"),
+        "codeVerified":
+            MessageLookupByLibrary.simpleMessage("Code verified successfully"),
         "compressed": MessageLookupByLibrary.simpleMessage("Compressed"),
         "confirmPassword":
             MessageLookupByLibrary.simpleMessage("Confirm Password"),
@@ -53,10 +62,13 @@ class MessageLookup extends MessageLookupByLibrary {
             MessageLookupByLibrary.simpleMessage("Don\'t have an account? "),
         "email": MessageLookupByLibrary.simpleMessage("Email"),
         "english": MessageLookupByLibrary.simpleMessage("English"),
+        "enter6DigitCode":
+            MessageLookupByLibrary.simpleMessage("Please enter a 6-digit code"),
+        "enterCodeToEmail": m1,
         "enterConfirmPassword": MessageLookupByLibrary.simpleMessage(
             "Please confirm your password"),
-        "enterEmail": MessageLookupByLibrary.simpleMessage(
-            "Please enter your email address"),
+        "enterEmail":
+            MessageLookupByLibrary.simpleMessage("Please enter your email"),
         "enterPassword":
             MessageLookupByLibrary.simpleMessage("Please enter your password"),
         "enterPhone": MessageLookupByLibrary.simpleMessage(
@@ -65,9 +77,19 @@ class MessageLookup extends MessageLookupByLibrary {
             MessageLookupByLibrary.simpleMessage("Please enter your username"),
         "enterUsernameOrEmail": MessageLookupByLibrary.simpleMessage(
             "Please enter your username or email"),
+        "errorFetchingData":
+            MessageLookupByLibrary.simpleMessage("Error fetching data"),
+        "failedResendCode":
+            MessageLookupByLibrary.simpleMessage("Failed to resend code"),
+        "failedSendCode":
+            MessageLookupByLibrary.simpleMessage("Failed to send code"),
         "filter": MessageLookupByLibrary.simpleMessage("Filter"),
         "forgotPassword":
             MessageLookupByLibrary.simpleMessage("Forgot Password?"),
+        "forgotPasswordSubtitle": MessageLookupByLibrary.simpleMessage(
+            "Enter your email address and we\'ll send you a code to reset your password."),
+        "forgotPasswordTitle":
+            MessageLookupByLibrary.simpleMessage("Forgot your password?"),
         "freeInternal": MessageLookupByLibrary.simpleMessage("Free Internal"),
         "freeInternalValue": MessageLookupByLibrary.simpleMessage("120.5 GB"),
         "general": MessageLookupByLibrary.simpleMessage("General"),
@@ -81,6 +103,8 @@ class MessageLookup extends MessageLookupByLibrary {
             MessageLookupByLibrary.simpleMessage("Invalid credentials"),
         "invalidEmail": MessageLookupByLibrary.simpleMessage(
             "Please enter a valid email address"),
+        "invalidOrExpiredCode":
+            MessageLookupByLibrary.simpleMessage("Invalid or expired code"),
         "invalidPhone": MessageLookupByLibrary.simpleMessage(
             "Please enter a valid phone number (10-15 digits)"),
         "language": MessageLookupByLibrary.simpleMessage("Language"),
@@ -90,6 +114,8 @@ class MessageLookup extends MessageLookupByLibrary {
         "legalPolicies":
             MessageLookupByLibrary.simpleMessage("Legal & Policies"),
         "logIn": MessageLookupByLibrary.simpleMessage("Log In"),
+        "loginRequiredToAccessFiles": MessageLookupByLibrary.simpleMessage(
+            "You must log in to access the files"),
         "loginSubtitle":
             MessageLookupByLibrary.simpleMessage("Login to your account"),
         "loginSuccessful":
@@ -100,9 +126,15 @@ class MessageLookup extends MessageLookupByLibrary {
         "manageStorageSettings":
             MessageLookupByLibrary.simpleMessage("Manage storage settings"),
         "mobile": MessageLookupByLibrary.simpleMessage("Mobile"),
+        "mustLogin":
+            MessageLookupByLibrary.simpleMessage("You must log in first"),
         "myFiles": MessageLookupByLibrary.simpleMessage("My Files"),
         "myFolders": MessageLookupByLibrary.simpleMessage("My Folders"),
+        "noFilesInCategory":
+            MessageLookupByLibrary.simpleMessage("No files in this category."),
         "notifications": MessageLookupByLibrary.simpleMessage("Notifications"),
+        "numberOfFiles":
+            MessageLookupByLibrary.simpleMessage("Number of files:"),
         "other": MessageLookupByLibrary.simpleMessage("Other"),
         "password": MessageLookupByLibrary.simpleMessage("Password"),
         "passwordMin": MessageLookupByLibrary.simpleMessage(
@@ -116,9 +148,13 @@ class MessageLookup extends MessageLookupByLibrary {
             MessageLookupByLibrary.simpleMessage("Privacy settings"),
         "recentFiles": MessageLookupByLibrary.simpleMessage("Recent Files"),
         "recentFolders": MessageLookupByLibrary.simpleMessage("Recent Folders"),
+        "resendCode": MessageLookupByLibrary.simpleMessage("Resend Code"),
+        "resetPassword": MessageLookupByLibrary.simpleMessage("Reset Password"),
+        "retry": MessageLookupByLibrary.simpleMessage("Retry"),
         "searchHint":
             MessageLookupByLibrary.simpleMessage("Search anything here"),
         "seeAll": MessageLookupByLibrary.simpleMessage("See all"),
+        "sendCode": MessageLookupByLibrary.simpleMessage("Send Code"),
         "settings": MessageLookupByLibrary.simpleMessage("Settings"),
         "shared": MessageLookupByLibrary.simpleMessage("Shared"),
         "sharedFiles": MessageLookupByLibrary.simpleMessage("Shared Files"),
@@ -142,6 +178,9 @@ class MessageLookup extends MessageLookupByLibrary {
             "Terms of service & privacy policy"),
         "timeAndDate": MessageLookupByLibrary.simpleMessage("Time & Date"),
         "type": MessageLookupByLibrary.simpleMessage("Type"),
+        "updated": MessageLookupByLibrary.simpleMessage("Updated"),
+        "upload_success":
+            MessageLookupByLibrary.simpleMessage("File uploaded successfully"),
         "used": MessageLookupByLibrary.simpleMessage("Used"),
         "usedStorage": MessageLookupByLibrary.simpleMessage("Used storage:"),
         "usedStorageValue": MessageLookupByLibrary.simpleMessage("149.5 GB"),
@@ -154,6 +193,10 @@ class MessageLookup extends MessageLookupByLibrary {
             "Username must be at least 3 characters"),
         "usernameOrEmail":
             MessageLookupByLibrary.simpleMessage("Username or Email"),
+        "validEmail":
+            MessageLookupByLibrary.simpleMessage("Please enter a valid email"),
+        "verify": MessageLookupByLibrary.simpleMessage("Verify"),
+        "verifyCodeTitle": MessageLookupByLibrary.simpleMessage("Verify Code"),
         "videos": MessageLookupByLibrary.simpleMessage("Videos"),
         "yesterday": MessageLookupByLibrary.simpleMessage("Yesterday")
       };

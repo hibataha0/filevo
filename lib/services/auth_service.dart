@@ -108,5 +108,49 @@ class AuthService {
   Future<String?> getToken() async {
     return await StorageService.getToken();
   }
+
+ // 1️⃣ Forgot Password
+  // Forgot Password - تم التصحيح
+  Future<Map<String, dynamic>> forgotPassword(String email) async {
+    final result = await _apiService.post(
+      ApiEndpoints.forgotPassword,
+      body: {'email': email},
+    );
+    
+    print('🔐 Forgot Password Response: $result');
+    
+    return result;
+  }
+
+  // Verify Reset Code - تم التصحيح
+  Future<Map<String, dynamic>> verifyResetCode(String code) async {
+    final result = await _apiService.post(
+      ApiEndpoints.verifyResetCode,
+      body: {'resetCode': code},
+    );
+    
+    print('🔐 Verify Reset Code Response: $result');
+    
+    return result;
+  }
+
+   // Reset Password
+  Future<Map<String, dynamic>> resetPassword({
+    required String email,
+    required String newPassword,
+    required String confirmPassword,
+  }) async {
+    final result = await _apiService.put(
+      ApiEndpoints.resetPassword,
+      body: {
+        'email': email,
+        'newPassword': newPassword,
+        'confirmPassword': confirmPassword,
+      },
+    );
+    
+    print('🔐 Reset Password Response: $result');
+    return result;
+  }
 }
 

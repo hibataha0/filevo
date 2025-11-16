@@ -270,16 +270,6 @@ class S {
     );
   }
 
-  /// `Please enter your email address`
-  String get enterEmail {
-    return Intl.message(
-      'Please enter your email address',
-      name: 'enterEmail',
-      desc: '',
-      args: [],
-    );
-  }
-
   /// `Please enter a valid email address`
   String get invalidEmail {
     return Intl.message(
@@ -995,6 +985,266 @@ class S {
     return Intl.message(
       'Sign out from your account',
       name: 'signOut',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Reset Password`
+  String get resetPassword {
+    return Intl.message(
+      'Reset Password',
+      name: 'resetPassword',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Forgot your password?`
+  String get forgotPasswordTitle {
+    return Intl.message(
+      'Forgot your password?',
+      name: 'forgotPasswordTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Enter your email address and we'll send you a code to reset your password.`
+  String get forgotPasswordSubtitle {
+    return Intl.message(
+      'Enter your email address and we\'ll send you a code to reset your password.',
+      name: 'forgotPasswordSubtitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Send Code`
+  String get sendCode {
+    return Intl.message(
+      'Send Code',
+      name: 'sendCode',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Please enter your email`
+  String get enterEmail {
+    return Intl.message(
+      'Please enter your email',
+      name: 'enterEmail',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Please enter a valid email`
+  String get validEmail {
+    return Intl.message(
+      'Please enter a valid email',
+      name: 'validEmail',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Code sent successfully`
+  String get codeSent {
+    return Intl.message(
+      'Code sent successfully',
+      name: 'codeSent',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Failed to send code`
+  String get failedSendCode {
+    return Intl.message(
+      'Failed to send code',
+      name: 'failedSendCode',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Back to Login`
+  String get backToLogin {
+    return Intl.message(
+      'Back to Login',
+      name: 'backToLogin',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Verify Code`
+  String get verifyCodeTitle {
+    return Intl.message(
+      'Verify Code',
+      name: 'verifyCodeTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Please enter a 6-digit code`
+  String get enter6DigitCode {
+    return Intl.message(
+      'Please enter a 6-digit code',
+      name: 'enter6DigitCode',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Enter the 6-digit code sent to {email}`
+  String enterCodeToEmail(Object email) {
+    return Intl.message(
+      'Enter the 6-digit code sent to $email',
+      name: 'enterCodeToEmail',
+      desc: '',
+      args: [email],
+    );
+  }
+
+  /// `Verify`
+  String get verify {
+    return Intl.message(
+      'Verify',
+      name: 'verify',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Resend Code`
+  String get resendCode {
+    return Intl.message(
+      'Resend Code',
+      name: 'resendCode',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Code verified successfully`
+  String get codeVerified {
+    return Intl.message(
+      'Code verified successfully',
+      name: 'codeVerified',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Invalid or expired code`
+  String get invalidOrExpiredCode {
+    return Intl.message(
+      'Invalid or expired code',
+      name: 'invalidOrExpiredCode',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Code resent successfully`
+  String get codeResent {
+    return Intl.message(
+      'Code resent successfully',
+      name: 'codeResent',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Failed to resend code`
+  String get failedResendCode {
+    return Intl.message(
+      'Failed to resend code',
+      name: 'failedResendCode',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `You must log in first`
+  String get mustLogin {
+    return Intl.message(
+      'You must log in first',
+      name: 'mustLogin',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Error fetching data`
+  String get errorFetchingData {
+    return Intl.message(
+      'Error fetching data',
+      name: 'errorFetchingData',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `You must log in to access the files`
+  String get loginRequiredToAccessFiles {
+    return Intl.message(
+      'You must log in to access the files',
+      name: 'loginRequiredToAccessFiles',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Retry`
+  String get retry {
+    return Intl.message(
+      'Retry',
+      name: 'retry',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `No files in this category.`
+  String get noFilesInCategory {
+    return Intl.message(
+      'No files in this category.',
+      name: 'noFilesInCategory',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Updated`
+  String get updated {
+    return Intl.message(
+      'Updated',
+      name: 'updated',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Number of files:`
+  String get numberOfFiles {
+    return Intl.message(
+      'Number of files:',
+      name: 'numberOfFiles',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `File uploaded successfully`
+  String get upload_success {
+    return Intl.message(
+      'File uploaded successfully',
+      name: 'upload_success',
       desc: '',
       args: [],
     );

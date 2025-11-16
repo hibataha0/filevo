@@ -22,6 +22,8 @@ class MessageLookup extends MessageLookupByLibrary {
 
   static String m0(version) => "إصدار التطبيق ${version}";
 
+  static String m1(email) => "أدخل الرمز المكون من 6 أرقام المرسل إلى ${email}";
+
   final messages = _notInlinedMessages(_notInlinedMessages);
   static Map<String, Function> _notInlinedMessages(_) => <String, Function>{
         "about": MessageLookupByLibrary.simpleMessage("حول"),
@@ -36,10 +38,18 @@ class MessageLookup extends MessageLookupByLibrary {
         "applications": MessageLookupByLibrary.simpleMessage("تطبيقات"),
         "arabic": MessageLookupByLibrary.simpleMessage("العربية"),
         "audio": MessageLookupByLibrary.simpleMessage("صوتيات"),
+        "backToLogin":
+            MessageLookupByLibrary.simpleMessage("العودة لتسجيل الدخول"),
         "basicAppSettings":
             MessageLookupByLibrary.simpleMessage("الإعدادات الأساسية للتطبيق"),
         "chooseLanguage": MessageLookupByLibrary.simpleMessage("اختر اللغة"),
         "code": MessageLookupByLibrary.simpleMessage("رمز/كود"),
+        "codeResent":
+            MessageLookupByLibrary.simpleMessage("تم إعادة إرسال الرمز بنجاح"),
+        "codeSent":
+            MessageLookupByLibrary.simpleMessage("تم إرسال الرمز بنجاح"),
+        "codeVerified":
+            MessageLookupByLibrary.simpleMessage("تم التحقق من الرمز بنجاح"),
         "compressed": MessageLookupByLibrary.simpleMessage("مضغوط"),
         "confirmPassword":
             MessageLookupByLibrary.simpleMessage("تأكيد كلمة المرور"),
@@ -52,10 +62,13 @@ class MessageLookup extends MessageLookupByLibrary {
             MessageLookupByLibrary.simpleMessage("ليس لديك حساب؟ "),
         "email": MessageLookupByLibrary.simpleMessage("البريد الإلكتروني"),
         "english": MessageLookupByLibrary.simpleMessage("الإنجليزية"),
+        "enter6DigitCode": MessageLookupByLibrary.simpleMessage(
+            "الرجاء إدخال رمز مكون من 6 أرقام"),
+        "enterCodeToEmail": m1,
         "enterConfirmPassword":
             MessageLookupByLibrary.simpleMessage("يرجى تأكيد كلمة المرور"),
-        "enterEmail": MessageLookupByLibrary.simpleMessage(
-            "الرجاء إدخال البريد الإلكتروني"),
+        "enterEmail":
+            MessageLookupByLibrary.simpleMessage("يرجى إدخال بريدك الإلكتروني"),
         "enterPassword":
             MessageLookupByLibrary.simpleMessage("الرجاء إدخال كلمة المرور"),
         "enterPhone":
@@ -64,8 +77,18 @@ class MessageLookup extends MessageLookupByLibrary {
             MessageLookupByLibrary.simpleMessage("الرجاء إدخال اسم المستخدم"),
         "enterUsernameOrEmail": MessageLookupByLibrary.simpleMessage(
             "الرجاء إدخال اسم المستخدم أو البريد الإلكتروني"),
+        "errorFetchingData":
+            MessageLookupByLibrary.simpleMessage("خطأ في جلب البيانات"),
+        "failedResendCode":
+            MessageLookupByLibrary.simpleMessage("فشل في إعادة إرسال الرمز"),
+        "failedSendCode":
+            MessageLookupByLibrary.simpleMessage("فشل في إرسال الرمز"),
         "filter": MessageLookupByLibrary.simpleMessage("تصفية"),
         "forgotPassword":
+            MessageLookupByLibrary.simpleMessage("هل نسيت كلمة المرور؟"),
+        "forgotPasswordSubtitle": MessageLookupByLibrary.simpleMessage(
+            "أدخل بريدك الإلكتروني وسنرسل لك رمزًا لإعادة تعيين كلمة المرور."),
+        "forgotPasswordTitle":
             MessageLookupByLibrary.simpleMessage("هل نسيت كلمة المرور؟"),
         "freeInternal":
             MessageLookupByLibrary.simpleMessage("المساحة الداخلية المتاحة"),
@@ -81,6 +104,8 @@ class MessageLookup extends MessageLookupByLibrary {
             MessageLookupByLibrary.simpleMessage("بيانات الاعتماد غير صحيحة"),
         "invalidEmail": MessageLookupByLibrary.simpleMessage(
             "الرجاء إدخال بريد إلكتروني صالح"),
+        "invalidOrExpiredCode": MessageLookupByLibrary.simpleMessage(
+            "الرمز غير صالح أو منتهي الصلاحية"),
         "invalidPhone": MessageLookupByLibrary.simpleMessage(
             "الرجاء إدخال رقم هاتف صالح (10-15 رقمًا)"),
         "language": MessageLookupByLibrary.simpleMessage("اللغة"),
@@ -90,6 +115,8 @@ class MessageLookup extends MessageLookupByLibrary {
         "legalPolicies":
             MessageLookupByLibrary.simpleMessage("القوانين والسياسات"),
         "logIn": MessageLookupByLibrary.simpleMessage("تسجيل الدخول"),
+        "loginRequiredToAccessFiles": MessageLookupByLibrary.simpleMessage(
+            "يجب تسجيل الدخول للوصول إلى الملفات"),
         "loginSubtitle":
             MessageLookupByLibrary.simpleMessage("سجّل الدخول إلى حسابك"),
         "loginSuccessful":
@@ -100,9 +127,14 @@ class MessageLookup extends MessageLookupByLibrary {
         "manageStorageSettings":
             MessageLookupByLibrary.simpleMessage("إدارة إعدادات التخزين"),
         "mobile": MessageLookupByLibrary.simpleMessage("رقم الهاتف"),
+        "mustLogin":
+            MessageLookupByLibrary.simpleMessage("يجب تسجيل الدخول أولاً"),
         "myFiles": MessageLookupByLibrary.simpleMessage("ملفاتي"),
         "myFolders": MessageLookupByLibrary.simpleMessage("مجلداتي"),
+        "noFilesInCategory": MessageLookupByLibrary.simpleMessage(
+            "لا توجد ملفات في هذا التصنيف."),
         "notifications": MessageLookupByLibrary.simpleMessage("الإشعارات"),
+        "numberOfFiles": MessageLookupByLibrary.simpleMessage("عدد الملفات:"),
         "other": MessageLookupByLibrary.simpleMessage("أخرى"),
         "password": MessageLookupByLibrary.simpleMessage("كلمة المرور"),
         "passwordMin": MessageLookupByLibrary.simpleMessage(
@@ -117,9 +149,14 @@ class MessageLookup extends MessageLookupByLibrary {
         "recentFiles": MessageLookupByLibrary.simpleMessage("الملفات الحديثة"),
         "recentFolders":
             MessageLookupByLibrary.simpleMessage("المجلدات الحديثة"),
+        "resendCode": MessageLookupByLibrary.simpleMessage("إعادة إرسال الرمز"),
+        "resetPassword":
+            MessageLookupByLibrary.simpleMessage("إعادة تعيين كلمة المرور"),
+        "retry": MessageLookupByLibrary.simpleMessage("إعادة المحاولة"),
         "searchHint":
             MessageLookupByLibrary.simpleMessage("ابحث هنا عن أي شيء"),
         "seeAll": MessageLookupByLibrary.simpleMessage("عرض الكل"),
+        "sendCode": MessageLookupByLibrary.simpleMessage("إرسال الرمز"),
         "settings": MessageLookupByLibrary.simpleMessage("الإعدادات"),
         "shared": MessageLookupByLibrary.simpleMessage("مشتركة"),
         "sharedFiles": MessageLookupByLibrary.simpleMessage("الملفات المشتركة"),
@@ -145,6 +182,9 @@ class MessageLookup extends MessageLookupByLibrary {
             MessageLookupByLibrary.simpleMessage("شروط الخدمة وسياسة الخصوصية"),
         "timeAndDate": MessageLookupByLibrary.simpleMessage("الوقت والتاريخ"),
         "type": MessageLookupByLibrary.simpleMessage("النوع"),
+        "updated": MessageLookupByLibrary.simpleMessage(" تحديث"),
+        "upload_success":
+            MessageLookupByLibrary.simpleMessage("تم رفع الملف بنجاح"),
         "used": MessageLookupByLibrary.simpleMessage("المستخدمة"),
         "usedStorage":
             MessageLookupByLibrary.simpleMessage("التخزين المستخدم:"),
@@ -159,6 +199,11 @@ class MessageLookup extends MessageLookupByLibrary {
             "يجب أن يكون اسم المستخدم 3 أحرف على الأقل"),
         "usernameOrEmail": MessageLookupByLibrary.simpleMessage(
             "اسم المستخدم أو البريد الإلكتروني"),
+        "validEmail": MessageLookupByLibrary.simpleMessage(
+            "يرجى إدخال بريد إلكتروني صالح"),
+        "verify": MessageLookupByLibrary.simpleMessage("تحقق"),
+        "verifyCodeTitle":
+            MessageLookupByLibrary.simpleMessage("التحقق من الرمز"),
         "videos": MessageLookupByLibrary.simpleMessage("فيديوهات"),
         "yesterday": MessageLookupByLibrary.simpleMessage("أمس")
       };

@@ -9,6 +9,7 @@ class FilesGridView extends StatelessWidget {
   final double? mainAxisSpacing;
   final double? crossAxisSpacing;
   final double? childAspectRatio;
+  final void Function(Map<String, dynamic>)? onItemTap; // <--- أضفنا
 
   const FilesGridView({
     Key? key,
@@ -18,6 +19,7 @@ class FilesGridView extends StatelessWidget {
     this.mainAxisSpacing,
     this.crossAxisSpacing,
     this.childAspectRatio,
+    this.onItemTap, // <--- أضفنا
   }) : super(key: key);
 
   @override
@@ -55,11 +57,18 @@ class FilesGridView extends StatelessWidget {
       ),
       itemBuilder: (context, index) {
         final item = items[index];
-        return FolderFileCard(
-          title: item['title'] as String,
-          fileCount: item['fileCount'] as int,
-          size: item['size'] as String,
-          showFileCount: showFileCount,
+        return GestureDetector(
+          onTap: () {
+            if (onItemTap != null) {
+              onItemTap!(item); // <--- هنا ينادي الكولباك
+            }
+          },
+          child: FolderFileCard(
+            title: item['title'] as String,
+            fileCount: item['fileCount'] as int,
+            size: item['size'] as String,
+            showFileCount: showFileCount,
+          ),
         );
       },
     );

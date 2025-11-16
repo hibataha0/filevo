@@ -130,10 +130,10 @@ class _HomeViewState extends State<HomeView> {
                           ),
                         ),
 
-                        FilesGridView(
-                          items: folders,
-                          showFileCount: true,
-                        ),
+                        // FilesGridView(
+                        //   items: folders,
+                        //   showFileCount: true,
+                        // ),
 
                         SizedBox(
                           height: ResponsiveUtils.getResponsiveValue(
@@ -182,18 +182,18 @@ class _HomeViewState extends State<HomeView> {
                           ),
                         ),
 
-                        if (isFilesGridView)
-                          FilesGridView(
-                            items: files,
-                            showFileCount: false,
-                          ),
+                        // if (isFilesGridView)
+                        //   FilesGridView(
+                        //     items: files,
+                        //     showFileCount: false,
+                        //   ),
 
-                        if (!isFilesGridView)
-                          FilesListView(
-                            items: files,
-                            itemMargin: EdgeInsets.only(bottom: 10),
-                            showMoreOptions: true,
-                          ),
+                        // if (!isFilesGridView)
+                        //   FilesListView(
+                        //     items: files,
+                        //     itemMargin: EdgeInsets.only(bottom: 10),
+                        //     showMoreOptions: true,
+                        //   ),
 
                         SizedBox(height: 100),
                       ],

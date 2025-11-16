@@ -24,7 +24,6 @@
   "accountCreatedSuccessfully": "Account created successfully!",
 
   "enterUsernameOrEmail": "Please enter your username or email",
-  "enterEmail": "Please enter your email address",
   "invalidEmail": "Please enter a valid email address",
   "enterUsername": "Please enter your username",
   "usernameMin": "Username must be at least 3 characters",
@@ -40,7 +39,6 @@
   "recentFolders": "Recent Folders",
   "seeAll": "See all",
   "recentFiles": "Recent Files",
-
 
   "storageUsed": "Used",
   "storageUsedValue": "60%",
@@ -58,7 +56,6 @@
   "sharedFilesContent": "Shared files content will be here",
   "filter": "Filter",
 
-  
   "images": "Images",
   "videos": "Videos",
   "audio": "Audio",
@@ -76,7 +73,7 @@
   "lastYear": "Last year",
   "custom": "Custom",
 
-   "used": "Used",
+  "used": "Used",
   "storageOverview": "Storage Overview",
   "usedStorage": "Used storage:",
 
@@ -105,6 +102,34 @@
   "about": "About",
   "appVersion": "App version {version}",
   "logout": "Logout",
-  "signOut": "Sign out from your account"
-  
+  "signOut": "Sign out from your account",
+  "resetPassword": "Reset Password",
+  "forgotPasswordTitle": "Forgot your password?",
+  "forgotPasswordSubtitle": "Enter your email address and we'll send you a code to reset your password.",
+  "sendCode": "Send Code",
+  "enterEmail": "Please enter your email",
+  "validEmail": "Please enter a valid email",
+  "codeSent": "Code sent successfully",
+  "failedSendCode": "Failed to send code",
+  "backToLogin": "Back to Login",
+  "verifyCodeTitle": "Verify Code",
+"enter6DigitCode": "Please enter a 6-digit code",
+"enterCodeToEmail": "Enter the 6-digit code sent to {email}",
+"verify": "Verify",
+"resendCode": "Resend Code",
+"codeVerified": "Code verified successfully",
+"invalidOrExpiredCode": "Invalid or expired code",
+"codeResent": "Code resent successfully",
+"failedResendCode": "Failed to resend code",
+"mustLogin": "You must log in first",
+ "errorFetchingData": "Error fetching data",
+ "loginRequiredToAccessFiles": "You must log in to access the files",
+  "retry": "Retry",
+    "noFilesInCategory": "No files in this category.",
+    "updated": "Updated",
+      "numberOfFiles": "Number of files:",
+        "upload_success": "File uploaded successfully"
+
 }
+
+
