@@ -1249,6 +1249,46 @@ class S {
       args: [],
     );
   }
+
+  /// `Create Folder`
+  String get createFolder {
+    return Intl.message(
+      'Create Folder',
+      name: 'createFolder',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Folder Name`
+  String get folderNameHint {
+    return Intl.message(
+      'Folder Name',
+      name: 'folderNameHint',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Please enter folder name`
+  String get enterFolderName {
+    return Intl.message(
+      'Please enter folder name',
+      name: 'enterFolderName',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Cancel`
+  String get cancel {
+    return Intl.message(
+      'Cancel',
+      name: 'cancel',
+      desc: '',
+      args: [],
+    );
+  }
 }
 
 class AppLocalizationDelegate extends LocalizationsDelegate<S> {

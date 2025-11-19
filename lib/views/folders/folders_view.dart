@@ -2,7 +2,6 @@ import 'package:filevo/views/folders/CategoryFiles.dart';
 import 'package:flutter/material.dart';
 import 'package:filevo/components/FilesGridView.dart';
 import 'package:filevo/components/FilesListView.dart';
-import 'package:filevo/components/FolderFileCard.dart';
 import 'package:filevo/components/ViewToggleButtons.dart';
 import 'package:filevo/responsive.dart';
 import 'package:filevo/views/folders/components/filter_section.dart';
@@ -24,74 +23,80 @@ class _FoldersPageState extends State<FoldersPage> {
   bool isFoldersGridView = true;
   bool isFoldersListView = true;
 
+  // نقل قائمة المجلدات لتكون جزء من الـ State
+  List<Map<String, Object>> folders = [];
+
+  @override
+  void initState() {
+    super.initState();
+    folders = [
+      {
+        "title": S.current.images,
+        "fileCount": 156,
+        "size": "2.3 GB",
+        "icon": Icons.image,
+        "color": Colors.blue
+      },
+      {
+        "title": S.current.videos,
+        "fileCount": 89,
+        "size": "15.7 GB",
+        "icon": Icons.videocam,
+        "color": Colors.red
+      },
+      {
+        "title": S.current.audio,
+        "fileCount": 234,
+        "size": "3.1 GB",
+        "icon": Icons.audiotrack,
+        "color": Colors.green
+      },
+      {
+        "title": S.current.compressed,
+        "fileCount": 45,
+        "size": "8.2 GB",
+        "icon": Icons.folder_zip,
+        "color": Colors.orange
+      },
+      {
+        "title": S.current.applications,
+        "fileCount": 23,
+        "size": "12.5 GB",
+        "icon": Icons.apps,
+        "color": Colors.purple
+      },
+      {
+        "title": S.current.documents,
+        "fileCount": 312,
+        "size": "1.8 GB",
+        "icon": Icons.description,
+        "color": Colors.brown
+      },
+      {
+        "title": S.current.code,
+        "fileCount": 67,
+        "size": "856 MB",
+        "icon": Icons.code,
+        "color": Colors.teal
+      },
+      {
+        "title": S.current.other,
+        "fileCount": 78,
+        "size": "4.3 GB",
+        "icon": Icons.more_horiz,
+        "color": Colors.grey
+      },
+    ];
+  }
+
   @override
   void dispose() {
     _searchController.dispose();
     super.dispose();
-  }//dispose controller to free resources
+  }
 
   @override
   Widget build(BuildContext context) {
-    final folders = [
-  {
-    "title": S.of(context).images,
-    "fileCount": 156,
-    "size": "2.3 GB",
-    "icon": Icons.image,
-    "color": Colors.blue
-  },
-  {
-    "title": S.of(context).videos,
-    "fileCount": 89,
-    "size": "15.7 GB",
-    "icon": Icons.videocam,
-    "color": Colors.red
-  },
-  {
-    "title": S.of(context).audio,
-    "fileCount": 234,
-    "size": "3.1 GB",
-    "icon": Icons.audiotrack,
-    "color": Colors.green
-  },
-  {
-    "title": S.of(context).compressed,
-    "fileCount": 45,
-    "size": "8.2 GB",
-    "icon": Icons.folder_zip,
-    "color": Colors.orange
-  },
-  {
-    "title": S.of(context).applications,
-    "fileCount": 23,
-    "size": "12.5 GB",
-    "icon": Icons.apps,
-    "color": Colors.purple
-  },
-  {
-    "title": S.of(context).documents,
-    "fileCount": 312,
-    "size": "1.8 GB",
-    "icon": Icons.description,
-    "color": Colors.brown
-  },
-  {
-    "title": S.of(context).code,
-    "fileCount": 67,
-    "size": "856 MB",
-    "icon": Icons.code,
-    "color": Colors.teal
-  },
-  {
-    "title": S.of(context).other,
-    "fileCount": 78,
-    "size": "4.3 GB",
-    "icon": Icons.more_horiz,
-    "color": Colors.grey
-  },
-];
-
-
     return DefaultTabController(
       length: 3,
       child: Scaffold(
@@ -139,14 +144,14 @@ class _FoldersPageState extends State<FoldersPage> {
                               fontSize: 16,
                             ),
                             prefixIcon: Icon(
-                              Icons.search, 
+                              Icons.search,
                               color: Colors.grey[500],
                               size: 22,
                             ),
                             suffixIcon: _searchController.text.isNotEmpty
                                 ? IconButton(
                                     icon: Icon(
-                                      Icons.clear, 
+                                      Icons.clear,
                                       color: Colors.grey[500],
                                       size: 20,
                                     ),
@@ -207,24 +212,25 @@ class _FoldersPageState extends State<FoldersPage> {
                 ),
               ),
 
-              // خيارات الفلتر (تظهر/تختفي) - فوق الـ Tab Bar
-              if (_showFilterOptions) FilterSection(
-                selectedTypes: _selectedTypes,
-                selectedTimeFilter: _selectedTimeFilter,
-                onTypesChanged: (newTypes) {
-                  setState(() {
-                    _selectedTypes = newTypes;
-                  });
-                },
-                onTimeFilterChanged: (newTimeFilter) {
-                  setState(() {
-                    _selectedTimeFilter = newTimeFilter;
-                  });
-                },
-              ),
+              // خيارات الفلتر (تظهر/تختفي)
+              if (_showFilterOptions)
+                FilterSection(
+                  selectedTypes: _selectedTypes,
+                  selectedTimeFilter: _selectedTimeFilter,
+                  onTypesChanged: (newTypes) {
+                    setState(() {
+                      _selectedTypes = newTypes;
+                    });
+                  },
+                  onTimeFilterChanged: (newTimeFilter) {
+                    setState(() {
+                      _selectedTimeFilter = newTimeFilter;
+                    });
+                  },
+                ),
               SizedBox(height: 10),
-              
-              // استخدام الـ Custom Tab Bar من الملف المنفصل
+
+              // Custom Tab Bar
               CustomTabBar(
                 tabs: [
                   S.of(context).all,
@@ -249,11 +255,8 @@ class _FoldersPageState extends State<FoldersPage> {
               Expanded(
                 child: TabBarView(
                   children: [
-                    // Tab 1: All
                     _buildContent(folders, true, true),
-                    // Tab 2: My Files
                     _buildContent(folders, true, false),
-                    // Tab 3: Shared
                     _buildContent(folders, false, true),
                   ],
                 ),
@@ -266,7 +269,8 @@ class _FoldersPageState extends State<FoldersPage> {
   }
 
   // دالة لبناء المحتوى
-  Widget _buildContent(List<Map<String, Object>> folders, bool showFolders, bool showFiles) {
+  Widget _buildContent(
+      List<Map<String, Object>> folders, bool showFolders, bool showFiles) {
     return Card(
       elevation: 4,
       margin: EdgeInsets.zero,
@@ -292,7 +296,7 @@ class _FoldersPageState extends State<FoldersPage> {
             children: [
               SizedBox(height: 10),
 
-              // العنوان وأزرار العرض
+              // العنوان وأزرار العرض + زر إنشاء مجلد جديد
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -313,13 +317,22 @@ class _FoldersPageState extends State<FoldersPage> {
                       color: const Color(0xff28336f),
                     ),
                   ),
-                  ViewToggleButtons(
-                    isGridView: isFilesGridView,
-                    onViewChanged: (isGrid) {
-                      setState(() {
-                        isFilesGridView = isGrid;
-                      });
-                    },
+                  Row(
+                    children: [
+                      IconButton(
+                        icon: Icon(Icons.create_new_folder,
+                            color: Color(0xff28336f)),
+                        onPressed: () => _showCreateFolderDialog(),
+                      ),
+                      ViewToggleButtons(
+                        isGridView: isFilesGridView,
+                        onViewChanged: (isGrid) {
+                          setState(() {
+                            isFilesGridView = isGrid;
+                          });
+                        },
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -333,9 +346,7 @@ class _FoldersPageState extends State<FoldersPage> {
                     items: folders,
                     showFileCount: true,
                     onItemTap: (item) {
-                      // هنا يمكنك إضافة ما يحدث عند النقر على مجلد
-                      print('تم النقر على المجلد: ${item['title']}');
-                       Navigator.push(
+                      Navigator.push(
                         context,
                         MaterialPageRoute(
                           builder: (context) => CategoryPage(
@@ -345,8 +356,6 @@ class _FoldersPageState extends State<FoldersPage> {
                           ),
                         ),
                       );
-                      
-
                     },
                   ),
                 if (!isFilesGridView)
@@ -355,9 +364,7 @@ class _FoldersPageState extends State<FoldersPage> {
                     itemMargin: EdgeInsets.only(bottom: 10),
                     showMoreOptions: true,
                     onItemTap: (item) {
-                      // هنا يمكنك إضافة ما يحدث عند النقر على مجلد
-                      print('تم النقر على المجلد: ${item['title']}');
-                       Navigator.push(
+                      Navigator.push(
                         context,
                         MaterialPageRoute(
                           builder: (context) => CategoryPage(
@@ -367,8 +374,6 @@ class _FoldersPageState extends State<FoldersPage> {
                           ),
                         ),
                       );
-                      
-
                     },
                   ),
               ],
@@ -386,12 +391,55 @@ class _FoldersPageState extends State<FoldersPage> {
                 ),
               ],
 
-              // المسافة الفارغة 100 بكسل
               SizedBox(height: 100),
             ],
           ),
         ),
       ),
+    );
+  }
+
+  // Dialog لإنشاء مجلد جديد
+  void _showCreateFolderDialog() {
+    String newFolderName = '';
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text(S.of(context).createFolder),
+          content: TextField(
+            onChanged: (value) {
+              newFolderName = value;
+            },
+            decoration: InputDecoration(
+              hintText: S.of(context).folderNameHint,
+            ),
+          ),
+          actions: [
+            TextButton(
+              child: Text(S.of(context).cancel),
+              onPressed: () => Navigator.of(context).pop(),
+            ),
+            ElevatedButton(
+              child: Text(S.of(context).create),
+              onPressed: () {
+                if (newFolderName.isNotEmpty) {
+                  setState(() {
+                    folders.add({
+                      "title": newFolderName,
+                      "fileCount": 0,
+                      "size": "0 GB",
+                      "icon": Icons.folder,
+                      "color": Colors.blueGrey,
+                    });
+                  });
+                  Navigator.of(context).pop();
+                }
+              },
+            ),
+          ],
+        );
+      },
     );
   }
 }

@@ -128,7 +128,11 @@
     "noFilesInCategory": "No files in this category.",
     "updated": "Updated",
       "numberOfFiles": "Number of files:",
-        "upload_success": "File uploaded successfully"
+        "upload_success": "File uploaded successfully",
+    "createFolder": "Create Folder",
+    "folderNameHint": "Folder Name",
+    "enterFolderName": "Please enter folder name",
+    "cancel": "Cancel"
 
 }
 

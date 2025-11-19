@@ -2,6 +2,7 @@ import 'package:device_preview/device_preview.dart';
 import 'package:filevo/controllers/ThemeController.dart';
 import 'package:filevo/controllers/folders/files_controller.dart';
 import 'package:filevo/controllers/auth/auth_controller.dart';
+import 'package:filevo/controllers/folders/folders_controller.dart';
 import 'package:filevo/views/auth/login_view.dart';
 import 'package:filevo/views/auth/signup_view.dart';
 import 'package:filevo/views/folders/folders_view.dart';
@@ -55,6 +56,7 @@ class _MyAppState extends State<MyApp> {
         ChangeNotifierProvider(create: (_) => AuthController()),
         ChangeNotifierProvider(create: (_) => FileController()),
         ChangeNotifierProvider(create: (_) => ThemeController()), // ✅ ThemeController
+        ChangeNotifierProvider(create: (_) => FolderController()),
       ],
       child: Consumer<ThemeController>(
         builder: (context, themeController, child) {

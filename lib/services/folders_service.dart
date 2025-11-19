@@ -1,111 +1,76 @@
-import 'package:filevo/services/api_service.dart';
+import 'dart:convert';
+import 'dart:io';
 import 'package:filevo/services/api_endpoints.dart';
-import 'package:filevo/services/storage_service.dart';
+import 'package:http/http.dart' as http;
+import '../config/api_config.dart';
+import '../services/storage_service.dart';
 
-/// خدمة للتعامل مع المجلدات (Folders)
-/// مثال على كيفية استخدام ApiService مع token
-class FoldersService {
-  final ApiService _apiService = ApiService();
-
-  /// الحصول على جميع المجلدات
-  /// 
-  /// مثال:
-  /// ```dart
-  /// final foldersService = FoldersService();
-  /// final result = await foldersService.getAllFolders();
-  /// 
-  /// if (result['success']) {
-  ///   final folders = result['data']['folders'] as List;
-  ///   // استخدم المجلدات في UI
-  /// } else {
-  ///   print('Error: ${result['error']}');
-  /// }
-  /// ```
-  Future<Map<String, dynamic>> getAllFolders({
-    Map<String, String>? queryParameters,
-  }) async {
-    final token = await StorageService.getToken();
-    
-    return await _apiService.get(
-      ApiEndpoints.folders,
-      token: token,
-      queryParameters: queryParameters,
-    );
-  }
-
-  /// الحصول على مجلد محدد بالـ ID
-  Future<Map<String, dynamic>> getFolderById(String folderId) async {
-    final token = await StorageService.getToken();
-    
-    return await _apiService.get(
-      ApiEndpoints.folderById(folderId),
-      token: token,
-    );
-  }
-
-  /// الحصول على ملفات مجلد معين
-  Future<Map<String, dynamic>> getFolderFiles(
-    String folderId, {
-    Map<String, String>? queryParameters,
-  }) async {
-    final token = await StorageService.getToken();
-    
-    return await _apiService.get(
-      ApiEndpoints.folderFiles(folderId),
-      token: token,
-      queryParameters: queryParameters,
-    );
-  }
-
-  /// إنشاء مجلد جديد
+class FolderService {
   Future<Map<String, dynamic>> createFolder({
     required String name,
     String? parentId,
-    Map<String, dynamic>? additionalData,
   }) async {
     final token = await StorageService.getToken();
-    
-    final body = {
+
+    final body = jsonEncode({
       'name': name,
-      if (parentId != null) 'parent_id': parentId,
-      if (additionalData != null) ...additionalData,
-    };
+      if (parentId != null) 'parentId': parentId,
+    });
 
-    return await _apiService.post(
-      ApiEndpoints.folders,
+    final response = await http.post(
+      Uri.parse("${ApiConfig.baseUrl}${ApiEndpoints.folders}"),
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
       body: body,
-      token: token,
     );
+
+    return jsonDecode(response.body);
   }
 
-  /// تحديث مجلد
-  Future<Map<String, dynamic>> updateFolder(
-    String folderId, {
-    String? name,
-    Map<String, dynamic>? additionalData,
+  // رفع مجلد كامل
+  Future<Map<String, dynamic>> uploadFolder({
+    required String folderName,
+    required List<File> files,
+    required List<String> relativePaths,
+    String? parentFolderId,
   }) async {
     final token = await StorageService.getToken();
-    
-    final body = {
-      if (name != null) 'name': name,
-      if (additionalData != null) ...additionalData,
-    };
 
-    return await _apiService.put(
-      ApiEndpoints.folderById(folderId),
-      body: body,
-      token: token,
+    var request = http.MultipartRequest(
+      'POST',
+      Uri.parse("${ApiConfig.baseUrl}${ApiEndpoints.uploadFolder}"),
     );
-  }
 
-  /// حذف مجلد
-  Future<Map<String, dynamic>> deleteFolder(String folderId) async {
-    final token = await StorageService.getToken();
-    
-    return await _apiService.delete(
-      ApiEndpoints.folderById(folderId),
-      token: token,
-    );
+    request.headers['Authorization'] = "Bearer $token";
+
+    request.fields['folderName'] = folderName;
+
+    if (parentFolderId != null) {
+      request.fields['parentFolderId'] = parentFolderId;
+    }
+
+    // 🔥 أهم خطوة: إرسال relativePaths كـ Array
+    for (final path in relativePaths) {
+      request.fields['relativePaths[]'] = path;
+    }
+
+    // 🔥 إضافة الملفات بشكل صحيح
+    for (int i = 0; i < files.length; i++) {
+      final file = files[i];
+
+      request.files.add(
+        await http.MultipartFile.fromPath(
+          'files',      // ثابت، لا نستخدم مسار نسبي هنا
+          file.path,
+        ),
+      );
+    }
+
+    final res = await request.send();
+    final response = await http.Response.fromStream(res);
+
+    return jsonDecode(response.body);
   }
 }
-

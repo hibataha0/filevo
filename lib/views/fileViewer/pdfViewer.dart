@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_pdfview/flutter_pdfview.dart';
+import 'package:webview_flutter/webview_flutter.dart';
 import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
 
@@ -24,10 +25,12 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
   int pages = 0;
   int currentPage = 0;
   PDFViewController? pdfController;
+  WebViewController? webViewController;
   bool isFullScreen = false;
   bool showNavigationBar = true;
   bool hasError = false;
   bool showSearchBar = false;
+  bool useWebView = false; // ✅ خيار استخدام WebView للعرض المباشر
   final TextEditingController _searchController = TextEditingController();
   final TextEditingController _pageController = TextEditingController();
   
@@ -50,9 +53,28 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
 
   Future<void> _loadPdf() async {
     try {
+      // ✅ محاولة استخدام WebView مع PDF.js للعرض المباشر أولاً
+      try {
+        // التحقق من أن URL صالح
+        final testResponse = await http.head(Uri.parse(widget.pdfUrl));
+        if (testResponse.statusCode == 200 || testResponse.statusCode == 206) {
+          // استخدام WebView للعرض المباشر بدون تحميل كامل
+          if (mounted) {
+            setState(() {
+              useWebView = true;
+              isLoading = false;
+            });
+            _initializeWebView();
+            return;
+          }
+        }
+      } catch (e) {
+        print('⚠️ WebView PDF.js not available, falling back to local download');
+      }
+
+      // ✅ Fallback: تحميل PDF محلياً (للأجهزة التي لا تدعم WebView PDF.js)
       final response = await http.get(Uri.parse(widget.pdfUrl));
       if (response.statusCode == 200) {
-        
         // التحقق من أن الملف PDF صالح
         final bytes = response.bodyBytes;
         if (bytes.length < 4 || String.fromCharCodes(bytes.sublist(0, 4)) != '%PDF') {
@@ -66,6 +88,7 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
         if (mounted) {
           setState(() {
             localPath = file.path;
+            useWebView = false;
             isLoading = false;
           });
         }
@@ -84,6 +107,51 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
         );
       }
     }
+  }
+
+  void _initializeWebView() {
+    // ✅ استخدام PDF.js مع WebView للعرض المباشر
+    final encodedUrl = Uri.encodeComponent(widget.pdfUrl);
+    final pdfJsUrl = 'https://mozilla.github.io/pdf.js/web/viewer.html?file=$encodedUrl';
+    
+    webViewController = WebViewController()
+      ..setJavaScriptMode(JavaScriptMode.unrestricted)
+      ..setBackgroundColor(Colors.white)
+      ..setNavigationDelegate(
+        NavigationDelegate(
+          onProgress: (int progress) {
+            if (mounted) {
+              setState(() {
+                isLoading = progress < 100;
+              });
+            }
+          },
+          onPageStarted: (String url) {
+            if (mounted) {
+              setState(() {
+                isLoading = true;
+              });
+            }
+          },
+          onPageFinished: (String url) {
+            if (mounted) {
+              setState(() {
+                isLoading = false;
+              });
+            }
+          },
+          onWebResourceError: (WebResourceError error) {
+            print('❌ WebView Error: ${error.description}');
+            if (mounted) {
+              setState(() {
+                hasError = true;
+                isLoading = false;
+              });
+            }
+          },
+        ),
+      )
+      ..loadRequest(Uri.parse(pdfJsUrl));
   }
 
   void toggleFullScreen() {
@@ -250,15 +318,15 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
               onPressed: _retryLoading,
               tooltip: 'إعادة المحاولة',
             ),
-          // زر البحث
-          if (localPath != null)
+          // زر البحث (فقط للعرض المحلي)
+          if ((localPath != null || useWebView))
             IconButton(
               icon: const Icon(Icons.search),
-              onPressed: _toggleSearchBar,
-              tooltip: 'بحث في المستند',
+              onPressed: useWebView ? null : _toggleSearchBar, // WebView له بحث مدمج
+              tooltip: useWebView ? 'استخدم البحث المدمج في PDF.js' : 'بحث في المستند',
             ),
-          // زر إظهار/إخفاء شريط التنقل
-          if (localPath != null && pages > 1)
+          // زر إظهار/إخفاء شريط التنقل (فقط للعرض المحلي)
+          if ((localPath != null || useWebView) && pages > 1 && !useWebView)
             IconButton(
               icon: Icon(showNavigationBar ? Icons.visibility_off : Icons.visibility),
               onPressed: _toggleNavigationBar,
@@ -334,53 +402,66 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
 
     return Stack(
       children: [
-        // PDF Viewer
-        GestureDetector(
-          onTap: () {
-            if (isFullScreen) {
-              toggleFullScreen();
-            } else {
-              _toggleNavigationBar();
-            }
-          },
-          child: PDFView(
-            filePath: localPath!,
-            enableSwipe: true,
-            swipeHorizontal: false,
-            autoSpacing: true,
-            pageFling: true,
-            fitPolicy: FitPolicy.BOTH,
-            defaultPage: currentPage,
-            onRender: (totalPages) {
-              setState(() {
-                pages = totalPages!;
-              });
-            },
-            onViewCreated: (controller) {
-              pdfController = controller;
-            },
-            onPageChanged: (page, _) {
-              setState(() {
-                currentPage = page!;
-                _pageController.text = (page + 1).toString();
-              });
-            },
-            onError: (error) {
-              print(error);
-              if (mounted) {
-                setState(() {
-                  hasError = true;
-                });
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('حدث خطأ أثناء عرض الملف')),
-                );
+        // ✅ عرض PDF باستخدام WebView للعرض المباشر
+        if (useWebView && webViewController != null)
+          GestureDetector(
+            onTap: () {
+              if (isFullScreen) {
+                toggleFullScreen();
+              } else {
+                _toggleNavigationBar();
               }
             },
-            onPageError: (page, error) {
-              print('Error on page $page: $error');
+            child: WebViewWidget(controller: webViewController!),
+          )
+        // ✅ Fallback: عرض PDF محلياً
+        else if (localPath != null)
+          GestureDetector(
+            onTap: () {
+              if (isFullScreen) {
+                toggleFullScreen();
+              } else {
+                _toggleNavigationBar();
+              }
             },
+            child: PDFView(
+              filePath: localPath!,
+              enableSwipe: true,
+              swipeHorizontal: false,
+              autoSpacing: true,
+              pageFling: true,
+              fitPolicy: FitPolicy.BOTH,
+              defaultPage: currentPage,
+              onRender: (totalPages) {
+                setState(() {
+                  pages = totalPages!;
+                });
+              },
+              onViewCreated: (controller) {
+                pdfController = controller;
+              },
+              onPageChanged: (page, _) {
+                setState(() {
+                  currentPage = page!;
+                  _pageController.text = (page + 1).toString();
+                });
+              },
+              onError: (error) {
+                print(error);
+                if (mounted) {
+                  setState(() {
+                    hasError = true;
+                  });
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('حدث خطأ أثناء عرض الملف')),
+                  );
+                }
+              },
+              onPageError: (page, error) {
+                print('Error on page $page: $error');
+              },
+            ),
           ),
-        ),
 
         // شريط البحث
         if (showSearchBar)
@@ -391,8 +472,8 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
             child: _buildSearchBar(),
           ),
 
-        // شريط التنقل السفلي
-        if (showNavigationBar && !isFullScreen && pages > 1)
+        // شريط التنقل السفلي (فقط للعرض المحلي، WebView له أدواته الخاصة)
+        if (showNavigationBar && !isFullScreen && pages > 1 && !useWebView)
           Positioned(
             bottom: 0,
             left: 0,

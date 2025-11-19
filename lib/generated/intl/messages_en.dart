@@ -41,6 +41,7 @@ class MessageLookup extends MessageLookupByLibrary {
         "backToLogin": MessageLookupByLibrary.simpleMessage("Back to Login"),
         "basicAppSettings":
             MessageLookupByLibrary.simpleMessage("Basic app settings"),
+        "cancel": MessageLookupByLibrary.simpleMessage("Cancel"),
         "chooseLanguage":
             MessageLookupByLibrary.simpleMessage("Choose Language"),
         "code": MessageLookupByLibrary.simpleMessage("Code"),
@@ -55,6 +56,7 @@ class MessageLookup extends MessageLookupByLibrary {
             MessageLookupByLibrary.simpleMessage("Confirm Password"),
         "create": MessageLookupByLibrary.simpleMessage("Create"),
         "createAccount": MessageLookupByLibrary.simpleMessage("Create account"),
+        "createFolder": MessageLookupByLibrary.simpleMessage("Create Folder"),
         "custom": MessageLookupByLibrary.simpleMessage("Custom"),
         "darkMode": MessageLookupByLibrary.simpleMessage("Dark Mode"),
         "documents": MessageLookupByLibrary.simpleMessage("Documents"),
@@ -69,6 +71,8 @@ class MessageLookup extends MessageLookupByLibrary {
             "Please confirm your password"),
         "enterEmail":
             MessageLookupByLibrary.simpleMessage("Please enter your email"),
+        "enterFolderName":
+            MessageLookupByLibrary.simpleMessage("Please enter folder name"),
         "enterPassword":
             MessageLookupByLibrary.simpleMessage("Please enter your password"),
         "enterPhone": MessageLookupByLibrary.simpleMessage(
@@ -84,6 +88,7 @@ class MessageLookup extends MessageLookupByLibrary {
         "failedSendCode":
             MessageLookupByLibrary.simpleMessage("Failed to send code"),
         "filter": MessageLookupByLibrary.simpleMessage("Filter"),
+        "folderNameHint": MessageLookupByLibrary.simpleMessage("Folder Name"),
         "forgotPassword":
             MessageLookupByLibrary.simpleMessage("Forgot Password?"),
         "forgotPasswordSubtitle": MessageLookupByLibrary.simpleMessage(

@@ -40,16 +40,32 @@ class _VideoViewerState extends State<VideoViewer> {
 
   Future<void> _initializeVideo() async {
     try {
-      _controller = VideoPlayerController.network(widget.url);
+      // ✅ تحسين تحميل الفيديو بإضافة buffering options
+      _controller = VideoPlayerController.network(
+        widget.url,
+        // ✅ إعدادات لتحسين الأداء والسرعة
+        httpHeaders: {
+          'Connection': 'keep-alive',
+          'Accept': '*/*',
+        },
+      );
+      
+      // ✅ إعداد buffer قبل التشغيل
       await _controller.initialize();
+      
+      // ✅ إعداد buffering أفضل
+      _controller.setLooping(false);
+      _controller.setVolume(1.0);
       
       _chewieController = ChewieController(
         videoPlayerController: _controller,
-        autoPlay: true,
+        autoPlay: false, // ✅ عدم التشغيل التلقائي للسماح بالـ buffering أولاً
         looping: false,
         allowFullScreen: false,
         allowMuting: true,
         showControls: false,
+        // ✅ تحسين إعدادات التحميل
+        startAt: Duration.zero,
         materialProgressColors: ChewieProgressColors(
           playedColor: Colors.blue,
           handleColor: Colors.blue,
@@ -63,6 +79,28 @@ class _VideoViewerState extends State<VideoViewer> {
           ),
         ),
         autoInitialize: true,
+        // ✅ تحسين buffer للفيديو
+        errorBuilder: (context, errorMessage) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.error_outline, color: Colors.red, size: 48),
+                const SizedBox(height: 16),
+                Text(
+                  'فشل تحميل الفيديو',
+                  style: const TextStyle(color: Colors.white, fontSize: 16),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  errorMessage,
+                  style: const TextStyle(color: Colors.white70, fontSize: 12),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          );
+        },
         subtitle: _buildSubtitles(),
         subtitleBuilder: (context, subtitle) => Container(
           padding: const EdgeInsets.all(10.0),
@@ -84,6 +122,14 @@ class _VideoViewerState extends State<VideoViewer> {
           ),
         ),
       );
+      
+      // ✅ انتظار buffer قبل التشغيل (تحسين السرعة)
+      await Future.delayed(const Duration(milliseconds: 500));
+      
+      // ✅ بدء التشغيل بعد buffer كافي
+      if (_controller.value.isInitialized && mounted) {
+        await _controller.play();
+      }
 
       if (mounted) {
         setState(() {

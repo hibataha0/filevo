@@ -11,9 +11,10 @@ class ApiEndpoints {
   static const String resetPassword = '/auth/resetPassword';
   
   // Folders endpoints
-  static const String folders = '/folders';
+  static const String folders = '/folders/create';
   static String folderById(String id) => '/folders/$id';
   static String folderFiles(String id) => '/folders/$id/files';
+  static const String uploadFolder = '/folders/upload';
   
   // Files endpoints
   static const String files = '/files';

@@ -47,18 +47,41 @@ class _FilesGridState extends State<FilesGrid> {
     }
   }
 
+  // ✅ Cache لـ thumbnails الفيديو لمنع إعادة التوليد عند scroll
+  final Map<String, String?> _thumbnailCache = {};
+
   Future<String?> _getVideoThumbnail(String videoUrl) async {
+    // ✅ التحقق من cache أولاً
+    if (_thumbnailCache.containsKey(videoUrl)) {
+      final cachedPath = _thumbnailCache[videoUrl];
+      if (cachedPath != null) {
+        final file = File(cachedPath);
+        if (await file.exists()) {
+          return cachedPath; // ✅ إرجاع thumbnail من cache
+        }
+      }
+    }
+
     try {
       final tempDir = await getTemporaryDirectory();
-      return await VideoThumbnail.thumbnailFile(
+      final thumbnailPath = await VideoThumbnail.thumbnailFile(
         video: videoUrl,
         thumbnailPath: tempDir.path,
         imageFormat: ImageFormat.PNG,
         maxHeight: 200,
         quality: 75,
+        timeMs: 1000, // ✅ أخذ thumbnail من الثانية الأولى
       );
+      
+      // ✅ حفظ في cache
+      if (thumbnailPath != null) {
+        _thumbnailCache[videoUrl] = thumbnailPath;
+      }
+      
+      return thumbnailPath;
     } catch (e) {
       print('Error generating thumbnail: $e');
+      _thumbnailCache[videoUrl] = null; // ✅ حفظ null في cache لتجنب إعادة المحاولة
       return null;
     }
   }
@@ -176,6 +199,10 @@ class _FilesGridState extends State<FilesGrid> {
     return GridView.builder(
       padding: const EdgeInsets.all(16),
       itemCount: widget.files.length,
+      // ✅ إعدادات cache للـ GridView لمنع إعادة التحميل عند Scroll
+      cacheExtent: 500, // ✅ الاحتفاظ بـ 500 بكسل من الصور المحملة خارج الشاشة
+      addAutomaticKeepAlives: true, // ✅ الاحتفاظ بالـ widgets محملة
+      addRepaintBoundaries: true, // ✅ تحسين الأداء
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 2,
         mainAxisSpacing: 16,
@@ -297,7 +324,21 @@ class _FilesGridState extends State<FilesGrid> {
         fit: BoxFit.cover,
         width: double.infinity,
         height: double.infinity,
-        placeholder: (context, url) => Container(color: Colors.grey.shade50, child: const Center(child: CircularProgressIndicator(strokeWidth: 2))),
+        // ✅ إعدادات Cache لمنع إعادة التحميل عند Scroll
+        cacheKey: url, // ✅ مفتاح cache فريد للـ URL
+        maxWidthDiskCache: 800, // ✅ تقليل حجم الصورة المحفوظة
+        maxHeightDiskCache: 800,
+        memCacheWidth: 400, // ✅ تحسين استخدام الذاكرة
+        memCacheHeight: 400,
+        fadeInDuration: const Duration(milliseconds: 200), // ✅ تأثير fade-in سلس
+        fadeOutDuration: const Duration(milliseconds: 100),
+        // ✅ إظهار placeholder فقط عند أول تحميل
+        placeholder: (context, url) => Container(
+          color: Colors.grey.shade50, 
+          child: const Center(child: CircularProgressIndicator(strokeWidth: 2))
+        ),
+        // ✅ إظهار placeholder فوري من cache بدون إعادة تحميل
+        placeholderFadeInDuration: const Duration(milliseconds: 100),
         errorWidget: (context, url, error) => Container(
           color: Colors.grey.shade50,
           child: Column(

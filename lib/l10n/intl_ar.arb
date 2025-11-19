@@ -128,7 +128,12 @@
     "noFilesInCategory": "لا توجد ملفات في هذا التصنيف.",
     "updated": " تحديث",
       "numberOfFiles": "عدد الملفات:",
-      "upload_success": "تم رفع الملف بنجاح"
+      "upload_success": "تم رفع الملف بنجاح",
+   "createFolder": "إنشاء مجلد",
+   "folderNameHint": "اسم المجلد",
+   "enterFolderName": "الرجاء إدخال اسم المجلد",
+   "folderCreated": "تم إنشاء المجلد بنجاح",
+   "cancel": "إلغاء"
 
 
 }

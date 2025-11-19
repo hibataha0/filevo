@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:photo_view/photo_view.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 class ImageViewer extends StatefulWidget {
   final String imageUrl;
@@ -68,7 +69,14 @@ class _ImageViewerState extends State<ImageViewer> {
   Widget _buildPhotoView() {
     return Center(
       child: PhotoView(
-        imageProvider: NetworkImage(widget.imageUrl),
+        // ✅ استخدام CachedNetworkImage للعرض المباشر مع cache قوي
+        imageProvider: CachedNetworkImageProvider(
+          widget.imageUrl,
+          maxWidth: null, // عرض الصورة بالحجم الكامل للتفاصيل
+          maxHeight: null,
+          // ✅ إعدادات cache قوية لمنع إعادة التحميل
+          cacheKey: widget.imageUrl, // ✅ مفتاح cache فريد
+        ),
         controller: _photoViewController,
         loadingBuilder: (context, progress) {
           return Center(

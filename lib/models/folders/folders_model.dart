@@ -1,63 +1,86 @@
-// import 'package:flutter/material.dart';
+import 'dart:convert';
 
-// enum FoldersModelStatus {
-//   Ended,
-//   Loading,
-//   Error,
-// }
+class FolderModel {
+  final String id;
+  final String name;
+  final String userId;
+  final String? parentId;
+  final int size;
+  final String path;
+  final bool isShared;
+  final List<SharedUser> sharedWith;
+  final bool isDeleted;
+  final DateTime? deletedAt;
+  final DateTime? deleteExpiryDate;
+  final bool isStarred;
+  final String? description;
+  final List<String> tags;
+  final DateTime createdAt;
+  final DateTime updatedAt;
 
-// class FoldersModel extends ChangeNotifier {
-//   FoldersModelStatus _status;
-//   String _errorCode;
-//   String _errorMessage;
+  FolderModel({
+    required this.id,
+    required this.name,
+    required this.userId,
+    this.parentId,
+    required this.size,
+    required this.path,
+    required this.isShared,
+    required this.sharedWith,
+    required this.isDeleted,
+    this.deletedAt,
+    this.deleteExpiryDate,
+    required this.isStarred,
+    this.description,
+    required this.tags,
+    required this.createdAt,
+    required this.updatedAt,
+  });
 
-//   String get errorCode => _errorCode;
-//   String get errorMessage => _errorMessage;
-//   FoldersModelStatus get status => _status;
+  factory FolderModel.fromJson(Map<String, dynamic> json) {
+    return FolderModel(
+      id: json["_id"],
+      name: json["name"],
+      userId: json["userId"],
+      parentId: json["parentId"],
+      size: json["size"] ?? 0,
+      path: json["path"],
+      isShared: json["isShared"] ?? false,
+      sharedWith: json["sharedWith"] != null
+          ? List<SharedUser>.from(
+              json["sharedWith"].map((x) => SharedUser.fromJson(x)))
+          : [],
+      isDeleted: json["isDeleted"] ?? false,
+      deletedAt:
+          json["deletedAt"] != null ? DateTime.parse(json["deletedAt"]) : null,
+      deleteExpiryDate: json["deleteExpiryDate"] != null
+          ? DateTime.parse(json["deleteExpiryDate"])
+          : null,
+      isStarred: json["isStarred"] ?? false,
+      description: json["description"],
+      tags: json["tags"] != null ? List<String>.from(json["tags"]) : [],
+      createdAt: DateTime.parse(json["createdAt"]),
+      updatedAt: DateTime.parse(json["updatedAt"]),
+    );
+  }
+}
 
-//   FoldersModel();
+class SharedUser {
+  final String user;
+  final String permission;
+  final DateTime sharedAt;
 
-//   FoldersModel.instance() {
-//     //TODO Add code here
-//   }
-  
-//   void getter() {
-//     _status = FoldersModelStatus.Loading;
-//     notifyListeners();
+  SharedUser({
+    required this.user,
+    required this.permission,
+    required this.sharedAt,
+  });
 
-//     //TODO Add code here
-
-//     _status = FoldersModelStatus.Ended;
-//     notifyListeners();
-//   }
-
-//   void setter() {
-//     _status = FoldersModelStatus.Loading;
-//     notifyListeners();
-
-//     //TODO Add code here
-    
-//     _status = FoldersModelStatus.Ended;
-//     notifyListeners();
-//   }
-
-//   void update() {
-//     _status = FoldersModelStatus.Loading;
-//     notifyListeners();
-
-//     //TODO Add code here
-    
-//     _status = FoldersModelStatus.Ended;
-//     notifyListeners();
-//   }
-
-//   void remove() {
-//     _status = FoldersModelStatus.Loading;
-//     notifyListeners();
-
-//     //TODO Add code here
-    
-//     _status = FoldersModelStatus.Ended;
-//     notifyListeners();
-//   }
-// }
+  factory SharedUser.fromJson(Map<String, dynamic> json) {
+    return SharedUser(
+      user: json["user"],
+      permission: json["permission"],
+      sharedAt: DateTime.parse(json["sharedAt"]),
+    );
+  }
+}

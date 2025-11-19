@@ -42,6 +42,7 @@ class MessageLookup extends MessageLookupByLibrary {
             MessageLookupByLibrary.simpleMessage("العودة لتسجيل الدخول"),
         "basicAppSettings":
             MessageLookupByLibrary.simpleMessage("الإعدادات الأساسية للتطبيق"),
+        "cancel": MessageLookupByLibrary.simpleMessage("إلغاء"),
         "chooseLanguage": MessageLookupByLibrary.simpleMessage("اختر اللغة"),
         "code": MessageLookupByLibrary.simpleMessage("رمز/كود"),
         "codeResent":
@@ -55,6 +56,7 @@ class MessageLookup extends MessageLookupByLibrary {
             MessageLookupByLibrary.simpleMessage("تأكيد كلمة المرور"),
         "create": MessageLookupByLibrary.simpleMessage("إنشاء"),
         "createAccount": MessageLookupByLibrary.simpleMessage("إنشاء حساب"),
+        "createFolder": MessageLookupByLibrary.simpleMessage("إنشاء مجلد"),
         "custom": MessageLookupByLibrary.simpleMessage("مخصص"),
         "darkMode": MessageLookupByLibrary.simpleMessage("الوضع الداكن"),
         "documents": MessageLookupByLibrary.simpleMessage("مستندات"),
@@ -69,6 +71,8 @@ class MessageLookup extends MessageLookupByLibrary {
             MessageLookupByLibrary.simpleMessage("يرجى تأكيد كلمة المرور"),
         "enterEmail":
             MessageLookupByLibrary.simpleMessage("يرجى إدخال بريدك الإلكتروني"),
+        "enterFolderName":
+            MessageLookupByLibrary.simpleMessage("الرجاء إدخال اسم المجلد"),
         "enterPassword":
             MessageLookupByLibrary.simpleMessage("الرجاء إدخال كلمة المرور"),
         "enterPhone":
@@ -84,6 +88,7 @@ class MessageLookup extends MessageLookupByLibrary {
         "failedSendCode":
             MessageLookupByLibrary.simpleMessage("فشل في إرسال الرمز"),
         "filter": MessageLookupByLibrary.simpleMessage("تصفية"),
+        "folderNameHint": MessageLookupByLibrary.simpleMessage("اسم المجلد"),
         "forgotPassword":
             MessageLookupByLibrary.simpleMessage("هل نسيت كلمة المرور؟"),
         "forgotPasswordSubtitle": MessageLookupByLibrary.simpleMessage(
