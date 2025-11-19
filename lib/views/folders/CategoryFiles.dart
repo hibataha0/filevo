@@ -625,6 +625,8 @@ class _CategoryPageState extends State<CategoryPage> {
                                               'path': f['path'],
                                               'createdAt': f['createdAt'],
                                               'originalName': fileName,
+                                              '_id': f['_id']?.toString(),
+                                              'originalData': f,
                                             };
                                           })
                                           .toList(),
@@ -705,7 +707,17 @@ class _CategoryPageState extends State<CategoryPage> {
         // صورة
         else if (name.endsWith('.jpg') || name.endsWith('.jpeg') || name.endsWith('.png') ||
             name.endsWith('.gif') || name.endsWith('.bmp') || name.endsWith('.webp')) {
-          Navigator.push(context, MaterialPageRoute(builder: (_) => ImageViewer(imageUrl: url)));
+          final fileId = file['_id']?.toString() ?? 
+                         (file['originalData'] is Map ? file['originalData']['_id']?.toString() : null);
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => ImageViewer(
+                imageUrl: url,
+                fileId: fileId,
+              ),
+            ),
+          );
         }
         // نص
         else if (TextViewerPage.isTextFile(fileName)) {

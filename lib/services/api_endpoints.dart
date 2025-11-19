@@ -45,6 +45,23 @@ class ApiEndpoints {
   static const String sharedFiles = '/files/shared';
   static String shareFile(String id) => '/files/$id/share';
   
+  // Rooms endpoints
+  static const String rooms = '/rooms';
+  static String roomById(String id) => '/rooms/$id';
+  static String roomMembers(String id) => '/rooms/$id/members';
+  static String roomMemberById(String roomId, String memberId) => '/rooms/$roomId/members/$memberId';
+  static String roomInvitations(String id) => '/rooms/$id/invitations';
+  static String sendInvitation(String roomId) => '/rooms/$roomId/invite';
+  static const String pendingInvitations = '/rooms/invitations/pending';
+  static String acceptInvitation(String invitationId) => '/rooms/invitations/$invitationId/accept';
+  static String rejectInvitation(String invitationId) => '/rooms/invitations/$invitationId/reject';
+  static const String cleanupInvitations = '/rooms/invitations/cleanup';
+  static const String invitationStats = '/rooms/invitations/stats';
+  static String shareFileWithRoom(String roomId) => '/rooms/$roomId/share-file';
+  static String shareFolderWithRoom(String roomId) => '/rooms/$roomId/share-folder';
+  static String roomComments(String roomId) => '/rooms/$roomId/comments';
+  static String deleteComment(String roomId, String commentId) => '/rooms/$roomId/comments/$commentId';
+  
   // Search endpoints
   static const String search = '/search';
   

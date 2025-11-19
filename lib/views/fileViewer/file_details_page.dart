@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import 'package:filevo/services/storage_service.dart';
 import 'package:video_thumbnail/video_thumbnail.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:filevo/views/folders/share_file_with_room_page.dart';
 
 class FileDetailsPage extends StatefulWidget {
   final String fileId;
@@ -116,6 +117,57 @@ class _FileDetailsPageState extends State<FileDetailsPage> {
             bottom: Radius.circular(20),
           ),
         ),
+        actions: [
+          PopupMenuButton<String>(
+            icon: Icon(Icons.more_vert),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            itemBuilder: (context) => [
+              PopupMenuItem(
+                value: 'share_with_room',
+                child: Row(
+                  children: [
+                    Icon(Icons.meeting_room, color: Color(0xff28336f)),
+                    SizedBox(width: 12),
+                    Text('مشاركة مع غرفة'),
+                  ],
+                ),
+              ),
+              PopupMenuItem(
+                value: 'share',
+                child: Row(
+                  children: [
+                    Icon(Icons.share, color: Colors.green),
+                    SizedBox(width: 12),
+                    Text('مشاركة'),
+                  ],
+                ),
+              ),
+            ],
+            onSelected: (value) async {
+              if (value == 'share_with_room' && fileData != null) {
+                final result = await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => ShareFileWithRoomPage(
+                      fileId: widget.fileId,
+                      fileName: fileData!['name'] ?? 'ملف',
+                    ),
+                  ),
+                );
+                if (result == true) {
+                  _loadFileDetails();
+                }
+              } else if (value == 'share') {
+                // TODO: Add share functionality
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('ميزة المشاركة قريباً')),
+                );
+              }
+            },
+          ),
+        ],
       ),
       body: _buildBody(),
     );

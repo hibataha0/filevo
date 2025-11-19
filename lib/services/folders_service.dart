@@ -51,10 +51,8 @@ class FolderService {
       request.fields['parentFolderId'] = parentFolderId;
     }
 
-    // 🔥 أهم خطوة: إرسال relativePaths كـ Array
-    for (final path in relativePaths) {
-      request.fields['relativePaths[]'] = path;
-    }
+    // ✅ إرسال relativePaths كـ JSON string (أوضح وأكثر موثوقية)
+    request.fields['relativePaths'] = jsonEncode(relativePaths);
 
     // 🔥 إضافة الملفات بشكل صحيح
     for (int i = 0; i < files.length; i++) {

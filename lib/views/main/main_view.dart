@@ -14,7 +14,7 @@ import 'package:filevo/views/settings/settings_view.dart';
 import 'package:filevo/services/storage_service.dart';
 import 'package:path/path.dart' as p;
 import 'package:permission_handler/permission_handler.dart';
-import 'package:flutter_file_dialog/flutter_file_dialog.dart' as file_dialog;
+import 'package:filevo/utils/saf.dart';
 
 class MainPage extends StatefulWidget {
   const MainPage({Key? key}) : super(key: key);
@@ -70,50 +70,71 @@ class _MainPageState extends State<MainPage> {
     try {
       // ✅ طلب الصلاحيات أولاً (لـ Android 10 وأقل)
       if (await _requestStoragePermissions()) {
+        print('✅ Storage permissions granted');
         _showSnackBar('✅ تم منح الصلاحيات');
       }
 
-      print('📁 Opening folder picker...');
+      print('📁 Opening SAF folder picker (like Google Drive)...');
       _showSnackBar('📁 جاري فتح مدير الملفات...');
       
-      // ✅ استخدام FilePicker مع SAF (يعمل تلقائياً على Android 11+)
-      String? directoryPath = await FilePicker.platform.getDirectoryPath(
-        dialogTitle: 'اختر المجلد الذي تريد رفعه',
-      );
+      // ✅ استخدام SAF folder picker (مثل Google Drive) - يعمل على كل إصدارات Android
+      String? folderUri = await SAF.openFolderPicker();
 
-      if (directoryPath == null) {
+      if (folderUri == null) {
         print('❌ User cancelled folder selection');
         return;
       }
 
-      print('📁 Selected directory: $directoryPath');
+      print('✅ Selected folder URI: $folderUri');
 
-      final directory = Directory(directoryPath);
-      if (!directory.existsSync()) {
-        _showSnackBar('❌ المجلد غير موجود', isError: true);
-        return;
+      // ✅ استخراج اسم المجلد من URI
+      String folderName = 'المجلد المختار';
+      try {
+        final uriParts = folderUri.split('/');
+        if (uriParts.isNotEmpty) {
+          folderName = uriParts.last;
+        }
+      } catch (e) {
+        print('⚠️ Could not extract folder name from URI: $e');
       }
-
-      final folderName = p.basename(directoryPath);
       
-      // ✅ عرض dialog تأكيد مع عدد الملفات المتوقعة
-      final shouldProceed = await _showFolderConfirmationDialog(directoryPath, folderName);
-      if (!shouldProceed) return;
+      // ✅ عرض dialog تأكيد
+      final shouldProceed = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: Text('رفع المجلد $folderName'),
+          content: const Text('هل تريد رفع هذا المجلد مع جميع محتوياته؟\n\nسيتم جمع جميع الملفات تلقائياً...'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('إلغاء'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('رفع'),
+            ),
+          ],
+        ),
+      );
+      
+      if (shouldProceed != true) return;
 
       _showSnackBar('📁 جاري جمع الملفات من "$folderName"...');
 
-      // ✅ استخدام طريقة محسنة لقراءة الملفات مع دعم SAF الكامل
+      // ✅ استخدام native code لقراءة الملفات من SAF URI (مثل Google Drive)
       List<File> collectedFiles;
       List<String> relativePaths;
       int fileCount;
       
       try {
-        final result = await _readFolderContentsWithSAF(directoryPath);
+        final result = await SAF.loadFiles(folderUri);
         collectedFiles = result.$1;
         relativePaths = result.$2;
         fileCount = result.$3;
+        
+        print('✅ Collected $fileCount files from SAF folder');
       } catch (e) {
-        print('❌ Failed to read folder: $e');
+        print('❌ Failed to read folder from SAF: $e');
         
         // ✅ عرض رسالة خطأ مفيدة للمستخدم
         final errorMsg = e.toString();
@@ -122,7 +143,7 @@ class _MainPageState extends State<MainPage> {
             context: context,
             builder: (context) => AlertDialog(
               title: const Text('⚠️ خطأ في قراءة المجلد'),
-              content: Text(errorMsg),
+              content: Text('فشل قراءة ملفات المجلد من SAF:\n\n$errorMsg'),
               actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(context),
@@ -174,12 +195,14 @@ Future<bool> _requestStoragePermissions() async {
     if (await Permission.photos.isGranted || 
         await Permission.videos.isGranted || 
         await Permission.audio.isGranted) {
+          print('✅ Media permissions already granted');
       return true;
     }
 
     // ✅ للـ Android 11-12 (API 30-32) - SAF يغطيها
     // ✅ للـ Android 10 وأقل (API 29-)
     if (await Permission.storage.isGranted) {
+      print('✅ Storage permission already granted');
       return true;
     }
 
@@ -294,21 +317,11 @@ Future<(List<File>, List<String>, int)> _readFolderContentsWithSAF(String direct
             try {
               final stat = await file.stat();
               
-              // ✅ محاولة فتح الملف للقراءة (اختبار سريع)
-              try {
-                final testRead = file.openRead();
-                await testRead.first.timeout(
-                  const Duration(seconds: 1),
-                  onTimeout: () {
-                    throw TimeoutException('Timeout reading file');
-                  },
-                );
-              } catch (e) {
-                if (e is TimeoutException) {
-                  rethrow;
-                }
-                // ✅ إذا كان خطأ آخر، نحاول المتابعة
-              }
+              // ✅ محاولة فتح الملف للقراءة
+              final testRead = file.openRead();
+              await testRead.first.timeout(
+                const Duration(seconds: 1),
+              );
               
               files.add(file);
               final relativePath = p.relative(entity.path, from: effectivePath);

@@ -7,6 +7,11 @@ import 'package:filevo/responsive.dart';
 import 'package:filevo/views/folders/components/filter_section.dart';
 import 'package:filevo/views/folders/components/tab_bar.dart';
 import 'package:filevo/generated/l10n.dart';
+import 'package:provider/provider.dart';
+import 'package:filevo/controllers/folders/room_controller.dart';
+import 'package:filevo/views/folders/create_share_page.dart';
+import 'package:filevo/views/folders/room_details_page.dart';
+import 'package:filevo/views/folders/pending_invitations_page.dart';
 
 class FoldersPage extends StatefulWidget {
   @override
@@ -87,6 +92,12 @@ class _FoldersPageState extends State<FoldersPage> {
         "color": Colors.grey
       },
     ];
+    
+    // ✅ تحميل الغرف عند بدء الصفحة
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final roomController = Provider.of<RoomController>(context, listen: false);
+      roomController.getRooms();
+    });
   }
 
   @override
@@ -178,6 +189,41 @@ class _FoldersPageState extends State<FoldersPage> {
                             setState(() {});
                           },
                         ),
+                      ),
+                    ),
+                    SizedBox(width: 12),
+                    // زر الدعوات المعلقة
+                    Container(
+                      height: 50,
+                      width: 50,
+                      decoration: BoxDecoration(
+                        color: Color(0xFFF59E0B),
+                        borderRadius: BorderRadius.circular(10),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.1),
+                            blurRadius: 8,
+                            offset: Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: IconButton(
+                        icon: Icon(
+                          Icons.mail_outline,
+                          color: Colors.white,
+                        ),
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => ChangeNotifierProvider.value(
+                                value: Provider.of<RoomController>(context, listen: false),
+                                child: PendingInvitationsPage(),
+                              ),
+                            ),
+                          );
+                        },
+                        tooltip: 'الدعوات المعلقة',
                       ),
                     ),
                     SizedBox(width: 12),
@@ -296,7 +342,7 @@ class _FoldersPageState extends State<FoldersPage> {
             children: [
               SizedBox(height: 10),
 
-              // العنوان وأزرار العرض + زر إنشاء مجلد جديد
+              // العنوان وأزرار العرض + زر إنشاء مجلد جديد أو غرفة
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -319,11 +365,20 @@ class _FoldersPageState extends State<FoldersPage> {
                   ),
                   Row(
                     children: [
-                      IconButton(
-                        icon: Icon(Icons.create_new_folder,
-                            color: Color(0xff28336f)),
-                        onPressed: () => _showCreateFolderDialog(),
-                      ),
+                      // ✅ زر إنشاء غرفة في tab المشتركة، أو زر إنشاء مجلد في باقي التابز
+                      if (!showFolders && showFiles)
+                        IconButton(
+                          icon: Icon(Icons.add_circle_outline,
+                              color: Color(0xff28336f)),
+                          tooltip: 'إنشاء غرفة مشاركة',
+                          onPressed: () => _showCreateRoomPage(),
+                        )
+                      else
+                        IconButton(
+                          icon: Icon(Icons.create_new_folder,
+                              color: Color(0xff28336f)),
+                          onPressed: () => _showCreateFolderDialog(),
+                        ),
                       ViewToggleButtons(
                         isGridView: isFilesGridView,
                         onViewChanged: (isGrid) {
@@ -378,16 +433,132 @@ class _FoldersPageState extends State<FoldersPage> {
                   ),
               ],
 
-              // عرض الملفات فقط
+              // ✅ عرض الغرف في tab المشتركة
               if (showFiles && !showFolders) ...[
-                Center(
-                  child: Text(
-                    S.of(context).sharedFilesContent,
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: Colors.grey[600],
-                    ),
-                  ),
+                Consumer<RoomController>(
+                  builder: (context, roomController, child) {
+                    if (roomController.isLoading && roomController.rooms.isEmpty) {
+                      return Center(
+                        child: Padding(
+                          padding: const EdgeInsets.all(20.0),
+                          child: CircularProgressIndicator(),
+                        ),
+                      );
+                    }
+
+                    if (roomController.errorMessage != null && roomController.rooms.isEmpty) {
+                      return Center(
+                        child: Padding(
+                          padding: const EdgeInsets.all(20.0),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.error_outline, size: 48, color: Colors.red),
+                              SizedBox(height: 16),
+                              Text(
+                                roomController.errorMessage!,
+                                style: TextStyle(color: Colors.red),
+                                textAlign: TextAlign.center,
+                              ),
+                              SizedBox(height: 16),
+                              ElevatedButton(
+                                onPressed: () => roomController.getRooms(),
+                                child: Text('إعادة المحاولة'),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    }
+
+                    if (roomController.rooms.isEmpty) {
+                      return Center(
+                        child: Padding(
+                          padding: const EdgeInsets.all(20.0),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.meeting_room_outlined,
+                                  size: 64, color: Colors.grey),
+                              SizedBox(height: 16),
+                              Text(
+                                'لا توجد غرف مشاركة',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  color: Colors.grey[600],
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              SizedBox(height: 8),
+                              Text(
+                                'اضغط على + لإنشاء غرفة مشاركة جديدة',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: Colors.grey[500],
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    }
+
+                    // ✅ تحويل الغرف إلى format مناسب للعرض
+                    final roomItems = roomController.rooms.map((room) {
+                      final membersCount = room['members']?.length ?? 0;
+                      return {
+                        "title": room['name'] ?? 'بدون اسم',
+                        "fileCount": membersCount,
+                        "size": _formatMemberCount(membersCount),
+                        "icon": Icons.meeting_room,
+                        "color": Color(0xff28336f),
+                        "description": room['description'] ?? '',
+                        "room": room, // ✅ إضافة بيانات الغرفة الكاملة
+                      };
+                    }).toList();
+
+                    if (isFilesGridView) {
+                      return FilesGridView(
+                        items: roomItems,
+                        showFileCount: true,
+                        onItemTap: (item) {
+                          final room = item['room'] as Map<String, dynamic>?;
+                          if (room != null && room['_id'] != null) {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => ChangeNotifierProvider.value(
+                                  value: roomController,
+                                  child: RoomDetailsPage(roomId: room['_id']),
+                                ),
+                              ),
+                            );
+                          }
+                        },
+                      );
+                    } else {
+                      return FilesListView(
+                        items: roomItems,
+                        itemMargin: EdgeInsets.only(bottom: 10),
+                        showMoreOptions: true,
+                        onItemTap: (item) {
+                          final room = item['room'] as Map<String, dynamic>?;
+                          if (room != null && room['_id'] != null) {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => ChangeNotifierProvider.value(
+                                  value: roomController,
+                                  child: RoomDetailsPage(roomId: room['_id']),
+                                ),
+                              ),
+                            );
+                          }
+                        },
+                      );
+                    }
+                  },
                 ),
               ],
 
@@ -441,5 +612,42 @@ class _FoldersPageState extends State<FoldersPage> {
         );
       },
     );
+  }
+
+  // ✅ فتح صفحة إنشاء غرفة مشاركة جديدة
+  Future<void> _showCreateRoomPage() async {
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ChangeNotifierProvider.value(
+          value: Provider.of<RoomController>(context, listen: false),
+          child: CreateSharePage(),
+        ),
+      ),
+    );
+
+    // ✅ إذا تم إنشاء غرفة بنجاح، تحديث القائمة
+    if (result != null && mounted) {
+      final roomController = Provider.of<RoomController>(context, listen: false);
+      await roomController.getRooms();
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('✅ تم إنشاء الغرفة بنجاح'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    }
+  }
+
+  // ✅ تنسيق عدد الأعضاء
+  String _formatMemberCount(int count) {
+    if (count == 0) {
+      return 'لا يوجد أعضاء';
+    } else if (count == 1) {
+      return 'عضو واحد';
+    } else {
+      return '$count أعضاء';
+    }
   }
 }
