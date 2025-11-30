@@ -104,14 +104,12 @@ class RoomOwner {
 class RoomMember {
   final String id;
   final RoomMemberUser user;
-  final String permission; // "view", "edit", "delete"
   final String role; // "owner", "editor", "viewer", "commenter"
   final DateTime joinedAt;
 
   RoomMember({
     required this.id,
     required this.user,
-    required this.permission,
     required this.role,
     required this.joinedAt,
   });
@@ -120,7 +118,6 @@ class RoomMember {
     return RoomMember(
       id: json["_id"]?.toString() ?? json["id"]?.toString() ?? '',
       user: RoomMemberUser.fromJson(json["user"] ?? {}),
-      permission: json["permission"] ?? 'view',
       role: json["role"] ?? 'viewer',
       joinedAt: json["joinedAt"] != null
           ? (json["joinedAt"] is String
@@ -134,7 +131,6 @@ class RoomMember {
     return {
       "_id": id,
       "user": user.toJson(),
-      "permission": permission,
       "role": role,
       "joinedAt": joinedAt.toIso8601String(),
     };
@@ -172,11 +168,13 @@ class RoomMemberUser {
 class RoomFile {
   final String id;
   final RoomFileRef fileId;
+  final RoomMemberUser? sharedBy;
   final DateTime sharedAt;
 
   RoomFile({
     required this.id,
     required this.fileId,
+    this.sharedBy,
     required this.sharedAt,
   });
 
@@ -184,6 +182,9 @@ class RoomFile {
     return RoomFile(
       id: json["_id"]?.toString() ?? json["id"]?.toString() ?? '',
       fileId: RoomFileRef.fromJson(json["fileId"] ?? {}),
+      sharedBy: json["sharedBy"] != null
+          ? RoomMemberUser.fromJson(json["sharedBy"])
+          : null,
       sharedAt: json["sharedAt"] != null
           ? (json["sharedAt"] is String
               ? DateTime.parse(json["sharedAt"])
@@ -196,6 +197,7 @@ class RoomFile {
     return {
       "_id": id,
       "fileId": fileId.toJson(),
+      if (sharedBy != null) "sharedBy": sharedBy!.toJson(),
       "sharedAt": sharedAt.toIso8601String(),
     };
   }
@@ -236,11 +238,13 @@ class RoomFileRef {
 class RoomFolder {
   final String id;
   final RoomFolderRef folderId;
+  final RoomMemberUser? sharedBy;
   final DateTime sharedAt;
 
   RoomFolder({
     required this.id,
     required this.folderId,
+    this.sharedBy,
     required this.sharedAt,
   });
 
@@ -248,6 +252,9 @@ class RoomFolder {
     return RoomFolder(
       id: json["_id"]?.toString() ?? json["id"]?.toString() ?? '',
       folderId: RoomFolderRef.fromJson(json["folderId"] ?? {}),
+      sharedBy: json["sharedBy"] != null
+          ? RoomMemberUser.fromJson(json["sharedBy"])
+          : null,
       sharedAt: json["sharedAt"] != null
           ? (json["sharedAt"] is String
               ? DateTime.parse(json["sharedAt"])
@@ -260,6 +267,7 @@ class RoomFolder {
     return {
       "_id": id,
       "folderId": folderId.toJson(),
+      if (sharedBy != null) "sharedBy": sharedBy!.toJson(),
       "sharedAt": sharedAt.toIso8601String(),
     };
   }
@@ -292,4 +300,12 @@ class RoomFolderRef {
     };
   }
 }
+
+
+
+
+
+
+
+
 

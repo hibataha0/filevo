@@ -13,14 +13,30 @@ class SendInvitationPage extends StatefulWidget {
 
 class _SendInvitationPageState extends State<SendInvitationPage> {
   final _formKey = GlobalKey<FormState>();
-  final _receiverIdController = TextEditingController();
+  final _emailController = TextEditingController();
   final _messageController = TextEditingController();
-  String _selectedPermission = 'view';
-  String? _selectedRole;
+  String _selectedRole = 'viewer';
+
+  @override
+  void initState() {
+    super.initState();
+    // ✅ مسح رسالة الخطأ عند فتح الصفحة
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final roomController = Provider.of<RoomController>(context, listen: false);
+      roomController.setError(null);
+    });
+  }
 
   @override
   void dispose() {
-    _receiverIdController.dispose();
+    // ✅ مسح رسالة الخطأ عند الخروج من الصفحة
+    try {
+      final roomController = Provider.of<RoomController>(context, listen: false);
+      roomController.setError(null);
+    } catch (e) {
+      // ✅ إذا لم يكن context متاحاً، لا مشكلة
+    }
+    _emailController.dispose();
     _messageController.dispose();
     super.dispose();
   }
@@ -28,11 +44,14 @@ class _SendInvitationPageState extends State<SendInvitationPage> {
   Future<void> _sendInvitation() async {
     if (_formKey.currentState!.validate()) {
       final roomController = Provider.of<RoomController>(context, listen: false);
+      
+      // ✅ مسح رسالة الخطأ السابقة قبل إرسال دعوة جديدة
+      roomController.setError(null);
 
       final result = await roomController.sendInvitation(
         roomId: widget.roomId,
-        receiverId: _receiverIdController.text.trim(),
-        permission: _selectedPermission,
+        email: _emailController.text.trim(),
+        role: _selectedRole,
         message: _messageController.text.trim().isEmpty
             ? null
             : _messageController.text.trim(),
@@ -47,14 +66,8 @@ class _SendInvitationPageState extends State<SendInvitationPage> {
             ),
           );
           Navigator.pop(context, true);
-        } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(roomController.errorMessage ?? '❌ فشل إرسال الدعوة'),
-              backgroundColor: Colors.red,
-            ),
-          );
         }
+        // ✅ رسالة الخطأ ستظهر تلقائياً في Consumer widget
       }
     }
   }
@@ -96,7 +109,7 @@ class _SendInvitationPageState extends State<SendInvitationPage> {
                     ),
                     SizedBox(height: 8),
                     Text(
-                      'أدخل معرف المستخدم لإرسال الدعوة',
+                      'أدخل البريد الإلكتروني لإرسال الدعوة',
                       style: TextStyle(
                         fontSize: 14,
                         color: Colors.white.withOpacity(0.9),
@@ -108,29 +121,42 @@ class _SendInvitationPageState extends State<SendInvitationPage> {
               ),
               SizedBox(height: 24),
 
-              // Receiver ID
+              // Email
               TextFormField(
-                controller: _receiverIdController,
+                controller: _emailController,
+                keyboardType: TextInputType.emailAddress,
                 decoration: InputDecoration(
-                  labelText: 'معرف المستخدم *',
-                  hintText: 'أدخل معرف المستخدم (User ID)',
-                  prefixIcon: Icon(Icons.person),
+                  labelText: 'البريد الإلكتروني *',
+                  hintText: 'أدخل البريد الإلكتروني',
+                  prefixIcon: Icon(Icons.email),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
                 ),
+                onChanged: (value) {
+                  // ✅ مسح رسالة الخطأ عند بدء الكتابة
+                  final roomController = Provider.of<RoomController>(context, listen: false);
+                  if (roomController.errorMessage != null) {
+                    roomController.setError(null);
+                  }
+                },
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
-                    return 'يرجى إدخال معرف المستخدم';
+                    return 'يرجى إدخال البريد الإلكتروني';
+                  }
+                  // ✅ التحقق من صحة البريد الإلكتروني
+                  final emailRegex = RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$');
+                  if (!emailRegex.hasMatch(value.trim())) {
+                    return 'يرجى إدخال بريد إلكتروني صحيح';
                   }
                   return null;
                 },
               ),
               SizedBox(height: 20),
 
-              // Permission
+              // Role
               Text(
-                'الصلاحية',
+                'الدور',
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
@@ -147,56 +173,28 @@ class _SendInvitationPageState extends State<SendInvitationPage> {
                     RadioListTile<String>(
                       title: Text('عرض فقط'),
                       subtitle: Text('يمكنه عرض الملفات فقط'),
-                      value: 'view',
-                      groupValue: _selectedPermission,
-                      onChanged: (value) => setState(() => _selectedPermission = value!),
+                      value: 'viewer',
+                      groupValue: _selectedRole,
+                      onChanged: (value) => setState(() => _selectedRole = value!),
                     ),
                     Divider(height: 1),
                     RadioListTile<String>(
-                      title: Text('تعديل'),
+                      title: Text('محرر'),
                       subtitle: Text('يمكنه تعديل الملفات'),
-                      value: 'edit',
-                      groupValue: _selectedPermission,
-                      onChanged: (value) => setState(() => _selectedPermission = value!),
+                      value: 'editor',
+                      groupValue: _selectedRole,
+                      onChanged: (value) => setState(() => _selectedRole = value!),
                     ),
                     Divider(height: 1),
                     RadioListTile<String>(
-                      title: Text('حذف'),
-                      subtitle: Text('يمكنه حذف الملفات'),
-                      value: 'delete',
-                      groupValue: _selectedPermission,
-                      onChanged: (value) => setState(() => _selectedPermission = value!),
+                      title: Text('معلق'),
+                      subtitle: Text('يمكنه التعليق على الملفات'),
+                      value: 'commenter',
+                      groupValue: _selectedRole,
+                      onChanged: (value) => setState(() => _selectedRole = value!),
                     ),
                   ],
                 ),
-              ),
-              SizedBox(height: 20),
-
-              // Role (optional)
-              Text(
-                'الدور (اختياري)',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              SizedBox(height: 8),
-              DropdownButtonFormField<String>(
-                value: _selectedRole,
-                decoration: InputDecoration(
-                  labelText: 'اختر الدور',
-                  prefixIcon: Icon(Icons.badge),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                items: [
-                  DropdownMenuItem(value: null, child: Text('بدون دور محدد')),
-                  DropdownMenuItem(value: 'viewer', child: Text('عرض فقط')),
-                  DropdownMenuItem(value: 'editor', child: Text('محرر')),
-                  DropdownMenuItem(value: 'commenter', child: Text('معلق')),
-                ],
-                onChanged: (value) => setState(() => _selectedRole = value),
               ),
               SizedBox(height: 20),
 
@@ -291,4 +289,11 @@ class _SendInvitationPageState extends State<SendInvitationPage> {
     );
   }
 }
+
+
+
+
+
+
+
 

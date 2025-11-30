@@ -1,127 +1,119 @@
-import 'package:filevo/views/profile/components/StorageCard.dart';
-import 'package:filevo/views/profile/components/profile_pic.dart';
-import 'package:filevo/views/profile/components/favorites_section.dart'; // أضف هذا الاستيراد
-import 'package:flutter/material.dart';
-import 'package:flutter_svg/svg.dart';
-import 'package:provider/provider.dart';
-// import model
-import 'package:filevo/models/profile/profile_model.dart';
-// import controller
 import 'package:filevo/controllers/profile/profile_controller.dart';
+import 'package:filevo/views/profile/profile_edit_page.dart';
+import 'package:filevo/views/profile/components/StorageCard.dart';
+import 'package:filevo/views/profile/components/favorites_section.dart';
+import 'package:filevo/views/profile/components/starred_folders_section.dart';
+import 'package:filevo/views/profile/components/profile_pic.dart';
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
-class ProfilePage extends StatelessWidget {
+class ProfilePage extends StatefulWidget {
+  const ProfilePage({super.key});
+
+  @override
+  State<ProfilePage> createState() => _ProfilePageState();
+}
+
+class _ProfilePageState extends State<ProfilePage> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final controller = context.read<ProfileController>();
+      if (!controller.isLoading && controller.userName == null) {
+        controller.getLoggedUserData();
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
+    final profileController = context.watch<ProfileController>();
+
     return Scaffold(
       backgroundColor: const Color(0xff28336f),
-      body: Column(
+      body: Stack(
         children: [
-          // الجزء العلوي الأزرق
-          Container(
-            padding: const EdgeInsets.only(top: 60, bottom: 30),
-            width: double.infinity,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.center,
+          if (profileController.isLoading && profileController.userName == null)
+            const Center(
+              child: CircularProgressIndicator(color: Colors.white),
+            )
+          else
+            Column(
               children: [
-                ProfilePic(),
-                const SizedBox(height: 20),
-                const Text(
-                  "Hiba Taha",
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 22,
-                    fontWeight: FontWeight.w400,
+                Container(
+                  padding: const EdgeInsets.only(top: 60, bottom: 30),
+                  width: double.infinity,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      const ProfilePic(),
+                      const SizedBox(height: 20),
+                      Text(
+                        profileController.userName ?? '—',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 22,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      if (profileController.userEmail != null) ...[
+                        const SizedBox(height: 6),
+                        Text(
+                          profileController.userEmail!,
+                          style: const TextStyle(color: Colors.white70, fontSize: 14),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: Container(
+                    decoration: const BoxDecoration(
+                      color: Color(0xFFE9E9E9),
+                      borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
+                    ),
+                    child: const SingleChildScrollView(
+                      padding: EdgeInsets.all(20.0),
+                      child: Column(
+                        children: [
+                          StorageCard(),
+                          FavoritesSection(),
+                          StarredFoldersSection(),
+                          SizedBox(height: 100),
+                        ],
+                      ),
+                    ),
                   ),
                 ),
               ],
             ),
-          ),
-
-          // البطاقة البيضاء التي تمتد لباقي الصفحة
-          Expanded(
-            child: Container(
-              width: double.infinity,
-              decoration: const BoxDecoration(
-                color: Color(0xFFE9E9E9),
-                borderRadius: BorderRadius.vertical(
-                  top: Radius.circular(30),
-                ),
-              ),
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(20.0),
-                child: Column(
-                  children: [
-                    StorageCard(),
-                    
-                    // قسم الملفات المفضلة - تم استدعاؤه من ملف منفصل
-                    const FavoritesSection(),
-                    
-                    // // محتوى البطاقة البيضاء
-                    // _buildProfileItem(Icons.person_outline, "المعلومات الشخصية"),
-                    // const SizedBox(height: 15),
-                    // _buildProfileItem(Icons.security, "الأمان"),
-                    // const SizedBox(height: 15),
-                    // _buildProfileItem(Icons.notifications, "الإشعارات"),
-                    // const SizedBox(height: 15),
-                    // _buildProfileItem(Icons.settings, "الإعدادات"),
-                    // const SizedBox(height: 15),
-                    // _buildProfileItem(Icons.help_outline, "المساعدة والدعم"),
-                    // const SizedBox(height: 15),
-                    // _buildProfileItem(Icons.info_outline, "عن التطبيق"),
-                    // const SizedBox(height: 25),
-                    // _buildProfileItem(Icons.logout, "تسجيل الخروج", isLogout: true),
-                    
-                    // مساحة إضافية في الأسفل
-                    const SizedBox(height: 100),
-                  ],
-                ),
-              ),
+          Positioned(
+            top: 70,
+            right: 20,
+            child: IconButton(
+              icon: const Icon(Icons.edit, color: Colors.white),
+              onPressed: () async {
+                final controller = context.read<ProfileController>();
+                if (controller.userData == null) {
+                  await controller.getLoggedUserData();
+                }
+                if (!mounted) return;
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => ChangeNotifierProvider.value(
+                      value: controller,
+                      child: const ProfileEditPage(),
+                    ),
+                  ),
+                );
+              },
             ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // دالة لبناء عنصر القائمة (إن كنت تحتاجها لاحقاً)
-  Widget _buildProfileItem(IconData icon, String title, {bool isLogout = false}) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black12,
-            blurRadius: 4,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Icon(
-            icon,
-            color: isLogout ? Colors.red : const Color(0xff28336f),
-            size: 24,
-          ),
-          const SizedBox(width: 15),
-          Text(
-            title,
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w500,
-              color: isLogout ? Colors.red : Colors.black87,
-            ),
-          ),
-          const Spacer(),
-          Icon(
-            Icons.arrow_forward_ios,
-            size: 16,
-            color: Colors.grey[400],
           ),
         ],
       ),
     );
   }
 }
+

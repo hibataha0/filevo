@@ -66,6 +66,59 @@ class FileService {
     }
   }
 
+  /// ✅ جلب جميع الملفات بدون parentFolder (مع pagination و category filter)
+  Future<Map<String, dynamic>> getAllFiles({
+    required String token,
+    int page = 1,
+    int limit = 10,
+    String? category,
+    String? sortBy,
+    String? sortOrder,
+  }) async {
+    try {
+      final queryParams = <String, String>{
+        'page': page.toString(),
+        'limit': limit.toString(),
+      };
+      
+      if (category != null && category.isNotEmpty && category != 'all') {
+        queryParams['category'] = category;
+      }
+      
+      if (sortBy != null) {
+        queryParams['sortBy'] = sortBy;
+      }
+      
+      if (sortOrder != null) {
+        queryParams['sortOrder'] = sortOrder;
+      }
+
+      final uri = Uri.parse("$_apiBase${ApiEndpoints.files}")
+          .replace(queryParameters: queryParams);
+
+      final response = await http.get(
+        uri,
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
+
+      print("Get all files response: ${response.statusCode}");
+      print("Get all files body: ${response.body}");
+
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      } else {
+        print("Error fetching files: ${response.body}");
+        throw Exception('Failed to get files: ${response.body}');
+      }
+    } catch (e) {
+      print("Get all files error: $e");
+      rethrow;
+    }
+  }
+
   /// جلب الملفات حسب الفئة (category)
   Future<List<dynamic>> getFilesByCategory({
     required String category,
@@ -98,6 +151,75 @@ class FileService {
     } catch (e) {
       print("Get files by category error: $e");
       return [];
+    }
+  }
+
+  /// 📊 جلب إحصائيات التصنيفات (عدد الملفات والحجم لكل تصنيف)
+  Future<Map<String, dynamic>?> getCategoriesStats({
+    required String token,
+  }) async {
+    try {
+      final url = "$_apiBase${ApiEndpoints.categoriesStats}";
+      
+      final response = await http.get(
+        Uri.parse(url),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        print('Categories stats data: $data');
+        return data;
+      } else {
+        // ✅ لا نطبع الخطأ في console - فقط نعيد null بهدوء
+        // الـ route غير موجود بعد، سنستخدم القيم الافتراضية
+        return null;
+      }
+    } catch (e) {
+      // ✅ لا نطبع الخطأ في console - فقط نعيد null بهدوء
+      // الـ route غير موجود بعد، سنستخدم القيم الافتراضية
+      return null;
+    }
+  }
+
+  /// 📊 جلب إحصائيات التصنيفات في الجذر فقط (عدد الملفات والحجم لكل تصنيف)
+  Future<Map<String, dynamic>?> getRootCategoriesStats({
+    required String token,
+  }) async {
+    try {
+      final url = "$_apiBase${ApiEndpoints.rootCategoriesStats}";
+      
+      final response = await http.get(
+        Uri.parse(url),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        print('Root categories stats data: $data');
+        
+        // ✅ معالجة format الجديد: { "status": "success", "data": ... }
+        if (data['status'] == 'success' && data['data'] != null) {
+          // ✅ تحويل format إلى نفس format القديم للتوافق مع الكود الحالي
+          return {
+            'categories': data['data'], // ✅ data يحتوي على قائمة التصنيفات
+          };
+        }
+        print( 'Root categories stats data----------: $data');
+        return data;
+      } else {
+        print('Error fetching root categories stats: ${response.statusCode} - ${response.body}');
+        return null;
+      }
+    } catch (e) {
+      print('Error fetching root categories stats: $e');
+      return null;
     }
   }
 
@@ -143,6 +265,47 @@ class FileService {
     } catch (e) {
       print("Get file details error: $e");
       return {"error": e.toString()};
+    }
+  }
+
+  /// 🔍 جلب تفاصيل ملف مشترك في روم
+  Future<Map<String, dynamic>?> getSharedFileDetailsInRoom({
+    required String fileId,
+    required String token,
+  }) async {
+    try {
+      final url = "$_apiBase${ApiEndpoints.getSharedFileDetailsInRoom(fileId)}";
+      print("Fetching shared file details in room from: $url");
+      
+      final response = await http.get(
+        Uri.parse(url),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
+
+      print("Get shared file details in room response status: ${response.statusCode}");
+      print("Get shared file details in room response body: ${response.body}");
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        if (data['file'] != null) {
+          return data;
+        } else {
+          print("No file data in response");
+          return null;
+        }
+      } else if (response.statusCode == 404) {
+        print("File not found in room");
+        return null;
+      } else {
+        print("Error getting shared file details in room: ${response.body}");
+        return null;
+      }
+    } catch (e) {
+      print("Error getting shared file details in room: $e");
+      return null;
     }
   }
 
@@ -208,6 +371,56 @@ class FileService {
     }
   }
 
+  /// 🔄 نقل ملف من مجلد إلى آخر
+  Future<Map<String, dynamic>> moveFile({
+    required String fileId,
+    required String token,
+    String? targetFolderId, // null للجذر أو folderId للمجلد
+  }) async {
+    try {
+      final url = "$_apiBase${ApiEndpoints.moveFile(fileId)}";
+      print("Moving file: $url");
+      
+      final Map<String, dynamic> body = {
+        'targetFolderId': targetFolderId, // يمكن أن يكون null
+      };
+
+      final response = await http.put(
+        Uri.parse(url),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode(body),
+      );
+
+      print("Move file response status: ${response.statusCode}");
+      print("Move file response body: ${response.body}");
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        return {
+          'success': true,
+          'message': data['message'] ?? 'تم نقل الملف بنجاح',
+          'file': data['file'],
+          'fromFolder': data['fromFolder'],
+          'toFolder': data['toFolder'],
+        };
+      } else {
+        final data = jsonDecode(response.body);
+        return {
+          'success': false,
+          'message': data['message'] ?? 'فشل في نقل الملف',
+        };
+      }
+    } catch (e) {
+      print("Move file error: $e");
+      return {
+        'success': false,
+        'message': 'خطأ في نقل الملف: ${e.toString()}',
+      };
+    }
+  }
 
  Future<Map<String, dynamic>> toggleStarFile({
     required String fileId,
@@ -287,6 +500,31 @@ class FileService {
         'success': false,
         'message': 'خطأ في جلب الملفات المفضلة: ${e.toString()}',
       };
+    }
+  }
+
+  /// ❌ إلغاء مشاركة الملف مع مستخدمين محددين
+  Future<Map<String, dynamic>> unshareFile({
+    required String fileId,
+    required List<String> userIds,
+    required String token,
+  }) async {
+    final url = "$_apiBase${ApiEndpoints.unshareFile(fileId)}";
+
+    final response = await http.delete(
+      Uri.parse(url),
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode({'users': userIds}),
+    );
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    } else {
+      final data = jsonDecode(response.body);
+      throw Exception(data['message'] ?? 'Failed to unshare file');
     }
   }
 

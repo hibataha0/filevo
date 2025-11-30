@@ -1,5 +1,7 @@
 import 'package:filevo/controllers/folders/files_controller.dart';
+import 'package:filevo/controllers/folders/room_controller.dart';
 import 'package:filevo/services/storage_service.dart';
+import 'package:filevo/views/folders/share_file_with_room_page.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -109,9 +111,35 @@ class FileActionsService {
     );
   }
 
-  /// مشاركة الملف (يطبع فقط)
-  static void shareFile(Map<String, dynamic> file) {
-    print('Sharing file: ${file['name'] ?? 'Unknown'}');
+  /// مشاركة الملف مع غرفة
+  static Future<void> shareFile(
+    BuildContext context,
+    Map<String, dynamic> file,
+  ) async {
+    final fileId = file['originalData']?['_id'] ?? file['_id'];
+    final fileName = file['name'] ?? file['originalData']?['name'] ?? 'ملف';
+
+    if (fileId == null) {
+      _showErrorSnackBar(context, 'لا يمكن تحديد الملف');
+      return;
+    }
+
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ChangeNotifierProvider(
+          create: (_) => RoomController(),
+          child: ShareFileWithRoomPage(
+            fileId: fileId,
+            fileName: fileName,
+          ),
+        ),
+      ),
+    );
+
+    if (result == true && context.mounted) {
+      _showSuccessSnackBar(context, '✅ تم إرسال طلب المشاركة للغرفة');
+    }
   }
 
   /// حذف الملف
@@ -186,6 +214,79 @@ class FileActionsService {
     }
   }
 
+  /// إلغاء مشاركة ملف
+  static Future<void> unshareFile(
+    BuildContext context,
+    FileController fileController,
+    Map<String, dynamic> file, {
+    VoidCallback? onLocalUpdate,
+  }) async {
+    final sharedWith = (file['originalData']?['sharedWith'] as List?) ?? [];
+    if (sharedWith.isEmpty) {
+      _showErrorSnackBar(context, "لا يوجد مستخدمون مشارك معهم الملف");
+      return;
+    }
+
+    final userIds = sharedWith
+        .map((user) {
+          final userObj = user['user'];
+          if (userObj is Map && userObj['_id'] != null) {
+            return userObj['_id'].toString();
+          } else if (userObj is String) {
+            return userObj;
+          }
+          return user['userId']?.toString();
+        })
+        .whereType<String>()
+        .toList();
+
+    if (userIds.isEmpty) {
+      _showErrorSnackBar(context, "لا يمكن تحديد المستخدمين لإلغاء المشاركة");
+      return;
+    }
+
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text("إلغاء مشاركة الملف"),
+        content: const Text("هل أنت متأكد من إلغاء مشاركة هذا الملف مع جميع المستخدمين؟"),
+        actions: [
+          TextButton(onPressed: () => Navigator.of(ctx).pop(false), child: const Text("إلغاء")),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text("إلغاء المشاركة"),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
+
+    final token = await StorageService.getToken();
+    if (token == null) {
+      _showErrorSnackBar(context, "❌ خطأ: لا يوجد توكن");
+      return;
+    }
+
+    final success = await fileController.unshareFile(
+      fileId: file['originalData']?['_id'] ?? file['_id'],
+      userIds: userIds,
+      token: token,
+    );
+
+    if (!context.mounted) return;
+
+    if (success) {
+      file['originalData']['sharedWith'] = [];
+      file['originalData']['isShared'] = false;
+      onLocalUpdate?.call();
+      _showSuccessSnackBar(context, "✅ تم إلغاء مشاركة الملف");
+    } else {
+      _showErrorSnackBar(context, fileController.errorMessage ?? "فشل إلغاء المشاركة");
+    }
+  }
+
   /// toggle favorite بدون ريفريش كامل
  /// toggle favorite بدون ريفريش كامل
 /// toggle favorite بدون ريفريش كامل
@@ -207,19 +308,70 @@ static Future<void> toggleStar(
       return;
     }
 
-    // ✅ نستدعي الـ backend ونجيب النتيجة الحقيقية
-    final newStarredValue = await controller.toggleStar(fileId: fileId, token: token);
+    // ✅ إظهار مؤشر التحميل (مثل المجلدات)
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+              ),
+            ),
+            SizedBox(width: 12),
+            Text('جاري التحديث...'),
+          ],
+        ),
+        duration: Duration(seconds: 2),
+      ),
+    );
 
-    // ✅ نحدث البيانات المحلية بالقيمة الحقيقية من الـ backend
-    file['originalData']['isStarred'] = newStarredValue;
-    
-    // ✅ نستدعي الـ callback عشان يحدث الـ UI
-    onToggle?.call();
+    // ✅ نستدعي الـ backend ونجيب النتيجة (Map بدلاً من bool)
+    final result = await controller.toggleStar(fileId: fileId, token: token);
 
-    print('✅ Star updated successfully to: $newStarredValue');
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+
+    if (result['success'] == true) {
+      final isStarred = result['isStarred'] as bool? ?? false;
+      final updatedFile = result['file'] as Map<String, dynamic>?;
+
+      // ✅ نحدث البيانات المحلية بالقيمة الحقيقية من الـ backend
+      if (updatedFile != null) {
+        file['originalData'] = updatedFile;
+        file['originalData']['isStarred'] = isStarred;
+      } else {
+        file['originalData']['isStarred'] = isStarred;
+      }
+      
+      // ✅ نستدعي الـ callback عشان يحدث الـ UI
+      onToggle?.call();
+
+      // ✅ عرض رسالة نجاح
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              isStarred
+                ? '✅ تم إضافة الملف إلى المفضلة'
+                : '✅ تم إزالة الملف من المفضلة',
+            ),
+            backgroundColor: Colors.green,
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+
+      print('✅ Star updated successfully to: $isStarred');
+    } else {
+      _showErrorSnackBar(context, result['message'] ?? "❌ حدث خطأ أثناء التحديث");
+    }
 
   } catch (e) {
     print('❌ Error in toggleStar: $e');
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
     _showErrorSnackBar(context, "❌ حدث خطأ أثناء التحديث");
   }
 }

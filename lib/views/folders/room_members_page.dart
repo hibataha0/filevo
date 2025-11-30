@@ -14,6 +14,7 @@ class RoomMembersPage extends StatefulWidget {
 class _RoomMembersPageState extends State<RoomMembersPage> {
   Map<String, dynamic>? roomData;
   bool isLoading = true;
+  bool _hasChanges = false; // ✅ تتبع إذا كان هناك تغييرات
 
   @override
   void initState() {
@@ -38,34 +39,34 @@ class _RoomMembersPageState extends State<RoomMembersPage> {
     }
   }
 
-  Future<void> _updateMemberPermission(String memberId, String? permission, String? role) async {
+  Future<void> _updateMemberRole(String memberId, String role) async {
     final roomController = Provider.of<RoomController>(context, listen: false);
 
-    final success = await roomController.updateMemberPermission(
+    final success = await roomController.updateMemberRole(
       roomId: widget.roomId,
       memberId: memberId,
-      permission: permission,
       role: role,
     );
 
-    if (mounted) {
-      if (success) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('✅ تم تحديث الصلاحيات بنجاح'),
-            backgroundColor: Colors.green,
-          ),
-        );
-        _loadRoomData();
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(roomController.errorMessage ?? '❌ فشل تحديث الصلاحيات'),
-            backgroundColor: Colors.red,
-          ),
-        );
+      if (mounted) {
+        if (success) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('✅ تم تحديث الدور بنجاح'),
+              backgroundColor: Colors.green,
+            ),
+          );
+          _loadRoomData();
+          _hasChanges = true; // ✅ تم تسجيل تغيير
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(roomController.errorMessage ?? '❌ فشل تحديث الدور'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
       }
-    }
   }
 
   Future<void> _removeMember(String memberId, String memberName) async {
@@ -102,7 +103,9 @@ class _RoomMembersPageState extends State<RoomMembersPage> {
               backgroundColor: Colors.green,
             ),
           );
-          _loadRoomData();
+          // ✅ تحديث بيانات الصفحة الحالية أولاً
+          await _loadRoomData();
+          _hasChanges = true; // ✅ تم تسجيل تغيير
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -118,7 +121,6 @@ class _RoomMembersPageState extends State<RoomMembersPage> {
   void _showMemberOptions(Map<String, dynamic> member) {
     final user = member['user'] ?? {};
     final memberId = member['_id']?.toString() ?? '';
-    final currentPermission = member['permission'] ?? 'view';
     final currentRole = member['role'] ?? 'viewer';
     final isOwner = currentRole == 'owner';
 
@@ -155,7 +157,7 @@ class _RoomMembersPageState extends State<RoomMembersPage> {
                         ),
                       ),
                       Text(
-                        '$currentRole • $currentPermission',
+                        currentRole,
                         style: TextStyle(
                           fontSize: 14,
                           color: Colors.grey[600],
@@ -169,32 +171,6 @@ class _RoomMembersPageState extends State<RoomMembersPage> {
             SizedBox(height: 24),
             if (!isOwner) ...[
               Text(
-                'تحديث الصلاحية',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              SizedBox(height: 12),
-              Wrap(
-                spacing: 8,
-                children: [
-                  _buildPermissionChip('view', currentPermission, () {
-                    _updateMemberPermission(memberId, 'view', null);
-                    Navigator.pop(context);
-                  }),
-                  _buildPermissionChip('edit', currentPermission, () {
-                    _updateMemberPermission(memberId, 'edit', null);
-                    Navigator.pop(context);
-                  }),
-                  _buildPermissionChip('delete', currentPermission, () {
-                    _updateMemberPermission(memberId, 'delete', null);
-                    Navigator.pop(context);
-                  }),
-                ],
-              ),
-              SizedBox(height: 24),
-              Text(
                 'تحديث الدور',
                 style: TextStyle(
                   fontSize: 16,
@@ -206,15 +182,15 @@ class _RoomMembersPageState extends State<RoomMembersPage> {
                 spacing: 8,
                 children: [
                   _buildRoleChip('viewer', currentRole, () {
-                    _updateMemberPermission(memberId, null, 'viewer');
+                    _updateMemberRole(memberId, 'viewer');
                     Navigator.pop(context);
                   }),
                   _buildRoleChip('editor', currentRole, () {
-                    _updateMemberPermission(memberId, null, 'editor');
+                    _updateMemberRole(memberId, 'editor');
                     Navigator.pop(context);
                   }),
                   _buildRoleChip('commenter', currentRole, () {
-                    _updateMemberPermission(memberId, null, 'commenter');
+                    _updateMemberRole(memberId, 'commenter');
                     Navigator.pop(context);
                   }),
                 ],
@@ -246,7 +222,7 @@ class _RoomMembersPageState extends State<RoomMembersPage> {
                     SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        'لا يمكن تعديل صلاحيات المالك',
+                        'لا يمكن تعديل دور المالك',
                         style: TextStyle(color: Colors.amber.shade900),
                       ),
                     ),
@@ -255,21 +231,6 @@ class _RoomMembersPageState extends State<RoomMembersPage> {
               ),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildPermissionChip(String permission, String current, VoidCallback onTap) {
-    final isSelected = permission == current;
-    return FilterChip(
-      label: Text(permission),
-      selected: isSelected,
-      onSelected: (selected) => onTap(),
-      selectedColor: _getPermissionColor(permission).withOpacity(0.2),
-      checkmarkColor: _getPermissionColor(permission),
-      labelStyle: TextStyle(
-        color: isSelected ? _getPermissionColor(permission) : Colors.black,
-        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
       ),
     );
   }
@@ -295,6 +256,13 @@ class _RoomMembersPageState extends State<RoomMembersPage> {
       appBar: AppBar(
         title: Text('أعضاء الغرفة'),
         backgroundColor: Color(0xff28336f),
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back),
+          onPressed: () {
+            // ✅ إرجاع true إذا كان هناك تغييرات
+            Navigator.of(context).pop(_hasChanges);
+          },
+        ),
         actions: [
           IconButton(
             icon: Icon(Icons.refresh),
@@ -326,7 +294,6 @@ class _RoomMembersPageState extends State<RoomMembersPage> {
   Widget _buildMemberCard(Map<String, dynamic> member) {
     final user = member['user'] ?? {};
     final role = member['role'] ?? 'viewer';
-    final permission = member['permission'] ?? 'view';
     final isOwner = role == 'owner';
 
     return Card(
@@ -351,40 +318,20 @@ class _RoomMembersPageState extends State<RoomMembersPage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             SizedBox(height: 4),
-            Row(
-              children: [
-                Container(
-                  padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: _getRoleColor(role).withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: Text(
-                    role,
-                    style: TextStyle(
-                      fontSize: 10,
-                      color: _getRoleColor(role),
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
+            Container(
+              padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              decoration: BoxDecoration(
+                color: _getRoleColor(role).withOpacity(0.1),
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: Text(
+                role,
+                style: TextStyle(
+                  fontSize: 10,
+                  color: _getRoleColor(role),
+                  fontWeight: FontWeight.w600,
                 ),
-                SizedBox(width: 8),
-                Container(
-                  padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: _getPermissionColor(permission).withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: Text(
-                    permission,
-                    style: TextStyle(
-                      fontSize: 10,
-                      color: _getPermissionColor(permission),
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-              ],
+              ),
             ),
           ],
         ),
@@ -429,17 +376,5 @@ class _RoomMembersPageState extends State<RoomMembersPage> {
     }
   }
 
-  Color _getPermissionColor(String permission) {
-    switch (permission) {
-      case 'view':
-        return Color(0xFF10B981);
-      case 'edit':
-        return Color(0xFFF59E0B);
-      case 'delete':
-        return Color(0xFFEF4444);
-      default:
-        return Colors.grey;
-    }
-  }
 }
 

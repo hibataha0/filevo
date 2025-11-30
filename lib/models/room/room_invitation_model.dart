@@ -5,7 +5,7 @@ class RoomInvitationModel {
   final RoomInvitationRoom room;
   final RoomInvitationUser sender;
   final RoomInvitationUser receiver;
-  final String permission; // "view", "edit", "delete"
+  final String role; // "owner", "editor", "viewer", "commenter"
   final String? message;
   final String status; // "pending", "accepted", "rejected", "cancelled"
   final DateTime? respondedAt;
@@ -17,7 +17,7 @@ class RoomInvitationModel {
     required this.room,
     required this.sender,
     required this.receiver,
-    required this.permission,
+    required this.role,
     this.message,
     required this.status,
     this.respondedAt,
@@ -31,7 +31,7 @@ class RoomInvitationModel {
       room: RoomInvitationRoom.fromJson(json["room"] ?? {}),
       sender: RoomInvitationUser.fromJson(json["sender"] ?? {}),
       receiver: RoomInvitationUser.fromJson(json["receiver"] ?? {}),
-      permission: json["permission"] ?? 'view',
+      role: json["role"] ?? 'viewer',
       message: json["message"],
       status: json["status"] ?? 'pending',
       respondedAt: json["respondedAt"] != null
@@ -58,7 +58,7 @@ class RoomInvitationModel {
       "room": room.toJson(),
       "sender": sender.toJson(),
       "receiver": receiver.toJson(),
-      "permission": permission,
+      "role": role,
       "message": message,
       "status": status,
       "respondedAt": respondedAt?.toIso8601String(),
@@ -128,4 +128,12 @@ class RoomInvitationUser {
     };
   }
 }
+
+
+
+
+
+
+
+
 

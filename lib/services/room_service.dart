@@ -45,6 +45,11 @@ class RoomService {
   }
 
   /// ✅ الحصول على تفاصيل غرفة معينة
+  /// Returns room details with populated data:
+  /// - owner (name, email)
+  /// - members.user (name, email)
+  /// - files.fileId (file details)
+  /// - folders.folderId (folder details)
   Future<Map<String, dynamic>> getRoomById(String roomId) async {
     final token = await StorageService.getToken();
 
@@ -56,7 +61,18 @@ class RoomService {
       },
     );
 
-    return jsonDecode(response.body);
+    if (response.statusCode == 200) {
+      final decodedResponse = jsonDecode(response.body);
+      // ✅ التأكد من أن الاستجابة تحتوي على room
+      if (decodedResponse is Map<String, dynamic> && decodedResponse['room'] != null) {
+        return decodedResponse;
+      } else {
+        throw Exception('Invalid response format: room not found');
+      }
+    } else {
+      final errorBody = jsonDecode(response.body);
+      throw Exception(errorBody['message'] ?? 'Failed to load room details');
+    }
   }
 
   /// ✅ تحديث غرفة
@@ -84,7 +100,7 @@ class RoomService {
     return jsonDecode(response.body);
   }
 
-  /// ✅ حذف غرفة
+  /// ✅ حذف غرفة (فقط مالك الغرفة يمكنه حذفها)
   Future<Map<String, dynamic>> deleteRoom(String roomId) async {
     final token = await StorageService.getToken();
 
@@ -96,21 +112,46 @@ class RoomService {
       },
     );
 
-    return jsonDecode(response.body);
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    } else {
+      final errorBody = jsonDecode(response.body);
+      throw Exception(errorBody['message'] ?? 'Failed to delete room');
+    }
+  }
+
+  /// ✅ مغادرة غرفة (أي عضو يمكنه مغادرة الغرفة، لكن المالك لا يمكنه)
+  Future<Map<String, dynamic>> leaveRoom(String roomId) async {
+    final token = await StorageService.getToken();
+
+    final response = await http.delete(
+      Uri.parse("${ApiConfig.baseUrl}${ApiEndpoints.leaveRoom(roomId)}"),
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+    );
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    } else {
+      final errorBody = jsonDecode(response.body);
+      throw Exception(errorBody['message'] ?? 'Failed to leave room');
+    }
   }
 
   /// ✅ إرسال دعوة للمستخدم للانضمام للغرفة
   Future<Map<String, dynamic>> sendInvitation({
     required String roomId,
-    required String receiverId,
-    String? permission,
+    required String email,
+    String? role,
     String? message,
   }) async {
     final token = await StorageService.getToken();
 
     final body = jsonEncode({
-      'receiverId': receiverId,
-      if (permission != null) 'permission': permission,
+      'email': email,
+      if (role != null) 'role': role,
       if (message != null && message.isNotEmpty) 'message': message,
     });
 
@@ -171,18 +212,16 @@ class RoomService {
     return jsonDecode(response.body);
   }
 
-  /// ✅ تحديث صلاحيات عضو في الغرفة
-  Future<Map<String, dynamic>> updateMemberPermission({
+  /// ✅ تحديث دور عضو في الغرفة
+  Future<Map<String, dynamic>> updateMemberRole({
     required String roomId,
     required String memberId,
-    String? permission,
-    String? role,
+    required String role,
   }) async {
     final token = await StorageService.getToken();
 
     final body = jsonEncode({
-      if (permission != null) 'permission': permission,
-      if (role != null) 'role': role,
+      'role': role,
     });
 
     final response = await http.put(
@@ -219,11 +258,13 @@ class RoomService {
   Future<Map<String, dynamic>> shareFileWithRoom({
     required String roomId,
     required String fileId,
+    String? sharedBy,
   }) async {
     final token = await StorageService.getToken();
 
     final body = jsonEncode({
       'fileId': fileId,
+      if (sharedBy != null) 'sharedBy': sharedBy,
     });
 
     final response = await http.post(
@@ -238,15 +279,40 @@ class RoomService {
     return jsonDecode(response.body);
   }
 
+  /// ✅ إزالة ملف من الغرفة
+  Future<Map<String, dynamic>> unshareFileFromRoom({
+    required String roomId,
+    required String fileId,
+  }) async {
+    final token = await StorageService.getToken();
+
+    final response = await http.delete(
+      Uri.parse("${ApiConfig.baseUrl}${ApiEndpoints.unshareFileFromRoom(roomId, fileId)}"),
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+    );
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    } else {
+      final errorBody = jsonDecode(response.body);
+      throw Exception(errorBody['message'] ?? 'Failed to remove file from room');
+    }
+  }
+
   /// ✅ مشاركة مجلد مع الغرفة
   Future<Map<String, dynamic>> shareFolderWithRoom({
     required String roomId,
     required String folderId,
+    String? sharedBy,
   }) async {
     final token = await StorageService.getToken();
 
     final body = jsonEncode({
       'folderId': folderId,
+      if (sharedBy != null) 'sharedBy': sharedBy,
     });
 
     final response = await http.post(
@@ -261,18 +327,40 @@ class RoomService {
     return jsonDecode(response.body);
   }
 
-  /// ✅ إضافة تعليق على ملف/مجلد في الغرفة
-  Future<Map<String, dynamic>> addComment({
+  /// ✅ إزالة مجلد من الغرفة
+  Future<Map<String, dynamic>> unshareFolderFromRoom({
     required String roomId,
-    required String targetType, // 'file' or 'folder'
-    required String targetId,
-    required String content,
+    required String folderId,
   }) async {
     final token = await StorageService.getToken();
 
+    final response = await http.delete(
+      Uri.parse("${ApiConfig.baseUrl}${ApiEndpoints.unshareFolderFromRoom(roomId, folderId)}"),
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+    );
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    } else {
+      final errorBody = jsonDecode(response.body);
+      throw Exception(errorBody['message'] ?? 'Failed to remove folder from room');
+    }
+  }
+
+  /// ✅ إضافة تعليق على ملف/مجلد في الغرفة
+  Future<Map<String, dynamic>> addComment({
+    required String roomId,
+    required String targetType, // 'file', 'folder', or 'room'
+    String? targetId,
+    required String content,
+  }) async {
+    final token = await StorageService.getToken();
     final body = jsonEncode({
       'targetType': targetType,
-      'targetId': targetId,
+      if (targetId != null && targetId.isNotEmpty) 'targetId': targetId,
       'content': content,
     });
 
@@ -291,17 +379,16 @@ class RoomService {
   /// ✅ الحصول على تعليقات ملف/مجلد في الغرفة
   Future<Map<String, dynamic>> listComments({
     required String roomId,
-    required String targetType, // 'file' or 'folder'
-    required String targetId,
+    required String targetType, // 'file', 'folder', or 'room'
+    String? targetId,
   }) async {
     final token = await StorageService.getToken();
-
-    final uri = Uri.parse("${ApiConfig.baseUrl}${ApiEndpoints.roomComments(roomId)}").replace(
-      queryParameters: {
-        'targetType': targetType,
-        'targetId': targetId,
-      },
-    );
+    final query = {
+      'targetType': targetType,
+      if (targetId != null && targetId.isNotEmpty) 'targetId': targetId,
+    };
+    final uri = Uri.parse("${ApiConfig.baseUrl}${ApiEndpoints.roomComments(roomId)}")
+        .replace(queryParameters: query);
 
     final response = await http.get(
       uri,

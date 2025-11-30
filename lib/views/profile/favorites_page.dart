@@ -199,7 +199,7 @@ class _FavoritesPageState extends State<FavoritesPage> {
                    originalName.endsWith('.aac') || originalName.endsWith('.ogg')) {
           Navigator.push(context, MaterialPageRoute(builder: (_) => AudioPlayerPage(audioUrl: url, fileName: originalName)));
         } else {
-          await OfficeFileOpener.openAnyFile(url: url, fileName: originalName, context: context);
+          await OfficeFileOpener.openAnyFile(url: url, context: context, token: _token);
         }
       } else {
         ScaffoldMessenger.of(context).showSnackBar(

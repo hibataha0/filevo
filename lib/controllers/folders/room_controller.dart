@@ -1,8 +1,11 @@
 import 'package:filevo/services/room_service.dart';
+import 'package:filevo/services/storage_service.dart';
+import 'package:filevo/services/user_service.dart';
 import 'package:flutter/material.dart';
 
 class RoomController with ChangeNotifier {
   final RoomService _service = RoomService();
+  final UserService _userService = UserService();
 
   bool isLoading = false;
   String? errorMessage;
@@ -17,6 +20,49 @@ class RoomController with ChangeNotifier {
     errorMessage = error;
     notifyListeners();
   }
+
+  Future<String?> _getCurrentUserId() async {
+    final cachedId = await StorageService.getUserId();
+    if (cachedId != null && cachedId.isNotEmpty) {
+      return cachedId;
+    }
+
+    try {
+      final result = await _userService.getLoggedUserData();
+      if (result['success'] == true) {
+        Map<String, dynamic>? data;
+        final rawData = result['data'];
+        if (rawData is Map<String, dynamic>) {
+          if (rawData['user'] is Map<String, dynamic>) {
+            data = Map<String, dynamic>.from(rawData['user'] as Map);
+          } else {
+            data = rawData;
+          }
+        }
+
+        final fetchedId = data?['_id']?.toString() ??
+            data?['id']?.toString() ??
+            data?['userId']?.toString();
+
+        if (fetchedId != null && fetchedId.isNotEmpty) {
+          await StorageService.saveUserId(fetchedId);
+          return fetchedId;
+        }
+      } else {
+        debugPrint('RoomController: getLoggedUserData failed - ${result['error']}');
+      }
+    } catch (e) {
+      debugPrint('RoomController: Failed to fetch user id: $e');
+    }
+
+    return null;
+  }
+
+  /// ✅ الحصول على معرف المستخدم الحالي (public method)
+  Future<String?> getCurrentUserId() async {
+    return await _getCurrentUserId();
+  }
+
 
   /// ✅ إنشاء غرفة مشاركة جديدة
   Future<Map<String, dynamic>?> createRoom({
@@ -134,35 +180,12 @@ class RoomController with ChangeNotifier {
   }
 
   /// ✅ حذف غرفة
-  Future<bool> deleteRoom(String roomId) async {
-    setLoading(true);
-    setError(null);
-    
-    try {
-      final response = await _service.deleteRoom(roomId);
-
-      if (response['message'] != null) {
-        // ✅ إزالة الغرفة من القائمة
-        rooms.removeWhere((room) => room['_id'] == roomId);
-        notifyListeners();
-        return true;
-      }
-
-      setError(response['message'] ?? 'فشل حذف الغرفة');
-      return false;
-    } catch (e) {
-      setError(e.toString());
-      return false;
-    } finally {
-      setLoading(false);
-    }
-  }
-
+  
   /// ✅ إرسال دعوة للمستخدم للانضمام للغرفة
   Future<Map<String, dynamic>?> sendInvitation({
     required String roomId,
-    required String receiverId,
-    String? permission,
+    required String email,
+    String? role,
     String? message,
   }) async {
     setLoading(true);
@@ -171,8 +194,8 @@ class RoomController with ChangeNotifier {
     try {
       final response = await _service.sendInvitation(
         roomId: roomId,
-        receiverId: receiverId,
-        permission: permission,
+        email: email,
+        role: role,
         message: message,
       );
 
@@ -262,21 +285,19 @@ class RoomController with ChangeNotifier {
     }
   }
 
-  /// ✅ تحديث صلاحيات عضو في الغرفة
-  Future<bool> updateMemberPermission({
+  /// ✅ تحديث دور عضو في الغرفة
+  Future<bool> updateMemberRole({
     required String roomId,
     required String memberId,
-    String? permission,
-    String? role,
+    required String role,
   }) async {
     setLoading(true);
     setError(null);
     
     try {
-      final response = await _service.updateMemberPermission(
+      final response = await _service.updateMemberRole(
         roomId: roomId,
         memberId: memberId,
-        permission: permission,
         role: role,
       );
 
@@ -292,7 +313,7 @@ class RoomController with ChangeNotifier {
         return true;
       }
 
-      setError(response['message'] ?? 'فشل تحديث صلاحيات العضو');
+      setError(response['message'] ?? 'فشل تحديث دور العضو');
       return false;
     } catch (e) {
       setError(e.toString());
@@ -338,6 +359,60 @@ class RoomController with ChangeNotifier {
     }
   }
 
+  /// ✅ حذف غرفة (فقط مالك الغرفة يمكنه حذفها)
+  Future<bool> deleteRoom(String roomId) async {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      final response = await _service.deleteRoom(roomId);
+
+      if (response['message'] != null) {
+        // ✅ إزالة الغرفة من القائمة
+        rooms.removeWhere((room) => 
+          room['_id']?.toString() == roomId.toString()
+        );
+        notifyListeners();
+        return true;
+      }
+
+      setError(response['message'] ?? 'فشل حذف الغرفة');
+      return false;
+    } catch (e) {
+      setError(e.toString());
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  /// ✅ مغادرة غرفة (أي عضو يمكنه مغادرة الغرفة، لكن المالك لا يمكنه)
+  Future<bool> leaveRoom(String roomId) async {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      final response = await _service.leaveRoom(roomId);
+
+      if (response['message'] != null) {
+        // ✅ إزالة الغرفة من القائمة
+        rooms.removeWhere((room) => 
+          room['_id']?.toString() == roomId.toString()
+        );
+        notifyListeners();
+        return true;
+      }
+
+      setError(response['message'] ?? 'فشل مغادرة الغرفة');
+      return false;
+    } catch (e) {
+      setError(e.toString());
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  }
+
   /// ✅ مشاركة ملف مع الغرفة
   Future<bool> shareFileWithRoom({
     required String roomId,
@@ -347,9 +422,17 @@ class RoomController with ChangeNotifier {
     setError(null);
     
     try {
+      print('Sharing file $fileId with room $roomId');
+      final sharedBy = await _getCurrentUserId();
+      if (sharedBy == null) {
+        setError('لا يمكن تحديد هوية المستخدم. يرجى إعادة تسجيل الدخول.');
+        return false;
+      }
+
       final response = await _service.shareFileWithRoom(
         roomId: roomId,
         fileId: fileId,
+        sharedBy: sharedBy,
       );
 
       if (response['room'] != null) {
@@ -361,10 +444,85 @@ class RoomController with ChangeNotifier {
           rooms[index] = response['room'] as Map<String, dynamic>;
           notifyListeners();
         }
+        print('File shared successfully with room.');
         return true;
       }
 
       setError(response['message'] ?? 'فشل مشاركة الملف');
+      print('Error sharing file with room: ${response['message']}');
+      return false;
+    } catch (e) {
+      setError(e.toString());
+      print('Exception sharing file with room: $e');
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  /// ✅ إزالة ملف من الغرفة
+  Future<bool> unshareFileFromRoom({
+    required String roomId,
+    required String fileId,
+  }) async {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      final response = await _service.unshareFileFromRoom(
+        roomId: roomId,
+        fileId: fileId,
+      );
+
+      if (response['room'] != null || response['message'] != null) {
+        // ✅ تحديث الغرفة في القائمة
+        final index = rooms.indexWhere((room) => 
+          room['_id']?.toString() == roomId.toString()
+        );
+        if (index != -1 && index < rooms.length) {
+          rooms[index] = response['room'] as Map<String, dynamic>? ?? rooms[index];
+          notifyListeners();
+        }
+        return true;
+      }
+
+      setError(response['message'] ?? 'فشل إزالة الملف من الغرفة');
+      return false;
+    } catch (e) {
+      setError(e.toString());
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  /// ✅ إزالة مجلد من الغرفة
+  Future<bool> unshareFolderFromRoom({
+    required String roomId,
+    required String folderId,
+  }) async {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      final response = await _service.unshareFolderFromRoom(
+        roomId: roomId,
+        folderId: folderId,
+      );
+
+      if (response['room'] != null || response['message'] != null) {
+        // ✅ تحديث الغرفة في القائمة
+        final index = rooms.indexWhere((room) => 
+          room['_id']?.toString() == roomId.toString()
+        );
+        if (index != -1 && index < rooms.length) {
+          rooms[index] = response['room'] as Map<String, dynamic>? ?? rooms[index];
+          notifyListeners();
+        }
+        return true;
+      }
+
+      setError(response['message'] ?? 'فشل إزالة المجلد من الغرفة');
       return false;
     } catch (e) {
       setError(e.toString());
@@ -383,9 +541,16 @@ class RoomController with ChangeNotifier {
     setError(null);
     
     try {
+      final sharedBy = await _getCurrentUserId();
+      if (sharedBy == null) {
+        setError('لا يمكن تحديد هوية المستخدم. يرجى إعادة تسجيل الدخول.');
+        return false;
+      }
+
       final response = await _service.shareFolderWithRoom(
         roomId: roomId,
         folderId: folderId,
+        sharedBy: sharedBy,
       );
 
       if (response['room'] != null) {
@@ -413,8 +578,8 @@ class RoomController with ChangeNotifier {
   /// ✅ إضافة تعليق على ملف/مجلد في الغرفة
   Future<Map<String, dynamic>?> addComment({
     required String roomId,
-    required String targetType, // 'file' or 'folder'
-    required String targetId,
+    required String targetType, // 'file', 'folder', أو 'room'
+    String? targetId,
     required String content,
   }) async {
     setLoading(true);
@@ -445,8 +610,8 @@ class RoomController with ChangeNotifier {
   /// ✅ الحصول على تعليقات ملف/مجلد في الغرفة
   Future<List<Map<String, dynamic>>> listComments({
     required String roomId,
-    required String targetType, // 'file' or 'folder'
-    required String targetId,
+    required String targetType, // 'file', 'folder', أو 'room'
+    String? targetId,
   }) async {
     setLoading(true);
     setError(null);

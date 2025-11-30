@@ -14,7 +14,6 @@ import 'package:filevo/views/settings/settings_view.dart';
 import 'package:filevo/services/storage_service.dart';
 import 'package:path/path.dart' as p;
 import 'package:permission_handler/permission_handler.dart';
-import 'package:filevo/utils/saf.dart';
 
 class MainPage extends StatefulWidget {
   const MainPage({Key? key}) : super(key: key);
@@ -60,7 +59,7 @@ class _MainPageState extends State<MainPage> {
     );
   }
 
-  // ✅ رفع مجلد كامل - لـ Android مع SAF support
+  // ✅ رفع مجلد - اختيار اسم المجلد أولاً ثم اختيار الملفات
   Future<void> _uploadFolderAndroid() async {
     if (_token == null) {
       _showSnackBar('⚠️ سجل دخول أولاً', isError: true);
@@ -68,125 +67,167 @@ class _MainPageState extends State<MainPage> {
     }
 
     try {
-      // ✅ طلب الصلاحيات أولاً (لـ Android 10 وأقل)
-      if (await _requestStoragePermissions()) {
-        print('✅ Storage permissions granted');
-        _showSnackBar('✅ تم منح الصلاحيات');
-      }
-
-      print('📁 Opening SAF folder picker (like Google Drive)...');
-      _showSnackBar('📁 جاري فتح مدير الملفات...');
-      
-      // ✅ استخدام SAF folder picker (مثل Google Drive) - يعمل على كل إصدارات Android
-      String? folderUri = await SAF.openFolderPicker();
-
-      if (folderUri == null) {
-        print('❌ User cancelled folder selection');
-        return;
-      }
-
-      print('✅ Selected folder URI: $folderUri');
-
-      // ✅ استخراج اسم المجلد من URI
-      String folderName = 'المجلد المختار';
-      try {
-        final uriParts = folderUri.split('/');
-        if (uriParts.isNotEmpty) {
-          folderName = uriParts.last;
-        }
-      } catch (e) {
-        print('⚠️ Could not extract folder name from URI: $e');
-      }
-      
-      // ✅ عرض dialog تأكيد
+      // ✅ 1. طلب اسم المجلد أولاً
+      final folderNameController = TextEditingController();
       final shouldProceed = await showDialog<bool>(
         context: context,
         builder: (context) => AlertDialog(
-          title: Text('رفع المجلد $folderName'),
-          content: const Text('هل تريد رفع هذا المجلد مع جميع محتوياته؟\n\nسيتم جمع جميع الملفات تلقائياً...'),
+          title: const Text('إنشاء مجلد جديد'),
+          content: TextField(
+            controller: folderNameController,
+            decoration: const InputDecoration(
+              hintText: 'أدخل اسم المجلد',
+              border: OutlineInputBorder(),
+              prefixIcon: Icon(Icons.folder),
+            ),
+            autofocus: true,
+            onSubmitted: (value) {
+              if (value.trim().isNotEmpty) {
+                Navigator.pop(context, true);
+              }
+            },
+          ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context, false),
               child: const Text('إلغاء'),
             ),
             TextButton(
-              onPressed: () => Navigator.pop(context, true),
-              child: const Text('رفع'),
+              onPressed: () {
+                if (folderNameController.text.trim().isNotEmpty) {
+                  Navigator.pop(context, true);
+                }
+              },
+              child: const Text('التالي'),
             ),
           ],
         ),
       );
-      
-      if (shouldProceed != true) return;
 
-      _showSnackBar('📁 جاري جمع الملفات من "$folderName"...');
-
-      // ✅ استخدام native code لقراءة الملفات من SAF URI (مثل Google Drive)
-      List<File> collectedFiles;
-      List<String> relativePaths;
-      int fileCount;
+      // ✅ قراءة النص من الـ controller قبل أي dispose
+      final folderName = shouldProceed == true 
+          ? folderNameController.text.trim() 
+          : '';
       
-      try {
-        final result = await SAF.loadFiles(folderUri);
-        collectedFiles = result.$1;
-        relativePaths = result.$2;
-        fileCount = result.$3;
-        
-        print('✅ Collected $fileCount files from SAF folder');
-      } catch (e) {
-        print('❌ Failed to read folder from SAF: $e');
-        
-        // ✅ عرض رسالة خطأ مفيدة للمستخدم
-        final errorMsg = e.toString();
-        if (mounted) {
-          showDialog(
-            context: context,
-            builder: (context) => AlertDialog(
-              title: const Text('⚠️ خطأ في قراءة المجلد'),
-              content: Text('فشل قراءة ملفات المجلد من SAF:\n\n$errorMsg'),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text('حسناً'),
-                ),
-              ],
-            ),
-          );
+      // ✅ انتظار قليل للتأكد من إغلاق الـ dialog تماماً
+      await Future.delayed(const Duration(milliseconds: 100));
+      
+      // ✅ الآن يمكن dispose بأمان
+      folderNameController.dispose();
+      
+      if (shouldProceed != true || folderName.isEmpty) {
+        if (shouldProceed == true && folderName.isEmpty) {
+          _showSnackBar('⚠️ يجب إدخال اسم المجلد', isError: true);
         }
-        
         return;
       }
 
-    if (collectedFiles.isEmpty) {
-      _showSnackBar('❌ لا يمكن قراءة ملفات المجلد. جرب مجلد آخر أو تأكد من الصلاحيات', isError: true);
-      return;
+      // ✅ 2. طلب الصلاحيات (لـ Android 10 وأقل)
+      if (await _requestStoragePermissions()) {
+        print('✅ Storage permissions granted');
+      }
+
+      // ✅ 3. فتح file picker لاختيار ملفات متعددة
+      _showSnackBar('📁 اختر الملفات التي تريد إضافتها للمجلد...');
+      
+      final result = await FilePicker.platform.pickFiles(
+        allowMultiple: true,
+        type: FileType.any,
+      );
+
+      if (result == null || result.files.isEmpty) {
+        print('❌ User cancelled file selection');
+        return;
+      }
+
+      print('✅ Selected ${result.files.length} files');
+
+      // ✅ 4. قراءة الملفات وتحويلها إلى bytes
+      _showSnackBar('📁 جاري قراءة الملفات...');
+
+      List<Map<String, dynamic>> filesData = [];
+      List<String> relativePaths = [];
+
+      for (var platformFile in result.files) {
+        try {
+          List<int> bytes;
+          String fileName = platformFile.name;
+          
+          if (platformFile.path != null) {
+            final file = File(platformFile.path!);
+            if (await file.exists()) {
+              bytes = await file.readAsBytes();
+              print('✅ Read file: $fileName (${bytes.length} bytes)');
+            } else {
+              print('⚠️ File does not exist: ${platformFile.path}');
+              continue;
+            }
+          } else if (platformFile.bytes != null) {
+            // ✅ إذا كان الملف في الذاكرة (مثل اختيار من Google Drive)
+            bytes = platformFile.bytes!;
+            print('✅ Read file from memory: $fileName (${bytes.length} bytes)');
+          } else {
+            print('⚠️ No file data available for: $fileName');
+            continue;
+          }
+          
+          filesData.add({
+            'bytes': bytes,
+            'fileName': fileName,
+          });
+          
+          // ✅ استخدام اسم الملف كـ relative path
+          relativePaths.add(fileName);
+        } catch (e) {
+          print('❌ Error reading file ${platformFile.name}: $e');
+        }
+      }
+
+      if (filesData.isEmpty) {
+        _showSnackBar('❌ لا يمكن قراءة الملفات المختارة', isError: true);
+        return;
+      }
+
+      print('✅ Successfully collected ${filesData.length} files');
+
+      // ✅ 5. رفع المجلد مع الملفات
+      final folderController = Provider.of<FolderController>(context, listen: false);
+      _showSnackBar('📁 جاري رفع المجلد "$folderName" (${filesData.length} ملف)...');
+
+      print('🔄 MainView: Calling uploadFolder...');
+      print('   Folder name: $folderName');
+      print('   Files count: ${filesData.length}');
+      print('   Relative paths count: ${relativePaths.length}');
+
+      final response = await folderController.uploadFolder(
+        folderName: folderName,
+        filesData: filesData,
+        relativePaths: relativePaths,
+      );
+
+      print('📥 MainView: Server response received');
+      print('📥 Response is null: ${response == null}');
+      print('📥 Response: $response');
+      print('📥 Controller error message: ${folderController.errorMessage}');
+
+      if (response != null && response['folder'] != null) {
+        print('✅ MainView: Upload successful!');
+        _showSnackBar('✅ تم رفع المجلد "$folderName" بنجاح! (${filesData.length} ملف)');
+      } else {
+        print('❌ MainView: Upload failed or response is null');
+        final errorMsg = response?['message'] ?? 
+                         response?['error'] ?? 
+                         folderController.errorMessage ?? 
+                         "فشل رفع المجلد";
+        print('❌ Error message: $errorMsg');
+        _showSnackBar('❌ $errorMsg', isError: true);
+      }
+
+    } catch (e) {
+      print('❌ Error in _uploadFolderAndroid: $e');
+      _showSnackBar('❌ خطأ في رفع المجلد: ${e.toString()}', isError: true);
     }
-
-    print('✅ Successfully collected $fileCount files from folder: $folderName');
-
-    final folderController = Provider.of<FolderController>(context, listen: false);
-    _showSnackBar('📁 جاري رفع المجلد "$folderName" ($fileCount ملف)...');
-
-    final response = await folderController.uploadFolder(
-      folderName: folderName,
-      files: collectedFiles,
-      relativePaths: relativePaths,
-    );
-
-    print('📥 Server response: $response');
-
-    if (response != null && response['folder'] != null) {
-      _showSnackBar('✅ تم رفع المجلد "$folderName" بنجاح! ($fileCount ملف)');
-    } else {
-      final errorMsg = response?['message'] ?? folderController.errorMessage ?? "فشل رفع المجلد";
-      _showSnackBar('❌ $errorMsg', isError: true);
-    }
-
-  } catch (e) {
-    print('❌ Error in _uploadFolderAndroid: $e');
-    _showSnackBar('❌ خطأ في رفع المجلد: ${e.toString()}', isError: true);
   }
-}
 
 // ✅ دالة لطلب صلاحيات التخزين
 Future<bool> _requestStoragePermissions() async {
@@ -623,8 +664,8 @@ Future<int> _estimateFileCount(String directoryPath) async {
       children: [
         ListTile(
           leading: Icon(Icons.folder, color: Colors.blue),
-          title: Text("رفع مجلد كامل"),
-          subtitle: Text("اختر مجلد مع جميع ملفاته"),
+          title: Text("رفع مجلد"),
+          subtitle: Text("اختر اسم المجلد ثم اختر الملفات"),
           onTap: () {
             Navigator.pop(context);
             _uploadFolderAndroid();

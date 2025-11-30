@@ -22,6 +22,9 @@ class FileController extends ChangeNotifier {
   Map<String, dynamic> _pagination = {};
   int _currentPage = 1;
   bool _hasMore = true;
+  
+  // ✅ إحصائيات التصنيفات
+  Map<String, Map<String, dynamic>> _categoriesStats = {};
 
   // Getters
   List<Map<String, dynamic>> get trashFiles => _trashFiles;
@@ -32,6 +35,14 @@ class FileController extends ChangeNotifier {
   Map<String, dynamic>? get fileDetails => _fileDetails;
   List<Map<String, dynamic>> get starredFiles => _starredFiles;
   Map<String, dynamic> get pagination => _pagination;
+  
+  // ✅ Getter لإحصائيات التصنيفات
+  Map<String, Map<String, dynamic>> get categoriesStats => _categoriesStats;
+  
+  // ✅ Getter لإحصائيات تصنيف معين
+  Map<String, dynamic>? getCategoryStats(String category) {
+    return _categoriesStats[category.toLowerCase()];
+  }
 
   @override
   void dispose() {
@@ -137,6 +148,74 @@ class FileController extends ChangeNotifier {
     }
   }
 
+  /// ✅ جلب جميع الملفات بدون parentFolder (مع pagination و category filter)
+  Future<Map<String, dynamic>?> getAllFiles({
+    required String token,
+    int page = 1,
+    int limit = 10,
+    String? category,
+    String? sortBy,
+    String? sortOrder,
+  }) async {
+    setLoading(true);
+    setError(null);
+    try {
+      final result = await _fileService.getAllFiles(
+        token: token,
+        page: page,
+        limit: limit,
+        category: category,
+        sortBy: sortBy,
+        sortOrder: sortOrder,
+      );
+
+      if (result['files'] != null) {
+        _uploadedFiles = List<Map<String, dynamic>>.from(result['files']);
+        _pagination = Map<String, dynamic>.from(result['pagination'] ?? {});
+        _currentPage = page;
+        _hasMore = result['pagination']?['hasNext'] ?? false;
+        _safeNotifyListeners();
+      }
+      
+      return result;
+    } catch (e) {
+      setError('خطأ في جلب الملفات: ${e.toString()}');
+      _uploadedFiles = [];
+      _pagination = {};
+      _safeNotifyListeners();
+      return null;
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  Future<bool> unshareFile({
+    required String fileId,
+    required List<String> userIds,
+    required String token,
+  }) async {
+    setLoading(true);
+    setError(null);
+    setSuccess(null);
+
+    try {
+      final result = await _fileService.unshareFile(
+        fileId: fileId,
+        userIds: userIds,
+        token: token,
+      );
+
+      setSuccess(result['message'] ?? 'تم إلغاء مشاركة الملف بنجاح');
+      return true;
+    } catch (e) {
+      setError('فشل في إلغاء مشاركة الملف: ${e.toString()}');
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  }
+
+
   /// جلب الملفات حسب التصنيف
   Future<List<Map<String, dynamic>>> getFilesByCategory({
     required String category,
@@ -165,6 +244,126 @@ class FileController extends ChangeNotifier {
     }
   }
 
+  /// جلب إحصائيات التصنيفات (عدد الملفات والحجم لكل تصنيف)
+  Future<Map<String, dynamic>?> getCategoriesStats({
+    required String token,
+  }) async {
+    // ✅ لا نضبط loading لأن هذا استدعاء خلفي ولا نريد أن يؤثر على UI
+    try {
+      final result = await _fileService.getCategoriesStats(token: token);
+      
+      // ✅ حفظ إحصائيات التصنيفات في Controller
+      if (result != null && result['categories'] != null) {
+        final statsList = result['categories'] as List;
+        
+        // ✅ تحديث _categoriesStats
+        _categoriesStats.clear();
+        for (var stat in statsList) {
+          final categoryName = (stat['category'] as String).toLowerCase();
+          dynamic filesCountValue = stat['filesCount'];
+          dynamic totalSizeValue = stat['totalSize'];
+          
+          int filesCount = 0;
+          int totalSize = 0;
+          
+          if (filesCountValue != null) {
+            if (filesCountValue is int) {
+              filesCount = filesCountValue;
+            } else if (filesCountValue is num) {
+              filesCount = filesCountValue.toInt();
+            } else if (filesCountValue is String) {
+              filesCount = int.tryParse(filesCountValue) ?? 0;
+            }
+          }
+          
+          if (totalSizeValue != null) {
+            if (totalSizeValue is int) {
+              totalSize = totalSizeValue;
+            } else if (totalSizeValue is num) {
+              totalSize = totalSizeValue.toInt();
+            } else if (totalSizeValue is String) {
+              totalSize = int.tryParse(totalSizeValue) ?? 0;
+            }
+          }
+          
+          _categoriesStats[categoryName] = {
+            'filesCount': filesCount,
+            'totalSize': totalSize,
+            'category': stat['category'] as String,
+          };
+        }
+        
+        // ✅ إشعار الـ listeners بالتحديث
+        _safeNotifyListeners();
+      }
+      
+      return result;
+    } catch (e) {
+      // ✅ لا نضبط error لأن هذا استدعاء اختياري - سنستخدم القيم الافتراضية
+      return null;
+    }
+  }
+
+  /// 📊 جلب إحصائيات التصنيفات في الجذر فقط (عدد الملفات والحجم لكل تصنيف)
+  Future<Map<String, dynamic>?> getRootCategoriesStats({
+    required String token,
+  }) async {
+    // ✅ لا نضبط loading لأن هذا استدعاء خلفي ولا نريد أن يؤثر على UI
+    try {
+      final result = await _fileService.getRootCategoriesStats(token: token);
+      
+      // ✅ حفظ إحصائيات التصنيفات في Controller
+      if (result != null && result['categories'] != null) {
+        final statsList = result['categories'] as List;
+        
+        // ✅ تحديث _categoriesStats
+        _categoriesStats.clear();
+        for (var stat in statsList) {
+          final categoryName = (stat['category'] as String).toLowerCase();
+          dynamic filesCountValue = stat['filesCount'];
+          dynamic totalSizeValue = stat['totalSize'];
+          
+          int filesCount = 0;
+          int totalSize = 0;
+          
+          if (filesCountValue != null) {
+            if (filesCountValue is int) {
+              filesCount = filesCountValue;
+            } else if (filesCountValue is num) {
+              filesCount = filesCountValue.toInt();
+            } else if (filesCountValue is String) {
+              filesCount = int.tryParse(filesCountValue) ?? 0;
+            }
+          }
+          
+          if (totalSizeValue != null) {
+            if (totalSizeValue is int) {
+              totalSize = totalSizeValue;
+            } else if (totalSizeValue is num) {
+              totalSize = totalSizeValue.toInt();
+            } else if (totalSizeValue is String) {
+              totalSize = int.tryParse(totalSizeValue) ?? 0;
+            }
+          }
+          
+          _categoriesStats[categoryName] = {
+            'filesCount': filesCount,
+            'totalSize': totalSize,
+            'category': stat['category'] as String,
+          };
+        }
+        
+        // ✅ إشعار الـ listeners بالتحديث
+        _safeNotifyListeners();
+      }
+      
+      return result;
+    } catch (e) {
+      print('⚠️ Error fetching root categories stats: $e');
+      return null;
+    }
+  }
+
   /// جلب تفاصيل ملف واحد
   Future<Map<String, dynamic>?> getFileDetails({
     required String fileId,
@@ -178,6 +377,7 @@ class FileController extends ChangeNotifier {
       if (data != null) {
         _fileDetails = data;
         _safeNotifyListeners();
+        print('Fetched file details: $_fileDetails');
         return _fileDetails;
       } else {
         setError('فشل في جلب تفاصيل الملف');
@@ -185,6 +385,31 @@ class FileController extends ChangeNotifier {
       }
     } catch (e) {
       setError('خطأ في جلب تفاصيل الملف: ${e.toString()}');
+      return null;
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  Future<Map<String, dynamic>?> getSharedFileDetailsInRoom({
+    required String fileId,
+    required String token,
+  }) async {
+    setLoading(true);
+    setError(null);
+    clearFileDetails();
+    try {
+      final data = await _fileService.getSharedFileDetailsInRoom(fileId: fileId, token: token);
+      if (data != null) {
+        _fileDetails = data;
+        _safeNotifyListeners();
+        return _fileDetails;
+      } else {
+        setError('فشل في جلب تفاصيل الملف المشترك في الروم');
+        return null;
+      }
+    } catch (e) {
+      setError('خطأ في جلب تفاصيل الملف المشترك في الروم: ${e.toString()}');
       return null;
     } finally {
       setLoading(false);
@@ -259,37 +484,155 @@ class FileController extends ChangeNotifier {
     }
   }
 
-  Future<bool> toggleStar({required String fileId, required String token}) async {
-  try {
-    final result = await _fileService.toggleStarFile(fileId: fileId, token: token);
-    
-    print('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-    print('🔍 Full Response: $result');
-    print('🔍 isStarred: ${result['file']?['isStarred']}');
-    print('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-    
-    if (result['success'] == true && result['file'] != null) {
-      final updatedFile = Map<String, dynamic>.from(result['file']);
-      final index = _uploadedFiles.indexWhere((f) => f['_id'] == fileId);
-      if (index != -1) {
-        _uploadedFiles[index] = updatedFile;
+  /// 🔄 نقل ملف من مجلد إلى آخر
+  Future<bool> moveFile({
+    required String fileId,
+    required String token,
+    String? targetFolderId, // null للجذر أو folderId للمجلد
+  }) async {
+    setLoading(true);
+    setError(null);
+    setSuccess(null);
+    try {
+      final result = await _fileService.moveFile(
+        fileId: fileId,
+        token: token,
+        targetFolderId: targetFolderId,
+      );
+
+      if (result['success'] == true) {
+        if (result['file'] != null) {
+          final movedFile = Map<String, dynamic>.from(result['file']);
+          final newParentFolderId = movedFile['parentFolderId'];
+          final oldParentFolderId = result['fromFolder'];
+          
+          // ✅ التحقق من الملف القديم في _uploadedFiles
+          final index = _uploadedFiles.indexWhere((f) => f['_id']?.toString() == fileId.toString());
+          final oldFile = index != -1 ? _uploadedFiles[index] : null;
+          
+          // ✅ التحقق من الموقع القديم: إذا كان oldParentFolderId null أو كان الملف في _uploadedFiles بدون parentFolderId
+          final wasInRoot = oldParentFolderId == null || 
+                           oldParentFolderId == 'null' || 
+                           oldParentFolderId == '' ||
+                           (oldFile != null && (oldFile['parentFolderId'] == null || oldFile['parentFolderId'] == 'null' || oldFile['parentFolderId'] == ''));
+          
+          // ✅ التحقق من الموقع الجديد
+          final isNowInRoot = newParentFolderId == null || 
+                             newParentFolderId == 'null' || 
+                             newParentFolderId == '' ||
+                             newParentFolderId.toString().isEmpty;
+          
+          // ✅ إذا كان الملف في الجذر ونُقل لمجلد، يجب إزالته من _uploadedFiles
+          if (wasInRoot && !isNowInRoot) {
+            // ✅ إزالة الملف من _uploadedFiles لأنه لم يعد في الجذر
+            if (index != -1) {
+              _uploadedFiles.removeAt(index);
+              print('✅ تم إزالة الملف من _uploadedFiles بعد نقله من الجذر لمجلد');
+            }
+          }
+          // ✅ إذا كان الملف في مجلد ونُقل للجذر، يجب إضافته لـ _uploadedFiles
+          else if (!wasInRoot && isNowInRoot) {
+            // ✅ إضافة الملف لـ _uploadedFiles لأنه الآن في الجذر
+            if (index == -1) {
+              _uploadedFiles.add(movedFile);
+              print('✅ تم إضافة الملف لـ _uploadedFiles بعد نقله للجذر');
+            } else {
+              _uploadedFiles[index] = movedFile;
+            }
+          }
+          // ✅ إذا كان في مجلد ونُقل لمجلد آخر، أو في الجذر ونُقل للجذر، فقط تحديث البيانات
+          else if (index != -1) {
+            _uploadedFiles[index] = movedFile;
+          }
+          
+          // ✅ تحديث تفاصيل الملف إذا كان هو الملف الحالي
+          if (_fileDetails != null && _fileDetails!['_id']?.toString() == fileId.toString()) {
+            _fileDetails = movedFile;
+          }
+          
+          // ✅ إذا كان الملف في المفضلة، قم بتحديثه هناك أيضاً
+          final starredIndex = _starredFiles.indexWhere((f) => f['_id']?.toString() == fileId.toString());
+          if (starredIndex != -1) {
+            _starredFiles[starredIndex] = movedFile;
+          }
+        }
+        
+        // ✅ إعادة جلب إحصائيات التصنيفات بعد نقل الملف
+        try {
+          await getRootCategoriesStats(token: token);
+          print('✅ تم تحديث إحصائيات التصنيفات في الجذر بعد نقل الملف');
+        } catch (e) {
+          // ✅ في حالة الخطأ، نستمر بدون إيقاف العملية
+          print('⚠️ Error refreshing categories stats: $e');
+        }
+        
+        setSuccess(result['message'] ?? 'تم نقل الملف بنجاح');
+        _safeNotifyListeners();
+        return true;
+      } else {
+        setError(result['message'] ?? 'فشل في نقل الملف');
+        return false;
+      }
+    } catch (e) {
+      setError('خطأ في نقل الملف: ${e.toString()}');
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  Future<Map<String, dynamic>> toggleStar({required String fileId, required String token}) async {
+    // ✅ لا نستخدم setLoading لأن هذا تحديث بسيط لا يحتاج refresh للصفحة كلها
+    setError(null);
+
+    try {
+      final result = await _fileService.toggleStarFile(fileId: fileId, token: token);
+      
+      if (result['success'] == true && result['file'] != null) {
+        final updatedFile = Map<String, dynamic>.from(result['file']);
+        final isStarred = updatedFile['isStarred'] ?? false;
+        
+        // ✅ تحديث قائمة الملفات المرفوعة
+        final uploadedIndex = _uploadedFiles.indexWhere((f) => f['_id'] == fileId);
+        if (uploadedIndex != -1) {
+          _uploadedFiles[uploadedIndex] = updatedFile;
+        }
+        
+        // ✅ تحديث قائمة المفضلة فوراً
+        final existingIndex = _starredFiles.indexWhere((f) => f['_id'] == fileId);
+        
+        if (isStarred) {
+          // ✅ إذا تم إضافة للمفضلة، أضفه للقائمة إذا لم يكن موجوداً
+          if (existingIndex == -1) {
+            _starredFiles.insert(0, updatedFile); // ✅ إضافة في البداية
+          } else {
+            // ✅ تحديث الملف الموجود
+            _starredFiles[existingIndex] = updatedFile;
+          }
+        } else {
+          // ✅ إذا تم إزالته من المفضلة، احذفه من القائمة
+          if (existingIndex != -1) {
+            _starredFiles.removeAt(existingIndex);
+          }
+        }
+        
+        _safeNotifyListeners();
+        return {
+          'success': true,
+          'isStarred': isStarred,
+          'file': updatedFile,
+        };
       }
       
-      // ✅ نرجع القيمة الحقيقية من الـ backend
-      final isStarred = updatedFile['isStarred'] ?? false;
-      print('✅ Returning isStarred: $isStarred');
-      return isStarred;
-      
-    } else {
-      setError(result['message'] ?? 'فشل في تحديث حالة النجمة');
-      return false; // ⚠️ هنا المشكلة - بيرجع false دايماً
+      final errorMsg = result['message'] ?? 'فشل في تحديث حالة النجمة';
+      setError(errorMsg);
+      return {'success': false, 'isStarred': false, 'message': errorMsg};
+    } catch (e) {
+      final errorMsg = 'خطأ في تحديث حالة النجمة: ${e.toString()}';
+      setError(errorMsg);
+      return {'success': false, 'isStarred': false, 'message': errorMsg};
     }
-  } catch (e) {
-    print('❌ Exception: $e');
-    setError('خطأ في تحديث حالة النجمة: ${e.toString()}');
-    return false;
   }
-}
 
   /// جلب الملفات المفضلة
   Future<void> getStarredFiles({
@@ -329,7 +672,7 @@ class FileController extends ChangeNotifier {
           _starredFiles = newFiles;
         }
 
-        notifyListeners();
+        _safeNotifyListeners();
       } else {
         setError(result['message'] ?? 'فشل في جلب الملفات المفضلة');
       }

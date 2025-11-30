@@ -364,15 +364,24 @@ class _FavoritesSectionState extends State<FavoritesSection> {
       ),
     );
 
-    final success = await controller.toggleStar(fileId: fileId, token: _token!);
+    final result = await controller.toggleStar(fileId: fileId, token: _token!);
 
     ScaffoldMessenger.of(context).hideCurrentSnackBar();
 
-    if (success) {
-      await controller.getStarredFiles(token: _token!, limit: 6);
-      _showSnack('تمت الإزالة من المفضلة', Colors.green);
+    if (result['success'] == true) {
+      final isStarred = result['isStarred'] as bool? ?? false;
+      // ✅ لا حاجة لإعادة تحميل القائمة - التحديث يحدث تلقائياً في toggleStar
+      _showSnack(
+        isStarred
+          ? '✅ تم إضافة الملف إلى المفضلة'
+          : '✅ تم إزالة الملف من المفضلة',
+        Colors.green,
+      );
     } else {
-      _showSnack('فشل في الإزالة من المفضلة', Colors.red);
+      _showSnack(
+        result['message'] ?? 'فشل في تحديث حالة المفضلة',
+        Colors.red,
+      );
     }
   }
 

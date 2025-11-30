@@ -51,39 +51,59 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
     super.dispose();
   }
 
-  Future<void> _loadPdf() async {
+  Future<void> _loadPdf({bool preferWebView = false}) async {
     try {
-      // ✅ محاولة استخدام WebView مع PDF.js للعرض المباشر أولاً
-      try {
-        // التحقق من أن URL صالح
-        final testResponse = await http.head(Uri.parse(widget.pdfUrl));
-        if (testResponse.statusCode == 200 || testResponse.statusCode == 206) {
-          // استخدام WebView للعرض المباشر بدون تحميل كامل
-          if (mounted) {
-            setState(() {
-              useWebView = true;
-              isLoading = false;
-            });
-            _initializeWebView();
-            return;
-          }
+      print('📄 Loading PDF from: ${widget.pdfUrl}');
+      
+      // ✅ إذا كان preferWebView = true (مثل عند البحث)، استخدم WebView مباشرة
+      if (preferWebView) {
+        print('🌐 Using WebView directly for search support...');
+        if (mounted) {
+          setState(() {
+            useWebView = true;
+            isLoading = false;
+          });
+          _initializeWebView();
+          return;
         }
-      } catch (e) {
-        print('⚠️ WebView PDF.js not available, falling back to local download');
       }
-
-      // ✅ Fallback: تحميل PDF محلياً (للأجهزة التي لا تدعم WebView PDF.js)
-      final response = await http.get(Uri.parse(widget.pdfUrl));
+      
+      // ✅ تحميل PDF محلياً مباشرة (أكثر موثوقية)
+      print('📥 Downloading PDF to local storage...');
+      final response = await http.get(Uri.parse(widget.pdfUrl)).timeout(Duration(seconds: 60));
+      
       if (response.statusCode == 200) {
-        // التحقق من أن الملف PDF صالح
+        // ✅ التحقق من أن الملف PDF صالح
         final bytes = response.bodyBytes;
-        if (bytes.length < 4 || String.fromCharCodes(bytes.sublist(0, 4)) != '%PDF') {
-          throw Exception('الملف ليس PDF صالح أو تالف');
+        if (bytes.length < 4) {
+          throw Exception('الملف صغير جداً أو تالف');
+        }
+        
+        final signature = String.fromCharCodes(bytes.sublist(0, 4));
+        if (signature != '%PDF') {
+          print('⚠️ File signature: $signature (expected %PDF)');
+          print('⚠️ File may not be a valid PDF, attempting to open anyway...');
+          // ✅ قد يكون الملف مشفر أو في صيغة خاصة
+        } else {
+          print('✅ PDF signature verified: %PDF');
+          
+          // ✅ التحقق الإضافي من صحة PDF (قراءة بعض البيانات)
+          try {
+            // ✅ محاولة قراءة version من البايتات (عادة في السطر الأول)
+            final header = String.fromCharCodes(bytes.sublist(0, 100));
+            if (!header.contains('PDF-')) {
+              print('⚠️ PDF header may be invalid');
+            }
+          } catch (e) {
+            print('⚠️ Could not verify PDF header: $e');
+          }
         }
         
         final dir = await getTemporaryDirectory();
         final file = File("${dir.path}/temp_${DateTime.now().millisecondsSinceEpoch}.pdf");
         await file.writeAsBytes(bytes);
+        
+        print('✅ PDF downloaded successfully to: ${file.path} (${bytes.length} bytes)');
         
         if (mounted) {
           setState(() {
@@ -93,7 +113,7 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
           });
         }
       } else {
-        throw Exception('HTTP ${response.statusCode}');
+        throw Exception('HTTP ${response.statusCode}: ${response.reasonPhrase}');
       }
     } catch (e) {
       print("❌ Error loading PDF: $e");
@@ -103,16 +123,65 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
           hasError = true;
         });
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('فشل تحميل ملف PDF: ${e.toString()}')),
+          SnackBar(
+            content: Text('فشل تحميل ملف PDF: ${e.toString()}'),
+            action: SnackBarAction(
+              label: 'إعادة المحاولة',
+              onPressed: _retryLoading,
+            ),
+          ),
         );
       }
     }
   }
 
-  void _initializeWebView() {
-    // ✅ استخدام PDF.js مع WebView للعرض المباشر
-    final encodedUrl = Uri.encodeComponent(widget.pdfUrl);
-    final pdfJsUrl = 'https://mozilla.github.io/pdf.js/web/viewer.html?file=$encodedUrl';
+  // ✅ محاولة استخدام WebView كـ fallback عند فشل flutter_pdfview
+  Future<void> _tryWebViewFallback() async {
+    try {
+      print('🌐 Trying WebView fallback for PDF...');
+      if (mounted) {
+        setState(() {
+          isLoading = true;
+          hasError = false;
+          useWebView = true;
+        });
+        _initializeWebView();
+      }
+    } catch (e) {
+      print('❌ WebView fallback failed: $e');
+      if (mounted) {
+        setState(() {
+          hasError = true;
+          isLoading = false;
+          useWebView = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('فشل فتح الملف. قد يكون تالفاً أو مشفراً.'),
+            duration: Duration(seconds: 5),
+            action: SnackBarAction(
+              label: 'إعادة المحاولة',
+              onPressed: _retryLoading,
+            ),
+          ),
+        );
+      }
+    }
+  }
+
+  void _initializeWebView() async {
+    // ✅ استخدام PDF.js مع WebView للعرض المباشر مع دعم البحث
+    // ✅ استخدام URL المباشر من الـ server (أفضل من الملف المحلي)
+    final pdfUrl = widget.pdfUrl;
+    final encodedUrl = Uri.encodeComponent(pdfUrl);
+    
+    // ✅ استخدام نسخة مستقرة من PDF.js من CDN
+    // ✅ إضافة #toolbar=0 لإخفاء شريط الأدوات الافتراضي
+    final pdfJsUrl = 'https://mozilla.github.io/pdf.js/web/viewer.html?file=$encodedUrl#toolbar=0';
+    
+    print('🌐 Initializing WebView with PDF.js');
+    print('  - PDF URL: $pdfUrl');
+    print('  - PDF.js URL: $pdfJsUrl');
     
     webViewController = WebViewController()
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
@@ -127,6 +196,7 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
             }
           },
           onPageStarted: (String url) {
+            print('📄 WebView page started: $url');
             if (mounted) {
               setState(() {
                 isLoading = true;
@@ -134,24 +204,71 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
             }
           },
           onPageFinished: (String url) {
+            print('✅ WebView page finished: $url');
             if (mounted) {
               setState(() {
                 isLoading = false;
               });
+              
+              // ✅ التأكد من أن PDF.js جاهز
+              webViewController?.runJavaScript('''
+                (function() {
+                  if (window.PDFViewerApplication) {
+                    console.log('PDF.js is ready');
+                  } else {
+                    console.log('Waiting for PDF.js...');
+                    setTimeout(function() {
+                      if (window.PDFViewerApplication) {
+                        console.log('PDF.js loaded');
+                      }
+                    }, 1000);
+                  }
+                })();
+              ''');
             }
           },
           onWebResourceError: (WebResourceError error) {
-            print('❌ WebView Error: ${error.description}');
-            if (mounted) {
-              setState(() {
-                hasError = true;
-                isLoading = false;
-              });
+            print('❌ WebView Error: ${error.description} (Code: ${error.errorCode})');
+            // ✅ إذا فشل WebView، حاول التحميل المحلي
+            if (mounted && error.errorCode != -3) { // -3 = navigation cancelled
+              _fallbackToLocalDownload();
             }
           },
         ),
       )
       ..loadRequest(Uri.parse(pdfJsUrl));
+  }
+  
+  // ✅ Fallback: تحميل PDF محلياً إذا فشل WebView
+  Future<void> _fallbackToLocalDownload() async {
+    print('📥 Falling back to local download...');
+    try {
+      final response = await http.get(Uri.parse(widget.pdfUrl)).timeout(Duration(seconds: 60));
+      
+      if (response.statusCode == 200) {
+        final bytes = response.bodyBytes;
+        final dir = await getTemporaryDirectory();
+        final file = File("${dir.path}/temp_${DateTime.now().millisecondsSinceEpoch}.pdf");
+        await file.writeAsBytes(bytes);
+        
+        if (mounted) {
+          setState(() {
+            localPath = file.path;
+            useWebView = false;
+            isLoading = false;
+            hasError = false;
+          });
+        }
+      }
+    } catch (e) {
+      print('❌ Fallback download failed: $e');
+      if (mounted) {
+        setState(() {
+          hasError = true;
+          isLoading = false;
+        });
+      }
+    }
   }
 
   void toggleFullScreen() {
@@ -219,7 +336,7 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
     }
   }
 
-  // دالة البحث البديلة - تظهر اقتراحات
+  // ✅ دالة البحث - عرض رسالة توضيحية
   void _performSearch(String text) {
     if (text.isEmpty) {
       setState(() {
@@ -229,16 +346,26 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
       return;
     }
 
+    // ✅ flutter_pdfview لا يدعم البحث بشكل مباشر
+    // ✅ عرض رسالة توضيحية للمستخدم
     setState(() {
       _isSearching = true;
-      // هذه مجرد اقتراحات وهمية للتوضيح
       _searchSuggestions = [
-        'نتيجة بحث عن "$text" في الصفحة ${currentPage + 1}',
-        'العثور على "$text" في الصفحة ${(currentPage + 2).clamp(1, pages)}',
-        'مطابقة "$text" في المستند'
+        'البحث في PDF غير متاح حالياً',
+        'flutter_pdfview لا يدعم البحث بشكل مباشر',
+        'يمكنك فتح الملف في تطبيق خارجي للبحث'
       ];
     });
+    
+    // ✅ عرض SnackBar مع خيار فتح في تطبيق خارجي
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('البحث في PDF غير متاح حالياً. يمكنك فتح الملف في تطبيق خارجي للبحث.'),
+        duration: Duration(seconds: 4),
+      ),
+    );
   }
+
 
   void _showSearchHelp() {
     showDialog(
@@ -318,12 +445,12 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
               onPressed: _retryLoading,
               tooltip: 'إعادة المحاولة',
             ),
-          // زر البحث (فقط للعرض المحلي)
-          if ((localPath != null || useWebView))
+          // زر البحث
+          if (localPath != null)
             IconButton(
               icon: const Icon(Icons.search),
-              onPressed: useWebView ? null : _toggleSearchBar, // WebView له بحث مدمج
-              tooltip: useWebView ? 'استخدم البحث المدمج في PDF.js' : 'بحث في المستند',
+              onPressed: _toggleSearchBar,
+              tooltip: 'بحث في المستند',
             ),
           // زر إظهار/إخفاء شريط التنقل (فقط للعرض المحلي)
           if ((localPath != null || useWebView) && pages > 1 && !useWebView)
@@ -402,19 +529,10 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
 
     return Stack(
       children: [
-        // ✅ عرض PDF باستخدام WebView للعرض المباشر
+        // ✅ عرض PDF باستخدام WebView (إذا فشل flutter_pdfview)
         if (useWebView && webViewController != null)
-          GestureDetector(
-            onTap: () {
-              if (isFullScreen) {
-                toggleFullScreen();
-              } else {
-                _toggleNavigationBar();
-              }
-            },
-            child: WebViewWidget(controller: webViewController!),
-          )
-        // ✅ Fallback: عرض PDF محلياً
+          WebViewWidget(controller: webViewController!)
+        // ✅ عرض PDF محلياً باستخدام flutter_pdfview
         else if (localPath != null)
           GestureDetector(
             onTap: () {
@@ -447,18 +565,59 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
                 });
               },
               onError: (error) {
-                print(error);
+                print('❌ PDF Error: $error');
                 if (mounted) {
+                  // ✅ عرض رسالة خطأ واضحة مع خيارات
+                  final errorMessage = error.toString().toLowerCase();
+                  String userMessage = 'حدث خطأ أثناء عرض الملف';
+                  
+                  if (errorMessage.contains('corrupted') || 
+                      errorMessage.contains('not in pdf format') ||
+                      errorMessage.contains('cannot create document')) {
+                    userMessage = 'الملف PDF تالف أو مشفر. جاري المحاولة بطريقة أخرى...';
+                    
+                    // ✅ محاولة استخدام WebView مع PDF.js كـ fallback
+                    print('🔄 Attempting fallback to WebView with PDF.js...');
+                    _tryWebViewFallback();
+                    return; // ✅ لا نعرض رسالة خطأ إذا كنا نحاول WebView
+                  }
+                  
                   setState(() {
                     hasError = true;
                   });
+                  
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('حدث خطأ أثناء عرض الملف')),
+                    SnackBar(
+                      content: Text(userMessage),
+                      duration: Duration(seconds: 5),
+                      action: SnackBarAction(
+                        label: 'إعادة المحاولة',
+                        onPressed: _retryLoading,
+                      ),
+                    ),
                   );
                 }
               },
               onPageError: (page, error) {
-                print('Error on page $page: $error');
+                print('❌ Error on page $page: $error');
+                if (mounted) {
+                  // ✅ إذا كان الخطأ في الصفحة الأولى، قد يكون الملف تالف
+                  if (page == 0) {
+                    setState(() {
+                      hasError = true;
+                    });
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('الملف PDF قد يكون تالفاً أو مشفراً. الصفحة $page: $error'),
+                        duration: Duration(seconds: 5),
+                        action: SnackBarAction(
+                          label: 'إعادة المحاولة',
+                          onPressed: _retryLoading,
+                        ),
+                      ),
+                    );
+                  }
+                }
               },
             ),
           ),
@@ -552,10 +711,30 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
                           )
                         : null,
                   ),
-                  onChanged: _performSearch,
+                  onChanged: (text) {
+                    _performSearch(text);
+                  },
+                  onSubmitted: (text) {
+                    _performSearch(text);
+                  },
                 ),
               ),
               const SizedBox(width: 8),
+              // ✅ زر البحث التالي (إذا كان WebView نشط)
+              if (useWebView)
+                IconButton(
+                  icon: const Icon(Icons.arrow_forward),
+                  onPressed: () {
+                    if (_searchController.text.isNotEmpty) {
+                      webViewController?.runJavaScript('''
+                        if (window.PDFViewerApplication && window.PDFViewerApplication.findBar) {
+                          window.PDFViewerApplication.findBar.findNextButton.click();
+                        }
+                      ''');
+                    }
+                  },
+                  tooltip: 'التالي',
+                ),
               IconButton(
                 icon: const Icon(Icons.help_outline),
                 onPressed: _showSearchHelp,

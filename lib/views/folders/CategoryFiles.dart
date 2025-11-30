@@ -585,9 +585,12 @@ class _CategoryPageState extends State<CategoryPage> {
                           children: [
                             _buildFileCountCard(fileController.uploadedFiles.length),
                             Expanded(
-                              child: _isGridView
-                                  ? FilesGrid(
-                                      files: fileController.uploadedFiles
+                              child: Consumer<FileController>(
+                                builder: (context, fileController, child) {
+                                  // ✅ استخدام Consumer للاستماع للتغييرات في FileController
+                                  return _isGridView
+                                      ? FilesGrid(
+                                          files: fileController.uploadedFiles
                                           .where((f) => f['path'] != null && (f['path'] as String).isNotEmpty)
                                           .map((f) {
                                             final fileName = f['name']?.toString() ?? 'ملف بدون اسم';
@@ -612,6 +615,21 @@ class _CategoryPageState extends State<CategoryPage> {
                                         print('Original data: $originalData');
                                         _handleFileTap(originalData, context);
                                       },
+                                      onFileRemoved: () async {
+                                        // ✅ إعادة تحميل الملفات بعد نقل الملف
+                                        if (mounted && _token != null && _token!.isNotEmpty) {
+                                          final fileController = Provider.of<FileController>(context, listen: false);
+                                          // ✅ إعادة جلب الملفات من API (من الجذر فقط)
+                                          await fileController.getFilesByCategory(
+                                            category: widget.category,
+                                            token: _token!,
+                                            parentFolderId: null, // ✅ فقط الملفات من الجذر
+                                          );
+                                          if (mounted) {
+                                            setState(() {}); // ✅ تحديث الواجهة
+                                          }
+                                        }
+                                      },
                                     )
                                   : FilesListView(
                                       items: fileController.uploadedFiles
@@ -631,7 +649,24 @@ class _CategoryPageState extends State<CategoryPage> {
                                           })
                                           .toList(),
                                       onItemTap: (item) => _handleFileTap(item, context),
-                                    ),
+                                      onFileRemoved: () async {
+                                        // ✅ إعادة تحميل الملفات بعد نقل الملف
+                                        if (mounted && _token != null && _token!.isNotEmpty) {
+                                          final fileController = Provider.of<FileController>(context, listen: false);
+                                          // ✅ إعادة جلب الملفات من API
+                                          await fileController.getFilesByCategory(
+                                            category: widget.category,
+                                            token: _token!,
+                                            parentFolderId: null, // ✅ فقط الملفات من الجذر
+                                          );
+                                          if (mounted) {
+                                            setState(() {}); // ✅ تحديث الواجهة
+                                          }
+                                        }
+                                      },
+                                    );
+                                },
+                              ),
                             ),
                           ],
                         ),
@@ -655,12 +690,59 @@ class _CategoryPageState extends State<CategoryPage> {
       return;
     }
        print(file['originalData']);
-    // استخدام الاسم الأصلي إذا كان متوفراً
+    // ✅ استخدام الاسم الأصلي إذا كان متوفراً
     final originalName = file['name'] as String?;
     print('Original name: $originalName');
-    final name = originalName ?? file['title']?.toString().toLowerCase() ?? '';
-    print(name);
+    final name = (originalName ?? file['title']?.toString() ?? '').toLowerCase();
+    print('Name (lowercase): $name');
     final fileName = originalName ?? file['title']?.toString() ?? 'ملف بدون اسم';
+    
+    // ✅ الحصول على extension من عدة مصادر
+    String? getFileExtension() {
+      // 1. من originalData إذا كان متوفراً
+      if (file['originalData'] is Map) {
+        final originalData = file['originalData'] as Map<String, dynamic>;
+        final origName = originalData['name']?.toString();
+        if (origName != null && origName.contains('.')) {
+          return origName.substring(origName.lastIndexOf('.') + 1).toLowerCase();
+        }
+        // 2. من contentType أو mimeType
+        final contentType = originalData['contentType']?.toString() ?? 
+                           originalData['mimeType']?.toString();
+        if (contentType != null) {
+          if (contentType.contains('image')) {
+            if (contentType.contains('jpeg')) return 'jpg';
+            if (contentType.contains('png')) return 'png';
+            if (contentType.contains('gif')) return 'gif';
+            if (contentType.contains('webp')) return 'webp';
+            if (contentType.contains('bmp')) return 'bmp';
+          }
+          if (contentType.contains('video')) {
+            if (contentType.contains('mp4')) return 'mp4';
+            if (contentType.contains('quicktime')) return 'mov';
+            if (contentType.contains('avi')) return 'avi';
+          }
+          if (contentType.contains('audio')) {
+            if (contentType.contains('mpeg')) return 'mp3';
+            if (contentType.contains('wav')) return 'wav';
+            if (contentType.contains('aac')) return 'aac';
+          }
+          if (contentType.contains('pdf')) return 'pdf';
+        }
+      }
+      // 3. من الاسم
+      if (name.contains('.')) {
+        return name.substring(name.lastIndexOf('.') + 1);
+      }
+      // 4. من filePath
+      if (filePath.contains('.')) {
+        return filePath.substring(filePath.lastIndexOf('.') + 1).toLowerCase();
+      }
+      return null;
+    }
+    
+    final extension = getFileExtension();
+    print('File extension: $extension');
 
     final url = getFileUrl(filePath);
 
@@ -685,28 +767,46 @@ class _CategoryPageState extends State<CategoryPage> {
       if (response.statusCode == 200 || response.statusCode == 206) {
         final bytes = response.bodyBytes;
         final isPdf = _isValidPdf(bytes);
+        final contentType = response.headers['content-type']?.toLowerCase() ?? '';
 
-        if (name.endsWith('.pdf') && !isPdf) {
-          _showPdfErrorDialog(url, fileName, name);
-          return;
+        // ✅ التحقق من نوع الملف من extension أو contentType
+        bool isImageFile() {
+          if (extension != null) {
+            return ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp'].contains(extension);
+          }
+          return contentType.startsWith('image/');
+        }
+        
+        bool isVideoFile() {
+          if (extension != null) {
+            return ['mp4', 'mov', 'mkv', 'avi', 'wmv', 'webm', 'm4v', '3gp', 'flv'].contains(extension);
+          }
+          return contentType.startsWith('video/');
+        }
+        
+        bool isAudioFile() {
+          if (extension != null) {
+            return ['mp3', 'wav', 'aac', 'ogg', 'm4a', 'wma', 'flac'].contains(extension);
+          }
+          return contentType.startsWith('audio/');
         }
 
         // PDF
-        if (name.endsWith('.pdf') && isPdf) {
-          print('Opening PDF----------: $fileName from $url');
+        if ((extension == 'pdf' || name.endsWith('.pdf')) && isPdf) {
+          print('Opening PDF: $fileName from $url');
           Navigator.push(
             context,
             MaterialPageRoute(builder: (_) => PdfViewerPage(pdfUrl: url, fileName: fileName)),
           );
         }
         // فيديو
-        else if (name.endsWith('.mp4') || name.endsWith('.mov') || name.endsWith('.mkv') ||
-            name.endsWith('.avi') || name.endsWith('.wmv')) {
+        else if (isVideoFile()) {
+          print('Opening Video: $fileName from $url');
           Navigator.push(context, MaterialPageRoute(builder: (_) => VideoViewer(url: url)));
         }
         // صورة
-        else if (name.endsWith('.jpg') || name.endsWith('.jpeg') || name.endsWith('.png') ||
-            name.endsWith('.gif') || name.endsWith('.bmp') || name.endsWith('.webp')) {
+        else if (isImageFile()) {
+          print('Opening Image: $fileName from $url');
           final fileId = file['_id']?.toString() ?? 
                          (file['originalData'] is Map ? file['originalData']['_id']?.toString() : null);
           Navigator.push(
@@ -720,7 +820,7 @@ class _CategoryPageState extends State<CategoryPage> {
           );
         }
         // نص
-        else if (TextViewerPage.isTextFile(fileName)) {
+        else if (TextViewerPage.isTextFile(fileName) || contentType.startsWith('text/')) {
           _showLoadingDialog(context);
           try {
             final fullResponse = await http.get(Uri.parse(url));
@@ -740,19 +840,18 @@ class _CategoryPageState extends State<CategoryPage> {
           }
         }
         // صوت
-        else if (name.endsWith('.mp3') ||
-            name.endsWith('.wav') ||
-            name.endsWith('.aac') ||
-            name.endsWith('.ogg')) {
+        else if (isAudioFile()) {
+          print('Opening Audio: $fileName from $url');
           Navigator.push(
             context,
             MaterialPageRoute(builder: (_) => AudioPlayerPage(audioUrl: url, fileName: fileName)),
           );
         } 
+        // ✅ باقي الملفات (Office، مضغوطة، تطبيقات، وغيرها) → تفتح خارج التطبيق
         else {
-          print(name);
-          print('Opening Office or other file: $fileName from $url');
-          await OfficeFileOpener.openAnyFile(url: url, fileName: fileName, context: context);
+          // ✅ جميع الملفات الأخرى تفتح خارج التطبيق مع واجهة اختيار التطبيق
+          print('Opening file with OfficeFileOpener: $fileName from $url');
+          await OfficeFileOpener.openAnyFile(url: url, context: context, token: _token);
         }
       } else {
         ScaffoldMessenger.of(context).showSnackBar(

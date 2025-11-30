@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:photo_view/photo_view.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:filevo/views/folders/room_comments_page.dart';
-import 'package:provider/provider.dart';
-import 'package:filevo/controllers/folders/room_controller.dart';
 
 class ImageViewer extends StatefulWidget {
   final String imageUrl;
@@ -52,96 +50,22 @@ class _ImageViewerState extends State<ImageViewer> {
   }
 
   Future<void> _openComments(BuildContext context) async {
-    if (widget.fileId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('معرف الملف غير متوفر'),
-          backgroundColor: Colors.red,
-        ),
-      );
+    // ✅ هذه الدالة تُستدعى فقط عندما يكون roomId متوفراً (بسبب الشرط في actions)
+    if (widget.fileId == null || widget.roomId == null) {
       return;
     }
 
-    // إذا كان roomId متوفراً، افتح صفحة التعليقات مباشرة
-    if (widget.roomId != null) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => RoomCommentsPage(
-            roomId: widget.roomId!,
-            targetType: 'file',
-            targetId: widget.fileId!,
-          ),
+    // ✅ فتح صفحة التعليقات مباشرة للملفات المشتركة في الغرف
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => RoomCommentsPage(
+          roomId: widget.roomId!,
+          targetType: 'file',
+          targetId: widget.fileId!,
         ),
-      );
-      return;
-    }
-
-    // إذا لم يكن roomId متوفراً، اجلب الغرف واختر الغرفة أولاً
-    final roomController = Provider.of<RoomController>(context, listen: false);
-    final success = await roomController.getRooms();
-    
-    if (!success || roomController.rooms.isEmpty) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('لا توجد غرف متاحة. قم بإنشاء غرفة أولاً.'),
-            backgroundColor: Colors.orange,
-          ),
-        );
-      }
-      return;
-    }
-
-    if (!mounted) return;
-
-    // عرض dialog لاختيار الغرفة
-    final selectedRoom = await showDialog<Map<String, dynamic>>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text('اختر الغرفة'),
-        content: Container(
-          width: double.maxFinite,
-          child: ListView.builder(
-            shrinkWrap: true,
-            itemCount: roomController.rooms.length,
-            itemBuilder: (context, index) {
-              final room = roomController.rooms[index];
-              return ListTile(
-                leading: Icon(Icons.meeting_room, color: Color(0xff28336f)),
-                title: Text(room['name'] ?? 'بدون اسم'),
-                subtitle: room['description'] != null 
-                    ? Text(room['description'], maxLines: 1, overflow: TextOverflow.ellipsis)
-                    : null,
-                onTap: () => Navigator.pop(context, room),
-              );
-            },
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('إلغاء'),
-          ),
-        ],
       ),
     );
-
-    if (selectedRoom != null && mounted) {
-      final roomId = selectedRoom['_id']?.toString();
-      if (roomId != null) {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => RoomCommentsPage(
-              roomId: roomId,
-              targetType: 'file',
-              targetId: widget.fileId!,
-            ),
-          ),
-        );
-      }
-    }
   }
 
   @override
@@ -156,8 +80,8 @@ class _ImageViewerState extends State<ImageViewer> {
           onPressed: () => Navigator.pop(context),
         ),
         actions: [
-          // زر التعليقات (يظهر دائماً إذا كان fileId متوفراً)
-          if (widget.fileId != null)
+          // ✅ زر التعليقات (يظهر فقط للملفات المشتركة في الغرف - أي عندما يكون roomId متوفراً)
+          if (widget.fileId != null && widget.roomId != null)
             IconButton(
               icon: const Icon(Icons.comment, color: Colors.white),
               onPressed: () => _openComments(context),

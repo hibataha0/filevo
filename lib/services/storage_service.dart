@@ -35,6 +35,12 @@ class StorageService {
     return prefs.getString(_userIdKey);
   }
   
+  // حذف معرف المستخدم
+  static Future<void> deleteUserId() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_userIdKey);
+  }
+  
   // التحقق من وجود token (المستخدم مسجل دخول)
   static Future<bool> isLoggedIn() async {
     final token = await getToken();

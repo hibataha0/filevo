@@ -49,7 +49,8 @@ class _ShareFileWithRoomPageState extends State<ShareFileWithRoomPage> {
       roomId: roomId,
       fileId: widget.fileId,
     );
-
+ 
+ print('ShareFileWithRoomPage: shareFileWithRoom response success: $success');
     if (mounted) {
       if (success) {
         ScaffoldMessenger.of(context).showSnackBar(

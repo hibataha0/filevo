@@ -9,8 +9,11 @@ import 'package:filevo/views/fileViewer/imageViewer.dart';
 import 'package:filevo/views/fileViewer/office_file_opener.dart';
 import 'package:filevo/views/fileViewer/textViewer.dart';
 import 'package:filevo/config/api_config.dart';
+import 'package:filevo/services/storage_service.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:http/http.dart' as http;
+import 'package:filevo/responsive.dart';
+import 'package:filevo/views/fileViewer/FilesGridView1.dart';
 
 class RoomFilesPage extends StatefulWidget {
   final String roomId;
@@ -38,7 +41,7 @@ class _RoomFilesPageState extends State<RoomFilesPage> {
 
     final roomController = Provider.of<RoomController>(context, listen: false);
     final response = await roomController.getRoomById(widget.roomId);
-
+     print('RoomFilesPage: Loaded room data: $response');
     if (mounted) {
       setState(() {
         roomData = response?['room'];
@@ -192,7 +195,8 @@ class _RoomFilesPageState extends State<RoomFilesPage> {
           );
         }
         else {
-          await OfficeFileOpener.openAnyFile(url: url, fileName: fileName, context: context);
+          final token = await StorageService.getToken();
+          await OfficeFileOpener.openAnyFile(url: url, context: context, token: token);
         }
       } else {
         if (mounted) {
@@ -261,39 +265,99 @@ class _RoomFilesPageState extends State<RoomFilesPage> {
   }
 
   IconData _getFileIcon(String fileName) {
-    final name = fileName.toLowerCase();
-    if (name.endsWith('.pdf')) return Icons.picture_as_pdf;
-    if (name.endsWith('.mp4') || name.endsWith('.mov') || name.endsWith('.mkv') ||
-        name.endsWith('.avi') || name.endsWith('.wmv')) return Icons.videocam;
-    if (name.endsWith('.jpg') || name.endsWith('.jpeg') || name.endsWith('.png') ||
-        name.endsWith('.gif') || name.endsWith('.bmp') || name.endsWith('.webp')) return Icons.image;
-    if (name.endsWith('.mp3') || name.endsWith('.wav') || name.endsWith('.aac') ||
-        name.endsWith('.ogg')) return Icons.audiotrack;
-    if (TextViewerPage.isTextFile(fileName)) return Icons.description;
-    return Icons.insert_drive_file;
+    final ext = fileName.split('.').last.toLowerCase();
+    switch (ext) {
+      case 'jpg':
+      case 'jpeg':
+      case 'png':
+      case 'gif':
+      case 'webp':
+        return Icons.image;
+      case 'mp4':
+      case 'avi':
+      case 'mov':
+      case 'mkv':
+        return Icons.videocam;
+      case 'mp3':
+      case 'wav':
+      case 'flac':
+      case 'aac':
+      case 'ogg':
+        return Icons.audiotrack;
+      case 'pdf':
+        return Icons.picture_as_pdf;
+      case 'doc':
+      case 'docx':
+        return Icons.description;
+      case 'zip':
+      case 'rar':
+      case '7z':
+        return Icons.folder_zip;
+      default:
+        if (TextViewerPage.isTextFile(fileName)) return Icons.description;
+        return Icons.insert_drive_file;
+    }
   }
 
   Color _getFileIconColor(String fileName) {
-    final name = fileName.toLowerCase();
-    if (name.endsWith('.pdf')) return Color(0xFFF44336);
-    if (name.endsWith('.mp4') || name.endsWith('.mov') || name.endsWith('.mkv') ||
-        name.endsWith('.avi') || name.endsWith('.wmv')) return Color(0xFFE91E63);
-    if (name.endsWith('.jpg') || name.endsWith('.jpeg') || name.endsWith('.png') ||
-        name.endsWith('.gif') || name.endsWith('.bmp') || name.endsWith('.webp')) return Color(0xFF4CAF50);
-    if (name.endsWith('.mp3') || name.endsWith('.wav') || name.endsWith('.aac') ||
-        name.endsWith('.ogg')) return Color(0xFF9C27B0);
-    return Color(0xFF607D8B);
+    final ext = fileName.split('.').last.toLowerCase();
+    switch (ext) {
+      case 'jpg':
+      case 'jpeg':
+      case 'png':
+      case 'gif':
+      case 'webp':
+        return Colors.blue;
+      case 'mp4':
+      case 'avi':
+      case 'mov':
+      case 'mkv':
+        return Colors.red;
+      case 'mp3':
+      case 'wav':
+      case 'flac':
+      case 'aac':
+      case 'ogg':
+        return Colors.purple;
+      case 'pdf':
+        return Color(0xFFF44336);
+      case 'doc':
+      case 'docx':
+        return Colors.brown;
+      case 'zip':
+      case 'rar':
+      case '7z':
+        return Colors.orange;
+      default:
+        return Color(0xFF607D8B);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('الملفات المشتركة'),
+        title: Text(
+          'الملفات المشتركة',
+          style: TextStyle(
+            fontSize: ResponsiveUtils.getResponsiveValue(
+              context,
+              mobile: 18.0,
+              tablet: 20.0,
+              desktop: 22.0,
+            ),
+          ),
+        ),
         backgroundColor: Color(0xff28336f),
         actions: [
           IconButton(
             icon: Icon(Icons.refresh),
+            iconSize: ResponsiveUtils.getResponsiveValue(
+              context,
+              mobile: 24.0,
+              tablet: 26.0,
+              desktop: 28.0,
+            ),
             onPressed: () {
               setState(() => isLoading = true);
               _loadRoomData();
@@ -320,21 +384,50 @@ class _RoomFilesPageState extends State<RoomFilesPage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.insert_drive_file_outlined, size: 64, color: Colors.grey),
-            SizedBox(height: 16),
+            Icon(
+              Icons.insert_drive_file_outlined,
+              size: ResponsiveUtils.getResponsiveValue(
+                context,
+                mobile: 64.0,
+                tablet: 80.0,
+                desktop: 96.0,
+              ),
+              color: Colors.grey,
+            ),
+            SizedBox(height: ResponsiveUtils.getResponsiveValue(
+              context,
+              mobile: 16.0,
+              tablet: 20.0,
+              desktop: 24.0,
+            )),
             Text(
               'لا توجد ملفات مشتركة',
               style: TextStyle(
-                fontSize: 18,
+                fontSize: ResponsiveUtils.getResponsiveValue(
+                  context,
+                  mobile: 18.0,
+                  tablet: 20.0,
+                  desktop: 22.0,
+                ),
                 color: Colors.grey[600],
                 fontWeight: FontWeight.w600,
               ),
             ),
-            SizedBox(height: 8),
+            SizedBox(height: ResponsiveUtils.getResponsiveValue(
+              context,
+              mobile: 8.0,
+              tablet: 12.0,
+              desktop: 16.0,
+            )),
             Text(
               'قم بمشاركة ملفات مع هذه الغرفة',
               style: TextStyle(
-                fontSize: 14,
+                fontSize: ResponsiveUtils.getResponsiveValue(
+                  context,
+                  mobile: 14.0,
+                  tablet: 16.0,
+                  desktop: 18.0,
+                ),
                 color: Colors.grey[500],
               ),
             ),
@@ -343,67 +436,68 @@ class _RoomFilesPageState extends State<RoomFilesPage> {
       );
     }
 
-    return ListView.builder(
-      padding: EdgeInsets.all(16),
-      itemCount: files.length,
-      itemBuilder: (context, index) {
-        final file = files[index];
-        final fileIdRef = file['fileId'];
-        final fileData = fileIdRef is Map<String, dynamic> 
-            ? fileIdRef 
-            : <String, dynamic>{};
-        final fileName = fileData['name']?.toString() ?? 'ملف غير معروف';
-        final fileId = fileData['_id']?.toString() ?? 
-                       (fileIdRef is String ? fileIdRef : fileIdRef?.toString());
-        final sharedAt = file['sharedAt'];
+    // ✅ تحويل الملفات إلى format مناسب لـ FilesGrid (Grid View)
+    final displayFiles = files.map((file) {
+      final fileIdRef = file['fileId'];
+      final fileData = fileIdRef is Map<String, dynamic> 
+          ? fileIdRef 
+          : <String, dynamic>{};
+      final fileName = fileData['name']?.toString() ?? 'ملف غير معروف';
+      final fileId = fileData['_id']?.toString() ?? 
+                     (fileIdRef is String ? fileIdRef : fileIdRef?.toString());
+      final filePath = fileData['path']?.toString() ?? '';
+      final size = fileData['size'] ?? 0;
+      final category = fileData['category']?.toString() ?? '';
+      final createdAt = fileData['createdAt'];
+      final updatedAt = fileData['updatedAt'];
+      final sharedAt = file['sharedAt'];
+      
+      // ✅ استخراج معلومات من شارك الملف من room data
+      final sharedBy = _getSharedByInfo(file, fileData);
+      
+      return {
+        'name': fileName,
+        'url': _getFileUrl(filePath),
+        'type': _getFileType(fileName),
+        'size': _formatSize(size),
+        'category': category, // ✅ التصنيف
+        'createdAt': createdAt, // ✅ تاريخ الإنشاء
+        'updatedAt': updatedAt, // ✅ تاريخ التعديل
+        'sharedAt': sharedAt, // ✅ تاريخ المشاركة في الروم
+        'path': filePath,
+        'originalData': fileData,
+        'originalName': fileName,
+        'fileId': fileId,
+        'sharedBy': sharedBy, // ✅ معلومات من شارك الملف من أعضاء الروم
+      };
+    }).toList();
 
-        return Card(
-          margin: EdgeInsets.only(bottom: 12),
-          elevation: 2,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: ListTile(
-            leading: Container(
-              width: 50,
-              height: 50,
-              decoration: BoxDecoration(
-                color: _getFileIconColor(fileName).withOpacity(0.1),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(
-                _getFileIcon(fileName),
-                color: _getFileIconColor(fileName),
-              ),
-            ),
-            title: Text(
-              fileName,
-              style: TextStyle(fontWeight: FontWeight.w600),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-            subtitle: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                SizedBox(height: 4),
-                if (fileData['size'] != null)
-                  Text(
-                    _formatSize(fileData['size']),
-                    style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-                  ),
-                if (sharedAt != null)
-                  Text(
-                    'مشارك في: ${_formatDate(sharedAt)}',
-                    style: TextStyle(fontSize: 11, color: Colors.grey[500]),
-                  ),
-              ],
-            ),
-            trailing: Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
-            onTap: () => _openFile(fileData, fileId),
-          ),
-        );
+    return FilesGrid(
+      files: displayFiles,
+      roomId: widget.roomId, // ✅ تمرير roomId لاستخدام getSharedFileDetailsInRoom
+      onFileTap: (file) {
+        final fileData = file['originalData'] as Map<String, dynamic>? ?? file;
+        final fileId = file['fileId'] as String?;
+        _openFile(fileData, fileId);
+      },
+      onFileRemoved: () {
+        // ✅ إعادة تحميل بيانات الغرفة بعد إزالة الملف
+        _loadRoomData();
       },
     );
+  }
+
+  String _getFileType(String fileName) {
+    final name = fileName.toLowerCase();
+    if (name.endsWith('.pdf')) return 'pdf';
+    if (name.endsWith('.mp4') || name.endsWith('.mov') || name.endsWith('.mkv') ||
+        name.endsWith('.avi') || name.endsWith('.wmv')) return 'video';
+    if (name.endsWith('.jpg') || name.endsWith('.jpeg') || name.endsWith('.png') ||
+        name.endsWith('.gif') || name.endsWith('.bmp') || name.endsWith('.webp')) return 'image';
+    if (name.endsWith('.mp3') || name.endsWith('.wav') || name.endsWith('.aac') ||
+        name.endsWith('.ogg')) return 'audio';
+    if (TextViewerPage.isTextFile(fileName)) return 'text';
+    return 'file';
   }
 
   String _formatSize(dynamic size) {
@@ -427,6 +521,54 @@ class _RoomFilesPageState extends State<RoomFilesPage> {
     } catch (e) {
       return '—';
     }
+  }
+
+  // ✅ استخراج معلومات من شارك الملف/المجلد من room data
+  String? _getSharedByInfo(Map<String, dynamic> sharedItem, Map<String, dynamic> itemData) {
+    // ✅ 1. من sharedItem مباشرة (من room data - sharedBy)
+    if (sharedItem['sharedBy'] != null) {
+      final sharedBy = sharedItem['sharedBy'];
+      if (sharedBy is Map<String, dynamic>) {
+        return sharedBy['name'] ?? sharedBy['email'] ?? 'مستخدم';
+      }
+      if (sharedBy is String) {
+        // ✅ إذا كان sharedBy هو ID، ابحث في room members
+        if (roomData != null && roomData!['members'] != null) {
+          final members = roomData!['members'] as List?;
+          if (members != null) {
+            for (final member in members) {
+              final userId = member['user'];
+              final userIdStr = userId is Map ? userId['_id']?.toString() : userId?.toString();
+              if (userIdStr == sharedBy) {
+                final user = userId is Map ? userId : member['user'];
+                if (user is Map<String, dynamic>) {
+                  return user['name'] ?? user['email'] ?? 'مستخدم';
+                }
+              }
+            }
+          }
+        }
+        return null;
+      }
+    }
+    
+    // ✅ 2. من userId في itemData (fallback)
+    if (itemData['userId'] != null) {
+      final userId = itemData['userId'];
+      if (userId is Map<String, dynamic>) {
+        return userId['name'] ?? userId['email'] ?? 'مستخدم';
+      }
+    }
+    
+    // ✅ 3. من owner في itemData (fallback)
+    if (itemData['owner'] != null) {
+      final owner = itemData['owner'];
+      if (owner is Map<String, dynamic>) {
+        return owner['name'] ?? owner['email'] ?? 'مستخدم';
+      }
+    }
+    
+    return null;
   }
 }
 

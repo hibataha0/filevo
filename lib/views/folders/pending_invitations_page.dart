@@ -164,7 +164,7 @@ class _PendingInvitationsPageState extends State<PendingInvitationsPage> {
   Widget _buildInvitationCard(Map<String, dynamic> invitation) {
     final sender = invitation['sender'] ?? {};
     final room = invitation['room'] ?? {};
-    final permission = invitation['permission'] ?? 'view';
+    final role = invitation['role'] ?? 'viewer';
     final message = invitation['message'] ?? '';
 
     return Card(
@@ -280,14 +280,14 @@ class _PendingInvitationsPageState extends State<PendingInvitationsPage> {
                 Container(
                   padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
-                    color: _getPermissionColor(permission).withOpacity(0.1),
+                    color: _getRoleColor(role).withOpacity(0.1),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
-                    'الصلاحية: $permission',
+                    'الدور: $role',
                     style: TextStyle(
                       fontSize: 12,
-                      color: _getPermissionColor(permission),
+                      color: _getRoleColor(role),
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -335,14 +335,16 @@ class _PendingInvitationsPageState extends State<PendingInvitationsPage> {
     );
   }
 
-  Color _getPermissionColor(String permission) {
-    switch (permission) {
-      case 'view':
-        return Color(0xFF10B981);
-      case 'edit':
-        return Color(0xFFF59E0B);
-      case 'delete':
+  Color _getRoleColor(String role) {
+    switch (role) {
+      case 'owner':
         return Color(0xFFEF4444);
+      case 'editor':
+        return Color(0xFFF59E0B);
+      case 'viewer':
+        return Color(0xFF10B981);
+      case 'commenter':
+        return Color(0xFF8B5CF6);
       default:
         return Colors.grey;
     }

@@ -22,20 +22,25 @@ class _RoomCommentsPageState extends State<RoomCommentsPage> {
   List<Map<String, dynamic>> comments = [];
   bool isLoading = true;
   final TextEditingController _commentController = TextEditingController();
-  String _selectedTargetType = 'file';
-  String _selectedTargetId = '';
+  String _selectedTargetType = 'room'; // ✅ افتراضي: تعليقات عامة على الروم
+  String _selectedTargetId = ''; // ✅ إذا كان فارغاً، يعني تعليقات عامة على الروم
 
   @override
   void initState() {
     super.initState();
+    // ✅ إذا كان targetType و targetId محددين (مثل ملف)، استخدمهم
     if (widget.targetType != null && widget.targetId != null) {
       _selectedTargetType = widget.targetType!;
       _selectedTargetId = widget.targetId!;
-      // ✅ تأجيل تحميل البيانات حتى بعد اكتمال البناء الأولي
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _loadComments();
-      });
+    } else {
+      // ✅ إذا لم يكن محدداً، يعني تعليقات عامة على الروم
+      _selectedTargetType = 'room';
+      _selectedTargetId = widget.roomId; // ✅ استخدام roomId كـ targetId للتعليقات العامة
     }
+    // ✅ تأجيل تحميل البيانات حتى بعد اكتمال البناء الأولي
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadComments();
+    });
   }
 
   @override
@@ -45,20 +50,29 @@ class _RoomCommentsPageState extends State<RoomCommentsPage> {
   }
 
   Future<void> _loadComments() async {
-    if (_selectedTargetId.isEmpty) {
-      if (mounted) {
-        setState(() => isLoading = false);
-      }
+    if (!mounted) return;
+
+    if (_selectedTargetType != 'room' &&
+        _selectedTargetId.isEmpty &&
+        widget.targetId == null) {
+      setState(() {
+        comments = [];
+        isLoading = false;
+      });
       return;
     }
 
-    if (!mounted) return;
+    setState(() => isLoading = true);
 
     final roomController = Provider.of<RoomController>(context, listen: false);
+    final targetIdForApi = _selectedTargetType == 'room'
+        ? null
+        : (_selectedTargetId.isNotEmpty ? _selectedTargetId : widget.targetId);
+
     final result = await roomController.listComments(
       roomId: widget.roomId,
       targetType: _selectedTargetType,
-      targetId: _selectedTargetId,
+      targetId: targetIdForApi,
     );
 
     if (mounted) {
@@ -70,10 +84,22 @@ class _RoomCommentsPageState extends State<RoomCommentsPage> {
   }
 
   Future<void> _addComment() async {
-    if (_commentController.text.trim().isEmpty || _selectedTargetId.isEmpty) {
+    if (_commentController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('يرجى إدخال تعليق واختيار ملف/مجلد'),
+          content: Text('يرجى إدخال تعليق'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    if (_selectedTargetType != 'room' &&
+        _selectedTargetId.isEmpty &&
+        widget.targetId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('يرجى اختيار ملف/مجلد للتعليق عليه'),
           backgroundColor: Colors.red,
         ),
       );
@@ -81,10 +107,14 @@ class _RoomCommentsPageState extends State<RoomCommentsPage> {
     }
 
     final roomController = Provider.of<RoomController>(context, listen: false);
+    final targetIdForApi = _selectedTargetType == 'room'
+        ? null
+        : (_selectedTargetId.isNotEmpty ? _selectedTargetId : widget.targetId);
+
     final result = await roomController.addComment(
       roomId: widget.roomId,
       targetType: _selectedTargetType,
-      targetId: _selectedTargetId,
+      targetId: targetIdForApi,
       content: _commentController.text.trim(),
     );
 
@@ -174,8 +204,8 @@ class _RoomCommentsPageState extends State<RoomCommentsPage> {
       ),
       body: Column(
         children: [
-          // Target Selection (if not provided)
-          if (widget.targetId == null)
+          // ✅ Target Selection (فقط إذا لم يكن محدداً وكانت تعليقات على ملف/مجلد)
+          if (widget.targetId == null && _selectedTargetType != 'room')
             Container(
               padding: EdgeInsets.all(16),
               color: Colors.grey[100],
@@ -203,35 +233,43 @@ class _RoomCommentsPageState extends State<RoomCommentsPage> {
                           items: [
                             DropdownMenuItem(value: 'file', child: Text('ملف')),
                             DropdownMenuItem(value: 'folder', child: Text('مجلد')),
+                            DropdownMenuItem(value: 'room', child: Text('الروم')),
                           ],
                           onChanged: (value) {
                             setState(() {
                               _selectedTargetType = value!;
-                              _selectedTargetId = '';
+                              if (value == 'room') {
+                                _selectedTargetId = widget.roomId;
+                              } else {
+                                _selectedTargetId = '';
+                              }
                               comments = [];
+                              _loadComments();
                             });
                           },
                         ),
                       ),
-                      SizedBox(width: 12),
-                      Expanded(
-                        child: TextField(
-                          decoration: InputDecoration(
-                            labelText: 'معرف الملف/المجلد',
-                            border: OutlineInputBorder(),
-                            contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      if (_selectedTargetType != 'room') ...[
+                        SizedBox(width: 12),
+                        Expanded(
+                          child: TextField(
+                            decoration: InputDecoration(
+                              labelText: 'معرف الملف/المجلد',
+                              border: OutlineInputBorder(),
+                              contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                            ),
+                            onChanged: (value) {
+                              setState(() => _selectedTargetId = value);
+                            },
                           ),
-                          onChanged: (value) {
-                            setState(() => _selectedTargetId = value);
-                          },
                         ),
-                      ),
-                      SizedBox(width: 8),
-                      IconButton(
-                        icon: Icon(Icons.search),
-                        onPressed: _loadComments,
-                        color: Color(0xff28336f),
-                      ),
+                        SizedBox(width: 8),
+                        IconButton(
+                          icon: Icon(Icons.search),
+                          onPressed: _loadComments,
+                          color: Color(0xff28336f),
+                        ),
+                      ],
                     ],
                   ),
                 ],
@@ -242,7 +280,7 @@ class _RoomCommentsPageState extends State<RoomCommentsPage> {
           Expanded(
             child: isLoading
                 ? Center(child: CircularProgressIndicator())
-                : _selectedTargetId.isEmpty && widget.targetId == null
+                : (_selectedTargetId.isEmpty && widget.targetId == null && _selectedTargetType != 'room')
                     ? Center(
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
@@ -297,8 +335,8 @@ class _RoomCommentsPageState extends State<RoomCommentsPage> {
                           ),
           ),
 
-          // Add Comment Section
-          if (_selectedTargetId.isNotEmpty || widget.targetId != null)
+          // ✅ Add Comment Section - متاح دائماً للتعليقات العامة أو عند تحديد ملف/مجلد
+          if (_selectedTargetType == 'room' || _selectedTargetId.isNotEmpty || widget.targetId != null)
             Container(
               padding: EdgeInsets.all(16),
               decoration: BoxDecoration(

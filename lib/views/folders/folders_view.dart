@@ -1,4 +1,5 @@
 import 'package:filevo/views/folders/CategoryFiles.dart';
+import 'package:filevo/views/folders/folder_contents_page.dart';
 import 'package:flutter/material.dart';
 import 'package:filevo/components/FilesGridView.dart';
 import 'package:filevo/components/FilesListView.dart';
@@ -9,9 +10,12 @@ import 'package:filevo/views/folders/components/tab_bar.dart';
 import 'package:filevo/generated/l10n.dart';
 import 'package:provider/provider.dart';
 import 'package:filevo/controllers/folders/room_controller.dart';
+import 'package:filevo/controllers/folders/folders_controller.dart';
+import 'package:filevo/controllers/folders/files_controller.dart';
 import 'package:filevo/views/folders/create_share_page.dart';
 import 'package:filevo/views/folders/room_details_page.dart';
 import 'package:filevo/views/folders/pending_invitations_page.dart';
+import 'package:filevo/services/storage_service.dart';
 
 class FoldersPage extends StatefulWidget {
   @override
@@ -29,75 +33,337 @@ class _FoldersPageState extends State<FoldersPage> {
   bool isFoldersListView = true;
 
   // نقل قائمة المجلدات لتكون جزء من الـ State
-  List<Map<String, Object>> folders = [];
+  List<Map<String, dynamic>> folders = [];
+  List<Map<String, dynamic>> sharedFolders = []; // ✅ المجلدات المشتركة معي
+  bool _isLoadingFolders = false;
+  bool _isLoadingSharedFolders = false;
+  Map<String, Map<String, dynamic>> _previousCategoriesStats = {}; // ✅ لتتبع تغييرات إحصائيات التصنيفات
 
   @override
   void initState() {
     super.initState();
-    folders = [
-      {
-        "title": S.current.images,
-        "fileCount": 156,
-        "size": "2.3 GB",
-        "icon": Icons.image,
-        "color": Colors.blue
-      },
-      {
-        "title": S.current.videos,
-        "fileCount": 89,
-        "size": "15.7 GB",
-        "icon": Icons.videocam,
-        "color": Colors.red
-      },
-      {
-        "title": S.current.audio,
-        "fileCount": 234,
-        "size": "3.1 GB",
-        "icon": Icons.audiotrack,
-        "color": Colors.green
-      },
-      {
-        "title": S.current.compressed,
-        "fileCount": 45,
-        "size": "8.2 GB",
-        "icon": Icons.folder_zip,
-        "color": Colors.orange
-      },
-      {
-        "title": S.current.applications,
-        "fileCount": 23,
-        "size": "12.5 GB",
-        "icon": Icons.apps,
-        "color": Colors.purple
-      },
-      {
-        "title": S.current.documents,
-        "fileCount": 312,
-        "size": "1.8 GB",
-        "icon": Icons.description,
-        "color": Colors.brown
-      },
-      {
-        "title": S.current.code,
-        "fileCount": 67,
-        "size": "856 MB",
-        "icon": Icons.code,
-        "color": Colors.teal
-      },
-      {
-        "title": S.current.other,
-        "fileCount": 78,
-        "size": "4.3 GB",
-        "icon": Icons.more_horiz,
-        "color": Colors.grey
-      },
-    ];
+    
+    // ✅ تحميل التصنيفات والمجلدات بعد اكتمال البناء
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadCategoriesAndFolders();
+    });
     
     // ✅ تحميل الغرف عند بدء الصفحة
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final roomController = Provider.of<RoomController>(context, listen: false);
       roomController.getRooms();
     });
+    
+    // ✅ تحميل المجلدات المشتركة عند بدء الصفحة
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadSharedFolders();
+    });
+  }
+
+  // ✅ تحميل التصنيفات والمجلدات من الباك
+  Future<void> _loadCategoriesAndFolders() async {
+    if (!mounted) return;
+    
+    setState(() {
+      _isLoadingFolders = true;
+    });
+
+    // ✅ التصنيفات (categories) - قاعدة البيانات
+    final categoriesBase = [
+      {
+        "category": "images",
+        "title": S.current.images,
+        "fileCount": 0,
+        "size": "0 B",
+        "icon": Icons.image,
+        "color": Colors.blue,
+        "type": "category",
+        "folderData": {"type": "category"},
+      },
+      {
+        "category": "videos",
+        "title": S.current.videos,
+        "fileCount": 0,
+        "size": "0 B",
+        "icon": Icons.videocam,
+        "color": Colors.red,
+        "type": "category",
+        "folderData": {"type": "category"},
+      },
+      {
+        "category": "audio",
+        "title": S.current.audio,
+        "fileCount": 0,
+        "size": "0 B",
+        "icon": Icons.audiotrack,
+        "color": Colors.green,
+        "type": "category",
+        "folderData": {"type": "category"},
+      },
+      {
+        "category": "compressed",
+        "title": S.current.compressed,
+        "fileCount": 0,
+        "size": "0 B",
+        "icon": Icons.folder_zip,
+        "color": Colors.orange,
+        "type": "category",
+        "folderData": {"type": "category"},
+      },
+      {
+        "category": "applications",
+        "title": S.current.applications,
+        "fileCount": 0,
+        "size": "0 B",
+        "icon": Icons.apps,
+        "color": Colors.purple,
+        "type": "category",
+        "folderData": {"type": "category"},
+      },
+      {
+        "category": "documents",
+        "title": S.current.documents,
+        "fileCount": 0,
+        "size": "0 B",
+        "icon": Icons.description,
+        "color": Colors.brown,
+        "type": "category",
+        "folderData": {"type": "category"},
+      },
+      {
+        "category": "code",
+        "title": S.current.code,
+        "fileCount": 0,
+        "size": "0 B",
+        "icon": Icons.code,
+        "color": Colors.teal,
+        "type": "category",
+        "folderData": {"type": "category"},
+      },
+      {
+        "category": "other",
+        "title": S.current.other,
+        "fileCount": 0,
+        "size": "0 B",
+        "icon": Icons.more_horiz,
+        "color": Colors.grey,
+        "type": "category",
+        "folderData": {"type": "category"},
+      },
+    ];
+
+    // ✅ جلب إحصائيات التصنيفات من الباك (الجذر فقط)
+    // ✅ الآن يتم حفظ القيم في Controller مباشرة
+    try {
+      final fileController = Provider.of<FileController>(context, listen: false);
+      final token = await StorageService.getToken();
+      
+      if (token != null) {
+        // ✅ جلب الإحصائيات للجذر فقط - سيتم حفظها في Controller تلقائياً
+        await fileController.getRootCategoriesStats(token: token);
+      }
+    } catch (e) {
+      // ✅ في حالة الخطأ، نستخدم القيم الافتراضية (0) بهدوء
+      print('⚠️ Error loading root categories stats: $e');
+    }
+
+    // ✅ جلب المجلدات من الباك
+    try {
+      final folderController = Provider.of<FolderController>(context, listen: false);
+      final result = await folderController.getAllFolders(page: 1, limit: 100);
+      
+      List<Map<String, dynamic>> userFolders = [];
+      
+      if (result != null && result['folders'] != null) {
+        final foldersList = result['folders'] as List;
+        userFolders = foldersList.map((folder) {
+          final folderData = folder as Map<String, dynamic>;
+          
+          // ✅ التحويل الصحيح للحجم وعدد الملفات
+          dynamic sizeValue = folderData['size'];
+          dynamic filesCountValue = folderData['filesCount'];
+          
+          // ✅ تحويل إلى int إذا كان String أو num
+          int size = 0;
+          int filesCount = 0;
+          
+          if (sizeValue != null) {
+            if (sizeValue is int) {
+              size = sizeValue;
+            } else if (sizeValue is num) {
+              size = sizeValue.toInt();
+            } else if (sizeValue is String) {
+              size = int.tryParse(sizeValue) ?? 0;
+            }
+          }
+          
+          if (filesCountValue != null) {
+            if (filesCountValue is int) {
+              filesCount = filesCountValue;
+            } else if (filesCountValue is num) {
+              filesCount = filesCountValue.toInt();
+            } else if (filesCountValue is String) {
+              filesCount = int.tryParse(filesCountValue) ?? 0;
+            }
+          }
+          
+          // ✅ Log للتحقق من القيم
+          print('📁 Folder: ${folderData['name']} - Size: $size bytes, Files: $filesCount');
+          print('   Raw size: $sizeValue, Raw filesCount: $filesCountValue');
+          
+          return {
+            "title": folderData['name'] ?? 'بدون اسم',
+            "fileCount": filesCount,
+            "size": _formatBytes(size),
+            "icon": Icons.folder,
+            "color": Color(0xff28336f), // ✅ لون مختلف للمجلدات
+            "type": "folder", // ✅ للتمييز
+            "folderId": folderData['_id'], // ✅ ID المجلد
+            "folderData": folderData, // ✅ بيانات المجلد الكاملة
+          };
+        }).toList();
+      }
+      
+      if (!mounted) return;
+      
+      // ✅ الحصول على إحصائيات التصنيفات من Controller
+      final fileController = Provider.of<FileController>(context, listen: false);
+      final categoriesStats = fileController.categoriesStats;
+      
+      // ✅ تحديث _previousCategoriesStats عند التحميل الأول
+      if (_previousCategoriesStats.isEmpty) {
+        _previousCategoriesStats = Map<String, Map<String, dynamic>>.from(categoriesStats);
+      }
+      
+      // ✅ تحديث التصنيفات بالقيم من Controller
+      final updatedCategories = categoriesBase.map((category) {
+        final categoryName = (category['category'] as String).toLowerCase();
+        final stats = categoriesStats[categoryName];
+        
+        if (stats != null) {
+          return {
+            ...category,
+            'fileCount': stats['filesCount'] ?? 0,
+            'size': _formatBytes(stats['totalSize'] ?? 0),
+          };
+        }
+        return category; // ✅ القيم الافتراضية (0)
+      }).toList();
+      
+      // ✅ دمج التصنيفات المحدثة والمجلدات
+      setState(() {
+        folders = [...updatedCategories, ...userFolders];
+        _isLoadingFolders = false;
+      });
+    } catch (e) {
+      print('❌ Error loading folders: $e');
+      
+      if (!mounted) return;
+      
+      // ✅ في حالة الخطأ، نعرض التصنيفات فقط (مع القيم من Controller إن وجدت)
+      final fileController = Provider.of<FileController>(context, listen: false);
+      final categoriesStats = fileController.categoriesStats;
+      
+      final updatedCategories = categoriesBase.map((category) {
+        final categoryName = (category['category'] as String).toLowerCase();
+        final stats = categoriesStats[categoryName];
+        
+        if (stats != null) {
+          return {
+            ...category,
+            'fileCount': stats['filesCount'] ?? 0,
+            'size': _formatBytes(stats['totalSize'] ?? 0),
+          };
+        }
+        return category;
+      }).toList();
+      
+      setState(() {
+        folders = updatedCategories;
+        _isLoadingFolders = false;
+      });
+    }
+  }
+
+  // ✅ تحميل المجلدات المشتركة معي
+  Future<void> _loadSharedFolders() async {
+    if (!mounted) return;
+    
+    setState(() {
+      _isLoadingSharedFolders = true;
+    });
+
+    try {
+      final folderController = Provider.of<FolderController>(context, listen: false);
+      final result = await folderController.getFoldersSharedWithMe(page: 1, limit: 100);
+      
+      if (!mounted) return;
+      
+      List<Map<String, dynamic>> sharedFoldersList = [];
+      
+      if (result != null && result['folders'] != null) {
+        final foldersList = result['folders'] as List;
+        sharedFoldersList = foldersList.map((folder) {
+          final folderData = folder as Map<String, dynamic>;
+          final size = folderData['size'] ?? 0;
+          final filesCount = folderData['filesCount'] ?? 0;
+          final owner = folderData['userId'] as Map<String, dynamic>?;
+          final ownerName = owner?['name'] ?? owner?['email'] ?? 'مستخدم';
+          
+          return {
+            "title": folderData['name'] ?? 'بدون اسم',
+            "fileCount": filesCount,
+            "size": _formatBytes(size),
+            "icon": Icons.folder_shared,
+            "color": Colors.orange, // ✅ لون مختلف للمجلدات المشتركة
+            "type": "folder", // ✅ للتمييز
+            "folderId": folderData['_id'], // ✅ ID المجلد
+            "folderData": folderData, // ✅ بيانات المجلد الكاملة
+            "owner": ownerName, // ✅ اسم المالك
+            "myPermission": folderData['myPermission'] ?? 'view', // ✅ صلاحياتي
+          };
+        }).toList();
+      }
+      
+      if (!mounted) return;
+      
+      setState(() {
+        sharedFolders = sharedFoldersList;
+        _isLoadingSharedFolders = false;
+      });
+    } catch (e) {
+      print('❌ Error loading shared folders: $e');
+      
+      if (!mounted) return;
+      
+      setState(() {
+        sharedFolders = [];
+        _isLoadingSharedFolders = false;
+      });
+    }
+  }
+
+  // ✅ تنسيق حجم الملف
+  String _formatBytes(int bytes) {
+    if (bytes == 0) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+    
+    // ✅ حساب الفهرس بشكل صحيح
+    int i = 0;
+    double size = bytes.toDouble();
+    
+    while (size >= k && i < sizes.length - 1) {
+      size /= k;
+      i++;
+    }
+    
+    // ✅ التأكد من أن الفهرس ضمن النطاق
+    if (i >= sizes.length) {
+      i = sizes.length - 1;
+    }
+    
+    return '${size.toStringAsFixed(1)} ${sizes[i]}';
   }
 
   @override
@@ -105,6 +371,7 @@ class _FoldersPageState extends State<FoldersPage> {
     _searchController.dispose();
     super.dispose();
   }
+
 
   @override
   Widget build(BuildContext context) {
@@ -316,7 +583,7 @@ class _FoldersPageState extends State<FoldersPage> {
 
   // دالة لبناء المحتوى
   Widget _buildContent(
-      List<Map<String, Object>> folders, bool showFolders, bool showFiles) {
+      List<Map<String, dynamic>> folders, bool showFolders, bool showFiles) {
     return Card(
       elevation: 4,
       margin: EdgeInsets.zero,
@@ -396,45 +663,312 @@ class _FoldersPageState extends State<FoldersPage> {
 
               // عرض المجلدات فقط
               if (showFolders) ...[
-                if (isFilesGridView)
-                  FilesGridView(
-                    items: folders,
-                    showFileCount: true,
-                    onItemTap: (item) {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => CategoryPage(
-                            category: item['title'] as String,
-                            color: item['color'] as Color,
-                            icon: item['icon'] as IconData,
-                          ),
-                        ),
+                if (_isLoadingFolders)
+                  Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(20.0),
+                      child: CircularProgressIndicator(),
+                    ),
+                  )
+                else if (isFilesGridView)
+                  Consumer<FileController>(
+                    builder: (context, fileController, child) {
+                      // ✅ استخدام Consumer للاستماع لتغييرات categoriesStats
+                      final categoriesStats = fileController.categoriesStats;
+                      
+                      // ✅ تحديث التصنيفات بالقيم من Controller
+                      final updatedCategories = folders.where((item) => item['type'] == 'category').map((category) {
+                        final categoryName = (category['category'] as String).toLowerCase();
+                        final stats = categoriesStats[categoryName];
+                        
+                        if (stats != null) {
+                          return {
+                            ...category,
+                            'fileCount': stats['filesCount'] ?? 0,
+                            'size': _formatBytes(stats['totalSize'] ?? 0),
+                          };
+                        }
+                        return category;
+                      }).toList();
+                      
+                      // ✅ دمج التصنيفات المحدثة مع المجلدات
+                      final updatedFolders = [
+                        ...updatedCategories,
+                        ...folders.where((item) => item['type'] != 'category').toList(),
+                      ];
+                      
+                      // ✅ تحديث folders في الـ state عند تغيير categoriesStats
+                      if (_previousCategoriesStats.toString() != categoriesStats.toString()) {
+                        WidgetsBinding.instance.addPostFrameCallback((_) {
+                          if (mounted) {
+                            setState(() {
+                              folders = updatedFolders;
+                            });
+                          }
+                        });
+                        _previousCategoriesStats = Map<String, Map<String, dynamic>>.from(categoriesStats);
+                      }
+                      
+                      return FilesGridView(
+                        items: updatedFolders,
+                        showFileCount: true,
+                        onFileRemoved: () {
+                          // ✅ إعادة تحميل التصنيفات والمجلدات بعد نقل ملف أو مجلد
+                          _loadCategoriesAndFolders();
+                        },
+                        onItemTap: (item) {
+                          final type = item['type'] as String?;
+                          
+                          // ✅ إذا كان category، افتح صفحة التصنيف
+                          if (type == 'category') {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => CategoryPage(
+                                  category: item['title'] as String,
+                                  color: item['color'] as Color,
+                                  icon: item['icon'] as IconData,
+                                ),
+                              ),
+                            );
+                          } 
+                          // ✅ إذا كان folder، افتح محتويات المجلد
+                          else if (type == 'folder') {
+                            final folderId = item['folderId'] as String?;
+                            final folderName = item['title'] as String?;
+                            final folderColor = item['color'] as Color?;
+                            
+                            if (folderId != null) {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => ChangeNotifierProvider.value(
+                                    value: Provider.of<FolderController>(context, listen: false),
+                                    child: FolderContentsPage(
+                                      folderId: folderId,
+                                      folderName: folderName ?? 'مجلد',
+                                      folderColor: folderColor,
+                                    ),
+                                  ),
+                                ),
+                              ).then((_) {
+                                // ✅ إعادة تحميل المجلدات عند العودة من صفحة المحتويات
+                                if (mounted) {
+                                  _loadCategoriesAndFolders();
+                                }
+                              });
+                            }
+                          }
+                        },
                       );
                     },
                   ),
                 if (!isFilesGridView)
-                  FilesListView(
-                    items: folders,
-                    itemMargin: EdgeInsets.only(bottom: 10),
-                    showMoreOptions: true,
+                  Consumer<FileController>(
+                    builder: (context, fileController, child) {
+                      // ✅ استخدام Consumer للاستماع لتغييرات categoriesStats
+                      final categoriesStats = fileController.categoriesStats;
+                      
+                      // ✅ تحديث التصنيفات بالقيم من Controller
+                      final updatedCategories = folders.where((item) => item['type'] == 'category').map((category) {
+                        final categoryName = (category['category'] as String).toLowerCase();
+                        final stats = categoriesStats[categoryName];
+                        
+                        if (stats != null) {
+                          return {
+                            ...category,
+                            'fileCount': stats['filesCount'] ?? 0,
+                            'size': _formatBytes(stats['totalSize'] ?? 0),
+                          };
+                        }
+                        return category;
+                      }).toList();
+                      
+                      // ✅ دمج التصنيفات المحدثة مع المجلدات
+                      final updatedFolders = [
+                        ...updatedCategories,
+                        ...folders.where((item) => item['type'] != 'category').toList(),
+                      ];
+                      
+                      // ✅ تحديث folders في الـ state عند تغيير categoriesStats
+                      if (_previousCategoriesStats.toString() != categoriesStats.toString()) {
+                        WidgetsBinding.instance.addPostFrameCallback((_) {
+                          if (mounted) {
+                            setState(() {
+                              folders = updatedFolders;
+                            });
+                          }
+                        });
+                        _previousCategoriesStats = Map<String, Map<String, dynamic>>.from(categoriesStats);
+                      }
+                      
+                      return FilesListView(
+                        items: updatedFolders,
+                        itemMargin: EdgeInsets.only(bottom: 10),
+                        showMoreOptions: true,
+                        onFileRemoved: () {
+                          // ✅ إعادة تحميل التصنيفات والمجلدات بعد نقل ملف
+                          _loadCategoriesAndFolders();
+                        },
                     onItemTap: (item) {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => CategoryPage(
-                            category: item['title'] as String,
-                            color: item['color'] as Color,
-                            icon: item['icon'] as IconData,
+                      final type = item['type'] as String?;
+                      
+                      // ✅ إذا كان category، افتح صفحة التصنيف
+                      if (type == 'category') {
+                        final categoryTitle = item['title'] as String? ?? '';
+                        final categoryColor = item['color'] as Color? ?? Colors.blue;
+                        final categoryIcon = item['icon'] as IconData? ?? Icons.folder;
+                        
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => CategoryPage(
+                              category: categoryTitle,
+                              color: categoryColor,
+                              icon: categoryIcon,
+                            ),
                           ),
-                        ),
+                        );
+                      } 
+                      // ✅ إذا كان folder، افتح محتويات المجلد
+                      else if (type == 'folder') {
+                        final folderId = item['folderId'] as String?;
+                        final folderName = item['title'] as String?;
+                        final folderColor = item['color'] as Color?;
+                        
+                        if (folderId != null) {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => ChangeNotifierProvider.value(
+                                value: Provider.of<FolderController>(context, listen: false),
+                                child: FolderContentsPage(
+                                  folderId: folderId,
+                                  folderName: folderName ?? 'مجلد',
+                                  folderColor: folderColor,
+                                ),
+                              ),
+                            ),
+                          );
+                        }
+                      }
+                    },
                       );
                     },
                   ),
               ],
 
-              // ✅ عرض الغرف في tab المشتركة
+              // ✅ عرض المجلدات المشتركة والغرف في tab المشتركة
               if (showFiles && !showFolders) ...[
+                // ✅ عرض المجلدات المشتركة
+                if (_isLoadingSharedFolders)
+                  Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(20.0),
+                      child: CircularProgressIndicator(),
+                    ),
+                  )
+                else if (sharedFolders.isNotEmpty) ...[
+                  Text(
+                    'المجلدات المشتركة معي',
+                    style: TextStyle(
+                      fontSize: ResponsiveUtils.getResponsiveValue(
+                        context,
+                        mobile: 18.0,
+                        tablet: 20.0,
+                        desktop: 22.0,
+                      ),
+                      fontWeight: FontWeight.bold,
+                      color: const Color(0xff28336f),
+                    ),
+                  ),
+                  SizedBox(height: 16),
+                  if (isFilesGridView)
+                    FilesGridView(
+                      items: sharedFolders,
+                      showFileCount: true,
+                      onFileRemoved: () {
+                        // ✅ إعادة تحميل المجلدات المشتركة بعد نقل ملف أو مجلد
+                        _loadSharedFolders();
+                        _loadCategoriesAndFolders();
+                      },
+                      onItemTap: (item) {
+                        final type = item['type'] as String?;
+                        
+                        // ✅ إذا كان folder، افتح محتويات المجلد
+                        if (type == 'folder') {
+                          final folderId = item['folderId'] as String?;
+                          final folderName = item['title'] as String?;
+                          final folderColor = item['color'] as Color?;
+                          
+                          if (folderId != null) {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => ChangeNotifierProvider.value(
+                                  value: Provider.of<FolderController>(context, listen: false),
+                                  child: FolderContentsPage(
+                                    folderId: folderId,
+                                    folderName: folderName ?? 'مجلد',
+                                    folderColor: folderColor,
+                                  ),
+                                ),
+                              ),
+                            );
+                          }
+                        }
+                      },
+                    ),
+                  if (!isFilesGridView)
+                    FilesListView(
+                      items: sharedFolders,
+                      itemMargin: EdgeInsets.only(bottom: 10),
+                      showMoreOptions: true,
+                      onItemTap: (item) {
+                        final type = item['type'] as String?;
+                        
+                        // ✅ إذا كان folder، افتح محتويات المجلد
+                        if (type == 'folder') {
+                          final folderId = item['folderId'] as String?;
+                          final folderName = item['title'] as String?;
+                          final folderColor = item['color'] as Color?;
+                          
+                          if (folderId != null) {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => ChangeNotifierProvider.value(
+                                  value: Provider.of<FolderController>(context, listen: false),
+                                  child: FolderContentsPage(
+                                    folderId: folderId,
+                                    folderName: folderName ?? 'مجلد',
+                                    folderColor: folderColor,
+                                  ),
+                                ),
+                              ),
+                            );
+                          }
+                        }
+                      },
+                    ),
+                  SizedBox(height: 32),
+                ],
+                
+                // ✅ عرض الغرف
+                Text(
+                  'الغرف',
+                  style: TextStyle(
+                    fontSize: ResponsiveUtils.getResponsiveValue(
+                      context,
+                      mobile: 18.0,
+                      tablet: 20.0,
+                      desktop: 22.0,
+                    ),
+                    fontWeight: FontWeight.bold,
+                    color: const Color(0xff28336f),
+                  ),
+                ),
+                SizedBox(height: 16),
                 Consumer<RoomController>(
                   builder: (context, roomController, child) {
                     if (roomController.isLoading && roomController.rooms.isEmpty) {
@@ -507,13 +1041,15 @@ class _FoldersPageState extends State<FoldersPage> {
                     // ✅ تحويل الغرف إلى format مناسب للعرض
                     final roomItems = roomController.rooms.map((room) {
                       final membersCount = room['members']?.length ?? 0;
+                      final filesCount = (room['files'] as List?)?.length ?? 0;
                       return {
                         "title": room['name'] ?? 'بدون اسم',
-                        "fileCount": membersCount,
+                        "fileCount": filesCount, // ✅ عدد الملفات في الغرفة
                         "size": _formatMemberCount(membersCount),
                         "icon": Icons.meeting_room,
                         "color": Color(0xff28336f),
                         "description": room['description'] ?? '',
+                        "type": "room", // ✅ تمييز الغرف
                         "room": room, // ✅ إضافة بيانات الغرفة الكاملة
                       };
                     }).toList();
@@ -523,6 +1059,21 @@ class _FoldersPageState extends State<FoldersPage> {
                         items: roomItems,
                         showFileCount: true,
                         onItemTap: (item) {
+                          final room = item['room'] as Map<String, dynamic>?;
+                          if (room != null && room['_id'] != null) {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => ChangeNotifierProvider.value(
+                                  value: roomController,
+                                  child: RoomDetailsPage(roomId: room['_id']),
+                                ),
+                              ),
+                            );
+                          }
+                        },
+                        onRoomDetailsTap: (item) {
+                          // ✅ عرض تفاصيل الغرفة عند الضغط على خيار "عرض التفاصيل" في القائمة
                           final room = item['room'] as Map<String, dynamic>?;
                           if (room != null && room['_id'] != null) {
                             Navigator.push(

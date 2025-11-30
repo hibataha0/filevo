@@ -6,6 +6,8 @@ import 'package:filevo/generated/l10n.dart';
 import 'package:provider/provider.dart';
 import 'package:filevo/controllers/auth/auth_controller.dart';
 import 'package:filevo/views/settings/trash_files_page.dart';
+import 'package:filevo/views/settings/trash_folders_page.dart';
+import 'package:filevo/controllers/folders/folders_controller.dart';
 import 'package:filevo/services/storage_service.dart';
 
 class SettingsPage extends StatefulWidget {
@@ -214,7 +216,7 @@ class _SettingsPageState extends State<SettingsPage> {
                           SettingsItem(
                             icon: Icons.delete_outline,
                             title: 'المحذوفات',
-                            subtitle: 'عرض الملفات المحذوفة وإدارتها',
+                            subtitle: 'عرض الملفات والمجلدات المحذوفة وإدارتها',
                             onTap: () async {
                               final token = await StorageService.getToken();
 
@@ -227,10 +229,45 @@ class _SettingsPageState extends State<SettingsPage> {
                                 return;
                               }
 
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => TrashFilesPage(token: token),
+                              // عرض قائمة للاختيار بين الملفات والمجلدات
+                              showDialog(
+                                context: context,
+                                builder: (context) => AlertDialog(
+                                  title: const Text("المحذوفات"),
+                                  content: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      ListTile(
+                                        leading: const Icon(Icons.insert_drive_file),
+                                        title: const Text("الملفات المحذوفة"),
+                                        onTap: () {
+                                          Navigator.pop(context);
+                                          Navigator.push(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder: (_) => TrashFilesPage(token: token),
+                                            ),
+                                          );
+                                        },
+                                      ),
+                                      ListTile(
+                                        leading: const Icon(Icons.folder),
+                                        title: const Text("المجلدات المحذوفة"),
+                                        onTap: () {
+                                          Navigator.pop(context);
+                                          Navigator.push(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder: (_) => ChangeNotifierProvider(
+                                                create: (_) => FolderController(),
+                                                child: const TrashFoldersPage(),
+                                              ),
+                                            ),
+                                          );
+                                        },
+                                      ),
+                                    ],
+                                  ),
                                 ),
                               );
                             },

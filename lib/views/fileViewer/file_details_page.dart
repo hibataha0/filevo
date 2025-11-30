@@ -10,8 +10,9 @@ import 'package:filevo/views/folders/share_file_with_room_page.dart';
 
 class FileDetailsPage extends StatefulWidget {
   final String fileId;
+  final String? roomId; // ✅ معرف الروم (اختياري) - إذا كان موجوداً، نستخدم getSharedFileDetailsInRoom
 
-  const FileDetailsPage({super.key, required this.fileId});
+  const FileDetailsPage({super.key, required this.fileId, this.roomId});
 
   @override
   State<FileDetailsPage> createState() => _FileDetailsPageState();
@@ -39,16 +40,57 @@ class _FileDetailsPageState extends State<FileDetailsPage> {
       }
 
       print("🔄 Fetching details for file ID: ${widget.fileId}");
-      final data = await fileController.getFileDetails(
-        fileId: widget.fileId,
-        token: token,
-      );
+      
+      // ✅ إذا كان roomId موجوداً، استخدم getSharedFileDetailsInRoom
+      final data = widget.roomId != null
+          ? await fileController.getSharedFileDetailsInRoom(
+              fileId: widget.fileId,
+              token: token,
+            )
+          : await fileController.getFileDetails(
+              fileId: widget.fileId,
+              token: token,
+            );
 
       print("📥 Raw Data from backend: $data");
+
+      // ✅ التحقق من وجود خطأ في الاستجابة
+      if (data != null && data['error'] != null) {
+        if (mounted) {
+          setState(() {
+            isLoading = false;
+            fileData = null;
+          });
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(data['error'] ?? 'حدث خطأ في تحميل بيانات الملف'),
+              backgroundColor: Colors.red,
+              duration: Duration(seconds: 3),
+            ),
+          );
+        }
+        return;
+      }
 
       if (mounted) {
         setState(() {
           fileData = data?['file'];
+          // ✅ Log للتحقق من البيانات
+          print('📦 File data loaded: ${fileData?.keys.toList()}');
+          if (widget.roomId != null) {
+            print('🏠 Room ID: ${widget.roomId}');
+            print('👤 Shared by: ${fileData?['sharedBy']}');
+            print('📅 Last modified: ${fileData?['lastModified']}');
+            print('📁 Path: ${fileData?['path']}');
+            // ✅ إذا لم يكن path موجوداً، نحتاج لجلب تفاصيل الملف العادية للحصول على path
+            if (fileData?['path'] == null || fileData!['path'].toString().isEmpty) {
+              print('⚠️ Path not found in shared file details, fetching regular file details...');
+              // ✅ جلب path من تفاصيل الملف العادية
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                _loadFilePathFromRegularDetails();
+              });
+            }
+          }
         });
       }
 
@@ -73,7 +115,50 @@ class _FileDetailsPageState extends State<FileDetailsPage> {
 
     } catch (e) {
       print("❌ Error fetching file details: $e");
-      if (mounted) setState(() => isLoading = false);
+      if (mounted) {
+        setState(() {
+          isLoading = false;
+          fileData = null;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('حدث خطأ في تحميل بيانات الملف: ${e.toString()}'),
+            backgroundColor: Colors.red,
+            duration: Duration(seconds: 3),
+            action: SnackBarAction(
+              label: 'إعادة المحاولة',
+              textColor: Colors.white,
+              onPressed: _loadFileDetails,
+            ),
+          ),
+        );
+      }
+    }
+  }
+
+  // ✅ جلب path من تفاصيل الملف العادية إذا لم يكن موجوداً في shared details
+  Future<void> _loadFilePathFromRegularDetails() async {
+    try {
+      final fileController = Provider.of<FileController>(context, listen: false);
+      final token = await StorageService.getToken();
+
+      if (token == null) return;
+
+      final data = await fileController.getFileDetails(
+        fileId: widget.fileId,
+        token: token,
+      );
+
+      if (data != null && data['file'] != null && data['file']['path'] != null) {
+        if (mounted && fileData != null) {
+          setState(() {
+            fileData!['path'] = data['file']['path'];
+            print('✅ Path loaded from regular details: ${fileData!['path']}');
+          });
+        }
+      }
+    } catch (e) {
+      print('❌ Error loading file path: $e');
     }
   }
 
@@ -262,7 +347,20 @@ class _FileDetailsPageState extends State<FileDetailsPage> {
 
     final fileName = fileData!['name'] ?? 'بدون اسم';
     final fileType = fileData!['category'] ?? 'غير مصنف';
-    final fileUrl = "http://10.0.2.2:8000/${fileData!['path'] ?? ''}";
+    // ✅ الحصول على path من البيانات - قد يكون في path مباشرة أو في originalData
+    final filePath = fileData!['path']?.toString() ?? '';
+    // ✅ بناء URL بشكل صحيح
+    String fileUrl = '';
+    if (filePath.isNotEmpty) {
+      // ✅ تنظيف path وإزالة الشرطات المزدوجة
+      String cleanPath = filePath.replaceAll(r'\', '/').replaceAll('//', '/');
+      while (cleanPath.startsWith('/')) {
+        cleanPath = cleanPath.substring(1);
+      }
+      fileUrl = "http://10.0.2.2:8000/$cleanPath";
+    }
+    
+    print('🖼️ File preview - Name: $fileName, Type: $fileType, Path: $filePath, URL: $fileUrl');
 
     return SingleChildScrollView(
       physics: BouncingScrollPhysics(),
@@ -306,9 +404,9 @@ class _FileDetailsPageState extends State<FileDetailsPage> {
             child: Container(
               height: 200,
               width: double.infinity,
-              child: fileType.toLowerCase() == "images" 
+              child: fileUrl.isNotEmpty && fileType.toLowerCase() == "images" 
                   ? _buildImagePreview(fileUrl, fileType)
-                  : fileType.toLowerCase() == "videos"
+                  : fileUrl.isNotEmpty && fileType.toLowerCase() == "videos"
                       ? _buildVideoPreview(fileUrl, fileType)
                       : _buildFileIcon(fileType),
             ),
@@ -636,6 +734,14 @@ class _FileDetailsPageState extends State<FileDetailsPage> {
   }
 
   Widget _buildFileDetailsSection() {
+    // ✅ إذا كان ملف/مجلد مشترك في روم، اعرض معلومات محددة فقط
+    final isSharedInRoom = widget.roomId != null && fileData != null && fileData!['sharedBy'] != null;
+    
+    if (isSharedInRoom) {
+      return _buildSharedInRoomDetails();
+    }
+    
+    // ✅ عرض التفاصيل العادية للملفات/المجلدات العادية
     return Container(
       margin: EdgeInsets.symmetric(horizontal: 20),
       padding: EdgeInsets.all(24),
@@ -687,9 +793,24 @@ class _FileDetailsPageState extends State<FileDetailsPage> {
           
           // Details Grid
           _buildDetailItem('folder', '📁', 'التصنيف', fileData!['category'] ?? '—'),
-          _buildDetailItem('size', '📊', 'الحجم', fileData!['sizeFormatted'] ?? fileData!['size'] ?? '—'),
+          
+          // ✅ عرض الامتداد إذا كان متاحاً
+          if (fileData!['extension'] != null)
+            _buildDetailItem('extension', '📄', 'الامتداد', fileData!['extension'] ?? '—'),
+          
+          _buildDetailItem('size', '📊', 'الحجم', fileData!['sizeFormatted'] ?? _formatSize(fileData!['size']) ?? '—'),
           _buildDetailItem('time', '🕒', 'أنشئ في', _formatDate(fileData!['createdAt'])),
-          _buildDetailItem('edit', '✏️', 'آخر تعديل', _formatDate(fileData!['updatedAt'])),
+          _buildDetailItem('edit', '✏️', 'آخر تعديل', _formatDate(fileData!['updatedAt'] ?? fileData!['lastModified'])),
+          
+          // ✅ عرض معلومات المالك (owner)
+          if (fileData!['owner'] != null)
+            _buildDetailItem(
+              'owner',
+              '👤',
+              'المالك',
+              fileData!['owner']['name'] ?? fileData!['owner']['email'] ?? '—',
+            ),
+          
           _buildDetailItem('description', '📝', 'الوصف', 
               fileData!['description']?.isNotEmpty == true ? fileData!['description'] : "—"),
           _buildDetailItem('tags', '🏷️', 'الوسوم', 
@@ -704,14 +825,133 @@ class _FileDetailsPageState extends State<FileDetailsPage> {
                 _buildDetailItem(
                   'share',
                   '👥',
-                  'تمت المشاركة مع',
+                  'تمت المشاركة مع (${fileData!['sharedWithCount'] ?? fileData!['sharedWith'].length})',
                   fileData!['sharedWith']
-                      .map<String>((u) => u['email']?.toString() ?? '')
-                      .where((email) => email.isNotEmpty)
+                      .map<String>((u) {
+                        // ✅ محاولة الحصول على name أو email من user object
+                        if (u['user'] != null && u['user'] is Map) {
+                          return u['user']['name'] ?? u['user']['email'] ?? '';
+                        }
+                        return u['name'] ?? u['email'] ?? '';
+                      })
+                      .where((name) => name.isNotEmpty)
                       .join(', ') ?? "—",
                 ),
               ],
             ),
+          
+          // ✅ عرض حالة الملف
+          if (fileData!['isOwner'] != null)
+            _buildDetailItem(
+              'status',
+              fileData!['isOwner'] == true ? '⭐' : '🔗',
+              'الحالة',
+              fileData!['isOwner'] == true ? 'أنت المالك' : 'ملف مشترك',
+            ),
+        ],
+      ),
+    );
+  }
+
+  // ✅ بناء قسم تفاصيل الملف/المجلد المشترك في الروم
+  Widget _buildSharedInRoomDetails() {
+    return Container(
+      margin: EdgeInsets.symmetric(horizontal: 20),
+      padding: EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: Color(0xFF000000).withOpacity(0.05),
+            blurRadius: 20,
+            offset: Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Section Header
+          Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [Color(0xFF4F6BED), Color(0xFF6D8BFF)],
+                  ),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.info_outline_rounded,
+                  color: Colors.white,
+                  size: 20,
+                ),
+              ),
+              SizedBox(width: 12),
+              Text(
+                'معلومات الملف',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF1F2937),
+                ),
+              ),
+            ],
+          ),
+          
+          SizedBox(height: 24),
+          
+          // ✅ التصنيف
+          if (fileData!['category'] != null)
+            _buildDetailItem('folder', '📁', 'التصنيف', fileData!['category'] ?? '—'),
+          
+          // ✅ الامتداد
+          if (fileData!['extension'] != null)
+            _buildDetailItem('extension', '📄', 'الامتداد', fileData!['extension'] ?? '—'),
+          
+          // ✅ الحجم
+          _buildDetailItem('size', '📊', 'الحجم', fileData!['sizeFormatted'] ?? _formatSize(fileData!['size']) ?? '—'),
+          
+          // ✅ تاريخ الإنشاء (إذا كان متاحاً)
+          if (fileData!['createdAt'] != null || fileData!['uploadedAt'] != null)
+            _buildDetailItem('time', '🕒', 'أنشئ في', _formatDate(fileData!['createdAt'] ?? fileData!['uploadedAt'])),
+          
+          // ✅ تاريخ آخر تعديل
+          if (fileData!['lastModified'] != null || fileData!['updatedAt'] != null)
+            _buildDetailItem('edit', '✏️', 'آخر تعديل', _formatDate(fileData!['lastModified'] ?? fileData!['updatedAt'])),
+          
+          // ✅ المالك (owner)
+          if (fileData!['owner'] != null)
+            _buildDetailItem(
+              'owner',
+              '👤',
+              'المالك',
+              fileData!['owner']['name'] ?? fileData!['owner']['email'] ?? '—',
+            ),
+          
+          // ✅ من شارك الملف/المجلد (sharedBy)
+          if (fileData!['sharedBy'] != null)
+            _buildDetailItem(
+              'sharedBy',
+              '🔗',
+              'شاركه',
+              fileData!['sharedBy']['name'] ?? fileData!['sharedBy']['email'] ?? '—',
+            ),
+          
+          // ✅ الوصف (إذا كان متاحاً)
+          _buildDetailItem('description', '📝', 'الوصف', 
+              (fileData!['description'] != null && fileData!['description'].toString().isNotEmpty) 
+                  ? fileData!['description'].toString() 
+                  : "—"),
+          
+          // ✅ التاغات (إذا كانت متاحة)
+          _buildDetailItem('tags', '🏷️', 'الوسوم', 
+              (fileData!['tags'] != null && (fileData!['tags'] as List?)?.isNotEmpty == true)
+                  ? (fileData!['tags'] as List).join(', ')
+                  : "—"),
         ],
       ),
     );
@@ -727,6 +967,9 @@ class _FileDetailsPageState extends State<FileDetailsPage> {
         case 'description': return Color(0xFF4F6BED);
         case 'tags': return Color(0xFFEC4899);
         case 'share': return Color(0xFF06B6D4);
+        case 'owner': return Color(0xFF10B981);
+        case 'extension': return Color(0xFF8B5CF6);
+        case 'status': return Color(0xFFF59E0B);
         default: return Color(0xFF6B7280);
       }
     }
@@ -782,7 +1025,34 @@ class _FileDetailsPageState extends State<FileDetailsPage> {
 
   String _formatDate(dynamic date) {
     if (date == null) return '—';
-    return date.toString();
+    try {
+      final dateTime = date is String ? DateTime.parse(date) : date as DateTime;
+      return '${dateTime.day}/${dateTime.month}/${dateTime.year} ${dateTime.hour}:${dateTime.minute.toString().padLeft(2, '0')}';
+    } catch (e) {
+      return date.toString();
+    }
+  }
+
+  // ✅ تنسيق حجم الملف
+  String? _formatSize(dynamic size) {
+    if (size == null) return null;
+    try {
+      final bytes = size is int ? size : (size is num ? size.toInt() : int.tryParse(size.toString()) ?? 0);
+      if (bytes == 0) return '0 B';
+      const k = 1024;
+      const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+      int i = 0;
+      double sizeInUnit = bytes.toDouble();
+      
+      while (sizeInUnit >= k && i < sizes.length - 1) {
+        sizeInUnit /= k;
+        i++;
+      }
+      
+      return '${sizeInUnit.toStringAsFixed(2)} ${sizes[i]}';
+    } catch (e) {
+      return null;
+    }
   }
 
   @override

@@ -8,6 +8,9 @@ import 'package:filevo/views/folders/room_comments_page.dart';
 import 'package:filevo/views/folders/share_file_with_room_page.dart';
 import 'package:filevo/views/folders/share_folder_with_room_page.dart';
 import 'package:filevo/views/folders/room_files_page.dart';
+import 'package:filevo/views/folders/room_folders_page.dart';
+import 'package:filevo/views/folders/folder_contents_page.dart';
+import 'package:filevo/controllers/folders/folders_controller.dart';
 import 'package:filevo/views/fileViewer/pdfViewer.dart';
 import 'package:filevo/views/fileViewer/VideoViewer.dart';
 import 'package:filevo/views/fileViewer/audioPlayer.dart';
@@ -17,6 +20,8 @@ import 'package:filevo/views/fileViewer/textViewer.dart';
 import 'package:filevo/config/api_config.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:http/http.dart' as http;
+import 'package:filevo/responsive.dart';
+import 'package:filevo/services/storage_service.dart';
 
 class RoomDetailsPage extends StatefulWidget {
   final String roomId;
@@ -43,14 +48,35 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
   Future<void> _loadRoomDetails() async {
     if (!mounted) return;
     
-    final roomController = Provider.of<RoomController>(context, listen: false);
-    final response = await roomController.getRoomById(widget.roomId);
+    try {
+      final roomController = Provider.of<RoomController>(context, listen: false);
+      final response = await roomController.getRoomById(widget.roomId);
 
-    if (mounted) {
-      setState(() {
-        roomData = response?['room'];
-        isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          // ✅ التأكد من أن الاستجابة تحتوي على room
+          if (response != null && response['room'] != null) {
+            roomData = response['room'];
+            isLoading = false;
+          } else {
+            roomData = null;
+            isLoading = false;
+          }
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          roomData = null;
+          isLoading = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('خطأ في تحميل تفاصيل الغرفة: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 
@@ -69,18 +95,109 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
           style: TextStyle(
             color: Colors.white,
             fontWeight: FontWeight.w700,
-            fontSize: 18,
+            fontSize: ResponsiveUtils.getResponsiveValue(
+              context,
+              mobile: 18.0,
+              tablet: 20.0,
+              desktop: 22.0,
+            ),
           ),
         ),
         backgroundColor: Color(0xff28336f),
         elevation: 0,
         centerTitle: true,
-        iconTheme: IconThemeData(color: Colors.white),
+        iconTheme: IconThemeData(
+          color: Colors.white,
+          size: ResponsiveUtils.getResponsiveValue(
+            context,
+            mobile: 24.0,
+            tablet: 26.0,
+            desktop: 28.0,
+          ),
+        ),
         actions: [
           IconButton(
             icon: Icon(Icons.refresh),
+            iconSize: ResponsiveUtils.getResponsiveValue(
+              context,
+              mobile: 24.0,
+              tablet: 26.0,
+              desktop: 28.0,
+            ),
             onPressed: _refreshRoom,
           ),
+          // ✅ قائمة خيارات الغرفة (حذف/مغادرة)
+          if (roomData != null)
+            PopupMenuButton<String>(
+              icon: Icon(Icons.more_vert),
+              iconSize: ResponsiveUtils.getResponsiveValue(
+                context,
+                mobile: 24.0,
+                tablet: 26.0,
+                desktop: 28.0,
+              ),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              onSelected: (value) async {
+                if (value == 'delete') {
+                  // ✅ التحقق من أن المستخدم هو المالك قبل عرض dialog
+                  final isOwner = await _checkIfCurrentUserIsOwner();
+                  if (isOwner) {
+                    _showDeleteRoomDialog();
+                  } else {
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('❌ فقط مالك الغرفة يمكنه حذفها'),
+                          backgroundColor: Colors.red,
+                        ),
+                      );
+                    }
+                  }
+                } else if (value == 'leave') {
+                  // ✅ التحقق من أن المستخدم ليس المالك قبل عرض dialog
+                  final isOwner = await _checkIfCurrentUserIsOwner();
+                  if (!isOwner) {
+                    _showLeaveRoomDialog();
+                  } else {
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('❌ مالك الغرفة لا يمكنه مغادرتها. يرجى حذف الغرفة بدلاً من ذلك'),
+                          backgroundColor: Colors.orange,
+                        ),
+                      );
+                    }
+                  }
+                }
+              },
+              itemBuilder: (context) {
+                // ✅ عرض كلا الخيارين، وسيتم التحقق في onSelected
+                return [
+                  PopupMenuItem(
+                    value: 'delete',
+                    child: Row(
+                      children: [
+                        Icon(Icons.delete, color: Colors.red),
+                        SizedBox(width: 12),
+                        Text('حذف الغرفة', style: TextStyle(color: Colors.red)),
+                      ],
+                    ),
+                  ),
+                  PopupMenuItem(
+                    value: 'leave',
+                    child: Row(
+                      children: [
+                        Icon(Icons.exit_to_app, color: Colors.orange),
+                        SizedBox(width: 12),
+                        Text('مغادرة الغرفة', style: TextStyle(color: Colors.orange)),
+                      ],
+                    ),
+                  ),
+                ];
+              },
+            ),
         ],
       ),
       body: isLoading
@@ -108,17 +225,47 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
                     child: Column(
                       children: [
                         _buildRoomHeader(),
-                        SizedBox(height: 20),
+                        SizedBox(height: ResponsiveUtils.getResponsiveValue(
+                          context,
+                          mobile: 20.0,
+                          tablet: 24.0,
+                          desktop: 28.0,
+                        )),
                         _buildQuickActions(),
-                        SizedBox(height: 20),
+                        SizedBox(height: ResponsiveUtils.getResponsiveValue(
+                          context,
+                          mobile: 20.0,
+                          tablet: 24.0,
+                          desktop: 28.0,
+                        )),
                         _buildRoomInfo(),
-                        SizedBox(height: 20),
+                        SizedBox(height: ResponsiveUtils.getResponsiveValue(
+                          context,
+                          mobile: 20.0,
+                          tablet: 24.0,
+                          desktop: 28.0,
+                        )),
                         _buildMembersSection(),
-                        SizedBox(height: 20),
+                        SizedBox(height: ResponsiveUtils.getResponsiveValue(
+                          context,
+                          mobile: 20.0,
+                          tablet: 24.0,
+                          desktop: 28.0,
+                        )),
                         _buildSharedFilesSection(),
-                        SizedBox(height: 20),
+                        SizedBox(height: ResponsiveUtils.getResponsiveValue(
+                          context,
+                          mobile: 20.0,
+                          tablet: 24.0,
+                          desktop: 28.0,
+                        )),
                         _buildSharedFoldersSection(),
-                        SizedBox(height: 100),
+                        SizedBox(height: ResponsiveUtils.getResponsiveValue(
+                          context,
+                          mobile: 100.0,
+                          tablet: 120.0,
+                          desktop: 140.0,
+                        )),
                       ],
                     ),
                   ),
@@ -132,16 +279,71 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
     final filesCount = (roomData!['files'] as List?)?.length ?? 0;
     final foldersCount = (roomData!['folders'] as List?)?.length ?? 0;
 
+    final margin = ResponsiveUtils.getResponsiveValue(
+      context,
+      mobile: 20.0,
+      tablet: 32.0,
+      desktop: 48.0,
+    );
+    final padding = ResponsiveUtils.getResponsiveValue(
+      context,
+      mobile: 24.0,
+      tablet: 28.0,
+      desktop: 32.0,
+    );
+    final borderRadius = ResponsiveUtils.getResponsiveValue(
+      context,
+      mobile: 24.0,
+      tablet: 28.0,
+      desktop: 32.0,
+    );
+    final iconSize = ResponsiveUtils.getResponsiveValue(
+      context,
+      mobile: 60.0,
+      tablet: 70.0,
+      desktop: 80.0,
+    );
+    final iconInnerSize = ResponsiveUtils.getResponsiveValue(
+      context,
+      mobile: 30.0,
+      tablet: 35.0,
+      desktop: 40.0,
+    );
+    final titleFontSize = ResponsiveUtils.getResponsiveValue(
+      context,
+      mobile: 24.0,
+      tablet: 28.0,
+      desktop: 32.0,
+    );
+    final subtitleFontSize = ResponsiveUtils.getResponsiveValue(
+      context,
+      mobile: 14.0,
+      tablet: 16.0,
+      desktop: 18.0,
+    );
+    final descriptionFontSize = ResponsiveUtils.getResponsiveValue(
+      context,
+      mobile: 14.0,
+      tablet: 16.0,
+      desktop: 18.0,
+    );
+    final spacing = ResponsiveUtils.getResponsiveValue(
+      context,
+      mobile: 16.0,
+      tablet: 20.0,
+      desktop: 24.0,
+    );
+
     return Container(
-      margin: EdgeInsets.all(20),
-      padding: EdgeInsets.all(24),
+      margin: EdgeInsets.all(margin),
+      padding: EdgeInsets.all(padding),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [Color(0xff28336f), Color(0xFF4D62D5)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(borderRadius),
         boxShadow: [
           BoxShadow(
             color: Color(0xff28336f).withOpacity(0.3),
@@ -156,8 +358,8 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
           Row(
             children: [
               Container(
-                width: 60,
-                height: 60,
+                width: iconSize,
+                height: iconSize,
                 decoration: BoxDecoration(
                   color: Colors.white.withOpacity(0.2),
                   shape: BoxShape.circle,
@@ -165,10 +367,10 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
                 child: Icon(
                   Icons.meeting_room,
                   color: Colors.white,
-                  size: 30,
+                  size: iconInnerSize,
                 ),
               ),
-              SizedBox(width: 16),
+              SizedBox(width: spacing),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -176,7 +378,7 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
                     Text(
                       roomData!['name'] ?? 'بدون اسم',
                       style: TextStyle(
-                        fontSize: 24,
+                        fontSize: titleFontSize,
                         fontWeight: FontWeight.bold,
                         color: Colors.white,
                       ),
@@ -185,7 +387,7 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
                     Text(
                       'المالك: ${owner['name'] ?? owner['email'] ?? '—'}',
                       style: TextStyle(
-                        fontSize: 14,
+                        fontSize: subtitleFontSize,
                         color: Colors.white.withOpacity(0.9),
                       ),
                     ),
@@ -196,29 +398,39 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
           ),
           if (roomData!['description'] != null &&
               roomData!['description'].toString().isNotEmpty) ...[
-            SizedBox(height: 16),
+            SizedBox(height: spacing),
             Container(
-              padding: EdgeInsets.all(12),
+              padding: EdgeInsets.all(ResponsiveUtils.getResponsiveValue(
+                context,
+                mobile: 12.0,
+                tablet: 14.0,
+                desktop: 16.0,
+              )),
               decoration: BoxDecoration(
                 color: Colors.white.withOpacity(0.15),
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(ResponsiveUtils.getResponsiveValue(
+                  context,
+                  mobile: 12.0,
+                  tablet: 14.0,
+                  desktop: 16.0,
+                )),
               ),
               child: Text(
                 roomData!['description'],
                 style: TextStyle(
-                  fontSize: 14,
+                  fontSize: descriptionFontSize,
                   color: Colors.white,
                 ),
               ),
             ),
           ],
-          SizedBox(height: 20),
+          SizedBox(height: spacing),
           Row(
             children: [
               _buildStatItem(Icons.people, '$membersCount', 'أعضاء'),
-              SizedBox(width: 16),
+              SizedBox(width: spacing),
               _buildStatItem(Icons.insert_drive_file, '$filesCount', 'ملفات'),
-              SizedBox(width: 16),
+              SizedBox(width: spacing),
               _buildStatItem(Icons.folder, '$foldersCount', 'مجلدات'),
             ],
           ),
@@ -228,21 +440,58 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
   }
 
   Widget _buildStatItem(IconData icon, String value, String label) {
+    final padding = ResponsiveUtils.getResponsiveValue(
+      context,
+      mobile: 12.0,
+      tablet: 14.0,
+      desktop: 16.0,
+    );
+    final horizontalPadding = ResponsiveUtils.getResponsiveValue(
+      context,
+      mobile: 8.0,
+      tablet: 10.0,
+      desktop: 12.0,
+    );
+    final borderRadius = ResponsiveUtils.getResponsiveValue(
+      context,
+      mobile: 12.0,
+      tablet: 14.0,
+      desktop: 16.0,
+    );
+    final iconSize = ResponsiveUtils.getResponsiveValue(
+      context,
+      mobile: 24.0,
+      tablet: 28.0,
+      desktop: 32.0,
+    );
+    final valueFontSize = ResponsiveUtils.getResponsiveValue(
+      context,
+      mobile: 18.0,
+      tablet: 20.0,
+      desktop: 22.0,
+    );
+    final labelFontSize = ResponsiveUtils.getResponsiveValue(
+      context,
+      mobile: 12.0,
+      tablet: 14.0,
+      desktop: 16.0,
+    );
+
     return Expanded(
       child: Container(
-        padding: EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+        padding: EdgeInsets.symmetric(vertical: padding, horizontal: horizontalPadding),
         decoration: BoxDecoration(
           color: Colors.white.withOpacity(0.15),
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(borderRadius),
         ),
         child: Column(
           children: [
-            Icon(icon, color: Colors.white, size: 24),
+            Icon(icon, color: Colors.white, size: iconSize),
             SizedBox(height: 4),
             Text(
               value,
               style: TextStyle(
-                fontSize: 18,
+                fontSize: valueFontSize,
                 fontWeight: FontWeight.bold,
                 color: Colors.white,
               ),
@@ -250,7 +499,7 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
             Text(
               label,
               style: TextStyle(
-                fontSize: 12,
+                fontSize: labelFontSize,
                 color: Colors.white.withOpacity(0.9),
               ),
             ),
@@ -265,8 +514,21 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
     // TODO: Get current user ID from AuthController
     final isOwner = true; // Replace with actual check
 
+    final margin = ResponsiveUtils.getResponsiveValue(
+      context,
+      mobile: 20.0,
+      tablet: 32.0,
+      desktop: 48.0,
+    );
+    final spacing = ResponsiveUtils.getResponsiveValue(
+      context,
+      mobile: 12.0,
+      tablet: 16.0,
+      desktop: 20.0,
+    );
+
     return Container(
-      margin: EdgeInsets.symmetric(horizontal: 20),
+      margin: EdgeInsets.symmetric(horizontal: margin),
       child: Row(
         children: [
           Expanded(
@@ -290,7 +552,7 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
               },
             ),
           ),
-          SizedBox(width: 12),
+          SizedBox(width: spacing),
           Expanded(
             child: _buildActionButton(
               icon: Icons.people,
@@ -312,7 +574,7 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
               },
             ),
           ),
-          SizedBox(width: 12),
+          SizedBox(width: spacing),
           Expanded(
             child: _buildActionButton(
               icon: Icons.comment,
@@ -339,24 +601,55 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
     required Color color,
     required VoidCallback onTap,
   }) {
+    final borderRadius = ResponsiveUtils.getResponsiveValue(
+      context,
+      mobile: 16.0,
+      tablet: 18.0,
+      desktop: 20.0,
+    );
+    final verticalPadding = ResponsiveUtils.getResponsiveValue(
+      context,
+      mobile: 16.0,
+      tablet: 18.0,
+      desktop: 20.0,
+    );
+    final iconSize = ResponsiveUtils.getResponsiveValue(
+      context,
+      mobile: 28.0,
+      tablet: 32.0,
+      desktop: 36.0,
+    );
+    final fontSize = ResponsiveUtils.getResponsiveValue(
+      context,
+      mobile: 12.0,
+      tablet: 14.0,
+      desktop: 16.0,
+    );
+    final spacing = ResponsiveUtils.getResponsiveValue(
+      context,
+      mobile: 8.0,
+      tablet: 10.0,
+      desktop: 12.0,
+    );
+
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: BorderRadius.circular(borderRadius),
       child: Container(
-        padding: EdgeInsets.symmetric(vertical: 16),
+        padding: EdgeInsets.symmetric(vertical: verticalPadding),
         decoration: BoxDecoration(
           color: color.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(borderRadius),
           border: Border.all(color: color.withOpacity(0.3)),
         ),
         child: Column(
           children: [
-            Icon(icon, color: color, size: 28),
-            SizedBox(height: 8),
+            Icon(icon, color: color, size: iconSize),
+            SizedBox(height: spacing),
             Text(
               label,
               style: TextStyle(
-                fontSize: 12,
+                fontSize: fontSize,
                 fontWeight: FontWeight.w600,
                 color: color,
               ),
@@ -368,12 +661,61 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
   }
 
   Widget _buildRoomInfo() {
+    final margin = ResponsiveUtils.getResponsiveValue(
+      context,
+      mobile: 20.0,
+      tablet: 32.0,
+      desktop: 48.0,
+    );
+    final padding = ResponsiveUtils.getResponsiveValue(
+      context,
+      mobile: 24.0,
+      tablet: 28.0,
+      desktop: 32.0,
+    );
+    final borderRadius = ResponsiveUtils.getResponsiveValue(
+      context,
+      mobile: 24.0,
+      tablet: 28.0,
+      desktop: 32.0,
+    );
+    final iconSize = ResponsiveUtils.getResponsiveValue(
+      context,
+      mobile: 40.0,
+      tablet: 48.0,
+      desktop: 56.0,
+    );
+    final iconInnerSize = ResponsiveUtils.getResponsiveValue(
+      context,
+      mobile: 20.0,
+      tablet: 24.0,
+      desktop: 28.0,
+    );
+    final titleFontSize = ResponsiveUtils.getResponsiveValue(
+      context,
+      mobile: 20.0,
+      tablet: 22.0,
+      desktop: 24.0,
+    );
+    final spacing = ResponsiveUtils.getResponsiveValue(
+      context,
+      mobile: 12.0,
+      tablet: 16.0,
+      desktop: 20.0,
+    );
+    final sectionSpacing = ResponsiveUtils.getResponsiveValue(
+      context,
+      mobile: 24.0,
+      tablet: 28.0,
+      desktop: 32.0,
+    );
+
     return Container(
-      margin: EdgeInsets.symmetric(horizontal: 20),
-      padding: EdgeInsets.all(24),
+      margin: EdgeInsets.symmetric(horizontal: margin),
+      padding: EdgeInsets.all(padding),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(borderRadius),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.05),
@@ -388,28 +730,28 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
           Row(
             children: [
               Container(
-                width: 40,
-                height: 40,
+                width: iconSize,
+                height: iconSize,
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: [Color(0xFF4F6BED), Color(0xFF6D8BFF)],
                   ),
                   shape: BoxShape.circle,
                 ),
-                child: Icon(Icons.info_outline, color: Colors.white, size: 20),
+                child: Icon(Icons.info_outline, color: Colors.white, size: iconInnerSize),
               ),
-              SizedBox(width: 12),
+              SizedBox(width: spacing),
               Text(
                 'معلومات الغرفة',
                 style: TextStyle(
-                  fontSize: 20,
+                  fontSize: titleFontSize,
                   fontWeight: FontWeight.w700,
                   color: Color(0xFF1F2937),
                 ),
               ),
             ],
           ),
-          SizedBox(height: 24),
+          SizedBox(height: sectionSpacing),
           _buildInfoItem('🕒', 'أنشئت في', _formatDate(roomData!['createdAt'])),
           _buildInfoItem('✏️', 'آخر تعديل', _formatDate(roomData!['updatedAt'])),
           _buildInfoItem('👤', 'المالك', roomData!['owner']?['name'] ?? roomData!['owner']?['email'] ?? '—'),
@@ -419,12 +761,43 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
   }
 
   Widget _buildInfoItem(String emoji, String label, String value) {
+    final emojiSize = ResponsiveUtils.getResponsiveValue(
+      context,
+      mobile: 20.0,
+      tablet: 24.0,
+      desktop: 28.0,
+    );
+    final spacing = ResponsiveUtils.getResponsiveValue(
+      context,
+      mobile: 12.0,
+      tablet: 16.0,
+      desktop: 20.0,
+    );
+    final labelFontSize = ResponsiveUtils.getResponsiveValue(
+      context,
+      mobile: 12.0,
+      tablet: 14.0,
+      desktop: 16.0,
+    );
+    final valueFontSize = ResponsiveUtils.getResponsiveValue(
+      context,
+      mobile: 16.0,
+      tablet: 18.0,
+      desktop: 20.0,
+    );
+    final bottomPadding = ResponsiveUtils.getResponsiveValue(
+      context,
+      mobile: 16.0,
+      tablet: 18.0,
+      desktop: 20.0,
+    );
+
     return Padding(
-      padding: EdgeInsets.only(bottom: 16),
+      padding: EdgeInsets.only(bottom: bottomPadding),
       child: Row(
         children: [
-          Text(emoji, style: TextStyle(fontSize: 20)),
-          SizedBox(width: 12),
+          Text(emoji, style: TextStyle(fontSize: emojiSize)),
+          SizedBox(width: spacing),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -432,7 +805,7 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
                 Text(
                   label,
                   style: TextStyle(
-                    fontSize: 12,
+                    fontSize: labelFontSize,
                     color: Colors.grey[600],
                   ),
                 ),
@@ -440,7 +813,7 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
                 Text(
                   value,
                   style: TextStyle(
-                    fontSize: 16,
+                    fontSize: valueFontSize,
                     fontWeight: FontWeight.w600,
                     color: Color(0xFF1F2937),
                   ),
@@ -456,12 +829,79 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
   Widget _buildMembersSection() {
     final members = roomData!['members'] as List? ?? [];
 
+    final margin = ResponsiveUtils.getResponsiveValue(
+      context,
+      mobile: 20.0,
+      tablet: 32.0,
+      desktop: 48.0,
+    );
+    final padding = ResponsiveUtils.getResponsiveValue(
+      context,
+      mobile: 24.0,
+      tablet: 28.0,
+      desktop: 32.0,
+    );
+    final borderRadius = ResponsiveUtils.getResponsiveValue(
+      context,
+      mobile: 24.0,
+      tablet: 28.0,
+      desktop: 32.0,
+    );
+    final iconSize = ResponsiveUtils.getResponsiveValue(
+      context,
+      mobile: 40.0,
+      tablet: 48.0,
+      desktop: 56.0,
+    );
+    final iconInnerSize = ResponsiveUtils.getResponsiveValue(
+      context,
+      mobile: 20.0,
+      tablet: 24.0,
+      desktop: 28.0,
+    );
+    final titleFontSize = ResponsiveUtils.getResponsiveValue(
+      context,
+      mobile: 20.0,
+      tablet: 22.0,
+      desktop: 24.0,
+    );
+    final spacing = ResponsiveUtils.getResponsiveValue(
+      context,
+      mobile: 12.0,
+      tablet: 16.0,
+      desktop: 20.0,
+    );
+    final sectionSpacing = ResponsiveUtils.getResponsiveValue(
+      context,
+      mobile: 16.0,
+      tablet: 20.0,
+      desktop: 24.0,
+    );
+    final emptyPadding = ResponsiveUtils.getResponsiveValue(
+      context,
+      mobile: 20.0,
+      tablet: 24.0,
+      desktop: 28.0,
+    );
+    final buttonIconSize = ResponsiveUtils.getResponsiveValue(
+      context,
+      mobile: 16.0,
+      tablet: 18.0,
+      desktop: 20.0,
+    );
+    final buttonFontSize = ResponsiveUtils.getResponsiveValue(
+      context,
+      mobile: 14.0,
+      tablet: 16.0,
+      desktop: 18.0,
+    );
+
     return Container(
-      margin: EdgeInsets.symmetric(horizontal: 20),
-      padding: EdgeInsets.all(24),
+      margin: EdgeInsets.symmetric(horizontal: margin),
+      padding: EdgeInsets.all(padding),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(borderRadius),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.05),
@@ -479,21 +919,21 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
               Row(
                 children: [
                   Container(
-                    width: 40,
-                    height: 40,
+                    width: iconSize,
+                    height: iconSize,
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
                         colors: [Color(0xFF10B981), Color(0xFF34D399)],
                       ),
                       shape: BoxShape.circle,
                     ),
-                    child: Icon(Icons.people, color: Colors.white, size: 20),
+                    child: Icon(Icons.people, color: Colors.white, size: iconInnerSize),
                   ),
-                  SizedBox(width: 12),
+                  SizedBox(width: spacing),
                   Text(
                     'الأعضاء (${members.length})',
                     style: TextStyle(
-                      fontSize: 20,
+                      fontSize: titleFontSize,
                       fontWeight: FontWeight.w700,
                       color: Color(0xFF1F2937),
                     ),
@@ -511,21 +951,35 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
                       ),
                     ),
                   );
-                  if (result == true) _refreshRoom();
+                  // ✅ تحديث البيانات تلقائياً عند الرجوع من صفحة الأعضاء
+                  if (result == true || result == null) {
+                    _refreshRoom();
+                  }
                 },
-                icon: Icon(Icons.arrow_forward_ios, size: 16),
-                label: Text('عرض الكل'),
+                icon: Icon(Icons.arrow_forward_ios, size: buttonIconSize),
+                label: Text(
+                  'عرض الكل',
+                  style: TextStyle(fontSize: buttonFontSize),
+                ),
               ),
             ],
           ),
-          SizedBox(height: 16),
+          SizedBox(height: sectionSpacing),
           if (members.isEmpty)
             Center(
               child: Padding(
-                padding: EdgeInsets.all(20),
+                padding: EdgeInsets.all(emptyPadding),
                 child: Text(
                   'لا يوجد أعضاء',
-                  style: TextStyle(color: Colors.grey[600]),
+                  style: TextStyle(
+                    color: Colors.grey[600],
+                    fontSize: ResponsiveUtils.getResponsiveValue(
+                      context,
+                      mobile: 14.0,
+                      tablet: 16.0,
+                      desktop: 18.0,
+                    ),
+                  ),
                 ),
               ),
             )
@@ -539,20 +993,58 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
   Widget _buildMemberItem(Map<String, dynamic> member) {
     final user = member['user'] ?? {};
     final role = member['role'] ?? 'viewer';
-    final permission = member['permission'] ?? 'view';
+
+    final bottomPadding = ResponsiveUtils.getResponsiveValue(
+      context,
+      mobile: 12.0,
+      tablet: 14.0,
+      desktop: 16.0,
+    );
+    final avatarSize = ResponsiveUtils.getResponsiveValue(
+      context,
+      mobile: 40.0,
+      tablet: 48.0,
+      desktop: 56.0,
+    );
+    final iconSize = ResponsiveUtils.getResponsiveValue(
+      context,
+      mobile: 20.0,
+      tablet: 24.0,
+      desktop: 28.0,
+    );
+    final spacing = ResponsiveUtils.getResponsiveValue(
+      context,
+      mobile: 12.0,
+      tablet: 16.0,
+      desktop: 20.0,
+    );
+    final nameFontSize = ResponsiveUtils.getResponsiveValue(
+      context,
+      mobile: 16.0,
+      tablet: 18.0,
+      desktop: 20.0,
+    );
+    final roleFontSize = ResponsiveUtils.getResponsiveValue(
+      context,
+      mobile: 12.0,
+      tablet: 14.0,
+      desktop: 16.0,
+    );
 
     return Padding(
-      padding: EdgeInsets.only(bottom: 12),
+      padding: EdgeInsets.only(bottom: bottomPadding),
       child: Row(
         children: [
           CircleAvatar(
+            radius: avatarSize / 2,
             backgroundColor: _getRoleColor(role).withOpacity(0.2),
             child: Icon(
               _getRoleIcon(role),
               color: _getRoleColor(role),
+              size: iconSize,
             ),
           ),
-          SizedBox(width: 12),
+          SizedBox(width: spacing),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -560,14 +1052,14 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
                 Text(
                   user['name'] ?? user['email'] ?? '—',
                   style: TextStyle(
-                    fontSize: 16,
+                    fontSize: nameFontSize,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
                 Text(
-                  '$role • $permission',
+                  role,
                   style: TextStyle(
-                    fontSize: 12,
+                    fontSize: roleFontSize,
                     color: Colors.grey[600],
                   ),
                 ),
@@ -582,12 +1074,49 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
   Widget _buildSharedFilesSection() {
     final files = roomData!['files'] as List? ?? [];
 
+    final margin = ResponsiveUtils.getResponsiveValue(
+      context,
+      mobile: 20.0,
+      tablet: 32.0,
+      desktop: 48.0,
+    );
+    final padding = ResponsiveUtils.getResponsiveValue(
+      context,
+      mobile: 24.0,
+      tablet: 28.0,
+      desktop: 32.0,
+    );
+    final borderRadius = ResponsiveUtils.getResponsiveValue(
+      context,
+      mobile: 24.0,
+      tablet: 28.0,
+      desktop: 32.0,
+    );
+    final iconSize = ResponsiveUtils.getResponsiveValue(
+      context,
+      mobile: 40.0,
+      tablet: 48.0,
+      desktop: 56.0,
+    );
+    final iconInnerSize = ResponsiveUtils.getResponsiveValue(
+      context,
+      mobile: 20.0,
+      tablet: 24.0,
+      desktop: 28.0,
+    );
+    final titleFontSize = ResponsiveUtils.getResponsiveValue(
+      context,
+      mobile: 20.0,
+      tablet: 22.0,
+      desktop: 24.0,
+    );
+
     return Container(
-      margin: EdgeInsets.symmetric(horizontal: 20),
-      padding: EdgeInsets.all(24),
+      margin: EdgeInsets.symmetric(horizontal: margin),
+      padding: EdgeInsets.all(padding),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(borderRadius),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.05),
@@ -602,33 +1131,49 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Row(
-                children: [
-                  Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [Color(0xFFF59E0B), Color(0xFFFBBF24)],
+              Flexible(
+                child: Row(
+                  children: [
+                    Container(
+                      width: iconSize,
+                      height: iconSize,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [Color(0xFFF59E0B), Color(0xFFFBBF24)],
+                        ),
+                        shape: BoxShape.circle,
                       ),
-                      shape: BoxShape.circle,
+                      child: Icon(
+                        Icons.insert_drive_file,
+                        color: Colors.white,
+                        size: iconInnerSize,
+                      ),
                     ),
-                    child: Icon(Icons.insert_drive_file, color: Colors.white, size: 20),
-                  ),
-                  SizedBox(width: 12),
-                  Text(
-                    'الملفات المشتركة (${files.length})',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w700,
-                      color: Color(0xFF1F2937),
+                    SizedBox(width: ResponsiveUtils.getResponsiveValue(
+                      context,
+                      mobile: 12.0,
+                      tablet: 16.0,
+                      desktop: 20.0,
+                    )),
+                    Flexible(
+                      child: Text(
+                        'الملفات المشتركة (${files.length})',
+                        style: TextStyle(
+                          fontSize: titleFontSize,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFF1F2937),
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 1,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
               Row(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  if (files.length > 3)
+                  if (!ResponsiveUtils.isMobile(context))
                     TextButton.icon(
                       onPressed: () {
                         Navigator.push(
@@ -641,11 +1186,62 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
                           ),
                         );
                       },
-                      icon: Icon(Icons.arrow_forward_ios, size: 16),
-                      label: Text('عرض الكل'),
+                      icon: Icon(
+                        Icons.arrow_forward_ios,
+                        size: ResponsiveUtils.getResponsiveValue(
+                          context,
+                          mobile: 16.0,
+                          tablet: 18.0,
+                          desktop: 20.0,
+                        ),
+                      ),
+                      label: Text(
+                        'عرض الكل',
+                        style: TextStyle(
+                          fontSize: ResponsiveUtils.getResponsiveValue(
+                            context,
+                            mobile: 14.0,
+                            tablet: 16.0,
+                            desktop: 18.0,
+                          ),
+                        ),
+                      ),
+                    )
+                  else
+                    IconButton(
+                      icon: Icon(
+                        Icons.arrow_forward_ios,
+                        size: ResponsiveUtils.getResponsiveValue(
+                          context,
+                          mobile: 18.0,
+                          tablet: 20.0,
+                          desktop: 22.0,
+                        ),
+                      ),
+                      tooltip: 'عرض الكل',
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => ChangeNotifierProvider.value(
+                              value: Provider.of<RoomController>(context, listen: false),
+                              child: RoomFilesPage(roomId: widget.roomId),
+                            ),
+                          ),
+                        );
+                      },
                     ),
                   IconButton(
-                    icon: Icon(Icons.add_circle_outline, color: Color(0xFFF59E0B)),
+                    icon: Icon(
+                      Icons.add_circle_outline,
+                      color: Color(0xFFF59E0B),
+                      size: ResponsiveUtils.getResponsiveValue(
+                        context,
+                        mobile: 24.0,
+                        tablet: 28.0,
+                        desktop: 32.0,
+                      ),
+                    ),
                     tooltip: 'إضافة ملف',
                     onPressed: () {
                       showDialog(
@@ -667,14 +1263,32 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
               ),
             ],
           ),
-          SizedBox(height: 16),
+          SizedBox(height: ResponsiveUtils.getResponsiveValue(
+            context,
+            mobile: 16.0,
+            tablet: 20.0,
+            desktop: 24.0,
+          )),
           if (files.isEmpty)
             Center(
               child: Padding(
-                padding: EdgeInsets.all(20),
+                padding: EdgeInsets.all(ResponsiveUtils.getResponsiveValue(
+                  context,
+                  mobile: 20.0,
+                  tablet: 24.0,
+                  desktop: 28.0,
+                )),
                 child: Text(
                   'لا توجد ملفات مشتركة',
-                  style: TextStyle(color: Colors.grey[600]),
+                  style: TextStyle(
+                    color: Colors.grey[600],
+                    fontSize: ResponsiveUtils.getResponsiveValue(
+                      context,
+                      mobile: 14.0,
+                      tablet: 16.0,
+                      desktop: 18.0,
+                    ),
+                  ),
                 ),
               ),
             )
@@ -692,22 +1306,72 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
     final fileId = fileData['_id']?.toString() ?? 
                    (fileIdRef is String ? fileIdRef : fileIdRef?.toString());
     
+    final iconSize = ResponsiveUtils.getResponsiveValue(
+      context,
+      mobile: 20.0,
+      tablet: 24.0,
+      desktop: 28.0,
+    );
+    final fontSize = ResponsiveUtils.getResponsiveValue(
+      context,
+      mobile: 14.0,
+      tablet: 16.0,
+      desktop: 18.0,
+    );
+    final padding = ResponsiveUtils.getResponsiveValue(
+      context,
+      mobile: 8.0,
+      tablet: 10.0,
+      desktop: 12.0,
+    );
+    
     return InkWell(
       onTap: () => _openFile(fileData, fileId),
-      borderRadius: BorderRadius.circular(8),
+      borderRadius: BorderRadius.circular(ResponsiveUtils.getResponsiveValue(
+        context,
+        mobile: 8.0,
+        tablet: 10.0,
+        desktop: 12.0,
+      )),
       child: Padding(
-        padding: EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+        padding: EdgeInsets.symmetric(
+          vertical: padding,
+          horizontal: ResponsiveUtils.getResponsiveValue(
+            context,
+            mobile: 4.0,
+            tablet: 6.0,
+            desktop: 8.0,
+          ),
+        ),
         child: Row(
           children: [
-            Icon(Icons.description, color: Color(0xFFF59E0B)),
-            SizedBox(width: 12),
+            Icon(
+              Icons.description,
+              color: Color(0xFFF59E0B),
+              size: iconSize,
+            ),
+            SizedBox(width: ResponsiveUtils.getResponsiveValue(
+              context,
+              mobile: 12.0,
+              tablet: 16.0,
+              desktop: 20.0,
+            )),
             Expanded(
               child: Text(
                 fileName,
-                style: TextStyle(fontSize: 14),
+                style: TextStyle(fontSize: fontSize),
               ),
             ),
-            Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
+            Icon(
+              Icons.arrow_forward_ios,
+              size: ResponsiveUtils.getResponsiveValue(
+                context,
+                mobile: 16.0,
+                tablet: 18.0,
+                desktop: 20.0,
+              ),
+              color: Colors.grey,
+            ),
           ],
         ),
       ),
@@ -865,7 +1529,8 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
         }
         // ملفات أخرى
         else {
-          await OfficeFileOpener.openAnyFile(url: url, fileName: fileName, context: context);
+          final token = await StorageService.getToken();
+          await OfficeFileOpener.openAnyFile(url: url, context: context, token: token);
         }
       } else {
         if (mounted) {
@@ -936,12 +1601,49 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
   Widget _buildSharedFoldersSection() {
     final folders = roomData!['folders'] as List? ?? [];
 
+    final margin = ResponsiveUtils.getResponsiveValue(
+      context,
+      mobile: 20.0,
+      tablet: 32.0,
+      desktop: 48.0,
+    );
+    final padding = ResponsiveUtils.getResponsiveValue(
+      context,
+      mobile: 24.0,
+      tablet: 28.0,
+      desktop: 32.0,
+    );
+    final borderRadius = ResponsiveUtils.getResponsiveValue(
+      context,
+      mobile: 24.0,
+      tablet: 28.0,
+      desktop: 32.0,
+    );
+    final iconSize = ResponsiveUtils.getResponsiveValue(
+      context,
+      mobile: 40.0,
+      tablet: 48.0,
+      desktop: 56.0,
+    );
+    final iconInnerSize = ResponsiveUtils.getResponsiveValue(
+      context,
+      mobile: 20.0,
+      tablet: 24.0,
+      desktop: 28.0,
+    );
+    final titleFontSize = ResponsiveUtils.getResponsiveValue(
+      context,
+      mobile: 20.0,
+      tablet: 22.0,
+      desktop: 24.0,
+    );
+
     return Container(
-      margin: EdgeInsets.symmetric(horizontal: 20),
-      padding: EdgeInsets.all(24),
+      margin: EdgeInsets.symmetric(horizontal: margin),
+      padding: EdgeInsets.all(padding),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(borderRadius),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.05),
@@ -956,59 +1658,164 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Row(
-                children: [
-                  Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [Color(0xFF8B5CF6), Color(0xFFA78BFA)],
+              Flexible(
+                child: Row(
+                  children: [
+                    Container(
+                      width: iconSize,
+                      height: iconSize,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [Color(0xFF8B5CF6), Color(0xFFA78BFA)],
+                        ),
+                        shape: BoxShape.circle,
                       ),
-                      shape: BoxShape.circle,
+                      child: Icon(
+                        Icons.folder,
+                        color: Colors.white,
+                        size: iconInnerSize,
+                      ),
                     ),
-                    child: Icon(Icons.folder, color: Colors.white, size: 20),
-                  ),
-                  SizedBox(width: 12),
-                  Text(
-                    'المجلدات المشتركة (${folders.length})',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w700,
-                      color: Color(0xFF1F2937),
+                    SizedBox(width: ResponsiveUtils.getResponsiveValue(
+                      context,
+                      mobile: 12.0,
+                      tablet: 16.0,
+                      desktop: 20.0,
+                    )),
+                    Flexible(
+                      child: Text(
+                        'المجلدات المشتركة (${folders.length})',
+                        style: TextStyle(
+                          fontSize: titleFontSize,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFF1F2937),
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 1,
+                      ),
                     ),
+                  ],
+                ),
+              ),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (!ResponsiveUtils.isMobile(context))
+                    TextButton.icon(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => ChangeNotifierProvider.value(
+                              value: Provider.of<RoomController>(context, listen: false),
+                              child: RoomFoldersPage(roomId: widget.roomId),
+                            ),
+                          ),
+                        );
+                      },
+                      icon: Icon(
+                        Icons.arrow_forward_ios,
+                        size: ResponsiveUtils.getResponsiveValue(
+                          context,
+                          mobile: 16.0,
+                          tablet: 18.0,
+                          desktop: 20.0,
+                        ),
+                      ),
+                      label: Text(
+                        'عرض الكل',
+                        style: TextStyle(
+                          fontSize: ResponsiveUtils.getResponsiveValue(
+                            context,
+                            mobile: 14.0,
+                            tablet: 16.0,
+                            desktop: 18.0,
+                          ),
+                        ),
+                      ),
+                    )
+                  else
+                    IconButton(
+                      icon: Icon(
+                        Icons.arrow_forward_ios,
+                        size: ResponsiveUtils.getResponsiveValue(
+                          context,
+                          mobile: 18.0,
+                          tablet: 20.0,
+                          desktop: 22.0,
+                        ),
+                      ),
+                      tooltip: 'عرض الكل',
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => ChangeNotifierProvider.value(
+                              value: Provider.of<RoomController>(context, listen: false),
+                              child: RoomFoldersPage(roomId: widget.roomId),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  IconButton(
+                    icon: Icon(
+                      Icons.add_circle_outline,
+                      color: Color(0xFF8B5CF6),
+                      size: ResponsiveUtils.getResponsiveValue(
+                        context,
+                        mobile: 24.0,
+                        tablet: 28.0,
+                        desktop: 32.0,
+                      ),
+                    ),
+                    tooltip: 'إضافة مجلد',
+                    onPressed: () {
+                      showDialog(
+                        context: context,
+                        builder: (context) => AlertDialog(
+                          title: Text('إضافة مجلد للغرفة'),
+                          content: Text('يرجى فتح صفحة تفاصيل المجلد ومشاركته مع الغرفة من هناك'),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.pop(context),
+                              child: Text('موافق'),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
                   ),
                 ],
               ),
-              IconButton(
-                icon: Icon(Icons.add_circle_outline, color: Color(0xFF8B5CF6)),
-                tooltip: 'إضافة مجلد',
-                onPressed: () {
-                  showDialog(
-                    context: context,
-                    builder: (context) => AlertDialog(
-                      title: Text('إضافة مجلد للغرفة'),
-                      content: Text('يرجى فتح صفحة تفاصيل المجلد ومشاركته مع الغرفة من هناك'),
-                      actions: [
-                        TextButton(
-                          onPressed: () => Navigator.pop(context),
-                          child: Text('موافق'),
-                        ),
-                      ],
-                    ),
-                  );
-                },
-              ),
             ],
           ),
-          SizedBox(height: 16),
+          SizedBox(height: ResponsiveUtils.getResponsiveValue(
+            context,
+            mobile: 16.0,
+            tablet: 20.0,
+            desktop: 24.0,
+          )),
           if (folders.isEmpty)
             Center(
               child: Padding(
-                padding: EdgeInsets.all(20),
+                padding: EdgeInsets.all(ResponsiveUtils.getResponsiveValue(
+                  context,
+                  mobile: 20.0,
+                  tablet: 24.0,
+                  desktop: 28.0,
+                )),
                 child: Text(
                   'لا توجد مجلدات مشتركة',
-                  style: TextStyle(color: Colors.grey[600]),
+                  style: TextStyle(
+                    color: Colors.grey[600],
+                    fontSize: ResponsiveUtils.getResponsiveValue(
+                      context,
+                      mobile: 14.0,
+                      tablet: 16.0,
+                      desktop: 18.0,
+                    ),
+                  ),
                 ),
               ),
             )
@@ -1020,20 +1827,101 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
   }
 
   Widget _buildFolderItem(Map<String, dynamic> folder) {
-    final folderData = folder['folderId'] ?? {};
-    return Padding(
-      padding: EdgeInsets.only(bottom: 12),
-      child: Row(
-        children: [
-          Icon(Icons.folder, color: Color(0xFF8B5CF6)),
-          SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              folderData['name'] ?? 'مجلد غير معروف',
-              style: TextStyle(fontSize: 14),
+    // ✅ استخراج بيانات المجلد
+    final folderIdRef = folder['folderId'];
+    final folderData = folderIdRef is Map<String, dynamic> ? folderIdRef : <String, dynamic>{};
+    final folderName = folderData['name']?.toString() ?? 'مجلد غير معروف';
+    final folderId = folderData['_id']?.toString() ?? 
+                     (folderIdRef is String ? folderIdRef : folderIdRef?.toString());
+    
+    final iconSize = ResponsiveUtils.getResponsiveValue(
+      context,
+      mobile: 20.0,
+      tablet: 24.0,
+      desktop: 28.0,
+    );
+    final fontSize = ResponsiveUtils.getResponsiveValue(
+      context,
+      mobile: 14.0,
+      tablet: 16.0,
+      desktop: 18.0,
+    );
+    final padding = ResponsiveUtils.getResponsiveValue(
+      context,
+      mobile: 8.0,
+      tablet: 10.0,
+      desktop: 12.0,
+    );
+    
+    return InkWell(
+      onTap: () {
+        if (folderId != null && folderId.isNotEmpty) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => ChangeNotifierProvider.value(
+                value: Provider.of<FolderController>(context, listen: false),
+                child: FolderContentsPage(
+                  folderId: folderId,
+                  folderName: folderName,
+                  folderColor: Color(0xFF8B5CF6),
+                ),
+              ),
             ),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('خطأ: معرف المجلد غير موجود')),
+          );
+        }
+      },
+      borderRadius: BorderRadius.circular(ResponsiveUtils.getResponsiveValue(
+        context,
+        mobile: 8.0,
+        tablet: 10.0,
+        desktop: 12.0,
+      )),
+      child: Padding(
+        padding: EdgeInsets.symmetric(
+          vertical: padding,
+          horizontal: ResponsiveUtils.getResponsiveValue(
+            context,
+            mobile: 4.0,
+            tablet: 6.0,
+            desktop: 8.0,
           ),
-        ],
+        ),
+        child: Row(
+          children: [
+            Icon(
+              Icons.folder,
+              color: Color(0xFF8B5CF6),
+              size: iconSize,
+            ),
+            SizedBox(width: ResponsiveUtils.getResponsiveValue(
+              context,
+              mobile: 12.0,
+              tablet: 16.0,
+              desktop: 20.0,
+            )),
+            Expanded(
+              child: Text(
+                folderName,
+                style: TextStyle(fontSize: fontSize),
+              ),
+            ),
+            Icon(
+              Icons.arrow_forward_ios,
+              size: ResponsiveUtils.getResponsiveValue(
+                context,
+                mobile: 16.0,
+                tablet: 18.0,
+                desktop: 20.0,
+              ),
+              color: Colors.grey,
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -1071,6 +1959,160 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
       return '${dateTime.day}/${dateTime.month}/${dateTime.year}';
     } catch (e) {
       return '—';
+    }
+  }
+
+  /// ✅ التحقق من أن المستخدم الحالي هو مالك الغرفة (async)
+  Future<bool> _checkIfCurrentUserIsOwner() async {
+    if (roomData == null) return false;
+    final owner = roomData!['owner'];
+    if (owner == null) return false;
+    
+    // ✅ الحصول على معرف المالك
+    final ownerId = owner is Map<String, dynamic> 
+        ? (owner['_id']?.toString() ?? owner['id']?.toString())
+        : owner.toString();
+    
+    if (ownerId == null || ownerId.isEmpty) return false;
+    
+    // ✅ الحصول على معرف المستخدم الحالي
+    final roomController = Provider.of<RoomController>(context, listen: false);
+    final currentUserId = await roomController.getCurrentUserId();
+    
+    if (currentUserId == null || currentUserId.isEmpty) return false;
+    
+    return currentUserId == ownerId;
+  }
+
+  /// ✅ عرض dialog لحذف الغرفة
+  void _showDeleteRoomDialog() {
+    if (roomData == null) return;
+    final roomName = roomData!['name'] ?? 'الغرفة';
+    
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text('حذف الغرفة'),
+        content: Text('هل أنت متأكد من حذف "$roomName"؟ سيتم حذف جميع البيانات المرتبطة بالغرفة.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: Text('إلغاء'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(dialogContext);
+              _deleteRoom();
+            },
+            child: Text('حذف', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// ✅ عرض dialog لمغادرة الغرفة
+  void _showLeaveRoomDialog() {
+    if (roomData == null) return;
+    final roomName = roomData!['name'] ?? 'الغرفة';
+    
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text('مغادرة الغرفة'),
+        content: Text('هل أنت متأكد من مغادرة "$roomName"؟ لن تتمكن من الوصول إلى هذه الغرفة بعد المغادرة.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: Text('إلغاء'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(dialogContext);
+              _leaveRoom();
+            },
+            child: Text('مغادرة', style: TextStyle(color: Colors.orange)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// ✅ حذف الغرفة
+  Future<void> _deleteRoom() async {
+    if (roomData == null) return;
+    
+    try {
+      final roomController = Provider.of<RoomController>(context, listen: false);
+      final success = await roomController.deleteRoom(widget.roomId);
+      
+      if (mounted) {
+        if (success) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('✅ تم حذف الغرفة بنجاح'),
+              backgroundColor: Colors.green,
+            ),
+          );
+          // ✅ الرجوع إلى الصفحة السابقة
+          Navigator.of(context).pop(true); // إرجاع true للإشارة إلى أنه تم حذف الغرفة
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(roomController.errorMessage ?? '❌ فشل حذف الغرفة'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('❌ خطأ: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  /// ✅ مغادرة الغرفة
+  Future<void> _leaveRoom() async {
+    if (roomData == null) return;
+    
+    try {
+      final roomController = Provider.of<RoomController>(context, listen: false);
+      final success = await roomController.leaveRoom(widget.roomId);
+      
+      if (mounted) {
+        if (success) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('✅ تم مغادرة الغرفة بنجاح'),
+              backgroundColor: Colors.green,
+            ),
+          );
+          // ✅ الرجوع إلى الصفحة السابقة
+          Navigator.of(context).pop(true); // إرجاع true للإشارة إلى أنه تم مغادرة الغرفة
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(roomController.errorMessage ?? '❌ فشل مغادرة الغرفة'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('❌ خطأ: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 }
