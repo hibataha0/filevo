@@ -82,6 +82,8 @@ static const String rootCategoriesStats = '/files/categories/stats/root'; // ✅
   static const String cleanupInvitations = '/rooms/invitations/cleanup';
   static const String invitationStats = '/rooms/invitations/stats';
   static String shareFileWithRoom(String roomId) => '/rooms/$roomId/share-file';
+  static String shareFileWithRoomOneTime(String roomId) => '/rooms/$roomId/share-file-onetime';
+  static String accessOneTimeFile(String roomId, String fileId) => '/rooms/$roomId/files/$fileId/access';
   static String unshareFileFromRoom(String roomId, String fileId) => '/rooms/$roomId/share-file/$fileId';
   static String shareFolderWithRoom(String roomId) => '/rooms/$roomId/share-folder';
   static String unshareFolderFromRoom(String roomId, String folderId) => '/rooms/$roomId/share-folder/$folderId';
@@ -91,6 +93,10 @@ static const String rootCategoriesStats = '/files/categories/stats/root'; // ✅
   
   // Search endpoints
   static const String search = '/search';
+  
+  // Smart search endpoints
+  static const String smartSearch = '/rooms/search/smart';
+  static String smartSearchInRoom(String roomId) => '/rooms/$roomId/search/smart';
   
 }
 

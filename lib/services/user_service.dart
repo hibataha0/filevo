@@ -1,6 +1,11 @@
+import 'dart:convert';
+import 'dart:io';
 import 'package:filevo/services/api_service.dart';
 import 'package:filevo/services/api_endpoints.dart';
 import 'package:filevo/services/storage_service.dart';
+import 'package:filevo/config/api_config.dart';
+import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart';
 
 class UserService {
   final ApiService _apiService = ApiService();
@@ -39,8 +44,21 @@ class UserService {
 
     final body = <String, dynamic>{};
     if (name != null && name.isNotEmpty) body['name'] = name;
-    if (email != null && email.isNotEmpty) body['email'] = email;
+    if (email != null && email.isNotEmpty) {
+      // ✅ التحقق من صحة البريد الإلكتروني قبل الإرسال
+      final emailRegex = RegExp(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$');
+      if (!emailRegex.hasMatch(email.trim())) {
+        return {
+          'success': false,
+          'error': 'Invalid email address',
+        };
+      }
+      body['email'] = email.trim();
+    }
     if (phone != null && phone.isNotEmpty) body['phone'] = phone;
+
+    // ✅ طباعة البيانات المرسلة للتحقق
+    print('📤 Updating user data with: $body');
 
     final result = await _apiService.put(
       ApiEndpoints.updateMe,
@@ -53,7 +71,9 @@ class UserService {
 
   /// تحديث كلمة مرور المستخدم المسجل
   Future<Map<String, dynamic>> updateLoggedUserPassword({
+    required String currentPassword,
     required String password,
+    required String passwordConfirm,
   }) async {
     final token = await StorageService.getToken();
     if (token == null) {
@@ -63,10 +83,28 @@ class UserService {
       };
     }
 
+    // ✅ التحقق من أن كلمة المرور الجديدة وتأكيدها متطابقان
+    if (password != passwordConfirm) {
+      return {
+        'success': false,
+        'error': 'Password confirmation does not match',
+      };
+    }
+
+    // ✅ التحقق من طول كلمة المرور
+    if (password.length < 6) {
+      return {
+        'success': false,
+        'error': 'Password must be at least 6 characters',
+      };
+    }
+
     final result = await _apiService.put(
       ApiEndpoints.changeMyPassword,
       body: {
+        'currentPassword': currentPassword,
         'password': password,
+        'passwordConfirm': passwordConfirm,
       },
       token: token,
     );
@@ -106,7 +144,124 @@ class UserService {
 
     return result;
   }
+
+  /// رفع صورة البروفايل
+  Future<Map<String, dynamic>> uploadProfileImage({
+    required File imageFile,
+  }) async {
+    final token = await StorageService.getToken();
+    if (token == null) {
+      return {
+        'success': false,
+        'error': 'لا يوجد token. يرجى تسجيل الدخول',
+      };
+    }
+
+    try {
+      final uri = Uri.parse('${ApiConfig.baseUrl}${ApiEndpoints.updateMe}');
+      final request = http.MultipartRequest('PUT', uri);
+
+      print('📤 Uploading profile image to: $uri');
+      print('📁 File path: ${imageFile.path}');
+      print('📏 File size: ${await imageFile.length()} bytes');
+
+      // ✅ إضافة الصورة مع اسم الحقل الصحيح
+      // ✅ استخدام filename من path للحصول على اسم الملف
+      final fileName = imageFile.path.split('/').last;
+      
+      // ✅ تحديد MIME type بناءً على امتداد الملف
+      String? contentType;
+      final extension = fileName.toLowerCase().split('.').last;
+      switch (extension) {
+        case 'jpg':
+        case 'jpeg':
+          contentType = 'image/jpeg';
+          break;
+        case 'png':
+          contentType = 'image/png';
+          break;
+        case 'gif':
+          contentType = 'image/gif';
+          break;
+        case 'webp':
+          contentType = 'image/webp';
+          break;
+        default:
+          contentType = 'image/jpeg'; // ✅ افتراضي
+      }
+      
+      print('✅ File extension: $extension');
+      print('✅ Content type: $contentType');
+      
+      final multipartFile = await http.MultipartFile.fromPath(
+        'profileImg', 
+        imageFile.path,
+        filename: fileName,
+        contentType: MediaType.parse(contentType), // ✅ إضافة MIME type صريح
+      );
+      request.files.add(multipartFile);
+      
+      print('✅ Added file to request: profileImg');
+      print('✅ File name: $fileName');
+      print('✅ Multipart file field name: ${multipartFile.field}');
+      print('✅ Multipart file filename: ${multipartFile.filename}');
+      print('✅ Multipart file content type: ${multipartFile.contentType}');
+
+      // ✅ إضافة الـ token
+      request.headers['Authorization'] = 'Bearer $token';
+      // ✅ لا نضيف Content-Type يدوياً - MultipartRequest يضيفه تلقائياً مع boundary
+
+      print('📤 Sending request...');
+      
+      // ✅ إرسال الطلب
+      final response = await request.send();
+      final responseBody = await response.stream.bytesToString();
+
+      print('📥 Response status: ${response.statusCode}');
+      print('📥 Response body: $responseBody');
+
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        try {
+          final data = jsonDecode(responseBody);
+          print('✅ Upload successful');
+          return {
+            'success': true,
+            'data': data,
+          };
+        } catch (e) {
+          print('❌ Error parsing response: $e');
+          return {
+            'success': false,
+            'error': 'خطأ في قراءة الاستجابة',
+          };
+        }
+      } else {
+        try {
+          final errorData = jsonDecode(responseBody);
+          print('❌ Upload failed: ${errorData['message'] ?? 'Unknown error'}');
+          return {
+            'success': false,
+            'error': errorData['message'] ?? errorData['error'] ?? 'فشل رفع الصورة',
+          };
+        } catch (e) {
+          print('❌ Error parsing error response: $e');
+          return {
+            'success': false,
+            'error': 'فشل رفع الصورة: ${response.statusCode}',
+          };
+        }
+      }
+    } catch (e) {
+      print('❌ Error uploading profile image: $e');
+      print('❌ Error type: ${e.runtimeType}');
+      return {
+        'success': false,
+        'error': 'خطأ في رفع الصورة: ${e.toString()}',
+      };
+    }
+  }
 }
+
 
 
 

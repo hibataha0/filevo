@@ -279,6 +279,73 @@ class RoomService {
     return jsonDecode(response.body);
   }
 
+  /// ✅ مشاركة ملف مع الغرفة لمرة واحدة
+  Future<Map<String, dynamic>> shareFileWithRoomOneTime({
+    required String roomId,
+    required String fileId,
+    int? expiresInHours,
+  }) async {
+    final token = await StorageService.getToken();
+
+    final body = jsonEncode({
+      'fileId': fileId,
+      if (expiresInHours != null) 'expiresInHours': expiresInHours,
+    });
+
+    final response = await http.post(
+      Uri.parse("${ApiConfig.baseUrl}${ApiEndpoints.shareFileWithRoomOneTime(roomId)}"),
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+      body: body,
+    );
+
+    return jsonDecode(response.body);
+  }
+
+  /// ✅ الوصول إلى ملف مشترك لمرة واحدة
+  /// Returns response with fields:
+  /// - message: Success/error message
+  /// - file: File data (if not removed)
+  /// - wasOneTimeShare: Boolean indicating if it was a one-time share
+  /// - fileRemovedFromRoom: Boolean indicating if file was removed
+  /// - allMembersViewed: Boolean indicating if all members viewed the file
+  /// - accessCount: Number of times the file was accessed
+  Future<Map<String, dynamic>> accessOneTimeFile({
+    required String roomId,
+    required String fileId,
+  }) async {
+    final token = await StorageService.getToken();
+
+    final response = await http.get(
+      Uri.parse("${ApiConfig.baseUrl}${ApiEndpoints.accessOneTimeFile(roomId, fileId)}"),
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+    );
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    } else if (response.statusCode == 410) {
+      // ✅ File access expired (410 Gone)
+      final errorBody = jsonDecode(response.body);
+      return {
+        'success': false,
+        'error': errorBody['message'] ?? 'File access has expired',
+        'expired': true,
+      };
+    } else {
+      // ✅ Other errors (403, 404, etc.)
+      final errorBody = jsonDecode(response.body);
+      return {
+        'success': false,
+        'error': errorBody['message'] ?? errorBody['error'] ?? 'Failed to access file',
+      };
+    }
+  }
+
   /// ✅ إزالة ملف من الغرفة
   Future<Map<String, dynamic>> unshareFileFromRoom({
     required String roomId,

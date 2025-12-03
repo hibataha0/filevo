@@ -417,23 +417,37 @@ class RoomController with ChangeNotifier {
   Future<bool> shareFileWithRoom({
     required String roomId,
     required String fileId,
+    bool isOneTime = false,
+    int? expiresInHours,
   }) async {
     setLoading(true);
     setError(null);
     
     try {
-      print('Sharing file $fileId with room $roomId');
+      print('Sharing file $fileId with room $roomId (one-time: $isOneTime)');
       final sharedBy = await _getCurrentUserId();
       if (sharedBy == null) {
         setError('لا يمكن تحديد هوية المستخدم. يرجى إعادة تسجيل الدخول.');
         return false;
       }
 
-      final response = await _service.shareFileWithRoom(
-        roomId: roomId,
-        fileId: fileId,
-        sharedBy: sharedBy,
-      );
+      Map<String, dynamic> response;
+      
+      if (isOneTime) {
+        // ✅ استخدام endpoint المشاركة لمرة واحدة
+        response = await _service.shareFileWithRoomOneTime(
+          roomId: roomId,
+          fileId: fileId,
+          expiresInHours: expiresInHours,
+        );
+      } else {
+        // ✅ استخدام endpoint المشاركة العادية
+        response = await _service.shareFileWithRoom(
+          roomId: roomId,
+          fileId: fileId,
+          sharedBy: sharedBy,
+        );
+      }
 
       if (response['room'] != null) {
         // ✅ تحديث الغرفة في القائمة
@@ -455,6 +469,125 @@ class RoomController with ChangeNotifier {
       setError(e.toString());
       print('Exception sharing file with room: $e');
       return false;
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  /// ✅ الوصول إلى ملف مشترك لمرة واحدة
+  /// ✅ يسجل أن المستخدم الحالي قد فتح الملف (لكل مستخدم مرة واحدة فقط)
+  /// ✅ إذا تمت إزالة الملف تلقائياً (allMembersViewed أو fileRemovedFromRoom)، يتم تحديث القائمة
+  Future<Map<String, dynamic>> accessOneTimeFile({
+    required String roomId,
+    required String fileId,
+  }) async {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      print('Accessing one-time file $fileId in room $roomId');
+      
+      final response = await _service.accessOneTimeFile(
+        roomId: roomId,
+        fileId: fileId,
+      );
+
+      // ✅ التحقق من حالة انتهاء الصلاحية أولاً
+      if (response['expired'] == true) {
+        // ✅ إزالة الملف من القائمة المحلية إذا انتهت صلاحيته
+        final roomIndex = rooms.indexWhere((room) => 
+          room['_id']?.toString() == roomId.toString()
+        );
+        
+        if (roomIndex != -1) {
+          final roomFiles = rooms[roomIndex]['files'] as List?;
+          if (roomFiles != null) {
+            final fileIndex = roomFiles.indexWhere((f) {
+              final fId = f['fileId'];
+              if (fId is Map) return fId['_id']?.toString() == fileId;
+              if (fId is String) return fId == fileId;
+              return fId?.toString() == fileId;
+            });
+            
+            if (fileIndex != -1) {
+              roomFiles.removeAt(fileIndex);
+              rooms[roomIndex]['files'] = roomFiles;
+              notifyListeners();
+              print('One-time file removed from room (expired).');
+            }
+          }
+        }
+        
+        setError(response['error'] ?? 'File access has expired');
+        return response;
+      }
+
+      // ✅ التحقق من نجاح الوصول (دعم الحقول الجديدة: oneTime, hideFromThisUser)
+      final isOneTime = response['oneTime'] == true || response['wasOneTimeShare'] == true;
+      final fileRemovedFromRoom = response['fileRemovedFromRoom'] == true;
+      final hideFromThisUser = response['hideFromThisUser'] == true;
+      
+      if (response['message'] != null || response['success'] == true || isOneTime) {
+        // ✅ تحديث بيانات الملف في القائمة المحلية
+        final roomIndex = rooms.indexWhere((room) => 
+          room['_id']?.toString() == roomId.toString()
+        );
+        
+        if (roomIndex != -1) {
+          final roomFiles = rooms[roomIndex]['files'] as List?;
+          if (roomFiles != null) {
+            final fileIndex = roomFiles.indexWhere((f) {
+              final fId = f['fileId'];
+              if (fId is Map) return fId['_id']?.toString() == fileId;
+              if (fId is String) return fId == fileId;
+              return fId?.toString() == fileId;
+            });
+            
+            // ✅ إذا كان ملف لمرة واحدة وتم تسجيل الوصول
+            // ✅ الملف يبقى في Room ولكن سيختفي عند إعادة تحميل البيانات (الباك إند يفلتره)
+            if (isOneTime && hideFromThisUser && fileIndex != -1) {
+              // ✅ تحديث accessCount من الاستجابة
+              final currentFileEntry = Map<String, dynamic>.from(roomFiles[fileIndex] as Map<String, dynamic>);
+              
+              if (response['accessCount'] != null) {
+                currentFileEntry['accessCount'] = response['accessCount'];
+              }
+              
+              // ✅ تحديث fileId إذا كان file متوفراً في الاستجابة
+              if (response['file'] != null) {
+                final fileFromResponse = response['file'] as Map<String, dynamic>;
+                currentFileEntry['fileId'] = fileFromResponse;
+              }
+              
+              roomFiles[fileIndex] = currentFileEntry;
+              rooms[roomIndex]['files'] = roomFiles;
+              notifyListeners();
+              print('✅ One-time file accessed (will be hidden from user on next room reload).');
+            }
+            // ✅ إذا كان ملف عادي
+            else if (fileIndex != -1 && !isOneTime) {
+              // ✅ تحديث بيانات الملف العادي
+              if (response['file'] != null) {
+                final currentFileEntry = Map<String, dynamic>.from(roomFiles[fileIndex] as Map<String, dynamic>);
+                final fileFromResponse = response['file'] as Map<String, dynamic>;
+                currentFileEntry['fileId'] = fileFromResponse;
+                roomFiles[fileIndex] = currentFileEntry;
+                rooms[roomIndex]['files'] = roomFiles;
+                notifyListeners();
+              }
+            }
+          }
+        }
+        
+        return response;
+      }
+
+      setError(response['message'] ?? response['error'] ?? 'فشل الوصول إلى الملف');
+      return response;
+    } catch (e) {
+      setError(e.toString());
+      print('Exception accessing one-time file: $e');
+      return {'success': false, 'error': e.toString()};
     } finally {
       setLoading(false);
     }

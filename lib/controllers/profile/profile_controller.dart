@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:filevo/services/user_service.dart';
 import 'package:filevo/services/storage_service.dart';
@@ -16,12 +17,19 @@ class ProfileController with ChangeNotifier {
   String? get userName => _userData?['name'] as String?;
   String? get userEmail => _userData?['email'] as String?;
   String? get userPhone => _userData?['phone'] as String?;
+  String? get profileImage => _userData?['profileImg'] as String?;
 
   Map<String, dynamic>? _extractUserData(dynamic rawData) {
     if (rawData is Map<String, dynamic>) {
+      // ✅ التحقق من وجود 'user' أولاً
       if (rawData['user'] is Map<String, dynamic>) {
         return Map<String, dynamic>.from(rawData['user'] as Map);
       }
+      // ✅ التحقق من وجود 'data' (التنسيق الجديد من الـ backend)
+      if (rawData['data'] is Map<String, dynamic>) {
+        return Map<String, dynamic>.from(rawData['data'] as Map);
+      }
+      // ✅ إذا كانت البيانات مباشرة في rawData
       print('ProfileController: Extracted user data: $rawData');
       return Map<String, dynamic>.from(rawData);
     }
@@ -90,14 +98,20 @@ class ProfileController with ChangeNotifier {
   }
 
   /// تحديث كلمة المرور
-  Future<bool> updateLoggedUserPassword(String password) async {
+  Future<bool> updateLoggedUserPassword({
+    required String currentPassword,
+    required String password,
+    required String passwordConfirm,
+  }) async {
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
 
     try {
       final result = await _userService.updateLoggedUserPassword(
+        currentPassword: currentPassword,
         password: password,
+        passwordConfirm: passwordConfirm,
       );
 
       if (result['success'] == true) {
@@ -134,6 +148,37 @@ class ProfileController with ChangeNotifier {
       }
     } catch (e) {
       _errorMessage = 'خطأ في حذف الحساب: ${e.toString()}';
+      return false;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  /// رفع صورة البروفايل
+  Future<bool> uploadProfileImage({
+    required File imageFile,
+  }) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      final result = await _userService.uploadProfileImage(
+        imageFile: imageFile,
+      );
+
+      if (result['success'] == true) {
+        // ✅ تحديث بيانات المستخدم بعد رفع الصورة
+        await getLoggedUserData();
+        _errorMessage = null;
+        return true;
+      } else {
+        _errorMessage = result['error'] ?? 'فشل في رفع الصورة';
+        return false;
+      }
+    } catch (e) {
+      _errorMessage = 'خطأ في رفع الصورة: ${e.toString()}';
       return false;
     } finally {
       _isLoading = false;

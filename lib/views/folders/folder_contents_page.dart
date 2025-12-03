@@ -2551,10 +2551,12 @@ class _FolderNavigationDialogState extends State<_FolderNavigationDialog> {
 
     try {
       final folderController = Provider.of<FolderController>(context, listen: false);
+      
+      // ✅ جلب جميع المجلدات الفرعية بدون pagination (limit كبير)
       final response = await folderController.getFolderContents(
         folderId: folderId,
         page: 1,
-        limit: 100,
+        limit: 1000, // ✅ limit كبير لضمان جلب جميع المجلدات
       );
       
       print('📁 Response for folder $folderId: ${response?.keys}');
@@ -2564,12 +2566,12 @@ class _FolderNavigationDialogState extends State<_FolderNavigationDialog> {
       List<Map<String, dynamic>> subfolders = [];
       
       if (response != null) {
-        // ✅ محاولة من subfolders مباشرة (الأولوية)
+        // ✅ محاولة من subfolders مباشرة (الأولوية) - هذا يحتوي على جميع المجلدات الفرعية
         if (response['subfolders'] != null) {
           subfolders = List<Map<String, dynamic>>.from(response['subfolders'] ?? []);
           print('📁 Found ${subfolders.length} subfolders from subfolders field');
         }
-        // ✅ إذا لم تكن موجودة، جرب من contents
+        // ✅ إذا لم تكن موجودة، جرب من contents (لكن هذا قد يكون محدود بـ pagination)
         if (subfolders.isEmpty && response['contents'] != null) {
           final contents = List<Map<String, dynamic>>.from(response['contents'] ?? []);
           subfolders = contents.where((item) => item['type'] == 'folder').toList();

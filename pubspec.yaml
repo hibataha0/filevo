@@ -40,6 +40,7 @@ dependencies:
   permission_handler: ^12.0.1
   flutter_file_dialog: ^3.0.2
   saf: ^1.0.4
+  image_picker: ^1.1.2
 
 
 

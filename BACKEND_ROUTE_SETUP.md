@@ -47,3 +47,6 @@ router.get('/files/categories/stats', protect, fileController.getCategoriesStats
 - تأكد من أن middleware `protect` موجود ويعمل بشكل صحيح
 
 
+
+
+

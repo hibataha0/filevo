@@ -1,7 +1,9 @@
 import 'dart:io';
+import 'package:filevo/generated/l10n.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:filevo/controllers/folders/room_controller.dart';
+import 'package:filevo/constants/app_colors.dart';
 import 'package:filevo/views/fileViewer/pdfViewer.dart';
 import 'package:filevo/views/fileViewer/VideoViewer.dart';
 import 'package:filevo/views/fileViewer/audioPlayer.dart';
@@ -72,15 +74,158 @@ class _RoomFilesPageState extends State<RoomFilesPage> {
   Future<void> _openFile(Map<String, dynamic> fileData, String? fileId) async {
     if (fileId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('معرف الملف غير متوفر'), backgroundColor: Colors.red),
+        SnackBar(content: Text(S.of(context).fileIdNotAvailable), backgroundColor: Colors.red),
       );
       return;
+    }
+
+    // ✅ التحقق من أن الملف مشترك لمرة واحدة والوصول إليه
+    final roomFiles = roomData?['files'] as List?;
+    final fileEntry = roomFiles?.firstWhere(
+      (f) {
+        final fId = f['fileId'];
+        if (fId is Map) return fId['_id']?.toString() == fileId;
+        if (fId is String) return fId == fileId;
+        return fId?.toString() == fileId;
+      },
+      orElse: () => null,
+    );
+    
+    final isOneTimeShare = fileEntry?['isOneTimeShare'] == true;
+    
+    // ✅ إذا كان الملف مشترك لمرة واحدة، استدعي endpoint الوصول أولاً
+    // ✅ هذا يسجل أن المستخدم الحالي قد فتح الملف
+    if (isOneTimeShare) {
+      // ✅ التحقق من أن المستخدم لم يفتح الملف من قبل
+      final accessedBy = fileEntry?['accessedBy'] as List?;
+      final currentUserId = await StorageService.getUserId();
+      
+      if (currentUserId != null && accessedBy != null) {
+        final hasAccessed = accessedBy.any((access) {
+          final accessUserId = access['user'];
+          if (accessUserId is Map) return accessUserId['_id']?.toString() == currentUserId;
+          if (accessUserId is String) return accessUserId == currentUserId;
+          return accessUserId?.toString() == currentUserId;
+        });
+        
+        if (hasAccessed) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('❌ ${S.of(context).fileAlreadyAccessed}'),
+              backgroundColor: Colors.red,
+              duration: Duration(seconds: 3),
+            ),
+          );
+          return; // ✅ منع فتح الملف
+        }
+      }
+      
+      // ✅ محاولة الوصول إلى الملف
+      try {
+        final roomController = Provider.of<RoomController>(context, listen: false);
+        final response = await roomController.accessOneTimeFile(
+          roomId: widget.roomId,
+          fileId: fileId,
+        );
+        
+        // ✅ التحقق من حالة انتهاء الصلاحية أولاً
+        if (response['expired'] == true) {
+          // ✅ إعادة تحميل بيانات الروم لإزالة الملف من القائمة
+          await _loadRoomData();
+          
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('❌ ${response['error'] ?? 'File access has expired'}'),
+                backgroundColor: Colors.red,
+                duration: Duration(seconds: 3),
+              ),
+            );
+          }
+          return; // ✅ منع فتح الملف
+        }
+
+        // ✅ التحقق من نجاح الوصول (دعم الحقول الجديدة: oneTime, hideFromThisUser)
+        final isOneTime = response['oneTime'] == true || response['wasOneTimeShare'] == true;
+        final fileRemovedFromRoom = response['fileRemovedFromRoom'] == true;
+        final hideFromThisUser = response['hideFromThisUser'] == true;
+        
+        if (response['message'] != null || response['success'] == true || isOneTime) {
+          // ✅ تحديث fileData من الاستجابة إذا كانت متوفرة
+          if (response['file'] != null) {
+            fileData = response['file'] as Map<String, dynamic>;
+          }
+          
+          // ✅ إذا كان ملف لمرة واحدة وتم تسجيل الوصول
+          // ✅ الملف يبقى في Room ولكن سيختفي عن هذا المستخدم عند إعادة تحميل البيانات
+          if (isOneTime && hideFromThisUser) {
+            // ✅ عرض رسالة مناسبة
+            if (mounted) {
+              final message = response['message']?.toString() ?? 
+                           '⚠️ تم الوصول للملف (مشاركة لمرة واحدة - سيختفي الملف من القائمة بعد التحديث)';
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(message),
+                  backgroundColor: Colors.orange,
+                  duration: Duration(seconds: 3),
+                ),
+              );
+            }
+            
+            // ✅ إعادة تحميل البيانات في الخلفية بعد فتح الملف (ليختفي الملف من القائمة)
+            // ✅ الباك إند يفلتر الملف في getRoomDetails لأنه في accessedBy
+            _loadRoomData();
+            
+            // ✅ الاستمرار في فتح الملف (الكود يستمر بعد if block)
+          } else {
+            // ✅ ملف عادي
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('✅ تم فتح الملف'),
+                  backgroundColor: Colors.green,
+                  duration: Duration(seconds: 2),
+                ),
+              );
+            }
+            
+            // ✅ إعادة تحميل البيانات في الخلفية (بعد فتح الملف)
+            _loadRoomData();
+            
+            // ✅ الاستمرار في فتح الملف (الكود يستمر بعد if block)
+          }
+        } else {
+          // ✅ إذا فشل الوصول (مثلاً المستخدم فتحه من قبل)
+          final errorMsg = response['message'] ?? response['error'] ?? S.of(context).cannotAccessFile;
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('❌ $errorMsg'),
+                backgroundColor: Colors.red,
+                duration: Duration(seconds: 3),
+              ),
+            );
+          }
+          return; // ✅ منع فتح الملف
+        }
+      } catch (e) {
+        print('Error accessing one-time file: $e');
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('❌ ${S.of(context).errorAccessingFile}: ${e.toString()}'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+        return; // ✅ منع فتح الملف في حالة الخطأ
+      }
     }
 
     final filePath = fileData['path']?.toString();
     if (filePath == null || filePath.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('رابط الملف غير متوفر'), backgroundColor: Colors.orange),
+        SnackBar(content: Text(S.of(context).fileUrlNotAvailable), backgroundColor: Colors.orange),
       );
       return;
     }
@@ -91,7 +236,7 @@ class _RoomFilesPageState extends State<RoomFilesPage> {
 
     if (url.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('رابط غير صالح'), backgroundColor: Colors.red),
+        SnackBar(content: Text(S.of(context).invalidUrl), backgroundColor: Colors.red),
       );
       return;
     }
@@ -117,19 +262,19 @@ class _RoomFilesPageState extends State<RoomFilesPage> {
               showDialog(
                 context: context,
                 builder: (context) => AlertDialog(
-                  title: Text('ملف غير مدعوم'),
-                  content: Text('هذا الملف ليس PDF صالح أو قد يكون تالفاً.'),
+                  title: Text(S.of(context).unsupportedFile),
+                  content: Text(S.of(context).invalidPdfFile),
                   actions: [
                     TextButton(
                       onPressed: () => Navigator.pop(context),
-                      child: Text('إلغاء'),
+                      child: Text(S.of(context).cancel),
                     ),
                     TextButton(
                       onPressed: () {
                         Navigator.pop(context);
                         _openAsTextFile(url, fileName);
                       },
-                      child: Text('فتح كنص'),
+                      child: Text(S.of(context).openAsText),
                     ),
                   ],
                 ),
@@ -333,12 +478,87 @@ class _RoomFilesPageState extends State<RoomFilesPage> {
     }
   }
 
+  List<Map<String, dynamic>> _mapFiles(List files) {
+    // ✅ تحويل الملفات إلى format مناسب لـ FilesGrid (Grid View)
+    // ✅ ملاحظة: الـ backend يقوم بفلترة الملفات المشتركة لمرة واحدة تلقائياً
+    final displayFiles = files.map((file) {
+      final fileIdRef = file['fileId'];
+      final fileData = fileIdRef is Map<String, dynamic> 
+          ? fileIdRef 
+          : <String, dynamic>{};
+      final fileName = fileData['name']?.toString() ?? 'ملف غير معروف';
+      final fileId = fileData['_id']?.toString() ?? 
+                     (fileIdRef is String ? fileIdRef : fileIdRef?.toString());
+      final filePath = fileData['path']?.toString() ?? '';
+      final size = fileData['size'] ?? 0;
+      final category = fileData['category']?.toString() ?? '';
+      final createdAt = fileData['createdAt'];
+      final updatedAt = fileData['updatedAt'];
+      final sharedAt = file['sharedAt'];
+      
+      // ✅ استخراج معلومات من شارك الملف من room data
+      final sharedBy = _getSharedByInfo(file, fileData);
+      
+      // ✅ التحقق من أن الملف مشترك لمرة واحدة
+      final isOneTimeShare = file['isOneTimeShare'] == true;
+      final expiresAt = file['expiresAt'];
+      final accessCount = file['accessCount'] ?? 0;
+      final accessedAt = file['accessedAt'];
+      final accessedBy = file['accessedBy'] as List?;
+      
+      // ✅ معلومات إضافية لصاحب الملف (من الباك اند)
+      final shareStatus = file['shareStatus']; // 'active' أو 'viewed_by_all'
+      final totalEligibleMembers = file['totalEligibleMembers'];
+      final viewedByAllAt = file['viewedByAllAt'];
+      final allMembersViewed = file['allMembersViewed'] == true;
+      
+      // ✅ التحقق من انتهاء الصلاحية
+      bool isExpired = false;
+      if (expiresAt != null) {
+        try {
+          final expiryDate = expiresAt is String ? DateTime.parse(expiresAt) : expiresAt as DateTime;
+          isExpired = DateTime.now().isAfter(expiryDate);
+        } catch (e) {
+          print('Error parsing expiry date: $e');
+        }
+      }
+      
+      return {
+        'name': fileName,
+        'url': _getFileUrl(filePath),
+        'type': _getFileType(fileName),
+        'size': _formatSize(size),
+        'category': category,
+        'createdAt': createdAt,
+        'updatedAt': updatedAt,
+        'sharedAt': sharedAt,
+        'path': filePath,
+        'originalData': fileData,
+        'originalName': fileName,
+        'fileId': fileId,
+        'sharedBy': sharedBy,
+        'isOneTimeShare': isOneTimeShare,
+        'expiresAt': expiresAt,
+        'accessCount': accessCount,
+        'accessedAt': accessedAt,
+        'accessedBy': accessedBy,
+        'isExpired': isExpired,
+        'shareStatus': shareStatus, // 'active' أو 'viewed_by_all'
+        'totalEligibleMembers': totalEligibleMembers,
+        'viewedByAllAt': viewedByAllAt,
+        'allMembersViewed': allMembersViewed,
+      };
+    }).toList();
+    
+    return displayFiles;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          'الملفات المشتركة',
+          S.of(context).sharedFiles,
           style: TextStyle(
             fontSize: ResponsiveUtils.getResponsiveValue(
               context,
@@ -348,7 +568,7 @@ class _RoomFilesPageState extends State<RoomFilesPage> {
             ),
           ),
         ),
-        backgroundColor: Color(0xff28336f),
+        backgroundColor: AppColors.lightAppBar,
         actions: [
           IconButton(
             icon: Icon(Icons.refresh),
@@ -401,7 +621,7 @@ class _RoomFilesPageState extends State<RoomFilesPage> {
               desktop: 24.0,
             )),
             Text(
-              'لا توجد ملفات مشتركة',
+              S.of(context).noSharedFiles,
               style: TextStyle(
                 fontSize: ResponsiveUtils.getResponsiveValue(
                   context,
@@ -420,7 +640,7 @@ class _RoomFilesPageState extends State<RoomFilesPage> {
               desktop: 16.0,
             )),
             Text(
-              'قم بمشاركة ملفات مع هذه الغرفة',
+              S.of(context).shareFilesWithRoom,
               style: TextStyle(
                 fontSize: ResponsiveUtils.getResponsiveValue(
                   context,
@@ -436,42 +656,10 @@ class _RoomFilesPageState extends State<RoomFilesPage> {
       );
     }
 
-    // ✅ تحويل الملفات إلى format مناسب لـ FilesGrid (Grid View)
-    final displayFiles = files.map((file) {
-      final fileIdRef = file['fileId'];
-      final fileData = fileIdRef is Map<String, dynamic> 
-          ? fileIdRef 
-          : <String, dynamic>{};
-      final fileName = fileData['name']?.toString() ?? 'ملف غير معروف';
-      final fileId = fileData['_id']?.toString() ?? 
-                     (fileIdRef is String ? fileIdRef : fileIdRef?.toString());
-      final filePath = fileData['path']?.toString() ?? '';
-      final size = fileData['size'] ?? 0;
-      final category = fileData['category']?.toString() ?? '';
-      final createdAt = fileData['createdAt'];
-      final updatedAt = fileData['updatedAt'];
-      final sharedAt = file['sharedAt'];
-      
-      // ✅ استخراج معلومات من شارك الملف من room data
-      final sharedBy = _getSharedByInfo(file, fileData);
-      
-      return {
-        'name': fileName,
-        'url': _getFileUrl(filePath),
-        'type': _getFileType(fileName),
-        'size': _formatSize(size),
-        'category': category, // ✅ التصنيف
-        'createdAt': createdAt, // ✅ تاريخ الإنشاء
-        'updatedAt': updatedAt, // ✅ تاريخ التعديل
-        'sharedAt': sharedAt, // ✅ تاريخ المشاركة في الروم
-        'path': filePath,
-        'originalData': fileData,
-        'originalName': fileName,
-        'fileId': fileId,
-        'sharedBy': sharedBy, // ✅ معلومات من شارك الملف من أعضاء الروم
-      };
-    }).toList();
-
+    // ✅ تحويل الملفات إلى format مناسب لـ FilesGrid
+    // ✅ ملاحظة: الـ backend يقوم بفلترة الملفات المشتركة لمرة واحدة تلقائياً
+    final displayFiles = _mapFiles(files);
+    
     return FilesGrid(
       files: displayFiles,
       roomId: widget.roomId, // ✅ تمرير roomId لاستخدام getSharedFileDetailsInRoom

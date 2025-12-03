@@ -375,10 +375,12 @@ class _FoldersPageState extends State<FoldersPage> {
 
   @override
   Widget build(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    
     return DefaultTabController(
       length: 3,
       child: Scaffold(
-        backgroundColor: const Color(0xff28336f),
+        backgroundColor: isDarkMode ? const Color(0xFF1E1E1E) : const Color(0xff28336f),
         body: Padding(
           padding: EdgeInsets.only(
             top: MediaQuery.of(context).padding.top,

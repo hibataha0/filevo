@@ -161,3 +161,6 @@ router.get('/files/categories/stats', protect, fileController.getCategoriesStats
 إذا كانت التصنيفات في قاعدة البيانات بأحرف كبيرة (مثل `Images` بدلاً من `images`)، يمكن تعديل الكود ليتعامل مع كلا الحالتين.
 
 
+
+
+

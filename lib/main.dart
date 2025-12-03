@@ -5,6 +5,7 @@ import 'package:filevo/controllers/auth/auth_controller.dart';
 import 'package:filevo/controllers/folders/folders_controller.dart';
 import 'package:filevo/controllers/folders/room_controller.dart';
 import 'package:filevo/controllers/profile/profile_controller.dart';
+import 'package:filevo/controllers/ai_search_controller.dart';
 import 'package:filevo/views/auth/login_view.dart';
 import 'package:filevo/views/auth/signup_view.dart';
 import 'package:filevo/views/folders/folders_view.dart';
@@ -12,12 +13,14 @@ import 'package:filevo/views/home/home_view.dart';
 import 'package:filevo/views/main/main_view.dart';
 import 'package:filevo/views/profile/profile_view.dart';
 import 'package:filevo/views/settings/settings_view.dart';
+import 'package:filevo/views/search/smart_search_page.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
 import 'package:filevo/services/storage_service.dart'; // ✅ إضافة خدمة التخزين
 import 'package:filevo/generated/l10n.dart';
+import 'package:filevo/constants/app_colors.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -51,6 +54,94 @@ class _MyAppState extends State<MyApp> {
     });
   }
 
+  // ✅ بناء Light Theme
+  ThemeData _buildLightTheme() {
+    return ThemeData(
+      useMaterial3: false, // ✅ استخدام Material 2 لتجنب مشاكل الألوان
+      brightness: Brightness.light,
+      primaryColor: AppColors.lightAppBar,
+      scaffoldBackgroundColor: AppColors.lightBackground,
+      cardColor: AppColors.lightCardBackground,
+      appBarTheme: const AppBarTheme(
+        backgroundColor: AppColors.lightAppBar,
+        foregroundColor: Colors.white,
+        elevation: 0,
+        iconTheme: IconThemeData(color: Colors.white),
+      ),
+      textTheme: const TextTheme(
+        displayLarge: TextStyle(color: AppColors.lightTextPrimary),
+        displayMedium: TextStyle(color: AppColors.lightTextPrimary),
+        displaySmall: TextStyle(color: AppColors.lightTextPrimary),
+        headlineLarge: TextStyle(color: AppColors.lightTextPrimary),
+        headlineMedium: TextStyle(color: AppColors.lightTextPrimary),
+        headlineSmall: TextStyle(color: AppColors.lightTextPrimary),
+        titleLarge: TextStyle(color: AppColors.lightTextPrimary),
+        titleMedium: TextStyle(color: AppColors.lightTextPrimary),
+        titleSmall: TextStyle(color: AppColors.lightTextPrimary),
+        bodyLarge: TextStyle(color: AppColors.lightTextPrimary),
+        bodyMedium: TextStyle(color: AppColors.lightTextPrimary),
+        bodySmall: TextStyle(color: AppColors.lightTextSecondary),
+        labelLarge: TextStyle(color: AppColors.lightTextPrimary),
+        labelMedium: TextStyle(color: AppColors.lightTextPrimary),
+        labelSmall: TextStyle(color: AppColors.lightTextSecondary),
+      ),
+      colorScheme: const ColorScheme.light(
+        primary: AppColors.lightAppBar,
+        secondary: AppColors.accent,
+        surface: AppColors.lightSurface,
+        background: AppColors.lightBackground,
+        onPrimary: Colors.white,
+        onSecondary: Colors.white,
+        onSurface: AppColors.lightTextPrimary,
+        onBackground: AppColors.lightTextPrimary,
+      ),
+    );
+  }
+
+  // ✅ بناء Dark Theme
+  ThemeData _buildDarkTheme() {
+    return ThemeData(
+      useMaterial3: false, // ✅ استخدام Material 2 لتجنب مشاكل الألوان
+      brightness: Brightness.dark,
+      primaryColor: AppColors.darkPrimary,
+      scaffoldBackgroundColor: AppColors.darkBackground,
+      cardColor: AppColors.darkCardBackground,
+      appBarTheme: const AppBarTheme(
+        backgroundColor: AppColors.darkAppBar,
+        foregroundColor: Colors.white,
+        elevation: 0,
+        iconTheme: IconThemeData(color: Colors.white),
+      ),
+      textTheme: const TextTheme(
+        displayLarge: TextStyle(color: AppColors.darkTextPrimary),
+        displayMedium: TextStyle(color: AppColors.darkTextPrimary),
+        displaySmall: TextStyle(color: AppColors.darkTextPrimary),
+        headlineLarge: TextStyle(color: AppColors.darkTextPrimary),
+        headlineMedium: TextStyle(color: AppColors.darkTextPrimary),
+        headlineSmall: TextStyle(color: AppColors.darkTextPrimary),
+        titleLarge: TextStyle(color: AppColors.darkTextPrimary),
+        titleMedium: TextStyle(color: AppColors.darkTextPrimary),
+        titleSmall: TextStyle(color: AppColors.darkTextPrimary),
+        bodyLarge: TextStyle(color: AppColors.darkTextPrimary),
+        bodyMedium: TextStyle(color: AppColors.darkTextPrimary),
+        bodySmall: TextStyle(color: AppColors.darkTextSecondary),
+        labelLarge: TextStyle(color: AppColors.darkTextPrimary),
+        labelMedium: TextStyle(color: AppColors.darkTextPrimary),
+        labelSmall: TextStyle(color: AppColors.darkTextSecondary),
+      ),
+      colorScheme: const ColorScheme.dark(
+        primary: AppColors.darkPrimary,
+        secondary: AppColors.accent,
+        surface: AppColors.darkSurface,
+        background: AppColors.darkBackground,
+        onPrimary: Colors.white,
+        onSecondary: Colors.white,
+        onSurface: AppColors.darkTextPrimary,
+        onBackground: AppColors.darkTextPrimary,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return MultiProvider(
@@ -61,9 +152,11 @@ class _MyAppState extends State<MyApp> {
         ChangeNotifierProvider(create: (_) => FolderController()),
         ChangeNotifierProvider(create: (_) => RoomController()), // ✅ RoomController
         ChangeNotifierProvider(create: (_) => ProfileController()), // ✅ ProfileController
+        ChangeNotifierProvider(create: (_) => AiSearchController()), // ✅ AiSearchController
       ],
       child: Consumer<ThemeController>(
         builder: (context, themeController, child) {
+          print('🎨 Building MaterialApp with theme: ${themeController.isDarkMode ? "Dark" : "Light"}');
           return MaterialApp(
             locale: _locale ?? const Locale('en'),
             localizationsDelegates: const [
@@ -74,9 +167,9 @@ class _MyAppState extends State<MyApp> {
             ],
             supportedLocales: S.delegate.supportedLocales,
             debugShowCheckedModeBanner: false,
-            theme: ThemeData.light(),
-            darkTheme: ThemeData.dark(),
-            themeMode: themeController.isDarkMode ? ThemeMode.dark : ThemeMode.light, // 🔹 استخدام ThemeController
+            theme: _buildLightTheme(),
+            darkTheme: _buildDarkTheme(),
+            themeMode: themeController.isDarkMode ? ThemeMode.dark : ThemeMode.light,
             routes: {
               'LogInPage': (context) => const LoginPage(),
               'SignUpPage': (context) => const SignUpPage(),
@@ -85,6 +178,7 @@ class _MyAppState extends State<MyApp> {
               'Folders': (context) => FoldersPage(),
               'Profile': (context) => ProfilePage(),
               'Settings': (context) => SettingsPage(),
+              'SmartSearch': (context) => SmartSearchPage(),
             },
             initialRoute: widget.isLoggedIn ? 'Main' : 'LogInPage',
           );

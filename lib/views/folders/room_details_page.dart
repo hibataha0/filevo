@@ -1,7 +1,9 @@
 import 'dart:io';
+import 'package:filevo/generated/l10n.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:filevo/controllers/folders/room_controller.dart';
+import 'package:filevo/constants/app_colors.dart';
 import 'package:filevo/views/folders/send_invitation_page.dart';
 import 'package:filevo/views/folders/room_members_page.dart';
 import 'package:filevo/views/folders/room_comments_page.dart';
@@ -72,7 +74,7 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
         });
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('خطأ في تحميل تفاصيل الغرفة: ${e.toString()}'),
+            content: Text('${S.of(context).errorLoadingRoomDetails}: ${e.toString()}'),
             backgroundColor: Colors.red,
           ),
         );
@@ -91,7 +93,7 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
       backgroundColor: Color(0xFFF8FAFD),
       appBar: AppBar(
         title: Text(
-          'تفاصيل الغرفة',
+          S.of(context).roomDetails,
           style: TextStyle(
             color: Colors.white,
             fontWeight: FontWeight.w700,
@@ -103,7 +105,7 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
             ),
           ),
         ),
-        backgroundColor: Color(0xff28336f),
+        backgroundColor: AppColors.lightAppBar,
         elevation: 0,
         centerTitle: true,
         iconTheme: IconThemeData(
@@ -149,7 +151,7 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
                     if (mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
-                          content: Text('❌ فقط مالك الغرفة يمكنه حذفها'),
+                          content: Text('❌ ${S.of(context).onlyOwnerCanDelete}'),
                           backgroundColor: Colors.red,
                         ),
                       );
@@ -164,7 +166,7 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
                     if (mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
-                          content: Text('❌ مالك الغرفة لا يمكنه مغادرتها. يرجى حذف الغرفة بدلاً من ذلك'),
+                          content: Text('❌ ${S.of(context).ownerCannotLeave}'),
                           backgroundColor: Colors.orange,
                         ),
                       );
@@ -181,7 +183,7 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
                       children: [
                         Icon(Icons.delete, color: Colors.red),
                         SizedBox(width: 12),
-                        Text('حذف الغرفة', style: TextStyle(color: Colors.red)),
+                        Text(S.of(context).deleteRoom, style: TextStyle(color: Colors.red)),
                       ],
                     ),
                   ),
@@ -191,7 +193,7 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
                       children: [
                         Icon(Icons.exit_to_app, color: Colors.orange),
                         SizedBox(width: 12),
-                        Text('مغادرة الغرفة', style: TextStyle(color: Colors.orange)),
+                        Text(S.of(context).leaveRoom, style: TextStyle(color: Colors.orange)),
                       ],
                     ),
                   ),
@@ -209,11 +211,11 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
                     children: [
                       Icon(Icons.error_outline, size: 64, color: Colors.red),
                       SizedBox(height: 16),
-                      Text('فشل تحميل تفاصيل الغرفة'),
+                      Text(S.of(context).failedToLoadRoomDetails),
                       SizedBox(height: 16),
                       ElevatedButton(
                         onPressed: _refreshRoom,
-                        child: Text('إعادة المحاولة'),
+                        child: Text(S.of(context).retry),
                       ),
                     ],
                   ),
@@ -276,6 +278,7 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
   Widget _buildRoomHeader() {
     final owner = roomData!['owner'] ?? {};
     final membersCount = (roomData!['members'] as List?)?.length ?? 0;
+    // ✅ ملاحظة: الـ backend يقوم بفلترة الملفات المشتركة لمرة واحدة تلقائياً
     final filesCount = (roomData!['files'] as List?)?.length ?? 0;
     final foldersCount = (roomData!['folders'] as List?)?.length ?? 0;
 
@@ -339,14 +342,14 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
       padding: EdgeInsets.all(padding),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [Color(0xff28336f), Color(0xFF4D62D5)],
+          colors: [AppColors.lightAppBar, AppColors.accent],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(borderRadius),
         boxShadow: [
           BoxShadow(
-            color: Color(0xff28336f).withOpacity(0.3),
+            color: AppColors.lightAppBar.withOpacity(0.3),
             blurRadius: 20,
             offset: Offset(0, 8),
           ),
@@ -376,7 +379,7 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      roomData!['name'] ?? 'بدون اسم',
+                      roomData!['name'] ?? S.of(context).roomNamePlaceholder,
                       style: TextStyle(
                         fontSize: titleFontSize,
                         fontWeight: FontWeight.bold,
@@ -385,7 +388,7 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
                     ),
                     SizedBox(height: 4),
                     Text(
-                      'المالك: ${owner['name'] ?? owner['email'] ?? '—'}',
+                      '${S.of(context).owner}: ${owner['name'] ?? owner['email'] ?? '—'}',
                       style: TextStyle(
                         fontSize: subtitleFontSize,
                         color: Colors.white.withOpacity(0.9),
@@ -427,11 +430,11 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
           SizedBox(height: spacing),
           Row(
             children: [
-              _buildStatItem(Icons.people, '$membersCount', 'أعضاء'),
+              _buildStatItem(Icons.people, '$membersCount', S.of(context).members),
               SizedBox(width: spacing),
-              _buildStatItem(Icons.insert_drive_file, '$filesCount', 'ملفات'),
+              _buildStatItem(Icons.insert_drive_file, '$filesCount', S.of(context).files),
               SizedBox(width: spacing),
-              _buildStatItem(Icons.folder, '$foldersCount', 'مجلدات'),
+              _buildStatItem(Icons.folder, '$foldersCount', S.of(context).folders),
             ],
           ),
         ],
@@ -534,7 +537,7 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
           Expanded(
             child: _buildActionButton(
               icon: Icons.person_add,
-              label: 'إرسال دعوة',
+              label: S.of(context).sendInvitation,
               color: Color(0xFF10B981),
               onTap: () async {
                 final result = await Navigator.push(
@@ -556,7 +559,7 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
           Expanded(
             child: _buildActionButton(
               icon: Icons.people,
-              label: 'الأعضاء',
+              label: S.of(context).members,
               color: Color(0xFF4F6BED),
               onTap: () async {
                 final result = await Navigator.push(
@@ -578,7 +581,7 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
           Expanded(
             child: _buildActionButton(
               icon: Icons.comment,
-              label: 'التعليقات',
+              label: S.of(context).comments,
               color: Color(0xFFF59E0B),
               onTap: () {
                 Navigator.push(
@@ -742,7 +745,7 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
               ),
               SizedBox(width: spacing),
               Text(
-                'معلومات الغرفة',
+                S.of(context).roomInfo,
                 style: TextStyle(
                   fontSize: titleFontSize,
                   fontWeight: FontWeight.w700,
@@ -752,9 +755,9 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
             ],
           ),
           SizedBox(height: sectionSpacing),
-          _buildInfoItem('🕒', 'أنشئت في', _formatDate(roomData!['createdAt'])),
-          _buildInfoItem('✏️', 'آخر تعديل', _formatDate(roomData!['updatedAt'])),
-          _buildInfoItem('👤', 'المالك', roomData!['owner']?['name'] ?? roomData!['owner']?['email'] ?? '—'),
+          _buildInfoItem('🕒', S.of(context).createdAt, _formatDate(roomData!['createdAt'])),
+          _buildInfoItem('✏️', S.of(context).lastModified, _formatDate(roomData!['updatedAt'])),
+          _buildInfoItem('👤', S.of(context).owner, roomData!['owner']?['name'] ?? roomData!['owner']?['email'] ?? '—'),
         ],
       ),
     );
@@ -931,7 +934,7 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
                   ),
                   SizedBox(width: spacing),
                   Text(
-                    'الأعضاء (${members.length})',
+                    '${S.of(context).members} (${members.length})',
                     style: TextStyle(
                       fontSize: titleFontSize,
                       fontWeight: FontWeight.w700,
@@ -958,7 +961,7 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
                 },
                 icon: Icon(Icons.arrow_forward_ios, size: buttonIconSize),
                 label: Text(
-                  'عرض الكل',
+                  S.of(context).viewAll,
                   style: TextStyle(fontSize: buttonFontSize),
                 ),
               ),
@@ -970,7 +973,7 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
               child: Padding(
                 padding: EdgeInsets.all(emptyPadding),
                 child: Text(
-                  'لا يوجد أعضاء',
+                  S.of(context).noMembers,
                   style: TextStyle(
                     color: Colors.grey[600],
                     fontSize: ResponsiveUtils.getResponsiveValue(
@@ -1157,8 +1160,9 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
                     )),
                     Flexible(
                       child: Text(
-                        'الملفات المشتركة (${files.length})',
-                        style: TextStyle(
+                      S.of(context).sharedFilesCount('${files.length}'),
+
+                     style: TextStyle(
                           fontSize: titleFontSize,
                           fontWeight: FontWeight.w700,
                           color: Color(0xFF1F2937),
@@ -1196,7 +1200,7 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
                         ),
                       ),
                       label: Text(
-                        'عرض الكل',
+                        S.of(context).viewAll,
                         style: TextStyle(
                           fontSize: ResponsiveUtils.getResponsiveValue(
                             context,
@@ -1242,17 +1246,17 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
                         desktop: 32.0,
                       ),
                     ),
-                    tooltip: 'إضافة ملف',
+                    tooltip: S.of(context).addFile,
                     onPressed: () {
                       showDialog(
                         context: context,
                         builder: (context) => AlertDialog(
-                          title: Text('إضافة ملف للغرفة'),
-                          content: Text('يرجى فتح صفحة تفاصيل الملف ومشاركته مع الغرفة من هناك'),
+                          title: Text(S.of(context).addFileToRoom),
+                          content: Text(S.of(context).openFileDetailsToShare),
                           actions: [
                             TextButton(
                               onPressed: () => Navigator.pop(context),
-                              child: Text('موافق'),
+                              child: Text(S.of(context).ok),
                             ),
                           ],
                         ),
@@ -1451,7 +1455,7 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
                   actions: [
                     TextButton(
                       onPressed: () => Navigator.pop(context),
-                      child: Text('إلغاء'),
+                      child: Text(S.of(context).cancel),
                     ),
                     TextButton(
                       onPressed: () {
@@ -1723,7 +1727,7 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
                         ),
                       ),
                       label: Text(
-                        'عرض الكل',
+                        S.of(context).viewAll,
                         style: TextStyle(
                           fontSize: ResponsiveUtils.getResponsiveValue(
                             context,
@@ -1768,18 +1772,18 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
                         tablet: 28.0,
                         desktop: 32.0,
                       ),
-                    ),
-                    tooltip: 'إضافة مجلد',
+                      ),
+                    tooltip: S.of(context).addFolder,
                     onPressed: () {
                       showDialog(
                         context: context,
                         builder: (context) => AlertDialog(
-                          title: Text('إضافة مجلد للغرفة'),
-                          content: Text('يرجى فتح صفحة تفاصيل المجلد ومشاركته مع الغرفة من هناك'),
+                          title: Text(S.of(context).addFolderToRoom),
+                          content: Text(S.of(context).openFolderDetailsToShare),
                           actions: [
                             TextButton(
                               onPressed: () => Navigator.pop(context),
-                              child: Text('موافق'),
+                              child: Text(S.of(context).ok),
                             ),
                           ],
                         ),
@@ -1871,7 +1875,7 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
           );
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('خطأ: معرف المجلد غير موجود')),
+            SnackBar(content: Text(S.of(context).folderIdNotAvailable)),
           );
         }
       },
@@ -1992,19 +1996,22 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
     showDialog(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: Text('حذف الغرفة'),
-        content: Text('هل أنت متأكد من حذف "$roomName"؟ سيتم حذف جميع البيانات المرتبطة بالغرفة.'),
+        title: Text(S.of(context).deleteRoom),
+        content:Text(
+  S.of(context).deleteRoomConfirm(roomName),
+)
+,
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
-            child: Text('إلغاء'),
+            child: Text(S.of(context).cancel),
           ),
           TextButton(
             onPressed: () {
               Navigator.pop(dialogContext);
               _deleteRoom();
             },
-            child: Text('حذف', style: TextStyle(color: Colors.red)),
+            child: Text(S.of(context).deleteRoom, style: TextStyle(color: Colors.red)),
           ),
         ],
       ),
@@ -2019,19 +2026,20 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
     showDialog(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: Text('مغادرة الغرفة'),
-        content: Text('هل أنت متأكد من مغادرة "$roomName"؟ لن تتمكن من الوصول إلى هذه الغرفة بعد المغادرة.'),
+        title: Text(S.of(context).leaveRoom),
+        content: Text(S.of(context).leaveRoomConfirm(roomName))
+,
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
-            child: Text('إلغاء'),
+            child: Text(S.of(context).cancel),
           ),
           TextButton(
             onPressed: () {
               Navigator.pop(dialogContext);
               _leaveRoom();
             },
-            child: Text('مغادرة', style: TextStyle(color: Colors.orange)),
+            child: Text(S.of(context).leave, style: TextStyle(color: Colors.orange)),
           ),
         ],
       ),

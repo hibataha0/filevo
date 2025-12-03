@@ -5,6 +5,8 @@ import 'package:filevo/generated/l10n.dart';
 import 'package:filevo/responsive.dart';
 import 'package:filevo/views/home/components/StorageCard.dart';
 import 'package:flutter/material.dart';
+import 'package:filevo/constants/app_colors.dart';
+import 'package:filevo/views/search/smart_search_page.dart';
 
 class HomeView extends StatefulWidget {
   const HomeView({super.key});
@@ -33,8 +35,28 @@ class _HomeViewState extends State<HomeView> {
 
   @override
   Widget build(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    
     return Scaffold(
-      backgroundColor: const Color(0xff28336f),
+      backgroundColor: isDarkMode ? AppColors.darkAppBar : AppColors.lightAppBar,
+      appBar: AppBar(
+        title: Text('الرئيسية'),
+        backgroundColor: isDarkMode ? AppColors.darkAppBar : AppColors.lightAppBar,
+        actions: [
+          IconButton(
+            icon: Icon(Icons.search),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => SmartSearchPage(),
+                ),
+              );
+            },
+            tooltip: 'بحث ذكي',
+          ),
+        ],
+      ),
       body: Padding(
         padding: EdgeInsets.only(
           top: MediaQuery.of(context).padding.top,
@@ -69,7 +91,7 @@ class _HomeViewState extends State<HomeView> {
                     ),
                   ),
                 ),
-                color: const Color(0xFFE9E9E9),
+                color: isDarkMode ? AppColors.darkBackground : AppColors.lightBackground,
                 child: Padding(
                   padding: const EdgeInsets.all(16.0),
                   child: SingleChildScrollView(

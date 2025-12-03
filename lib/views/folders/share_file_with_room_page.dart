@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:filevo/controllers/folders/room_controller.dart';
+import 'package:filevo/services/storage_service.dart';
+import 'package:filevo/constants/app_colors.dart';
+import 'package:filevo/generated/l10n.dart';
 
 class ShareFileWithRoomPage extends StatefulWidget {
   final String fileId;
@@ -20,6 +23,8 @@ class _ShareFileWithRoomPageState extends State<ShareFileWithRoomPage> {
   List<Map<String, dynamic>> rooms = [];
   bool isLoading = true;
   String? selectedRoomId;
+  bool isOneTimeShare = false; // ✅ خيار المشاركة لمرة واحدة
+  int? expiresInHours; // ✅ عدد الساعات للانتهاء (افتراضي 24)
 
   @override
   void initState() {
@@ -48,14 +53,18 @@ class _ShareFileWithRoomPageState extends State<ShareFileWithRoomPage> {
     final success = await roomController.shareFileWithRoom(
       roomId: roomId,
       fileId: widget.fileId,
+      isOneTime: isOneTimeShare,
+      expiresInHours: isOneTimeShare ? (expiresInHours ?? 24) : null,
     );
  
- print('ShareFileWithRoomPage: shareFileWithRoom response success: $success');
+    print('ShareFileWithRoomPage: shareFileWithRoom response success: $success (one-time: $isOneTimeShare)');
     if (mounted) {
       if (success) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('✅ تم مشاركة الملف مع الغرفة بنجاح'),
+            content: Text(isOneTimeShare 
+                ? '✅ تم مشاركة الملف مع الغرفة (لمرة واحدة) بنجاح'
+                : '✅ تم مشاركة الملف مع الغرفة بنجاح'),
             backgroundColor: Colors.green,
           ),
         );
@@ -70,13 +79,61 @@ class _ShareFileWithRoomPageState extends State<ShareFileWithRoomPage> {
       }
     }
   }
+  
+  void _showOneTimeShareDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(S.of(context).oneTimeShare),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              S.of(context).oneTimeShareDescription,
+              style: TextStyle(fontSize: 14),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              decoration: InputDecoration(
+                labelText: S.of(context).enterHours,
+                border: OutlineInputBorder(),
+                hintText: '24',
+              ),
+              keyboardType: TextInputType.number,
+              onChanged: (value) {
+                if (value.isNotEmpty) {
+                  expiresInHours = int.tryParse(value);
+                }
+              },
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(S.of(context).cancel),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              setState(() {
+                isOneTimeShare = true;
+                expiresInHours = expiresInHours ?? 24;
+              });
+              Navigator.pop(context);
+            },
+            child: Text(S.of(context).verify),
+          ),
+        ],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('مشاركة الملف مع غرفة'),
-        backgroundColor: Color(0xff28336f),
+        title: Text(S.of(context).shareFileWithRoom),
+        backgroundColor: AppColors.lightAppBar,
         actions: [
           IconButton(
             icon: Icon(Icons.refresh),
@@ -95,7 +152,7 @@ class _ShareFileWithRoomPageState extends State<ShareFileWithRoomPage> {
             padding: EdgeInsets.all(20),
             decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: [Color(0xff28336f), Color(0xFF4D62D5)],
+                colors: [AppColors.lightAppBar, AppColors.accent],
               ),
             ),
             child: Column(
@@ -115,7 +172,7 @@ class _ShareFileWithRoomPageState extends State<ShareFileWithRoomPage> {
                 ),
                 SizedBox(height: 8),
                 Text(
-                  'اختر غرفة لمشاركة هذا الملف',
+                  S.of(context).chooseRoomToShare,
                   style: TextStyle(
                     fontSize: 14,
                     color: Colors.white.withOpacity(0.9),
@@ -139,7 +196,7 @@ class _ShareFileWithRoomPageState extends State<ShareFileWithRoomPage> {
                                 size: 64, color: Colors.grey),
                             SizedBox(height: 16),
                             Text(
-                              'لا توجد غرف متاحة',
+                              S.of(context).noRoomsAvailable,
                               style: TextStyle(
                                 fontSize: 18,
                                 color: Colors.grey[600],
@@ -148,7 +205,7 @@ class _ShareFileWithRoomPageState extends State<ShareFileWithRoomPage> {
                             ),
                             SizedBox(height: 8),
                             Text(
-                              'قم بإنشاء غرفة أولاً للمشاركة',
+                              S.of(context).createRoomFirst,
                               style: TextStyle(
                                 fontSize: 14,
                                 color: Colors.grey[500],
@@ -168,6 +225,7 @@ class _ShareFileWithRoomPageState extends State<ShareFileWithRoomPage> {
                             final isSelected = selectedRoomId == room['_id'];
                             final membersCount =
                                 (room['members'] as List?)?.length ?? 0;
+                            // ✅ ملاحظة: الـ backend يقوم بفلترة الملفات المشتركة لمرة واحدة تلقائياً
                             final filesCount =
                                 (room['files'] as List?)?.length ?? 0;
 
@@ -201,7 +259,7 @@ class _ShareFileWithRoomPageState extends State<ShareFileWithRoomPage> {
                                 borderRadius: BorderRadius.circular(16),
                                 side: BorderSide(
                                   color: isSelected
-                                      ? Color(0xff28336f)
+                                      ? AppColors.lightAppBar
                                       : Colors.transparent,
                                   width: isSelected ? 2 : 0,
                                 ),
@@ -236,7 +294,7 @@ class _ShareFileWithRoomPageState extends State<ShareFileWithRoomPage> {
                                                   : Icons.meeting_room,
                                               color: isAlreadyShared
                                                   ? Colors.green
-                                                  : Color(0xff28336f),
+                                                  : AppColors.lightAppBar,
                                             ),
                                           ),
                                           SizedBox(width: 12),
@@ -274,7 +332,7 @@ class _ShareFileWithRoomPageState extends State<ShareFileWithRoomPage> {
                                           ),
                                           if (isSelected)
                                             Icon(Icons.check_circle,
-                                                color: Color(0xff28336f)),
+                                                color: AppColors.lightAppBar),
                                           if (isAlreadyShared)
                                             Container(
                                               padding: EdgeInsets.symmetric(
@@ -285,7 +343,7 @@ class _ShareFileWithRoomPageState extends State<ShareFileWithRoomPage> {
                                                     BorderRadius.circular(8),
                                               ),
                                               child: Text(
-                                                'مشترك',
+                                                S.of(context).shared,
                                                 style: TextStyle(
                                                   fontSize: 10,
                                                   color: Colors.green.shade700,
@@ -307,12 +365,47 @@ class _ShareFileWithRoomPageState extends State<ShareFileWithRoomPage> {
                                           _buildStatChip(
                                             Icons.insert_drive_file,
                                             '$filesCount',
-                                            'ملفات',
+                                            S.of(context).files,
                                           ),
                                         ],
                                       ),
                                       if (isSelected && !isAlreadyShared) ...[
                                         SizedBox(height: 12),
+                                        // ✅ خيار المشاركة لمرة واحدة
+                                        Row(
+                                          children: [
+                                            Expanded(
+                                              child: CheckboxListTile(
+                                                title: Text(
+                                                  S.of(context).oneTimeShare,
+                                                  style: TextStyle(fontSize: 14),
+                                                ),
+                                                subtitle: isOneTimeShare
+                                                    ? Text(
+                                                        S.of(context).expiresInHours('${expiresInHours ?? 24}')
+,
+                                                        style: TextStyle(fontSize: 12),
+                                                      )
+                                                    : null,
+                                                value: isOneTimeShare,
+                                                onChanged: (value) {
+                                                  setState(() {
+                                                    isOneTimeShare = value ?? false;
+                                                    if (isOneTimeShare && expiresInHours == null) {
+                                                      expiresInHours = 24;
+                                                    }
+                                                  });
+                                                  if (value == true) {
+                                                    _showOneTimeShareDialog();
+                                                  }
+                                                },
+                                                contentPadding: EdgeInsets.zero,
+                                                controlAffinity: ListTileControlAffinity.leading,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                        SizedBox(height: 8),
                                         SizedBox(
                                           width: double.infinity,
                                           child: Consumer<RoomController>(
@@ -339,7 +432,9 @@ class _ShareFileWithRoomPageState extends State<ShareFileWithRoomPage> {
                                                         ),
                                                       )
                                                     : Icon(Icons.share),
-                                                label: Text('مشاركة مع هذه الغرفة'),
+                                                label: Text(isOneTimeShare 
+                                                    ? S.of(context).oneTimeShare
+                                                    : S.of(context).share),
                                                 style: ElevatedButton.styleFrom(
                                                   backgroundColor:
                                                       Color(0xff28336f),

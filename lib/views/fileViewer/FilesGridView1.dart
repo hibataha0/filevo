@@ -11,6 +11,7 @@ import 'package:filevo/controllers/folders/folders_controller.dart';
 import 'package:filevo/controllers/folders/room_controller.dart';
 import 'package:filevo/services/storage_service.dart';
 import 'file_actions_service.dart';
+import 'package:filevo/generated/l10n.dart';
 
 class FilesGrid extends StatefulWidget {
   final List<Map<String, dynamic>> files;
@@ -171,37 +172,37 @@ class _FilesGridState extends State<FilesGrid> {
   /// ✅ بناء قائمة الملفات المشتركة في الغرف
   List<PopupMenuEntry<String>> _buildSharedFileMenuItems(Map<String, dynamic> file, bool isStarred) {
     return [
-      _buildMenuItem('open', Icons.open_in_new_rounded, 'فتح', Colors.blue),
-      _buildMenuItem('info', Icons.info_outline_rounded, 'عرض التفاصيل', Colors.teal),
-      _buildMenuItem('comments', Icons.comment_rounded, 'التعليقات', Color(0xFFF59E0B)),
+      _buildMenuItem('open', Icons.open_in_new_rounded, S.of(context).open, Colors.blue),
+      _buildMenuItem('info', Icons.info_outline_rounded, S.of(context).viewDetails, Colors.teal),
+      _buildMenuItem('comments', Icons.comment_rounded, S.of(context).comments, Color(0xFFF59E0B)),
       const PopupMenuDivider(),
       _buildMenuItem(
         'favorite',
         isStarred ? Icons.star_rounded : Icons.star_border_rounded,
-        isStarred ? 'إزالة من المفضلة' : 'إضافة إلى المفضلة',
+        isStarred ? S.of(context).removeFromFavorites : S.of(context).addToFavorites,
         Colors.amber[700]!,
       ),
       const PopupMenuDivider(),
-      _buildMenuItem('remove_from_room', Icons.link_off_rounded, 'إزالة من الغرفة', Colors.red),
+      _buildMenuItem('remove_from_room', Icons.link_off_rounded, S.of(context).removeFromRoom, Colors.red),
     ];
   }
 
   /// ✅ بناء قائمة الملفات العادية
   List<PopupMenuEntry<String>> _buildNormalFileMenuItems(Map<String, dynamic> file, bool isStarred) {
     return [
-      _buildMenuItem('open', Icons.open_in_new_rounded, 'فتح', Colors.blue),
-      _buildMenuItem('info', Icons.info_outline_rounded, 'عرض المعلومات', Colors.teal),
-      _buildMenuItem('edit', Icons.edit_rounded, 'تعديل', Colors.orange),
-      _buildMenuItem('share', Icons.share_rounded, 'مشاركة', Colors.green),
-      _buildMenuItem('move', Icons.drive_file_move_rounded, 'نقل', Colors.purple),
+      _buildMenuItem('open', Icons.open_in_new_rounded, S.of(context).open, Colors.blue),
+      _buildMenuItem('info', Icons.info_outline_rounded, S.of(context).viewInfo, Colors.teal),
+      _buildMenuItem('edit', Icons.edit_rounded, S.of(context).edit, Colors.orange),
+      _buildMenuItem('share', Icons.share_rounded, S.of(context).share, Colors.green),
+      _buildMenuItem('move', Icons.drive_file_move_rounded, S.of(context).move, Colors.purple),
       _buildMenuItem(
         'favorite',
         isStarred ? Icons.star_rounded : Icons.star_border_rounded,
-        isStarred ? 'إزالة من المفضلة' : 'إضافة إلى المفضلة',
+        isStarred ? S.of(context).removeFromFavorites : S.of(context).addToFavorites,
         Colors.amber[700]!,
       ),
       const PopupMenuDivider(),
-      _buildMenuItem('delete', Icons.delete_outline_rounded, 'حذف', Colors.red),
+      _buildMenuItem('delete', Icons.delete_outline_rounded, S.of(context).delete, Colors.red),
     ];
   }
 
@@ -268,19 +269,19 @@ class _FilesGridState extends State<FilesGrid> {
     showDialog(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: Text('إزالة الملف من الغرفة'),
-        content: Text('هل أنت متأكد من إزالة "$fileName" من هذه الغرفة؟'),
+        title: Text(S.of(context).removeFileFromRoom),
+        content: Text(S.of(context).removeFileFromRoomConfirm(fileName)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
-            child: Text('إلغاء'),
+            child: Text(S.of(context).cancel),
           ),
           TextButton(
             onPressed: () {
               Navigator.pop(dialogContext);
               _removeFileFromRoom(file);
             },
-            child: Text('إزالة', style: TextStyle(color: Colors.red)),
+            child: Text(S.of(context).remove, style: TextStyle(color: Colors.red)),
           ),
         ],
       ),
@@ -312,7 +313,7 @@ class _FilesGridState extends State<FilesGrid> {
         if (success) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('✅ تم إزالة الملف من الغرفة بنجاح'),
+              content: Text('✅ ${S.of(context).fileRemovedFromRoom}'),
               backgroundColor: Colors.green,
             ),
           );
@@ -323,7 +324,7 @@ class _FilesGridState extends State<FilesGrid> {
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(roomController.errorMessage ?? '❌ فشل إزالة الملف من الغرفة'),
+              content: Text(roomController.errorMessage ?? '❌ ${S.of(context).failedToRemoveFile}'),
               backgroundColor: Colors.red,
             ),
           );
@@ -341,135 +342,41 @@ class _FilesGridState extends State<FilesGrid> {
     }
   }
 
-  /// ✅ دالة لعرض dialog لاختيار المجلد الهدف لنقل الملف
+  /// ✅ دالة لعرض dialog لاختيار المجلد الهدف لنقل الملف - نفس folder_contents_page.dart
   void _showMoveFileDialog(Map<String, dynamic> file) async {
-    final originalData = file['originalData'] ?? {};
+    // ✅ حفظ context الأصلي قبل فتح الـ modal
+    final scaffoldContext = context;
+    
+    final originalData = file['originalData'] ?? file;
     final fileId = originalData['_id']?.toString();
-    final fileName = file['name'] ?? originalData['name'] ?? 'ملف';
+    final fileName = file['name'] as String? ?? originalData['name'] as String? ?? 'ملف';
     final currentParentId = originalData['parentFolderId']?.toString();
     
-    if (fileId == null || !mounted) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('خطأ: معرف الملف غير موجود')),
+    if (fileId == null) {
+      if (scaffoldContext.mounted) {
+        ScaffoldMessenger.of(scaffoldContext).showSnackBar(
+          SnackBar(content: Text(S.of(context).fileIdNotFound)),
         );
       }
       return;
     }
 
-    // ✅ جلب قائمة المجلدات
-    final folderController = Provider.of<FolderController>(context, listen: false);
-    final foldersResponse = await folderController.getAllFolders(page: 1, limit: 100);
-    
-    if (foldersResponse == null || foldersResponse['folders'] == null || !mounted) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('فشل جلب قائمة المجلدات')),
-        );
-      }
-      return;
-    }
-
-    final folders = List<Map<String, dynamic>>.from(foldersResponse['folders'] ?? []);
-    
-    // ✅ تصفية المجلد الحالي (إذا كان الملف في مجلد)
-    final availableFolders = folders.where((folder) {
-      final folderId = folder['_id']?.toString();
-      return folderId != currentParentId;
-    }).toList();
-
-    if (!mounted) return;
+    if (!scaffoldContext.mounted) return;
 
     showModalBottomSheet(
-      context: context,
+      context: scaffoldContext,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => Container(
-        height: MediaQuery.of(context).size.height * 0.7,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-        ),
-        child: Column(
-          children: [
-            // ✅ Header
-            Container(
-              padding: EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: Colors.purple,
-                borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-              ),
-              child: Row(
-                children: [
-                  Icon(Icons.drive_file_move_rounded, color: Colors.white, size: 32),
-                  SizedBox(width: 16),
-                  Expanded(
-                    child: Text(
-                      'نقل الملف: $fileName',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                  IconButton(
-                    icon: Icon(Icons.close, color: Colors.white),
-                    onPressed: () => Navigator.pop(context),
-                  ),
-                ],
-              ),
-            ),
-            
-            // ✅ Content
-            Expanded(
-              child: Column(
-                children: [
-                  // ✅ خيار "الجذر"
-                  ListTile(
-                    leading: Icon(Icons.home_rounded, color: Colors.blue),
-                    title: Text('الجذر'),
-                    subtitle: Text('نقل الملف للجذر (بدون مجلد)'),
-                    onTap: () {
-                      Navigator.pop(context);
-                      _moveFile(fileId, null, fileName);
-                    },
-                  ),
-                  Divider(),
-                  
-                  // ✅ قائمة المجلدات
-                  Expanded(
-                    child: availableFolders.isEmpty
-                        ? Center(
-                            child: Text(
-                              'لا توجد مجلدات متاحة',
-                              style: TextStyle(color: Colors.grey),
-                            ),
-                          )
-                        : ListView.builder(
-                            itemCount: availableFolders.length,
-                            itemBuilder: (context, index) {
-                              final folder = availableFolders[index];
-                              final folderId = folder['_id']?.toString();
-                              final folderName = folder['name'] ?? 'مجلد بدون اسم';
-                              
-                              return ListTile(
-                                leading: Icon(Icons.folder_rounded, color: Colors.orange),
-                                title: Text(folderName),
-                                subtitle: Text('${folder['filesCount'] ?? 0} ملف'),
-                                onTap: () {
-                                  Navigator.pop(context);
-                                  _moveFile(fileId, folderId, fileName);
-                                },
-                              );
-                            },
-                          ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
+      builder: (modalContext) => _FolderNavigationDialog(
+        title: 'نقل الملف: $fileName',
+        excludeFolderId: null, // ✅ الملف ليس مجلداً، لذا لا نحتاج لاستبعاد أي مجلد
+        excludeParentId: currentParentId, // ✅ استبعاد المجلد الحالي فقط (لتجنب النقل لنفس المكان)
+        onSelect: (targetFolderId) {
+          Navigator.pop(modalContext);
+          if (scaffoldContext.mounted) {
+            _moveFile(fileId, targetFolderId, fileName);
+          }
+        },
       ),
     );
   }
@@ -484,7 +391,7 @@ class _FilesGridState extends State<FilesGrid> {
     if (token == null || !mounted) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('خطأ: يجب تسجيل الدخول أولاً')),
+          SnackBar(content: Text(S.of(context).mustLoginFirst)),
         );
       }
       return;
@@ -496,10 +403,10 @@ class _FilesGridState extends State<FilesGrid> {
           children: [
             CircularProgressIndicator(color: Colors.white),
             SizedBox(width: 16),
-            Text('جاري نقل الملف...'),
+            Text(S.of(context).movingFile),
           ],
         ),
-        duration: Duration(seconds: 30),
+       // duration: Duration(seconds: 30),
       ),
     );
 
@@ -515,7 +422,7 @@ class _FilesGridState extends State<FilesGrid> {
       if (success) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('✅ تم نقل الملف بنجاح'),
+            content: Text('✅ ${S.of(context).fileMovedSuccessfully}'),
             backgroundColor: Colors.green,
           ),
         );
@@ -527,7 +434,7 @@ class _FilesGridState extends State<FilesGrid> {
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(fileController.errorMessage ?? '❌ فشل نقل الملف'),
+            content: Text(fileController.errorMessage ?? '❌ ${S.of(context).failedToMoveFile}'),
             backgroundColor: Colors.red,
           ),
         );
@@ -586,12 +493,12 @@ class _FilesGridState extends State<FilesGrid> {
             ),
             const SizedBox(height: 24),
             Text(
-              'لا توجد ملفات',
+              S.of(context).noFiles,
               style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.grey[700]),
             ),
             const SizedBox(height: 8),
             Text(
-              'ابدأ بإضافة ملفات جديدة',
+              S.of(context).startAddingFiles,
               style: TextStyle(fontSize: 14, color: Colors.grey[500]),
             ),
           ],
@@ -688,8 +595,92 @@ class _FilesGridState extends State<FilesGrid> {
                     style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF1A1A1A), height: 1.3),
                   ),
                   // ✅ عرض معلومات إضافية للملفات المشتركة في الروم
-                  if (file['sharedBy'] != null || file['category'] != null || file['createdAt'] != null) ...[
+                  if (file['sharedBy'] != null || file['category'] != null || file['createdAt'] != null || file['isOneTimeShare'] == true) ...[
                     const SizedBox(height: 6),
+                    // ✅ حالة الملف المشترك لمرة واحدة (لصاحب الملف فقط)
+                    if (file['isOneTimeShare'] == true && file['shareStatus'] != null)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 2),
+                        child: Container(
+                          padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: file['shareStatus'] == 'viewed_by_all' 
+                                ? Colors.green.shade50 
+                                : Colors.blue.shade50,
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                file['shareStatus'] == 'viewed_by_all' 
+                                    ? Icons.check_circle_outline 
+                                    : Icons.access_time,
+                                size: 10,
+                                color: file['shareStatus'] == 'viewed_by_all' 
+                                    ? Colors.green.shade700 
+                                    : Colors.blue.shade700,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                file['shareStatus'] == 'viewed_by_all' 
+                                    ? S.of(context).viewedByAll 
+                                    : S.of(context).active,
+                                style: TextStyle(
+                                  fontSize: 9,
+                                  color: file['shareStatus'] == 'viewed_by_all' 
+                                      ? Colors.green.shade700 
+                                      : Colors.blue.shade700,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    // ✅ معلومات إضافية لصاحب الملف (للملفات المشتركة لمرة واحدة)
+                    if (file['isOneTimeShare'] == true && file['shareStatus'] != null) ...[
+                      if (file['accessCount'] != null && file['accessCount'] > 0)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 2),
+                          child: Row(
+                            children: [
+                              Icon(Icons.visibility_outlined, size: 10, color: Colors.grey[600]),
+                              const SizedBox(width: 4),
+                              Expanded(
+                                child: Text(
+                                  '${S.of(context).accessed}: ${file['accessCount']}${file['totalEligibleMembers'] != null ? ' / ${file['totalEligibleMembers']}' : ''}',
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    fontSize: 9,
+                                    color: Colors.grey[600],
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      if (file['viewedByAllAt'] != null)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 2),
+                          child: Row(
+                            children: [
+                              Icon(Icons.check_circle, size: 10, color: Colors.green[600]),
+                              const SizedBox(width: 4),
+                              Expanded(
+                                child: Text(
+                                  '${S.of(context).completed}: ${_formatDate(file['viewedByAllAt'])}',
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    fontSize: 9,
+                                    color: Colors.green[700],
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                    ],
                     // ✅ التصنيف
                     if (file['category'] != null && file['category'].toString().isNotEmpty)
                       Padding(
@@ -722,7 +713,7 @@ class _FilesGridState extends State<FilesGrid> {
                             const SizedBox(width: 4),
                             Expanded(
                               child: Text(
-                                'شاركه: ${file['sharedBy']}',
+                                '${S.of(context).sharedBy}: ${file['sharedBy']}',
                                 overflow: TextOverflow.ellipsis,
                                 style: TextStyle(
                                   fontSize: 10,
@@ -765,7 +756,7 @@ class _FilesGridState extends State<FilesGrid> {
                             const SizedBox(width: 4),
                             Expanded(
                               child: Text(
-                                'عدل: ${_formatDate(file['updatedAt'])}',
+                                '${S.of(context).modified}: ${_formatDate(file['updatedAt'])}',
                                 overflow: TextOverflow.ellipsis,
                                 style: TextStyle(
                                   fontSize: 10,
@@ -929,5 +920,359 @@ class _FilesGridState extends State<FilesGrid> {
     } catch (e) {
       return '—';
     }
+  }
+}
+
+// ✅ Widget للتنقل داخل المجلدات عند النقل - نفس folder_contents_page.dart
+class _FolderNavigationDialog extends StatefulWidget {
+  final String title;
+  final String? excludeFolderId;
+  final String? excludeParentId;
+  final Function(String?) onSelect;
+
+  const _FolderNavigationDialog({
+    required this.title,
+    this.excludeFolderId,
+    this.excludeParentId,
+    required this.onSelect,
+  });
+
+  @override
+  State<_FolderNavigationDialog> createState() => _FolderNavigationDialogState();
+}
+
+class _FolderNavigationDialogState extends State<_FolderNavigationDialog> {
+  List<Map<String, dynamic>> _currentFolders = [];
+  List<Map<String, String?>> _breadcrumb = []; // [{id: null, name: 'الجذر'}]
+  bool _isLoading = false;
+  String? _currentFolderId;
+
+  @override
+  void initState() {
+    super.initState();
+    _breadcrumb.add({'id': null, 'name': 'الجذر'});
+    _loadRootFolders();
+  }
+
+  // ✅ جلب المجلدات الجذرية
+  Future<void> _loadRootFolders() async {
+    setState(() {
+      _isLoading = true;
+      _currentFolderId = null;
+    });
+
+    try {
+      final folderController = Provider.of<FolderController>(context, listen: false);
+      final response = await folderController.getAllFolders(page: 1, limit: 100);
+      
+      if (response != null && response['folders'] != null) {
+        final folders = List<Map<String, dynamic>>.from(response['folders'] ?? []);
+        
+        // ✅ تصفية المجلدات المستبعدة
+        final filteredFolders = folders.where((f) {
+          final fId = f['_id']?.toString();
+          return fId != widget.excludeFolderId && fId != widget.excludeParentId;
+        }).toList();
+
+        setState(() {
+          _currentFolders = filteredFolders;
+          _isLoading = false;
+        });
+      } else {
+        setState(() {
+          _currentFolders = [];
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      print('Error loading root folders: $e');
+      setState(() {
+        _currentFolders = [];
+        _isLoading = false;
+      });
+    }
+  }
+
+  // ✅ جلب المجلدات الفرعية لمجلد معين
+  Future<void> _loadSubfolders(String folderId, String folderName) async {
+    setState(() {
+      _isLoading = true;
+      _currentFolderId = folderId;
+    });
+
+    // ✅ إضافة المجلد إلى breadcrumb
+    setState(() {
+      _breadcrumb.add({'id': folderId, 'name': folderName});
+    });
+
+    try {
+      final folderController = Provider.of<FolderController>(context, listen: false);
+      
+      // ✅ جلب جميع المجلدات الفرعية (limit كبير لضمان جلب جميع المجلدات)
+      final response = await folderController.getFolderContents(
+        folderId: folderId,
+        page: 1,
+        limit: 1000, // ✅ limit كبير لضمان جلب جميع المجلدات الفرعية
+      );
+      
+      print('📁 Response for folder $folderId: ${response?.keys}');
+      print('📁 Full response: $response');
+      
+      // ✅ محاولة جلب المجلدات الفرعية من response
+      List<Map<String, dynamic>> subfolders = [];
+      
+      if (response != null) {
+        // ✅ محاولة من subfolders مباشرة (الأولوية) - هذا يحتوي على جميع المجلدات الفرعية
+        if (response['subfolders'] != null) {
+          subfolders = List<Map<String, dynamic>>.from(response['subfolders'] ?? []);
+          print('📁 Found ${subfolders.length} subfolders from subfolders field');
+        }
+        // ✅ إذا لم تكن موجودة، جرب من contents (لكن هذا قد يكون محدود بـ pagination)
+        if (subfolders.isEmpty && response['contents'] != null) {
+          final contents = List<Map<String, dynamic>>.from(response['contents'] ?? []);
+          subfolders = contents.where((item) => item['type'] == 'folder').toList();
+          print('📁 Found ${subfolders.length} subfolders from contents field');
+        }
+        
+        // ✅ إذا لم نجد أي مجلدات، جرب من folders مباشرة (fallback)
+        if (subfolders.isEmpty && response['folders'] != null) {
+          subfolders = List<Map<String, dynamic>>.from(response['folders'] ?? []);
+          print('📁 Found ${subfolders.length} subfolders from folders field (fallback)');
+        }
+      }
+      
+      print('📁 Total found: ${subfolders.length} subfolders for folder $folderId ($folderName)');
+      
+      // ✅ تصفية المجلدات المستبعدة
+      final filteredFolders = subfolders.where((f) {
+        final fId = f['_id']?.toString();
+        return fId != widget.excludeFolderId && fId != widget.excludeParentId;
+      }).toList();
+
+      setState(() {
+        _currentFolders = filteredFolders;
+        _isLoading = false;
+      });
+    } catch (e) {
+      print('❌ Error loading subfolders: $e');
+      print('❌ Stack trace: ${StackTrace.current}');
+      setState(() {
+        _currentFolders = [];
+        _isLoading = false;
+      });
+      
+      // ✅ إظهار رسالة خطأ للمستخدم
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('${S.of(context).errorLoadingSubfolders}: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  // ✅ العودة إلى مجلد سابق
+  void _navigateToFolder(String? folderId) {
+    if (folderId == null) {
+      // ✅ العودة للجذر
+      setState(() {
+        _breadcrumb = [{'id': null, 'name': 'الجذر'}];
+      });
+      _loadRootFolders();
+    } else {
+      // ✅ العودة لمجلد معين
+      final index = _breadcrumb.indexWhere((b) => b['id'] == folderId);
+      if (index >= 0) {
+        setState(() {
+          _breadcrumb = _breadcrumb.sublist(0, index + 1);
+        });
+        
+        if (folderId == null) {
+          _loadRootFolders();
+        } else {
+          final folderName = _breadcrumb.last['name'] ?? 'مجلد';
+          _loadSubfolders(folderId, folderName);
+        }
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: MediaQuery.of(context).size.height * 0.7,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      child: Column(
+        children: [
+          // ✅ Header
+          Container(
+            padding: EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Colors.purple,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.drive_file_move_rounded, color: Colors.white, size: 32),
+                SizedBox(width: 16),
+                Expanded(
+                  child: Text(
+                    widget.title,
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+                IconButton(
+                  icon: Icon(Icons.close, color: Colors.white),
+                  onPressed: () => Navigator.pop(context),
+                ),
+              ],
+            ),
+          ),
+          
+          // ✅ Breadcrumb
+          if (_breadcrumb.length > 1)
+            Container(
+              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              color: Colors.grey[100],
+              child: Row(
+                children: [
+                  Expanded(
+                    child: SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        children: _breadcrumb.asMap().entries.map((entry) {
+                          final index = entry.key;
+                          final item = entry.value;
+                          final isLast = index == _breadcrumb.length - 1;
+                          
+                          return GestureDetector(
+                            onTap: isLast ? null : () => _navigateToFolder(item['id']),
+                            child: Row(
+                              children: [
+                                if (index > 0) ...[
+                                  Icon(Icons.chevron_left, size: 16, color: Colors.grey),
+                                  SizedBox(width: 4),
+                                ],
+                                Text(
+                                  item['name'] ?? 'الجذر',
+                                  style: TextStyle(
+                                    color: isLast ? Colors.purple : Colors.blue,
+                                    fontWeight: isLast ? FontWeight.bold : FontWeight.normal,
+                                    decoration: isLast ? null : TextDecoration.underline,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          
+          // ✅ Content
+          Expanded(
+            child: Column(
+              children: [
+                // ✅ خيار "اختيار الجذر" (إذا كنا في الجذر)
+                if (_currentFolderId == null)
+                  ListTile(
+                    leading: Icon(Icons.home_rounded, color: Colors.blue),
+                    title: Text(S.of(context).moveToRoot),
+                    subtitle: Text(S.of(context).moveToRootDescription),
+                    onTap: () => widget.onSelect(null),
+                  ),
+                // ✅ خيار "اختيار المجلد الحالي" (إذا كنا داخل مجلد)
+                if (_currentFolderId != null)
+                  ListTile(
+                    leading: Icon(Icons.check_circle, color: Colors.green),
+                    title: Text('${S.of(context).selectFolder} "${_breadcrumb.last['name'] ?? S.of(context).folderNameHint}"'),
+                    subtitle: Text(S.of(context).selectFolderDescription),
+                    onTap: () => widget.onSelect(_currentFolderId),
+                  ),
+                // ✅ Divider بين الخيارات وقائمة المجلدات
+                Divider(),
+                
+                // ✅ قائمة المجلدات
+                Expanded(
+                  child: _isLoading
+                      ? Center(
+                          child: CircularProgressIndicator(),
+                        )
+                      : _currentFolders.isEmpty
+                          ? Center(
+                              child: Text(
+                                _currentFolderId == null
+                                    ? S.of(context).noFoldersAvailable
+                                    : S.of(context).noSubfolders,
+                                style: TextStyle(color: Colors.grey),
+                              ),
+                            )
+                          : ListView.builder(
+                              itemCount: _currentFolders.length,
+                              itemBuilder: (context, index) {
+                                final folder = _currentFolders[index];
+                                final folderId = folder['_id']?.toString();
+                                final folderName = folder['name'] ?? 'مجلد بدون اسم';
+                                
+                                return InkWell(
+                                  onTap: () {
+                                    // ✅ فتح المجلد لعرض المجلدات الفرعية
+                                    if (folderId != null) {
+                                      print('📂 Opening folder: $folderId ($folderName)');
+                                      _loadSubfolders(folderId, folderName);
+                                    } else {
+                                      print('⚠️ Folder ID is null for folder: $folderName');
+                                    }
+                                  },
+                                  child: ListTile(
+                                    leading: Icon(Icons.folder_rounded, color: Colors.orange),
+                                    title: Text(folderName),
+                                    subtitle: Text('${folder['filesCount'] ?? 0} ملف'),
+                                    trailing: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        // ✅ زر اختيار المجلد (checkmark)
+                                        Material(
+                                          color: Colors.transparent,
+                                          child: InkWell(
+                                            onTap: () {
+                                              // ✅ اختيار المجلد مباشرة
+                                              widget.onSelect(folderId);
+                                            },
+                                            borderRadius: BorderRadius.circular(20),
+                                            child: Container(
+                                              padding: EdgeInsets.all(8),
+                                              child: Icon(Icons.check_circle_outline, color: Colors.green, size: 24),
+                                            ),
+                                          ),
+                                        ),
+                                        SizedBox(width: 8),
+                                        // ✅ أيقونة chevron للإشارة إلى إمكانية فتح المجلد
+                                        Icon(Icons.chevron_right, color: Colors.grey),
+                                      ],
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

@@ -46,5 +46,17 @@ class StorageService {
     final token = await getToken();
     return token != null && token.isNotEmpty;
   }
+
+  // ✅ حفظ المود (Dark/Light)
+  static Future<void> saveThemeMode(bool isDarkMode) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('theme_mode', isDarkMode);
+  }
+
+  // ✅ جلب المود المحفوظ
+  static Future<bool?> getThemeMode() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool('theme_mode');
+  }
 }
 
