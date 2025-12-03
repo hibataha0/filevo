@@ -132,7 +132,170 @@
     "createFolder": "Create Folder",
     "folderNameHint": "Folder Name",
     "enterFolderName": "Please enter folder name",
-    "cancel": "Cancel"
+    "cancel": "Cancel",
+    
+    "sharedFiles": "Shared Files",
+    "fileIdNotAvailable": "File ID not available",
+    "fileAlreadyAccessed": "You have already accessed this file. One-time share only.",
+    "oneTimeShareAccessRecorded": "This file is shared for one time - your access has been recorded",
+    "cannotAccessFile": "Cannot access file",
+    "errorAccessingFile": "Error accessing file",
+    "fileUrlNotAvailable": "File URL not available",
+    "invalidUrl": "Invalid URL",
+    "unsupportedFile": "Unsupported File",
+    "invalidPdfFile": "This file is not a valid PDF or may be corrupted.",
+    "openAsText": "Open as Text",
+    "shareFileWithRoom": "Share File with Room",
+    "chooseRoomToShare": "Choose a room to share this file",
+    "noRoomsAvailable": "No rooms available",
+    "createRoomFirst": "Create a room first to share",
+    "oneTimeShare": "One-time Share",
+    "oneTimeShareDescription": "Each user can open the file only once",
+    "expiresInHours": "Expires in {hours} hours",
+    "enterHours": "Enter number of hours",
+    "confirm": "Confirm",
+    "share": "Share",
+    "fileAlreadyShared": "This file is already shared with this room",
+    "roomDetails": "Room Details",
+    "onlyOwnerCanDelete": "Only room owner can delete it",
+    "ownerCannotLeave": "Room owner cannot leave. Please delete the room instead",
+    "deleteRoom": "Delete Room",
+    "leaveRoom": "Leave Room",
+    "deleteRoomConfirm": "Are you sure you want to delete \"{roomName}\"? All data associated with the room will be deleted.",
+    "@deleteRoomConfirm": {
+      "placeholders": {
+        "roomName": {
+          "type": "String"
+        }
+      }
+    },
+    "leaveRoomConfirm": "Are you sure you want to leave \"{roomName}\"? You will not be able to access this room after leaving.",
+    "@leaveRoomConfirm": {
+      "placeholders": {
+        "roomName": {
+          "type": "String"
+        }
+      }
+    },
+    "roomName": "{roomName}",
+    "roomNamePlaceholder": "No name",
+    "leave": "Leave",
+    "owner": "Owner",
+    "members": "Members",
+    "files": "Files",
+    "folders": "Folders",
+    "sendInvitation": "Send Invitation",
+    "comments": "Comments",
+    "roomInfo": "Room Info",
+    "createdAt": "Created at",
+    "lastModified": "Last Modified",
+    "viewAll": "View All",
+    "noMembers": "No members",
+    "sharedFilesCount": "Shared Files ({count})",
+    "@sharedFilesCount": {
+      "placeholders": {
+        "count": {
+          "type": "String"
+        }
+      }
+    },
+    "filesCount": "{count}",
+    "addFile": "Add File",
+    "addFileToRoom": "Add File to Room",
+    "openFileDetailsToShare": "Please open the file details page and share it with the room from there",
+    "ok": "OK",
+    "addFolder": "Add Folder",
+    "addFolderToRoom": "Add Folder to Room",
+    "openFolderDetailsToShare": "Please open the folder details page and share it with the room from there",
+    "folderIdNotAvailable": "Error: Folder ID not found",
+    "failedToLoadRoomDetails": "Failed to load room details",
+    "retry": "Retry",
+    "errorLoadingRoomDetails": "Error loading room details",
+    "profile": "Profile",
+    "editUsername": "Edit Username",
+    "editEmail": "Edit Email",
+    "changePassword": "Change Password",
+    "currentPassword": "Current Password",
+    "newPassword": "New Password",
+    "confirmNewPassword": "Confirm New Password",
+    "currentPasswordRequired": "Current password is required",
+    "newPasswordRequired": "New password is required",
+    "passwordConfirmationRequired": "Password confirmation is required",
+    "passwordMinLength": "Password must be at least 6 characters",
+    "passwordsDoNotMatch": "Passwords do not match",
+    "fieldRequired": "This field is required",
+    "validEmailRequired": "Please enter a valid email address",
+    "updatedSuccessfully": "Updated successfully",
+    "updateFailed": "Failed to update",
+    "passwordUpdatedSuccessfully": "Password updated successfully",
+    "passwordUpdateFailed": "Failed to update password",
+    "trash": "Trash",
+    "deletedFiles": "Deleted Files",
+    "deletedFolders": "Deleted Folders",
+    "tokenNotFound": "Token not found",
+    "logoutSuccess": "Logged out successfully",
+    "noSharedFiles": "No shared files",
+    "shareFilesWithRoom": "Share files with this room",
+    "file": "File",
+    "fileNotAvailable": "File not available (error {statusCode})",
+    "@fileNotAvailable": {
+      "placeholders": {
+        "statusCode": {
+          "type": "Object"
+        }
+      }
+    },
+    "errorLoadingFile": "Error loading file",
+    "errorOpeningFile": "Error opening file",
+    "unknownFile": "Unknown file",
+    "user": "User",
+    "viewedByAll": "Viewed by all",
+    "active": "Active",
+    "accessed": "Accessed",
+    "completed": "Completed",
+    "sharedBy": "Shared by",
+    "modified": "Modified",
+    "noFiles": "No files",
+    "startAddingFiles": "Start adding new files",
+    "removeFileFromRoom": "Remove File from Room",
+    "removeFileFromRoomConfirm": "Are you sure you want to remove \"{fileName}\" from this room?",
+    "@removeFileFromRoomConfirm": {
+      "placeholders": {
+        "fileName": {
+          "type": "String"
+        }
+      }
+    },
+    "remove": "Remove",
+    "fileRemovedFromRoom": "File removed from room successfully",
+    "failedToRemoveFile": "Failed to remove file from room",
+    "fileIdNotFound": "Error: File ID not found",
+    "mustLoginFirst": "Error: You must log in first",
+    "movingFile": "Moving file...",
+    "fileMovedSuccessfully": "File moved successfully",
+    "failedToMoveFile": "Failed to move file",
+    "moveFile": "Move File",
+    "selectTargetFolder": "Select Target Folder",
+    "root": "Root",
+    "moveToRoot": "Move to Root",
+    "moveToRootDescription": "Move folder to main folder",
+    "selectFolder": "Select",
+    "selectFolderDescription": "Move to this folder",
+    "noFoldersAvailable": "No folders available",
+    "noSubfolders": "No subfolders",
+    "errorLoadingSubfolders": "Error loading subfolders",
+    "open": "Open",
+    "viewDetails": "View Details",
+    "comments": "Comments",
+    "removeFromFavorites": "Remove from Favorites",
+    "addToFavorites": "Add to Favorites",
+    "removeFromRoom": "Remove from Room",
+    "viewInfo": "View Info",
+    "edit": "Edit",
+    "share": "Share",
+    "move": "Move",
+    "delete": "Delete"
+
 
 }
 

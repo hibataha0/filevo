@@ -9,6 +9,8 @@ import 'package:filevo/views/settings/trash_files_page.dart';
 import 'package:filevo/views/settings/trash_folders_page.dart';
 import 'package:filevo/controllers/folders/folders_controller.dart';
 import 'package:filevo/services/storage_service.dart';
+import 'package:filevo/controllers/ThemeController.dart';
+import 'package:filevo/constants/app_colors.dart';
 
 class SettingsPage extends StatefulWidget {
   @override
@@ -51,8 +53,8 @@ class _SettingsPageState extends State<SettingsPage> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('تم تسجيل الخروج بنجاح'),
+          SnackBar(
+            content: Text(S.of(context).logoutSuccess),
             backgroundColor: Colors.green,
           ),
         );
@@ -120,8 +122,11 @@ class _SettingsPageState extends State<SettingsPage> {
 
   @override
   Widget build(BuildContext context) {
+    final themeController = context.watch<ThemeController>();
+    final isDarkMode = themeController.isDarkMode;
+    
     return Scaffold(
-      backgroundColor: const Color(0xff28336f),
+      backgroundColor: isDarkMode ? AppColors.darkAppBar : AppColors.lightAppBar,
       body: Padding(
         padding: EdgeInsets.only(top: MediaQuery.of(context).padding.top),
         child: Column(
@@ -141,224 +146,239 @@ class _SettingsPageState extends State<SettingsPage> {
             ),
 
             Expanded(
-              child: Card(
-                elevation: 4,
-                margin: EdgeInsets.zero,
-                clipBehavior: Clip.antiAlias,
-                shape: const RoundedRectangleBorder(
-                  borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
-                ),
-                color: const Color(0xFFE9E9E9),
-                child: SingleChildScrollView(
-                  physics: const BouncingScrollPhysics(),
-                  padding: const EdgeInsets.all(20.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const SizedBox(height: 10),
+              child: Consumer<ThemeController>(
+                builder: (context, themeController, child) {
+                  return Card(
+                    elevation: 4,
+                    margin: EdgeInsets.zero,
+                    clipBehavior: Clip.antiAlias,
+                    shape: const RoundedRectangleBorder(
+                      borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
+                    ),
+                    color: themeController.isDarkMode 
+                        ? const Color(0xFF121212) 
+                        : const Color(0xFFE9E9E9),
+                    child: SingleChildScrollView(
+                      physics: const BouncingScrollPhysics(),
+                      padding: const EdgeInsets.all(20.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const SizedBox(height: 10),
 
-                      SettingsSection(
-                        title: S.of(context).general,
-                        items: [
-                          SettingsItem(
-                            icon: Icons.settings_outlined,
-                            title: S.of(context).generalSettings,
-                            subtitle: S.of(context).basicAppSettings,
-                            onTap: () {},
-                          ),
-                          SettingsItem(
-                            icon: Icons.dark_mode_outlined,
-                            title: S.of(context).darkMode,
-                            subtitle: S.of(context).switchThemes,
-                            trailing: Switch(
-                              value: false,
-                              onChanged: (value) {},
-                              activeColor: const Color(0xff28336f),
-                            ),
-                            onTap: () {},
-                          ),
-                          SettingsItem(
-                            icon: Icons.language,
-                            title: S.of(context).language,
-                            subtitle: _selectedLocale.languageCode == 'en'
-                                ? S.of(context).english
-                                : S.of(context).arabic,
-                            onTap: () => _showLanguageMenu(context),
-                          ),
-                        ],
-                      ),
-
-                      const SizedBox(height: 24),
-
-                      SettingsSection(
-                        title: S.of(context).preferences,
-                        items: [
-                          SettingsItem(
-                            icon: Icons.notifications_outlined,
-                            title: S.of(context).notifications,
-                            subtitle: S.of(context).manageNotifications,
-                            onTap: () {},
-                          ),
-                          SettingsItem(
-                            icon: Icons.storage,
-                            title: S.of(context).storage,
-                            subtitle: S.of(context).manageStorageSettings,
-                            onTap: () {},
-                          ),
-                          SettingsItem(
-                            icon: Icons.security,
-                            title: S.of(context).privacySecurity,
-                            subtitle: S.of(context).privacySettings,
-                            onTap: () {},
+                          SettingsSection(
+                            title: S.of(context).general,
+                            items: [
+                              SettingsItem(
+                                icon: Icons.settings_outlined,
+                                title: S.of(context).generalSettings,
+                                subtitle: S.of(context).basicAppSettings,
+                                onTap: () {},
+                              ),
+                              Consumer<ThemeController>(
+                                builder: (context, themeController, child) {
+                                  return SettingsItem(
+                                    icon: Icons.dark_mode_outlined,
+                                    title: S.of(context).darkMode,
+                                    subtitle: S.of(context).switchThemes,
+                                    trailing: Switch(
+                                      value: themeController.isDarkMode,
+                                      onChanged: (value) {
+                                        print('🔄 Toggling theme to: $value');
+                                        themeController.toggleTheme(value);
+                                      },
+                                      activeColor: AppColors.lightAppBar,
+                                    ),
+                                    onTap: () {
+                                      themeController.toggleTheme(!themeController.isDarkMode);
+                                    },
+                                  );
+                                },
+                              ),
+                              SettingsItem(
+                                icon: Icons.language,
+                                title: S.of(context).language,
+                                subtitle: _selectedLocale.languageCode == 'en'
+                                    ? S.of(context).english
+                                    : S.of(context).arabic,
+                                onTap: () => _showLanguageMenu(context),
+                              ),
+                            ],
                           ),
 
-                          /// 🔥 خيار المحذوفات هنا
-                          SettingsItem(
-                            icon: Icons.delete_outline,
-                            title: 'المحذوفات',
-                            subtitle: 'عرض الملفات والمجلدات المحذوفة وإدارتها',
-                            onTap: () async {
-                              final token = await StorageService.getToken();
+                          const SizedBox(height: 24),
 
-                              if (token == null) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text("لم يتم العثور على التوكن"),
-                                  ),
-                                );
-                                return;
-                              }
+                          SettingsSection(
+                            title: S.of(context).preferences,
+                            items: [
+                              SettingsItem(
+                                icon: Icons.notifications_outlined,
+                                title: S.of(context).notifications,
+                                subtitle: S.of(context).manageNotifications,
+                                onTap: () {},
+                              ),
+                              SettingsItem(
+                                icon: Icons.storage,
+                                title: S.of(context).storage,
+                                subtitle: S.of(context).manageStorageSettings,
+                                onTap: () {},
+                              ),
+                              SettingsItem(
+                                icon: Icons.security,
+                                title: S.of(context).privacySecurity,
+                                subtitle: S.of(context).privacySettings,
+                                onTap: () {},
+                              ),
 
-                              // عرض قائمة للاختيار بين الملفات والمجلدات
-                              showDialog(
-                                context: context,
-                                builder: (context) => AlertDialog(
-                                  title: const Text("المحذوفات"),
-                                  content: Column(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      ListTile(
-                                        leading: const Icon(Icons.insert_drive_file),
-                                        title: const Text("الملفات المحذوفة"),
-                                        onTap: () {
-                                          Navigator.pop(context);
-                                          Navigator.push(
-                                            context,
-                                            MaterialPageRoute(
-                                              builder: (_) => TrashFilesPage(token: token),
-                                            ),
-                                          );
-                                        },
+                              /// 🔥 خيار المحذوفات هنا
+                              SettingsItem(
+                                icon: Icons.delete_outline,
+                                title: 'المحذوفات',
+                                subtitle: 'عرض الملفات والمجلدات المحذوفة وإدارتها',
+                                onTap: () async {
+                                  final token = await StorageService.getToken();
+
+                                  if (token == null) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text(S.of(context).tokenNotFound),
                                       ),
-                                      ListTile(
-                                        leading: const Icon(Icons.folder),
-                                        title: const Text("المجلدات المحذوفة"),
-                                        onTap: () {
-                                          Navigator.pop(context);
-                                          Navigator.push(
-                                            context,
-                                            MaterialPageRoute(
-                                              builder: (_) => ChangeNotifierProvider(
-                                                create: (_) => FolderController(),
-                                                child: const TrashFoldersPage(),
-                                              ),
-                                            ),
-                                          );
-                                        },
+                                    );
+                                    return;
+                                  }
+
+                                  // عرض قائمة للاختيار بين الملفات والمجلدات
+                                  showDialog(
+                                    context: context,
+                                    builder: (context) => AlertDialog(
+                                      title: Text(S.of(context).trash),
+                                      content: Column(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          ListTile(
+                                            leading: const Icon(Icons.insert_drive_file),
+                                            title: Text(S.of(context).deletedFiles),
+                                            onTap: () {
+                                              Navigator.pop(context);
+                                              Navigator.push(
+                                                context,
+                                                MaterialPageRoute(
+                                                  builder: (_) => TrashFilesPage(token: token),
+                                                ),
+                                              );
+                                            },
+                                          ),
+                                          ListTile(
+                                            leading: const Icon(Icons.folder),
+                                            title: Text(S.of(context).deletedFolders),
+                                            onTap: () {
+                                              Navigator.pop(context);
+                                              Navigator.push(
+                                                context,
+                                                MaterialPageRoute(
+                                                  builder: (_) => ChangeNotifierProvider(
+                                                    create: (_) => FolderController(),
+                                                    child: const TrashFoldersPage(),
+                                                  ),
+                                                ),
+                                              );
+                                            },
+                                          ),
+                                        ],
                                       ),
-                                    ],
-                                  ),
-                                ),
-                              );
-                            },
+                                    ),
+                                  );
+                                },
+                              ),
+                            ],
                           ),
-                        ],
-                      ),
 
-                      const SizedBox(height: 24),
+                          const SizedBox(height: 24),
 
-                      SettingsSection(
-                        title: S.of(context).support,
-                        items: [
-                          SettingsItem(
-                            icon: Icons.description_outlined,
-                            title: S.of(context).legalPolicies,
-                            subtitle: S.of(context).termsPrivacyPolicy,
-                            onTap: () {},
+                          SettingsSection(
+                            title: S.of(context).support,
+                            items: [
+                              SettingsItem(
+                                icon: Icons.description_outlined,
+                                title: S.of(context).legalPolicies,
+                                subtitle: S.of(context).termsPrivacyPolicy,
+                                onTap: () {},
+                              ),
+                              SettingsItem(
+                                icon: Icons.help_outline,
+                                title: S.of(context).helpSupport,
+                                subtitle: S.of(context).getHelpSupport,
+                                onTap: () {},
+                              ),
+                              SettingsItem(
+                                icon: Icons.info_outline,
+                                title: S.of(context).about,
+                                subtitle: S.of(context).appVersion("1.0.0"),
+                                onTap: () {},
+                              ),
+                            ],
                           ),
-                          SettingsItem(
-                            icon: Icons.help_outline,
-                            title: S.of(context).helpSupport,
-                            subtitle: S.of(context).getHelpSupport,
-                            onTap: () {},
-                          ),
-                          SettingsItem(
-                            icon: Icons.info_outline,
-                            title: S.of(context).about,
-                            subtitle: S.of(context).appVersion("1.0.0"),
-                            onTap: () {},
-                          ),
-                        ],
-                      ),
 
-                      const SizedBox(height: 60),
+                          const SizedBox(height: 60),
 
-                      Container(
-                        width: double.infinity,
-                        decoration: BoxDecoration(
-                          color: Colors.red.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: Colors.red.withOpacity(0.3),
-                            width: 1,
-                          ),
-                        ),
-                        child: ListTile(
-                          leading: Container(
-                            width: 40,
-                            height: 40,
+                          Container(
+                            width: double.infinity,
                             decoration: BoxDecoration(
-                              color: Colors.red.withOpacity(0.2),
-                              borderRadius: BorderRadius.circular(10),
+                              color: Colors.red.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: Colors.red.withOpacity(0.3),
+                                width: 1,
+                              ),
                             ),
-                            child: const Icon(
-                              Icons.logout,
-                              color: Colors.red,
-                              size: 20,
+                            child: ListTile(
+                              leading: Container(
+                                width: 40,
+                                height: 40,
+                                decoration: BoxDecoration(
+                                  color: Colors.red.withOpacity(0.2),
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: const Icon(
+                                  Icons.logout,
+                                  color: Colors.red,
+                                  size: 20,
+                                ),
+                              ),
+                              title: Text(
+                                S.of(context).logout,
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w500,
+                                  color: Colors.red,
+                                ),
+                              ),
+                              subtitle: Text(
+                                S.of(context).signOut,
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.red.withOpacity(0.7),
+                                ),
+                              ),
+                              trailing: const Icon(
+                                Icons.arrow_forward_ios,
+                                color: Colors.red,
+                                size: 16,
+                              ),
+                              onTap: () => _handleLogout(context),
+                              contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 8,
+                              ),
                             ),
                           ),
-                          title: Text(
-                            S.of(context).logout,
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w500,
-                              color: Colors.red,
-                            ),
-                          ),
-                          subtitle: Text(
-                            S.of(context).signOut,
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.red.withOpacity(0.7),
-                            ),
-                          ),
-                          trailing: const Icon(
-                            Icons.arrow_forward_ios,
-                            color: Colors.red,
-                            size: 16,
-                          ),
-                          onTap: () => _handleLogout(context),
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 8,
-                          ),
-                        ),
-                      ),
 
-                      const SizedBox(height: 100),
-                    ],
-                  ),
-                ),
+                          const SizedBox(height: 100),
+                        ],
+                      ),
+                    ),
+                  );
+                },
               ),
             ),
           ],

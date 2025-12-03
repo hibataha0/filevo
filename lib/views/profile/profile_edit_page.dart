@@ -1,6 +1,8 @@
 import 'package:filevo/controllers/profile/profile_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:filevo/constants/app_colors.dart';
+import 'package:filevo/generated/l10n.dart';
 
 class ProfileEditPage extends StatefulWidget {
   const ProfileEditPage({super.key});
@@ -30,11 +32,13 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
     final isLoading =
         profileController.isLoading && profileController.userData == null;
 
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    
     return Scaffold(
-      backgroundColor: const Color(0xFFF8EFFE),
+      backgroundColor: isDarkMode ? const Color(0xFF121212) : const Color(0xFFF8EFFE),
       appBar: AppBar(
-        backgroundColor: const Color(0xff28336f),
-        title: const Text('Profile'),
+        backgroundColor: isDarkMode ? AppColors.darkAppBar : AppColors.lightAppBar,
+        title: Text(S.of(context).profile),
       ),
       body: Padding(
         padding: const EdgeInsets.all(20),
@@ -45,13 +49,12 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
                 children: [
                   /// Username Field
                   _EditableFieldCard(
-                    label: 'Username',
-                    value: profileController.userData?['data']?['name'] ?? '—',
+                    label: S.of(context).username,
+                    value: profileController.userName ?? '—',
                     onTap: () => _showEditDialog(
                       context: context,
-                      title: 'Edit Username',
-                      initialValue:
-                          profileController.userData?['data']?['name'] ?? '',
+                      title: S.of(context).editUsername,
+                      initialValue: profileController.userName ?? '',
                       onSave: (value) =>
                           profileController.updateLoggedUserData(name: value),
                     ),
@@ -60,13 +63,13 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
 
                   /// Email Field
                   _EditableFieldCard(
-                    label: 'Email',
-                    value: profileController.userData?['data']?['email'] ?? '—',
+                    label: S.of(context).email,
+                    value: profileController.userEmail ?? '—',
                     onTap: () => _showEditDialog(
                       context: context,
-                      title: 'Edit Email',
-                      initialValue:
-                          profileController.userData?['data']?['email'] ?? '',
+                      title: S.of(context).editEmail,
+                      initialValue: profileController.userEmail ?? '',
+                      isEmail: true,
                       onSave: (value) =>
                           profileController.updateLoggedUserData(email: value),
                     ),
@@ -75,7 +78,7 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
 
                   /// Password Field
                   _EditableFieldCard(
-                    label: 'Password',
+                    label: S.of(context).password,
                     value: '••••••••',
                     onTap: () => _showPasswordDialog(context),
                   ),
@@ -93,24 +96,44 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
     required String title,
     required String initialValue,
     required Future<bool> Function(String value) onSave,
+    bool isEmail = false,
   }) {
     final controller = TextEditingController(text: initialValue);
+    final formKey = GlobalKey<FormState>();
 
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
         title: Text(title),
-        content: TextField(
-          controller: controller,
-          decoration: const InputDecoration(border: OutlineInputBorder()),
+        content: Form(
+          key: formKey,
+          child: TextFormField(
+            controller: controller,
+            decoration: const InputDecoration(border: OutlineInputBorder()),
+            keyboardType: isEmail ? TextInputType.emailAddress : TextInputType.text,
+            validator: (value) {
+              if (value == null || value.trim().isEmpty) {
+                return S.of(context).fieldRequired;
+              }
+              if (isEmail) {
+                final emailRegex = RegExp(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$');
+                if (!emailRegex.hasMatch(value.trim())) {
+                  return S.of(context).validEmailRequired;
+                }
+              }
+              return null;
+            },
+          ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
+            child: Text(S.of(context).cancel),
           ),
           ElevatedButton(
             onPressed: () async {
+              if (!formKey.currentState!.validate()) return;
+              
               final value = controller.text.trim();
               if (value.isEmpty) return;
 
@@ -120,15 +143,18 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
               if (success) {
                 Navigator.pop(ctx);
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('✅ Updated successfully')),
+                  SnackBar(content: Text('✅ ${S.of(context).updatedSuccessfully}')),
                 );
               } else {
+                final profileController = Provider.of<ProfileController>(context, listen: false);
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('❌ Failed to update')),
+                  SnackBar(
+                    content: Text(profileController.errorMessage ?? '❌ Failed to update'),
+                  ),
                 );
               }
             },
-            child: const Text('Save'),
+            child: Text(S.of(context).create),
           ),
         ],
       ),
@@ -141,69 +167,105 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
   void _showPasswordDialog(BuildContext context) {
     final profileController =
         Provider.of<ProfileController>(context, listen: false);
+    final currentPasswordCtrl = TextEditingController();
     final newPasswordCtrl = TextEditingController();
     final confirmPasswordCtrl = TextEditingController();
+    final formKey = GlobalKey<FormState>();
 
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Change Password'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: newPasswordCtrl,
-              decoration: const InputDecoration(
-                labelText: 'New Password',
-                border: OutlineInputBorder(),
+        title: Text(S.of(context).changePassword),
+        content: Form(
+          key: formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextFormField(
+                controller: currentPasswordCtrl,
+                decoration: InputDecoration(
+                  labelText: '${S.of(context).currentPassword} *',
+                  border: OutlineInputBorder(),
+                ),
+                obscureText: true,
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) {
+                    return S.of(context).currentPasswordRequired;
+                  }
+                  return null;
+                },
               ),
-              obscureText: true,
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: confirmPasswordCtrl,
-              decoration: const InputDecoration(
-                labelText: 'Confirm Password',
-                border: OutlineInputBorder(),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: newPasswordCtrl,
+                decoration: InputDecoration(
+                  labelText: '${S.of(context).newPassword} *',
+                  border: OutlineInputBorder(),
+                ),
+                obscureText: true,
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) {
+                    return S.of(context).newPasswordRequired;
+                  }
+                  if (value.length < 6) {
+                    return S.of(context).passwordMinLength;
+                  }
+                  return null;
+                },
               ),
-              obscureText: true,
-            ),
-          ],
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: confirmPasswordCtrl,
+                decoration: InputDecoration(
+                  labelText: '${S.of(context).confirmNewPassword} *',
+                  border: OutlineInputBorder(),
+                ),
+                obscureText: true,
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) {
+                    return S.of(context).passwordConfirmationRequired;
+                  }
+                  if (value != newPasswordCtrl.text) {
+                    return S.of(context).passwordsDoNotMatch;
+                  }
+                  return null;
+                },
+              ),
+            ],
+          ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
+            child: Text(S.of(context).cancel),
           ),
           ElevatedButton(
             onPressed: () async {
-              if (newPasswordCtrl.text != confirmPasswordCtrl.text) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('❌ Passwords do not match')),
-                );
-                return;
-              }
+              if (!formKey.currentState!.validate()) return;
 
-              final success = await profileController
-                  .updateLoggedUserPassword(newPasswordCtrl.text.trim());
+              final success = await profileController.updateLoggedUserPassword(
+                currentPassword: currentPasswordCtrl.text.trim(),
+                password: newPasswordCtrl.text.trim(),
+                passwordConfirm: confirmPasswordCtrl.text.trim(),
+              );
 
               if (!ctx.mounted) return;
 
               if (success) {
                 Navigator.pop(ctx);
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('✅ Password updated')),
+                  SnackBar(content: Text('✅ ${S.of(context).passwordUpdatedSuccessfully}')),
                 );
               } else {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Text(profileController.errorMessage ??
-                        '❌ Failed to update'),
+                        '❌ Failed to update password'),
                   ),
                 );
               }
             },
-            child: const Text('Change Password'),
+            child: Text(S.of(context).changePassword),
           ),
         ],
       ),

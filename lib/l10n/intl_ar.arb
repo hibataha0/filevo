@@ -133,7 +133,129 @@
    "folderNameHint": "اسم المجلد",
    "enterFolderName": "الرجاء إدخال اسم المجلد",
    "folderCreated": "تم إنشاء المجلد بنجاح",
-   "cancel": "إلغاء"
+   "cancel": "إلغاء",
+   
+   "sharedFiles": "الملفات المشتركة",
+   "fileIdNotAvailable": "معرف الملف غير متوفر",
+   "fileAlreadyAccessed": "لقد فتحت هذا الملف من قبل. الملف مشترك لمرة واحدة فقط.",
+   "oneTimeShareAccessRecorded": "هذا الملف مشترك لمرة واحدة - تم تسجيل وصولك",
+   "cannotAccessFile": "لا يمكن الوصول إلى الملف",
+   "errorAccessingFile": "خطأ في الوصول إلى الملف",
+   "fileUrlNotAvailable": "رابط الملف غير متوفر",
+   "invalidUrl": "رابط غير صالح",
+   "unsupportedFile": "ملف غير مدعوم",
+   "invalidPdfFile": "هذا الملف ليس PDF صالح أو قد يكون تالفاً.",
+   "openAsText": "فتح كنص",
+   "shareFileWithRoom": "مشاركة الملف مع غرفة",
+   "chooseRoomToShare": "اختر غرفة لمشاركة هذا الملف",
+   "noRoomsAvailable": "لا توجد غرف متاحة",
+   "createRoomFirst": "قم بإنشاء غرفة أولاً للمشاركة",
+   "oneTimeShare": "مشاركة لمرة واحدة",
+   "oneTimeShareDescription": "يمكن لكل مستخدم فتح الملف مرة واحدة فقط",
+   "expiresInHours": "ينتهي خلال {hours} ساعة",
+   "enterHours": "أدخل عدد الساعات",
+   "confirm": "تأكيد",
+   "share": "مشاركة",
+   "fileAlreadyShared": "هذا الملف مشترك بالفعل مع هذه الغرفة",
+   "roomDetails": "تفاصيل الغرفة",
+   "onlyOwnerCanDelete": "فقط مالك الغرفة يمكنه حذفها",
+   "ownerCannotLeave": "مالك الغرفة لا يمكنه مغادرتها. يرجى حذف الغرفة بدلاً من ذلك",
+   "deleteRoom": "حذف الغرفة",
+   "leaveRoom": "مغادرة الغرفة",
+   "deleteRoomConfirm": "هل أنت متأكد من حذف \"{roomName}\"؟ سيتم حذف جميع البيانات المرتبطة بالغرفة.",
+   "@deleteRoomConfirm": {
+     "placeholders": {
+       "roomName": {
+         "type": "String"
+       }
+     }
+   },
+   "leaveRoomConfirm": "هل أنت متأكد من مغادرة \"{roomName}\"؟ لن تتمكن من الوصول إلى هذه الغرفة بعد المغادرة.",
+   "@leaveRoomConfirm": {
+     "placeholders": {
+       "roomName": {
+         "type": "String"
+       }
+     }
+   },
+   "roomName": "{roomName}",
+   "roomNamePlaceholder": "بدون اسم",
+   "leave": "مغادرة",
+   "owner": "المالك",
+   "members": "أعضاء",
+   "files": "ملفات",
+   "folders": "مجلدات",
+   "sendInvitation": "إرسال دعوة",
+   "comments": "التعليقات",
+   "roomInfo": "معلومات الغرفة",
+   "createdAt": "أنشئت في",
+   "lastModified": "آخر تعديل",
+   "viewAll": "عرض الكل",
+   "noMembers": "لا يوجد أعضاء",
+   "sharedFilesCount": "الملفات المشتركة ({count})",
+   "@sharedFilesCount": {
+     "placeholders": {
+       "count": {
+         "type": "String"
+       }
+     }
+   },
+   "filesCount": "{count}",
+   "addFile": "إضافة ملف",
+   "addFileToRoom": "إضافة ملف للغرفة",
+   "openFileDetailsToShare": "يرجى فتح صفحة تفاصيل الملف ومشاركته مع الغرفة من هناك",
+   "ok": "موافق",
+   "addFolder": "إضافة مجلد",
+   "addFolderToRoom": "إضافة مجلد للغرفة",
+   "openFolderDetailsToShare": "يرجى فتح صفحة تفاصيل المجلد ومشاركته مع الغرفة من هناك",
+   "folderIdNotAvailable": "خطأ: معرف المجلد غير موجود",
+   "failedToLoadRoomDetails": "فشل تحميل تفاصيل الغرفة",
+   "retry": "إعادة المحاولة",
+   "errorLoadingRoomDetails": "خطأ في تحميل تفاصيل الغرفة",
+   "profile": "الملف الشخصي",
+   "editUsername": "تعديل اسم المستخدم",
+   "editEmail": "تعديل البريد الإلكتروني",
+   "changePassword": "تغيير كلمة المرور",
+   "currentPassword": "كلمة المرور الحالية",
+   "newPassword": "كلمة المرور الجديدة",
+   "confirmNewPassword": "تأكيد كلمة المرور الجديدة",
+   "currentPasswordRequired": "كلمة المرور الحالية مطلوبة",
+   "newPasswordRequired": "كلمة المرور الجديدة مطلوبة",
+   "passwordConfirmationRequired": "تأكيد كلمة المرور مطلوب",
+   "passwordMinLength": "يجب أن تكون كلمة المرور 6 أحرف على الأقل",
+   "passwordsDoNotMatch": "كلمتا المرور غير متطابقتين",
+   "fieldRequired": "هذا الحقل مطلوب",
+   "validEmailRequired": "يرجى إدخال بريد إلكتروني صالح",
+   "updatedSuccessfully": "تم التحديث بنجاح",
+   "updateFailed": "فشل التحديث",
+   "passwordUpdatedSuccessfully": "تم تحديث كلمة المرور بنجاح",
+   "passwordUpdateFailed": "فشل تحديث كلمة المرور",
+   "trash": "المحذوفات",
+   "deletedFiles": "الملفات المحذوفة",
+   "deletedFolders": "المجلدات المحذوفة",
+   "tokenNotFound": "لم يتم العثور على التوكن",
+   "logoutSuccess": "تم تسجيل الخروج بنجاح",
+   "noSharedFiles": "لا توجد ملفات مشتركة",
+   "shareFilesWithRoom": "قم بمشاركة ملفات مع هذه الغرفة",
+   "file": "ملف",
+   "fileNotAvailable": "الملف غير متاح (خطأ {statusCode})",
+   "@fileNotAvailable": {
+     "placeholders": {
+       "statusCode": {
+         "type": "Object"
+       }
+     }
+   },
+   "errorLoadingFile": "خطأ في تحميل الملف",
+   "errorOpeningFile": "خطأ في فتح الملف",
+   "unknownFile": "ملف غير معروف",
+   "user": "مستخدم",
+   "viewedByAll": "شوهد من الجميع",
+   "active": "نشط",
+   "accessed": "تم الوصول",
+   "completed": "اكتمل",
+   "sharedBy": "شاركه",
+   "modified": "عدل"
 
 
 }

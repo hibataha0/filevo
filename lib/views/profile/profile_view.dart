@@ -4,8 +4,10 @@ import 'package:filevo/views/profile/components/StorageCard.dart';
 import 'package:filevo/views/profile/components/favorites_section.dart';
 import 'package:filevo/views/profile/components/starred_folders_section.dart';
 import 'package:filevo/views/profile/components/profile_pic.dart';
+import 'package:filevo/controllers/ThemeController.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:filevo/constants/app_colors.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -15,6 +17,8 @@ class ProfilePage extends StatefulWidget {
 }
 
 class _ProfilePageState extends State<ProfilePage> {
+  final GlobalKey<StorageCardState> _storageCardKey = GlobalKey<StorageCardState>();
+
   @override
   void initState() {
     super.initState();
@@ -27,11 +31,30 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // ✅ تحديث بيانات المستخدم عند العودة للصفحة
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        final controller = context.read<ProfileController>();
+        // ✅ تحديث البيانات إذا كانت قديمة أو غير موجودة
+        if (controller.userData == null || controller.userName == null) {
+          controller.getLoggedUserData();
+        }
+        // ✅ تحديث بيانات التخزين أيضاً
+        _storageCardKey.currentState?.refresh();
+      }
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     final profileController = context.watch<ProfileController>();
+    final themeController = context.watch<ThemeController>();
+    final isDarkMode = themeController.isDarkMode;
 
     return Scaffold(
-      backgroundColor: const Color(0xff28336f),
+      backgroundColor: isDarkMode ? AppColors.darkAppBar : AppColors.lightAppBar,
       body: Stack(
         children: [
           if (profileController.isLoading && profileController.userName == null)
@@ -57,31 +80,38 @@ class _ProfilePageState extends State<ProfilePage> {
                           fontWeight: FontWeight.w600,
                         ),
                       ),
-                      if (profileController.userEmail != null) ...[
-                        const SizedBox(height: 6),
-                        Text(
-                          profileController.userEmail!,
-                          style: const TextStyle(color: Colors.white70, fontSize: 14),
-                        ),
-                      ],
+                      // if (profileController.userEmail != null) ...[
+                      //   const SizedBox(height: 6),
+                      //   Text(
+                      //     profileController.userEmail!,
+                      //     style: const TextStyle(color: Colors.white70, fontSize: 14),
+                      //   ),
+                      // ],
                     ],
                   ),
                 ),
                 Expanded(
                   child: Container(
-                    decoration: const BoxDecoration(
-                      color: Color(0xFFE9E9E9),
-                      borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
+                    decoration: BoxDecoration(
+                      color: isDarkMode ? const Color(0xFF121212) : const Color(0xFFE9E9E9),
+                      borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
                     ),
-                    child: const SingleChildScrollView(
-                      padding: EdgeInsets.all(20.0),
-                      child: Column(
-                        children: [
-                          StorageCard(),
-                          FavoritesSection(),
-                          StarredFoldersSection(),
-                          SizedBox(height: 100),
-                        ],
+                    child: RefreshIndicator(
+                      onRefresh: () async {
+                        // تحديث بيانات التخزين عند السحب للأسفل
+                        _storageCardKey.currentState?.refresh();
+                        await Future.delayed(Duration(milliseconds: 500));
+                      },
+                      child: SingleChildScrollView(
+                        padding: EdgeInsets.all(20.0),
+                        child: Column(
+                          children: [
+                            StorageCard(key: _storageCardKey),
+                            FavoritesSection(),
+                            StarredFoldersSection(),
+                            SizedBox(height: 100),
+                          ],
+                        ),
                       ),
                     ),
                   ),
@@ -99,7 +129,7 @@ class _ProfilePageState extends State<ProfilePage> {
                   await controller.getLoggedUserData();
                 }
                 if (!mounted) return;
-                Navigator.push(
+                await Navigator.push(
                   context,
                   MaterialPageRoute(
                     builder: (_) => ChangeNotifierProvider.value(
@@ -108,6 +138,10 @@ class _ProfilePageState extends State<ProfilePage> {
                     ),
                   ),
                 );
+                // تحديث بيانات التخزين عند العودة من صفحة التعديل
+                if (mounted) {
+                  _storageCardKey.currentState?.refresh();
+                }
               },
             ),
           ),
