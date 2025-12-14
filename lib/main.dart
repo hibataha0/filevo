@@ -24,17 +24,17 @@ import 'package:filevo/constants/app_colors.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  final bool loggedIn = await StorageService.isLoggedIn();
 
-  runApp(DevicePreview(
-    enabled: !kReleaseMode,
-    builder: (context) => MyApp(isLoggedIn: loggedIn),
-  ));
+  runApp(
+    DevicePreview(
+      enabled: !kReleaseMode,
+      builder: (context) => MyApp(),
+    ),
+  );
 }
 
 class MyApp extends StatefulWidget {
-  final bool isLoggedIn;
-  const MyApp({super.key, required this.isLoggedIn});
+  const MyApp({super.key});
 
   @override
   State<MyApp> createState() => _MyAppState();
@@ -148,15 +148,25 @@ class _MyAppState extends State<MyApp> {
       providers: [
         ChangeNotifierProvider(create: (_) => AuthController()),
         ChangeNotifierProvider(create: (_) => FileController()),
-        ChangeNotifierProvider(create: (_) => ThemeController()), // ✅ ThemeController
+        ChangeNotifierProvider(
+          create: (_) => ThemeController(),
+        ), // ✅ ThemeController
         ChangeNotifierProvider(create: (_) => FolderController()),
-        ChangeNotifierProvider(create: (_) => RoomController()), // ✅ RoomController
-        ChangeNotifierProvider(create: (_) => ProfileController()), // ✅ ProfileController
-        ChangeNotifierProvider(create: (_) => AiSearchController()), // ✅ AiSearchController
+        ChangeNotifierProvider(
+          create: (_) => RoomController(),
+        ), // ✅ RoomController
+        ChangeNotifierProvider(
+          create: (_) => ProfileController(),
+        ), // ✅ ProfileController
+        ChangeNotifierProvider(
+          create: (_) => AiSearchController(),
+        ), // ✅ AiSearchController
       ],
       child: Consumer<ThemeController>(
         builder: (context, themeController, child) {
-          print('🎨 Building MaterialApp with theme: ${themeController.isDarkMode ? "Dark" : "Light"}');
+          print(
+            '🎨 Building MaterialApp with theme: ${themeController.isDarkMode ? "Dark" : "Light"}',
+          );
           return MaterialApp(
             locale: _locale ?? const Locale('en'),
             localizationsDelegates: const [
@@ -169,7 +179,9 @@ class _MyAppState extends State<MyApp> {
             debugShowCheckedModeBanner: false,
             theme: _buildLightTheme(),
             darkTheme: _buildDarkTheme(),
-            themeMode: themeController.isDarkMode ? ThemeMode.dark : ThemeMode.light,
+            themeMode: themeController.isDarkMode
+                ? ThemeMode.dark
+                : ThemeMode.light,
             routes: {
               'LogInPage': (context) => const LoginPage(),
               'SignUpPage': (context) => const SignUpPage(),
@@ -180,7 +192,32 @@ class _MyAppState extends State<MyApp> {
               'Settings': (context) => SettingsPage(),
               'SmartSearch': (context) => SmartSearchPage(),
             },
-            initialRoute: widget.isLoggedIn ? 'Main' : 'LogInPage',
+            // ✅ استخدام FutureBuilder للتحقق من التوكن بشكل ديناميكي
+            home: FutureBuilder<bool>(
+              future: StorageService.isLoggedIn(),
+              builder: (context, snapshot) {
+                // أثناء التحميل، عرض شاشة تحميل
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return Scaffold(
+                    body: Center(
+                      child: CircularProgressIndicator(),
+                    ),
+                  );
+                }
+                
+                // التحقق من وجود التوكن
+                final isLoggedIn = snapshot.data ?? false;
+                print('🔑 [MyApp] Checking login status: $isLoggedIn');
+                
+                if (isLoggedIn) {
+                  print('✅ [MyApp] User is logged in, navigating to Main');
+                  return MainPage();
+                } else {
+                  print('❌ [MyApp] User is not logged in, navigating to Login');
+                  return const LoginPage();
+                }
+              },
+            ),
           );
         },
       ),

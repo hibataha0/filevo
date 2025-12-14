@@ -31,28 +31,29 @@ class RoomModel {
       name: json["name"] ?? '',
       description: json["description"],
       owner: RoomOwner.fromJson(json["owner"] ?? {}),
-      members: (json["members"] as List?)
+      members:
+          (json["members"] as List?)
               ?.map((m) => RoomMember.fromJson(m))
               .toList() ??
           [],
-      files: (json["files"] as List?)
-              ?.map((f) => RoomFile.fromJson(f))
-              .toList() ??
+      files:
+          (json["files"] as List?)?.map((f) => RoomFile.fromJson(f)).toList() ??
           [],
-      folders: (json["folders"] as List?)
+      folders:
+          (json["folders"] as List?)
               ?.map((f) => RoomFolder.fromJson(f))
               .toList() ??
           [],
       isActive: json["isActive"] ?? true,
       createdAt: json["createdAt"] != null
           ? (json["createdAt"] is String
-              ? DateTime.parse(json["createdAt"])
-              : json["createdAt"] as DateTime)
+                ? DateTime.parse(json["createdAt"])
+                : json["createdAt"] as DateTime)
           : DateTime.now(),
       updatedAt: json["updatedAt"] != null
           ? (json["updatedAt"] is String
-              ? DateTime.parse(json["updatedAt"])
-              : json["updatedAt"] as DateTime)
+                ? DateTime.parse(json["updatedAt"])
+                : json["updatedAt"] as DateTime)
           : DateTime.now(),
     );
   }
@@ -78,11 +79,7 @@ class RoomOwner {
   final String? name;
   final String? email;
 
-  RoomOwner({
-    required this.id,
-    this.name,
-    this.email,
-  });
+  RoomOwner({required this.id, this.name, this.email});
 
   factory RoomOwner.fromJson(Map<String, dynamic> json) {
     return RoomOwner(
@@ -93,11 +90,7 @@ class RoomOwner {
   }
 
   Map<String, dynamic> toJson() {
-    return {
-      "_id": id,
-      "name": name,
-      "email": email,
-    };
+    return {"_id": id, "name": name, "email": email};
   }
 }
 
@@ -105,12 +98,14 @@ class RoomMember {
   final String id;
   final RoomMemberUser user;
   final String role; // "owner", "editor", "viewer", "commenter"
+  final bool canShare; // صلاحية المشاركة
   final DateTime joinedAt;
 
   RoomMember({
     required this.id,
     required this.user,
     required this.role,
+    this.canShare = false,
     required this.joinedAt,
   });
 
@@ -119,10 +114,11 @@ class RoomMember {
       id: json["_id"]?.toString() ?? json["id"]?.toString() ?? '',
       user: RoomMemberUser.fromJson(json["user"] ?? {}),
       role: json["role"] ?? 'viewer',
+      canShare: json["canShare"] ?? false,
       joinedAt: json["joinedAt"] != null
           ? (json["joinedAt"] is String
-              ? DateTime.parse(json["joinedAt"])
-              : json["joinedAt"] as DateTime)
+                ? DateTime.parse(json["joinedAt"])
+                : json["joinedAt"] as DateTime)
           : DateTime.now(),
     );
   }
@@ -132,6 +128,7 @@ class RoomMember {
       "_id": id,
       "user": user.toJson(),
       "role": role,
+      "canShare": canShare,
       "joinedAt": joinedAt.toIso8601String(),
     };
   }
@@ -142,11 +139,7 @@ class RoomMemberUser {
   final String? name;
   final String? email;
 
-  RoomMemberUser({
-    required this.id,
-    this.name,
-    this.email,
-  });
+  RoomMemberUser({required this.id, this.name, this.email});
 
   factory RoomMemberUser.fromJson(Map<String, dynamic> json) {
     return RoomMemberUser(
@@ -157,11 +150,7 @@ class RoomMemberUser {
   }
 
   Map<String, dynamic> toJson() {
-    return {
-      "_id": id,
-      "name": name,
-      "email": email,
-    };
+    return {"_id": id, "name": name, "email": email};
   }
 }
 
@@ -187,8 +176,8 @@ class RoomFile {
           : null,
       sharedAt: json["sharedAt"] != null
           ? (json["sharedAt"] is String
-              ? DateTime.parse(json["sharedAt"])
-              : json["sharedAt"] as DateTime)
+                ? DateTime.parse(json["sharedAt"])
+                : json["sharedAt"] as DateTime)
           : DateTime.now(),
     );
   }
@@ -209,12 +198,7 @@ class RoomFileRef {
   final String? path;
   final String? category;
 
-  RoomFileRef({
-    required this.id,
-    this.name,
-    this.path,
-    this.category,
-  });
+  RoomFileRef({required this.id, this.name, this.path, this.category});
 
   factory RoomFileRef.fromJson(Map<String, dynamic> json) {
     return RoomFileRef(
@@ -226,12 +210,7 @@ class RoomFileRef {
   }
 
   Map<String, dynamic> toJson() {
-    return {
-      "_id": id,
-      "name": name,
-      "path": path,
-      "category": category,
-    };
+    return {"_id": id, "name": name, "path": path, "category": category};
   }
 }
 
@@ -257,8 +236,8 @@ class RoomFolder {
           : null,
       sharedAt: json["sharedAt"] != null
           ? (json["sharedAt"] is String
-              ? DateTime.parse(json["sharedAt"])
-              : json["sharedAt"] as DateTime)
+                ? DateTime.parse(json["sharedAt"])
+                : json["sharedAt"] as DateTime)
           : DateTime.now(),
     );
   }
@@ -278,11 +257,7 @@ class RoomFolderRef {
   final String? name;
   final String? path;
 
-  RoomFolderRef({
-    required this.id,
-    this.name,
-    this.path,
-  });
+  RoomFolderRef({required this.id, this.name, this.path});
 
   factory RoomFolderRef.fromJson(Map<String, dynamic> json) {
     return RoomFolderRef(
@@ -293,19 +268,6 @@ class RoomFolderRef {
   }
 
   Map<String, dynamic> toJson() {
-    return {
-      "_id": id,
-      "name": name,
-      "path": path,
-    };
+    return {"_id": id, "name": name, "path": path};
   }
 }
-
-
-
-
-
-
-
-
-

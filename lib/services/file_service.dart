@@ -1,11 +1,55 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:filevo/services/api_endpoints.dart' show ApiEndpoints;
+import 'package:filevo/services/storage_service.dart';
+import 'package:filevo/services/file_search_service.dart';
 import 'package:http/http.dart' as http;
 import 'package:filevo/config/api_config.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:dio/dio.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:flutter/services.dart';
 
 class FileService {
   final _apiBase = ApiConfig.baseUrl;
+  final _fileSearchService = FileSearchService();
+
+  /// معالجة ملف في الخلفية بعد الرفع
+  Future<void> _processFileInBackground(String fileId, String token) async {
+    try {
+      print('🔄 [FileService] Processing file $fileId in background...');
+      final result = await _fileSearchService.processFile(fileId);
+      
+      if (result['success'] == true) {
+        final hasExtractedText = result['hasExtractedText'] ?? false;
+        final hasEmbedding = result['hasEmbedding'] ?? false;
+        final hasSummary = result['hasSummary'] ?? false;
+        final extractedTextLength = result['extractedTextLength'] ?? 0;
+        final embeddingDimensions = result['embeddingDimensions'] ?? 0;
+        
+        print('✅ [FileService] File processed successfully in background');
+        print('   - Extracted Text: ${hasExtractedText ? "✅ ($extractedTextLength chars)" : "❌"}');
+        print('   - Embedding: ${hasEmbedding ? "✅ ($embeddingDimensions dimensions)" : "❌"}');
+        print('   - Summary: ${hasSummary ? "✅" : "❌"}');
+        
+        if (result['hasEmbeddingError'] == true) {
+          print('⚠️ [FileService] Embedding generation had issues: ${result['embeddingError']}');
+          print('   Note: Backend tried multiple endpoints automatically');
+        }
+        
+        if (result['textExtractionError'] != null) {
+          print('⚠️ [FileService] Text extraction error: ${result['textExtractionError']}');
+        }
+      } else {
+        print('⚠️ [FileService] Background processing failed: ${result['error']}');
+        if (result['originalError'] != null) {
+          print('   Original error: ${result['originalError']}');
+        }
+      }
+    } catch (e) {
+      print('❌ [FileService] Error in background processing: $e');
+    }
+  }
 
   /// رفع ملف واحد
   Future<Map<String, dynamic>> uploadSingleFile({
@@ -14,6 +58,12 @@ class FileService {
     String? parentFolderId,
   }) async {
     try {
+      print('═══════════════════════════════════════════════════════');
+      print('📤 [FileService] Uploading file: ${file.path}');
+      print('📤 [FileService] File name: ${file.path.split('/').last}');
+      print('📤 [FileService] File size: ${await file.length()} bytes');
+      print('📤 [FileService] Parent folder ID: ${parentFolderId ?? "null"}');
+
       var uri = Uri.parse("$_apiBase${ApiEndpoints.uploadSingleFile}");
       var request = http.MultipartRequest("POST", uri);
 
@@ -25,14 +75,71 @@ class FileService {
 
       request.headers['Authorization'] = 'Bearer $token';
 
+      print('📤 [FileService] Sending request to: $uri');
       var response = await request.send();
       var responseBody = await response.stream.bytesToString();
-      print('backend response--------------------------: $responseBody');
-      return jsonDecode(responseBody);
 
+      print('📥 [FileService] Response status: ${response.statusCode}');
+      print('📥 [FileService] Response body: $responseBody');
+
+      // ✅ التحقق من status code
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        final data = jsonDecode(responseBody);
+        final fileData = data['file'];
+
+        // ✅ التحقق من حالة المعالجة
+        if (fileData != null) {
+          final fileId = fileData['_id']?.toString();
+          final embedding = fileData['embedding'];
+          final isProcessed = fileData['isProcessed'] ?? false;
+
+          print('✅ [FileService] File uploaded successfully');
+          print('   - File ID: $fileId');
+          print('   - File name: ${fileData['name']}');
+          print('   - Is Processed: $isProcessed');
+          print(
+            '   - Embedding: ${embedding != null ? "✅ Generated" : "❌ Null"}',
+          );
+
+          // ✅ معالجة تلقائية للملف إذا لم يكن معالجاً
+          if (!isProcessed && fileId != null) {
+            print('🔄 [FileService] File not processed yet. Starting automatic processing...');
+            
+            // ✅ معالجة الملف في الخلفية (لا ننتظر النتيجة)
+            _processFileInBackground(fileId, token).catchError((error) {
+              print('⚠️ [FileService] Background processing failed: $error');
+              // ✅ لا نعرض خطأ للمستخدم لأن الرفع نجح
+            });
+          } else if (embedding == null && !isProcessed) {
+            print('⚠️ [FileService] Embedding is null and file not processed');
+            final embeddingError = fileData['embeddingError'];
+            if (embeddingError != null) {
+              print('   - Error: $embeddingError');
+            } else {
+              print('   - File will be processed automatically in background');
+            }
+          }
+        }
+
+        print('═══════════════════════════════════════════════════════');
+        return data;
+      } else {
+        final errorData = jsonDecode(responseBody);
+        print('❌ [FileService] Upload failed: ${errorData['message']}');
+        print('═══════════════════════════════════════════════════════');
+        return {
+          "success": false,
+          "message": errorData['message'] ?? "Error uploading file",
+          "error": errorData,
+        };
+      }
     } catch (e) {
-      print("Upload error: $e");
-      return {"success": false, "message": "Error uploading file"};
+      print("❌ [FileService] Upload error: $e");
+      print('═══════════════════════════════════════════════════════');
+      return {
+        "success": false,
+        "message": "Error uploading file: ${e.toString()}",
+      };
     }
   }
 
@@ -43,11 +150,23 @@ class FileService {
     String? parentFolderId,
   }) async {
     try {
+      print('═══════════════════════════════════════════════════════');
+      print('📤 [FileService] Uploading ${files.length} files');
+      print('📤 [FileService] Parent folder ID: ${parentFolderId ?? "null"}');
+
+      for (int i = 0; i < files.length; i++) {
+        final file = files[i];
+        final fileSize = await file.length();
+        print('   ${i + 1}. ${file.path.split('/').last} (${fileSize} bytes)');
+      }
+
       var uri = Uri.parse("$_apiBase${ApiEndpoints.uploadMultipleFiles}");
       var request = http.MultipartRequest("POST", uri);
 
       for (var file in files) {
-        request.files.add(await http.MultipartFile.fromPath('files', file.path));
+        request.files.add(
+          await http.MultipartFile.fromPath('files', file.path),
+        );
       }
 
       if (parentFolderId != null && parentFolderId.isNotEmpty) {
@@ -56,13 +175,73 @@ class FileService {
 
       request.headers['Authorization'] = 'Bearer $token';
 
+      print('📤 [FileService] Sending request to: $uri');
       var response = await request.send();
       var responseBody = await response.stream.bytesToString();
-      print('backend response--------------------------: $responseBody');
-      return jsonDecode(responseBody);
+
+      print('📥 [FileService] Response status: ${response.statusCode}');
+      print('📥 [FileService] Response body: $responseBody');
+
+      // ✅ التحقق من status code
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        final data = jsonDecode(responseBody);
+        final uploadedFiles = data['files'] as List? ?? [];
+
+        print('✅ [FileService] Files uploaded successfully');
+        print('   - Uploaded files count: ${uploadedFiles.length}');
+
+        // ✅ التحقق من حالة المعالجة لكل ملف ومعالجة تلقائية
+        int processedCount = 0;
+        int failedCount = 0;
+
+        for (var fileData in uploadedFiles) {
+          final fileId = fileData['_id']?.toString();
+          final embedding = fileData['embedding'];
+          final isProcessed = fileData['isProcessed'] ?? false;
+          final embeddingError = fileData['embeddingError'];
+
+          if (embedding != null || isProcessed) {
+            processedCount++;
+          } else {
+            failedCount++;
+            print('   ⚠️ File "${fileData['name']}" - Embedding: ❌ Null, IsProcessed: $isProcessed');
+            
+            // ✅ معالجة تلقائية للملف إذا لم يكن معالجاً
+            if (!isProcessed && fileId != null) {
+              print('   🔄 Starting automatic processing for file $fileId...');
+              _processFileInBackground(fileId, token).catchError((error) {
+                print('   ⚠️ Background processing failed: $error');
+              });
+            }
+            
+            if (embeddingError != null) {
+              print('      Previous Error: $embeddingError');
+            }
+          }
+        }
+
+        print('   - Processed (with embedding): $processedCount');
+        print('   - Failed (no embedding): $failedCount');
+        print('═══════════════════════════════════════════════════════');
+
+        return data;
+      } else {
+        final errorData = jsonDecode(responseBody);
+        print('❌ [FileService] Upload failed: ${errorData['message']}');
+        print('═══════════════════════════════════════════════════════');
+        return {
+          "success": false,
+          "message": errorData['message'] ?? "Error uploading multiple files",
+          "error": errorData,
+        };
+      }
     } catch (e) {
-      print("Upload multiple error: $e");
-      return {"success": false, "message": "Error uploading multiple files"};
+      print("❌ [FileService] Upload multiple error: $e");
+      print('═══════════════════════════════════════════════════════');
+      return {
+        "success": false,
+        "message": "Error uploading multiple files: ${e.toString()}",
+      };
     }
   }
 
@@ -80,21 +259,22 @@ class FileService {
         'page': page.toString(),
         'limit': limit.toString(),
       };
-      
+
       if (category != null && category.isNotEmpty && category != 'all') {
         queryParams['category'] = category;
       }
-      
+
       if (sortBy != null) {
         queryParams['sortBy'] = sortBy;
       }
-      
+
       if (sortOrder != null) {
         queryParams['sortOrder'] = sortOrder;
       }
 
-      final uri = Uri.parse("$_apiBase${ApiEndpoints.files}")
-          .replace(queryParameters: queryParams);
+      final uri = Uri.parse(
+        "$_apiBase${ApiEndpoints.files}",
+      ).replace(queryParameters: queryParams);
 
       final response = await http.get(
         uri,
@@ -116,6 +296,48 @@ class FileService {
     } catch (e) {
       print("Get all files error: $e");
       rethrow;
+    }
+  }
+
+  /// ✅ جلب الملفات الحديثة
+  Future<Map<String, dynamic>> getRecentFiles({int limit = 10}) async {
+    try {
+      final token = await StorageService.getToken();
+      if (token == null) {
+        return {'success': false, 'error': 'لا يوجد token. يرجى تسجيل الدخول'};
+      }
+
+      final uri = Uri.parse(
+        "$_apiBase${ApiEndpoints.recentFiles}",
+      ).replace(queryParameters: {'limit': limit.toString()});
+
+      final response = await http.get(
+        uri,
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        return {
+          'success': true,
+          'files': data['files'] ?? [],
+          'count': data['count'] ?? 0,
+        };
+      } else {
+        final data = jsonDecode(response.body);
+        return {
+          'success': false,
+          'error': data['message'] ?? 'فشل في جلب الملفات الحديثة',
+        };
+      }
+    } catch (e) {
+      return {
+        'success': false,
+        'error': 'خطأ في جلب الملفات الحديثة: ${e.toString()}',
+      };
     }
   }
 
@@ -142,7 +364,9 @@ class FileService {
       print("Get files by category response: ${response.body}");
 
       if (response.statusCode == 200) {
-        print('Fetched files-------------: ${jsonDecode(response.body)['files']}');
+        print(
+          'Fetched files-------------: ${jsonDecode(response.body)['files']}',
+        );
         return jsonDecode(response.body)['files'];
       } else {
         print("Error fetching files: ${response.body}");
@@ -160,7 +384,7 @@ class FileService {
   }) async {
     try {
       final url = "$_apiBase${ApiEndpoints.categoriesStats}";
-      
+
       final response = await http.get(
         Uri.parse(url),
         headers: {
@@ -191,7 +415,7 @@ class FileService {
   }) async {
     try {
       final url = "$_apiBase${ApiEndpoints.rootCategoriesStats}";
-      
+
       final response = await http.get(
         Uri.parse(url),
         headers: {
@@ -203,7 +427,7 @@ class FileService {
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         print('Root categories stats data: $data');
-        
+
         // ✅ معالجة format الجديد: { "status": "success", "data": ... }
         if (data['status'] == 'success' && data['data'] != null) {
           // ✅ تحويل format إلى نفس format القديم للتوافق مع الكود الحالي
@@ -211,10 +435,12 @@ class FileService {
             'categories': data['data'], // ✅ data يحتوي على قائمة التصنيفات
           };
         }
-        print( 'Root categories stats data----------: $data');
+        print('Root categories stats data----------: $data');
         return data;
       } else {
-        print('Error fetching root categories stats: ${response.statusCode} - ${response.body}');
+        print(
+          'Error fetching root categories stats: ${response.statusCode} - ${response.body}',
+        );
         return null;
       }
     } catch (e) {
@@ -232,7 +458,7 @@ class FileService {
       // استخدام نفس الـ endpoint الموجود في ApiEndpoints
       final url = "$_apiBase${ApiEndpoints.fileById(fileId)}";
       print("Fetching file details from: $url");
-      
+
       final response = await http.get(
         Uri.parse(url),
         headers: {
@@ -276,7 +502,7 @@ class FileService {
     try {
       final url = "$_apiBase${ApiEndpoints.getSharedFileDetailsInRoom(fileId)}";
       print("Fetching shared file details in room from: $url");
-      
+
       final response = await http.get(
         Uri.parse(url),
         headers: {
@@ -285,7 +511,9 @@ class FileService {
         },
       );
 
-      print("Get shared file details in room response status: ${response.statusCode}");
+      print(
+        "Get shared file details in room response status: ${response.statusCode}",
+      );
       print("Get shared file details in room response body: ${response.body}");
 
       if (response.statusCode == 200) {
@@ -309,9 +537,6 @@ class FileService {
     }
   }
 
-
-
-
   /// 🔄 تحديث بيانات ملف
   Future<Map<String, dynamic>> updateFile({
     required String fileId,
@@ -324,9 +549,9 @@ class FileService {
     try {
       final url = "$_apiBase${ApiEndpoints.updateFile(fileId)}";
       print("Updating file: $url");
-      
+
       final Map<String, dynamic> body = {};
-      
+
       // إضافة الحقول المطلوبة فقط
       if (name != null) body['name'] = name;
       if (description != null) body['description'] = description;
@@ -351,22 +576,21 @@ class FileService {
         return {
           'success': true,
           'message': data['message'] ?? 'تم تحديث الملف بنجاح',
-          
-          'file': data['file']
+
+          'file': data['file'],
         };
-        
       } else {
         final data = jsonDecode(response.body);
         return {
           'success': false,
-          'message': data['message'] ?? 'فشل في تحديث الملف'
+          'message': data['message'] ?? 'فشل في تحديث الملف',
         };
       }
     } catch (e) {
       print("Update file error: $e");
       return {
         'success': false,
-        'message': 'خطأ في تحديث الملف: ${e.toString()}'
+        'message': 'خطأ في تحديث الملف: ${e.toString()}',
       };
     }
   }
@@ -380,7 +604,7 @@ class FileService {
     try {
       final url = "$_apiBase${ApiEndpoints.moveFile(fileId)}";
       print("Moving file: $url");
-      
+
       final Map<String, dynamic> body = {
         'targetFolderId': targetFolderId, // يمكن أن يكون null
       };
@@ -415,14 +639,11 @@ class FileService {
       }
     } catch (e) {
       print("Move file error: $e");
-      return {
-        'success': false,
-        'message': 'خطأ في نقل الملف: ${e.toString()}',
-      };
+      return {'success': false, 'message': 'خطأ في نقل الملف: ${e.toString()}'};
     }
   }
 
- Future<Map<String, dynamic>> toggleStarFile({
+  Future<Map<String, dynamic>> toggleStarFile({
     required String fileId,
     required String token,
   }) async {
@@ -465,14 +686,16 @@ class FileService {
     }
   }
 
- // الملفات المميزة (Starred)
+  // الملفات المميزة (Starred)
   Future<Map<String, dynamic>> getStarredFiles({
     required String token,
     int page = 1,
     int limit = 20,
   }) async {
     try {
-      final url = Uri.parse("$_apiBase${ApiEndpoints.starredFiles}?page=$page&limit=$limit");
+      final url = Uri.parse(
+        "$_apiBase${ApiEndpoints.starredFiles}?page=$page&limit=$limit",
+      );
       final response = await http.get(
         url,
         headers: {
@@ -528,14 +751,14 @@ class FileService {
     }
   }
 
-
-
   static Future<Map<String, dynamic>> deleteFile({
     required String fileId,
     required String token,
   }) async {
     try {
-      final url = Uri.parse("${ApiConfig.baseUrl}${ApiEndpoints.deleteFile(fileId)}");
+      final url = Uri.parse(
+        "${ApiConfig.baseUrl}${ApiEndpoints.deleteFile(fileId)}",
+      );
 
       final response = await http.delete(
         url,
@@ -567,9 +790,8 @@ class FileService {
       };
     }
   }
-  
 
-/// جلب ملفات المهملات من الباك
+  /// جلب ملفات المهملات من الباك
   /// جلب ملفات المهملات
   static Future<Map<String, dynamic>> fetchTrashFiles({
     required String token,
@@ -577,7 +799,8 @@ class FileService {
     int limit = 20,
   }) async {
     try {
-      final url = "${ApiConfig.baseUrl}${ApiEndpoints.trashFiles}?page=$page&limit=$limit";
+      final url =
+          "${ApiConfig.baseUrl}${ApiEndpoints.trashFiles}?page=$page&limit=$limit";
       print("Fetching TRASH files from: $url");
 
       final response = await http.get(
@@ -597,7 +820,7 @@ class FileService {
           'success': true,
           'files': data['files'] ?? [],
           'pagination': data['pagination'] ?? {},
-          'message': data['message'] ?? 'تم جلب ملفات المهملات بنجاح'
+          'message': data['message'] ?? 'تم جلب ملفات المهملات بنجاح',
         };
       } else {
         final data = jsonDecode(response.body);
@@ -605,7 +828,7 @@ class FileService {
           'success': false,
           'message': data['message'] ?? 'فشل في جلب ملفات المهملات',
           'files': [],
-          'pagination': {}
+          'pagination': {},
         };
       }
     } catch (e) {
@@ -614,18 +837,19 @@ class FileService {
         'success': false,
         'message': 'خطأ في جلب ملفات المهملات: ${e.toString()}',
         'files': [],
-        'pagination': {}
+        'pagination': {},
       };
     }
   }
 
-/// استعادة ملف من المهملات
+  /// استعادة ملف من المهملات
   static Future<Map<String, dynamic>> restoreFiles({
     required List<String> fileIds,
     required String token,
   }) async {
     try {
-      final url = "${ApiConfig.baseUrl}${ApiEndpoints.restoreTrashFile(fileIds.join(','))}";
+      final url =
+          "${ApiConfig.baseUrl}${ApiEndpoints.restoreTrashFile(fileIds.join(','))}";
       print("Restoring files: $url");
 
       final response = await http.put(
@@ -634,9 +858,7 @@ class FileService {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
         },
-        body: jsonEncode({
-          'fileIds': fileIds,
-        }),
+        body: jsonEncode({'fileIds': fileIds}),
       );
 
       print("Restore files response status: ${response.statusCode}");
@@ -665,13 +887,14 @@ class FileService {
     }
   }
 
-/// حذف نهائي لملفات
+  /// حذف نهائي لملفات
   static Future<Map<String, dynamic>> permanentDelete({
     required List<String> fileIds,
     required String token,
   }) async {
     try {
-      final url = "${ApiConfig.baseUrl}${ApiEndpoints.deleteFilePermanent(fileIds.join(','))}";
+      final url =
+          "${ApiConfig.baseUrl}${ApiEndpoints.deleteFilePermanent(fileIds.join(','))}";
       print("Permanently deleting files: $url");
 
       final response = await http.delete(
@@ -680,9 +903,7 @@ class FileService {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
         },
-        body: jsonEncode({
-          'fileIds': fileIds,
-        }),
+        body: jsonEncode({'fileIds': fileIds}),
       );
 
       print("Permanent delete response status: ${response.statusCode}");
@@ -711,6 +932,358 @@ class FileService {
     }
   }
 
+  /// ✅ تحميل ملف خاص بالمستخدم
+  /// Returns: Map with 'success' and 'filePath' or 'error'
+  Future<Map<String, dynamic>> downloadFile({
+    required String fileId,
+    required String token,
+    String? fileName,
+  }) async {
+    try {
+      // ✅ طلب صلاحية الكتابة للتخزين
+      if (Platform.isAndroid) {
+        // ✅ للـ Android 13+ (API 33+)
+        bool hasPermission = false;
+        if (await Permission.photos.isGranted ||
+            await Permission.videos.isGranted ||
+            await Permission.audio.isGranted) {
+          hasPermission = true;
+        }
+        // ✅ للـ Android 11-12 (API 30-32) - SAF يغطيها
+        // ✅ للـ Android 10 وأقل (API 29-)
+        else if (await Permission.storage.isGranted) {
+          hasPermission = true;
+        }
 
-  
+        // ✅ إذا لم تكن الصلاحية موجودة، اطلبها
+        if (!hasPermission) {
+          // ✅ محاولة طلب صلاحيات Media أولاً (Android 13+)
+          if (await Permission.photos.request().isGranted ||
+              await Permission.videos.request().isGranted ||
+              await Permission.audio.request().isGranted) {
+            hasPermission = true;
+          }
+          // ✅ إذا فشل، جرب storage (Android 10-)
+          else {
+            final status = await Permission.storage.request();
+            if (!status.isGranted) {
+              return {
+                'success': false,
+                'error':
+                    'تم رفض صلاحية التخزين. يرجى منح الصلاحية من الإعدادات',
+              };
+            }
+            hasPermission = true;
+          }
+        }
+      } else if (Platform.isIOS) {
+        // ✅ iOS - استخدام Photos permission
+        final status = await Permission.photos.request();
+        if (!status.isGranted) {
+          return {
+            'success': false,
+            'error': 'تم رفض صلاحية التخزين. يرجى منح الصلاحية من الإعدادات',
+          };
+        }
+      }
+
+      final url = "$_apiBase${ApiEndpoints.downloadFile(fileId)}";
+      print("Downloading file from: $url");
+
+      final dio = Dio();
+      dio.options.headers['Authorization'] = 'Bearer $token';
+
+      // ✅ الحصول على مجلد التحميلات العام
+      Directory? downloadDir;
+      String? downloadPath;
+
+      if (Platform.isAndroid) {
+        // ✅ Android: استخدام مجلد التحميلات العام
+        try {
+          // ✅ محاولة استخدام getDownloadsDirectory أولاً
+          downloadDir = await getDownloadsDirectory();
+          if (downloadDir != null && await downloadDir.exists()) {
+            downloadPath = downloadDir.path;
+            print('✅ Using getDownloadsDirectory: $downloadPath');
+          } else {
+            // ✅ Fallback: بناء المسار يدوياً لمجلد التحميلات العام
+            final externalStorage = await getExternalStorageDirectory();
+            if (externalStorage != null) {
+              // ✅ الحصول على المسار الأساسي (بدون مجلد التطبيق)
+              // مثال: /storage/emulated/0/Android/data/com.example.filevo/files
+              // إلى: /storage/emulated/0
+              String basePath = externalStorage.path;
+              if (basePath.contains('/Android/')) {
+                basePath = basePath.split('/Android/')[0];
+              }
+              // ✅ استخدام Download (بدون s) لأن Android يستخدم Download
+              downloadPath = '$basePath/Download';
+              downloadDir = Directory(downloadPath);
+              print('✅ Using manual path: $downloadPath');
+            }
+          }
+        } catch (e) {
+          print('❌ Error getting downloads directory: $e');
+          // ✅ Fallback: استخدام مجلد التطبيق
+          final directory = await getExternalStorageDirectory();
+          if (directory != null) {
+            downloadPath = '${directory.path}/Downloads';
+            downloadDir = Directory(downloadPath);
+            print('✅ Using fallback path: $downloadPath');
+          }
+        }
+      } else if (Platform.isIOS) {
+        // ✅ iOS: استخدام مجلد المستندات
+        downloadDir = await getApplicationDocumentsDirectory();
+        downloadPath = downloadDir.path;
+      } else {
+        // ✅ Desktop/Web: استخدام مجلد التحميلات
+        downloadDir = await getDownloadsDirectory();
+        if (downloadDir != null) {
+          downloadPath = downloadDir.path;
+        } else {
+          final directory = await getApplicationDocumentsDirectory();
+          downloadPath = directory.path;
+          downloadDir = directory;
+        }
+      }
+
+      if (downloadDir == null || downloadPath == null) {
+        return {'success': false, 'error': 'فشل في الحصول على مجلد التحميلات'};
+      }
+
+      // ✅ إنشاء المجلد إذا لم يكن موجوداً
+      if (!await downloadDir.exists()) {
+        await downloadDir.create(recursive: true);
+        print('✅ Created download directory: $downloadPath');
+      }
+
+      print('✅ Download path: $downloadPath');
+
+      // ✅ التأكد من أن اسم الملف يحتوي على امتداد صحيح
+      String finalFileName = fileName ?? 'file_$fileId';
+      
+      // ✅ دالة للتحقق من وجود امتداد صحيح
+      bool hasValidExtension(String name) {
+        if (!name.contains('.')) return false;
+        final parts = name.split('.');
+        if (parts.length < 2) return false;
+        final extension = parts.last.toLowerCase();
+        // ✅ قائمة بالامتدادات المعروفة
+        const validExtensions = [
+          'jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg',
+          'mp4', 'mov', 'avi', 'mkv', 'wmv', 'webm', 'm4v', '3gp', 'flv',
+          'mp3', 'wav', 'aac', 'ogg', 'm4a', 'wma', 'flac',
+          'pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx',
+          'zip', 'rar', '7z', 'tar', 'gz',
+          'txt', 'json', 'xml', 'csv',
+        ];
+        return validExtensions.contains(extension) && extension.length >= 2;
+      }
+      
+      // ✅ إذا لم يكن الاسم يحتوي على امتداد صحيح، نحاول استخراجه من content-type
+      if (!hasValidExtension(finalFileName)) {
+        try {
+          print('⚠️ File name "$finalFileName" does not have valid extension, trying to get from content-type...');
+          // ✅ عمل HEAD request للحصول على content-type
+          final headResponse = await dio.head(url);
+          final contentType = headResponse.headers.value('content-type')?.toLowerCase() ?? '';
+          print('📄 Content-Type: $contentType');
+          
+          String? extension;
+          if (contentType.contains('image')) {
+            if (contentType.contains('jpeg')) extension = 'jpg';
+            else if (contentType.contains('png')) extension = 'png';
+            else if (contentType.contains('gif')) extension = 'gif';
+            else if (contentType.contains('webp')) extension = 'webp';
+            else if (contentType.contains('bmp')) extension = 'bmp';
+            else if (contentType.contains('svg')) extension = 'svg';
+            else extension = 'jpg'; // افتراضي للصور
+          } else if (contentType.contains('video')) {
+            if (contentType.contains('mp4')) extension = 'mp4';
+            else if (contentType.contains('quicktime')) extension = 'mov';
+            else if (contentType.contains('avi')) extension = 'avi';
+            else if (contentType.contains('webm')) extension = 'webm';
+            else if (contentType.contains('x-matroska')) extension = 'mkv';
+            else extension = 'mp4'; // افتراضي للفيديو
+          } else if (contentType.contains('audio')) {
+            if (contentType.contains('mpeg')) extension = 'mp3';
+            else if (contentType.contains('wav')) extension = 'wav';
+            else if (contentType.contains('aac')) extension = 'aac';
+            else if (contentType.contains('ogg')) extension = 'ogg';
+            else if (contentType.contains('x-m4a')) extension = 'm4a';
+            else extension = 'mp3'; // افتراضي للصوت
+          } else if (contentType.contains('pdf')) {
+            extension = 'pdf';
+          } else if (contentType.contains('zip')) {
+            extension = 'zip';
+          } else if (contentType.contains('json')) {
+            extension = 'json';
+          } else if (contentType.contains('text')) {
+            extension = 'txt';
+          } else if (contentType.contains('application/octet-stream')) {
+            // ✅ إذا كان content-type هو octet-stream، نحاول تخمينه من الاسم الأصلي
+            if (fileName != null && fileName.contains('.')) {
+              final parts = fileName.split('.');
+              if (parts.length > 1) {
+                final lastPart = parts.last.toLowerCase();
+                if (lastPart.length >= 2 && lastPart.length <= 5) {
+                  extension = lastPart;
+                  print('✅ Guessed extension from original filename: $extension');
+                }
+              }
+            }
+            // ✅ إذا لم نستطع التخمين، نستخدم 'bin' كامتداد افتراضي
+            if (extension == null) {
+              extension = 'bin';
+            }
+          }
+          
+          if (extension != null) {
+            // ✅ إزالة أي امتداد موجود مسبقاً وإضافة الامتداد الصحيح
+            if (finalFileName.contains('.')) {
+              final nameWithoutExt = finalFileName.substring(0, finalFileName.lastIndexOf('.'));
+              finalFileName = '$nameWithoutExt.$extension';
+            } else {
+              finalFileName = '$finalFileName.$extension';
+            }
+            print('✅ Added extension from content-type: $extension -> Final name: $finalFileName');
+          } else {
+            print('⚠️ Could not determine extension from content-type: $contentType');
+          }
+        } catch (e) {
+          print('⚠️ Could not get content-type, using filename as is: $e');
+          // ✅ محاولة أخيرة: إذا كان الاسم يحتوي على نقطة لكن الامتداد غير صحيح، نضيف 'bin'
+          if (finalFileName.contains('.') && !hasValidExtension(finalFileName)) {
+            final nameWithoutExt = finalFileName.substring(0, finalFileName.lastIndexOf('.'));
+            finalFileName = '$nameWithoutExt.bin';
+            print('⚠️ Added .bin extension as fallback');
+          }
+        }
+      } else {
+        print('✅ File name already has valid extension: $finalFileName');
+      }
+      
+      final filePath = '$downloadPath/$finalFileName';
+
+      // ✅ تحميل الملف
+      await dio.download(
+        url,
+        filePath,
+        onReceiveProgress: (received, total) {
+          if (total != -1) {
+            final progress = (received / total * 100).toStringAsFixed(0);
+            print('Download progress: $progress%');
+          }
+        },
+      );
+
+      // ✅ إضافة الملف إلى MediaStore للظهور في التحميلات (Android فقط)
+      if (Platform.isAndroid) {
+        bool addedToMediaStore = false;
+        try {
+          const platform = MethodChannel('com.example.filevo/download');
+          final result = await platform.invokeMethod('addToDownloads', {
+            'filePath': filePath,
+            'fileName': finalFileName,
+          });
+          final success = result as bool? ?? false;
+          if (success) {
+            print('✅ File added to MediaStore successfully');
+            addedToMediaStore = true;
+          } else {
+            print(
+              '⚠️ Failed to add file to MediaStore, but file is saved at: $filePath',
+            );
+          }
+        } on MissingPluginException catch (e) {
+          print('⚠️ MethodChannel not registered. Trying fallback method: $e');
+          // ✅ Fallback: نسخ الملف مباشرة إلى مجلد التحميلات العام
+          addedToMediaStore = await _copyToDownloadsFallback(
+            filePath,
+            finalFileName,
+          );
+        } catch (e) {
+          print('⚠️ Error adding file to MediaStore: $e');
+          // ✅ Fallback: نسخ الملف مباشرة إلى مجلد التحميلات العام
+          addedToMediaStore = await _copyToDownloadsFallback(
+            filePath,
+            finalFileName,
+          );
+        }
+
+        if (!addedToMediaStore) {
+          print('ℹ️ File is saved at: $filePath');
+          print('ℹ️ Please rebuild the app to enable MediaStore integration');
+        }
+      }
+
+      return {'success': true, 'filePath': filePath, 'fileName': finalFileName};
+    } on DioException catch (e) {
+      print("Download error: ${e.response?.statusCode} - ${e.message}");
+      if (e.response?.statusCode == 403) {
+        return {'success': false, 'error': 'ليس لديك صلاحية لتحميل هذا الملف'};
+      } else if (e.response?.statusCode == 404) {
+        return {'success': false, 'error': 'الملف غير موجود'};
+      }
+      return {
+        'success': false,
+        'error': e.response?.data?['message'] ?? 'فشل تحميل الملف',
+      };
+    } catch (e) {
+      print("Download error: $e");
+      return {'success': false, 'error': 'خطأ في تحميل الملف: ${e.toString()}'};
+    }
+  }
+
+  /// ✅ Fallback: نسخ الملف مباشرة إلى مجلد التحميلات العام
+  Future<bool> _copyToDownloadsFallback(
+    String sourcePath,
+    String fileName,
+  ) async {
+    try {
+      final sourceFile = File(sourcePath);
+      if (!await sourceFile.exists()) {
+        return false;
+      }
+
+      // ✅ الحصول على مجلد التحميلات العام
+      Directory? downloadsDir;
+      try {
+        downloadsDir = await getDownloadsDirectory();
+        if (downloadsDir == null || !await downloadsDir.exists()) {
+          final externalStorage = await getExternalStorageDirectory();
+          if (externalStorage != null) {
+            String basePath = externalStorage.path;
+            if (basePath.contains('/Android/')) {
+              basePath = basePath.split('/Android/')[0];
+            }
+            downloadsDir = Directory('$basePath/Download');
+          }
+        }
+      } catch (e) {
+        print('Error getting downloads directory: $e');
+        return false;
+      }
+
+      if (downloadsDir == null) {
+        return false;
+      }
+
+      // ✅ إنشاء المجلد إذا لم يكن موجوداً
+      if (!await downloadsDir.exists()) {
+        await downloadsDir.create(recursive: true);
+      }
+
+      // ✅ نسخ الملف
+      final targetFile = File('${downloadsDir.path}/$fileName');
+      await sourceFile.copy(targetFile.path);
+
+      print('✅ File copied to downloads folder: ${targetFile.path}');
+      return true;
+    } catch (e) {
+      print('❌ Error in fallback copy: $e');
+      return false;
+    }
+  }
 }

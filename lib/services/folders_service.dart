@@ -4,6 +4,9 @@ import 'package:filevo/services/api_endpoints.dart';
 import 'package:http/http.dart' as http;
 import '../config/api_config.dart';
 import '../services/storage_service.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:dio/dio.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 class FolderService {
   Future<Map<String, dynamic>> createFolder({
@@ -26,7 +29,17 @@ class FolderService {
       body: body,
     );
 
-    return jsonDecode(response.body);
+    // ✅ التحقق من status code
+    if (response.statusCode >= 200 && response.statusCode < 300) {
+      return jsonDecode(response.body);
+    } else {
+      final errorData = jsonDecode(response.body);
+      return {
+        "success": false,
+        "message": errorData['message'] ?? "Error creating folder",
+        "error": errorData,
+      };
+    }
   }
 
   // رفع مجلد - اختيار ملفات ورفعهم في مجلد
@@ -41,7 +54,7 @@ class FolderService {
     // ✅ التحقق من أن عدد الملفات يطابق عدد المسارات النسبية
     if (filesData.length != relativePaths.length) {
       throw Exception(
-        'Files count (${filesData.length}) does not match relativePaths count (${relativePaths.length})'
+        'Files count (${filesData.length}) does not match relativePaths count (${relativePaths.length})',
       );
     }
 
@@ -57,8 +70,7 @@ class FolderService {
       'POST',
       Uri.parse("${ApiConfig.baseUrl}${ApiEndpoints.uploadFolder}"),
     );
-     
-    
+
     request.headers['Authorization'] = "Bearer $token";
 
     request.fields['folderName'] = folderName;
@@ -71,7 +83,9 @@ class FolderService {
     // الباك يتوقع string أو array، وسيحول string إلى array تلقائياً
     // ✅ التأكد من أن relativePaths تطابق عدد الملفات
     if (relativePaths.length != filesData.length) {
-      print("⚠️ WARNING: relativePaths count (${relativePaths.length}) != files count (${filesData.length})");
+      print(
+        "⚠️ WARNING: relativePaths count (${relativePaths.length}) != files count (${filesData.length})",
+      );
       print("⚠️ Fixing relativePaths...");
       // ✅ إصلاح: إضافة relativePaths ناقصة
       while (relativePaths.length < filesData.length) {
@@ -84,17 +98,17 @@ class FolderService {
       }
       print("✅ Fixed relativePaths count: ${relativePaths.length}");
     }
-    
+
     // ✅ إرسال relativePaths كـ JSON string فقط
     // لا نرسل relativePaths[] كحقول منفصلة لأن multer يحسبها كملفات
     String relativePathsJson = jsonEncode(relativePaths);
     request.fields['relativePaths'] = relativePathsJson;
-    
+
     print("📋 Final relativePaths to send:");
     print("   Count: ${relativePaths.length}");
     print("   List: $relativePaths");
     print("   JSON string: $relativePathsJson");
-    
+
     // ✅ التحقق من أن JSON صحيح
     try {
       final decoded = jsonDecode(relativePathsJson);
@@ -130,14 +144,16 @@ class FolderService {
       // ✅ استخدام MultipartFile.fromBytes
       request.files.add(
         http.MultipartFile.fromBytes(
-          'files',      // اسم الحقل ثابت - الباك يتوقع 'files' كـ array
+          'files', // اسم الحقل ثابت - الباك يتوقع 'files' كـ array
           bytes,
           filename: fileName,
         ),
       );
     }
 
-    print('🚀 Sending request to: ${ApiConfig.baseUrl}${ApiEndpoints.uploadFolder}');
+    print(
+      '🚀 Sending request to: ${ApiConfig.baseUrl}${ApiEndpoints.uploadFolder}',
+    );
 
     try {
       final res = await request.send();
@@ -163,17 +179,20 @@ class FolderService {
       } else {
         print('❌ Upload failed with status: ${response.statusCode}');
         print('❌ Response body: ${response.body}');
-        
+
         // محاولة قراءة error message من الـ response
         try {
           final errorData = jsonDecode(response.body);
-          final errorMessage = errorData['message'] ?? errorData['error'] ?? response.body;
+          final errorMessage =
+              errorData['message'] ?? errorData['error'] ?? response.body;
           throw Exception('Failed to upload folder: $errorMessage');
         } catch (e) {
           if (e.toString().contains('Failed to upload folder')) {
             rethrow;
           }
-          throw Exception('Failed to upload folder: ${response.statusCode} - ${response.body}');
+          throw Exception(
+            'Failed to upload folder: ${response.statusCode} - ${response.body}',
+          );
         }
       }
     } catch (e) {
@@ -191,10 +210,9 @@ class FolderService {
     final token = await StorageService.getToken();
 
     final uri = Uri.parse("${ApiConfig.baseUrl}${ApiEndpoints.allFolders}")
-        .replace(queryParameters: {
-      'page': page.toString(),
-      'limit': limit.toString(),
-    });
+        .replace(
+          queryParameters: {'page': page.toString(), 'limit': limit.toString()},
+        );
 
     final response = await http.get(
       uri,
@@ -211,6 +229,44 @@ class FolderService {
     }
   }
 
+  /// ✅ جلب المجلدات الحديثة
+  Future<Map<String, dynamic>> getRecentFolders({int limit = 10}) async {
+    try {
+      final token = await StorageService.getToken();
+      if (token == null) {
+        return {'success': false, 'error': 'لا يوجد token. يرجى تسجيل الدخول'};
+      }
+
+      final uri = Uri.parse(
+        "${ApiConfig.baseUrl}${ApiEndpoints.recentFolders}",
+      ).replace(queryParameters: {'limit': limit.toString()});
+
+      final response = await http.get(
+        uri,
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        return {'success': true, 'folders': data['folders'] ?? []};
+      } else {
+        final data = jsonDecode(response.body);
+        return {
+          'success': false,
+          'error': data['message'] ?? 'فشل في جلب المجلدات الحديثة',
+        };
+      }
+    } catch (e) {
+      return {
+        'success': false,
+        'error': 'خطأ في جلب المجلدات الحديثة: ${e.toString()}',
+      };
+    }
+  }
+
   // ✅ جلب محتويات مجلد معين (subfolders + files)
   Future<Map<String, dynamic>> getFolderContents({
     required String folderId,
@@ -219,11 +275,12 @@ class FolderService {
   }) async {
     final token = await StorageService.getToken();
 
-    final uri = Uri.parse("${ApiConfig.baseUrl}${ApiEndpoints.folderContents(folderId)}")
-        .replace(queryParameters: {
-      'page': page.toString(),
-      'limit': limit.toString(),
-    });
+    final uri =
+        Uri.parse(
+          "${ApiConfig.baseUrl}${ApiEndpoints.folderContents(folderId)}",
+        ).replace(
+          queryParameters: {'page': page.toString(), 'limit': limit.toString()},
+        );
 
     final response = await http.get(
       uri,
@@ -239,12 +296,17 @@ class FolderService {
       // ✅ التأكد من أن البيانات في الصيغة الصحيحة
       return data;
     } else if (response.statusCode == 403) {
-      throw Exception('Access denied: You do not have permission to access this folder');
+      throw Exception(
+        'Access denied: You do not have permission to access this folder',
+      );
     } else if (response.statusCode == 404) {
       throw Exception('Folder not found');
     } else {
       final errorData = jsonDecode(response.body);
-      throw Exception(errorData['message'] ?? 'Failed to get folder contents: ${response.body}');
+      throw Exception(
+        errorData['message'] ??
+            'Failed to get folder contents: ${response.body}',
+      );
     }
   }
 
@@ -256,10 +318,9 @@ class FolderService {
     final token = await StorageService.getToken();
 
     final uri = Uri.parse("${ApiConfig.baseUrl}${ApiEndpoints.allItems}")
-        .replace(queryParameters: {
-      'page': page.toString(),
-      'limit': limit.toString(),
-    });
+        .replace(
+          queryParameters: {'page': page.toString(), 'limit': limit.toString()},
+        );
 
     final response = await http.get(
       uri,
@@ -364,7 +425,9 @@ class FolderService {
     final token = await StorageService.getToken();
 
     final response = await http.get(
-      Uri.parse("${ApiConfig.baseUrl}${ApiEndpoints.getSharedFolderDetailsInRoom(folderId)}"),
+      Uri.parse(
+        "${ApiConfig.baseUrl}${ApiEndpoints.getSharedFolderDetailsInRoom(folderId)}",
+      ),
       headers: {
         'Authorization': 'Bearer $token',
         'Content-Type': 'application/json',
@@ -378,7 +441,9 @@ class FolderService {
       throw Exception(errorData['message'] ?? 'Folder not found in room');
     } else {
       final errorData = jsonDecode(response.body);
-      throw Exception(errorData['message'] ?? 'Failed to get shared folder details in room');
+      throw Exception(
+        errorData['message'] ?? 'Failed to get shared folder details in room',
+      );
     }
   }
 
@@ -390,10 +455,7 @@ class FolderService {
   }) async {
     final token = await StorageService.getToken();
 
-    final body = jsonEncode({
-      'users': userIds,
-      'permission': permission,
-    });
+    final body = jsonEncode({'users': userIds, 'permission': permission});
 
     final response = await http.post(
       Uri.parse("${ApiConfig.baseUrl}${ApiEndpoints.shareFolder(folderId)}"),
@@ -415,13 +477,12 @@ class FolderService {
   // ✅ تحديث صلاحيات مشاركة المجلد
   Future<Map<String, dynamic>> updateFolderPermissions({
     required String folderId,
-    required List<Map<String, dynamic>> userPermissions, // [{userId: '...', permission: 'view'}]
+    required List<Map<String, dynamic>>
+    userPermissions, // [{userId: '...', permission: 'view'}]
   }) async {
     final token = await StorageService.getToken();
 
-    final body = jsonEncode({
-      'userPermissions': userPermissions,
-    });
+    final body = jsonEncode({'userPermissions': userPermissions});
 
     final response = await http.put(
       Uri.parse("${ApiConfig.baseUrl}${ApiEndpoints.shareFolder(folderId)}"),
@@ -436,7 +497,9 @@ class FolderService {
       return jsonDecode(response.body);
     } else {
       final errorData = jsonDecode(response.body);
-      throw Exception(errorData['message'] ?? 'Failed to update folder permissions');
+      throw Exception(
+        errorData['message'] ?? 'Failed to update folder permissions',
+      );
     }
   }
 
@@ -447,9 +510,7 @@ class FolderService {
   }) async {
     final token = await StorageService.getToken();
 
-    final body = jsonEncode({
-      'users': userIds,
-    });
+    final body = jsonEncode({'users': userIds});
 
     final response = await http.delete(
       Uri.parse("${ApiConfig.baseUrl}${ApiEndpoints.shareFolder(folderId)}"),
@@ -475,11 +536,12 @@ class FolderService {
   }) async {
     final token = await StorageService.getToken();
 
-    final uri = Uri.parse("${ApiConfig.baseUrl}${ApiEndpoints.foldersSharedWithMe}")
-        .replace(queryParameters: {
-      'page': page.toString(),
-      'limit': limit.toString(),
-    });
+    final uri =
+        Uri.parse(
+          "${ApiConfig.baseUrl}${ApiEndpoints.foldersSharedWithMe}",
+        ).replace(
+          queryParameters: {'page': page.toString(), 'limit': limit.toString()},
+        );
 
     final response = await http.get(
       uri,
@@ -497,9 +559,7 @@ class FolderService {
   }
 
   // ✅ حذف مجلد (soft delete)
-  Future<Map<String, dynamic>> deleteFolder({
-    required String folderId,
-  }) async {
+  Future<Map<String, dynamic>> deleteFolder({required String folderId}) async {
     final token = await StorageService.getToken();
 
     final response = await http.delete(
@@ -519,9 +579,7 @@ class FolderService {
   }
 
   // ✅ استعادة مجلد من المهملات
-  Future<Map<String, dynamic>> restoreFolder({
-    required String folderId,
-  }) async {
+  Future<Map<String, dynamic>> restoreFolder({required String folderId}) async {
     final token = await StorageService.getToken();
 
     final response = await http.put(
@@ -547,7 +605,9 @@ class FolderService {
     final token = await StorageService.getToken();
 
     final response = await http.delete(
-      Uri.parse("${ApiConfig.baseUrl}${ApiEndpoints.deleteFolderPermanent(folderId)}"),
+      Uri.parse(
+        "${ApiConfig.baseUrl}${ApiEndpoints.deleteFolderPermanent(folderId)}",
+      ),
       headers: {
         'Authorization': 'Bearer $token',
         'Content-Type': 'application/json',
@@ -558,7 +618,9 @@ class FolderService {
       return jsonDecode(response.body);
     } else {
       final errorData = jsonDecode(response.body);
-      throw Exception(errorData['message'] ?? 'Failed to delete folder permanently');
+      throw Exception(
+        errorData['message'] ?? 'Failed to delete folder permanently',
+      );
     }
   }
 
@@ -598,7 +660,9 @@ class FolderService {
       return jsonDecode(response.body);
     } else {
       final errorData = jsonDecode(response.body);
-      throw Exception(errorData['message'] ?? 'Failed to clean expired folders');
+      throw Exception(
+        errorData['message'] ?? 'Failed to clean expired folders',
+      );
     }
   }
 
@@ -609,7 +673,9 @@ class FolderService {
     final token = await StorageService.getToken();
 
     final response = await http.put(
-      Uri.parse("${ApiConfig.baseUrl}${ApiEndpoints.toggleStarFolder(folderId)}"),
+      Uri.parse(
+        "${ApiConfig.baseUrl}${ApiEndpoints.toggleStarFolder(folderId)}",
+      ),
       headers: {
         'Authorization': 'Bearer $token',
         'Content-Type': 'application/json',
@@ -631,12 +697,10 @@ class FolderService {
   }) async {
     final token = await StorageService.getToken();
 
-    final uri = Uri.parse("${ApiConfig.baseUrl}${ApiEndpoints.starredFolders}").replace(
-      queryParameters: {
-        'page': page.toString(),
-        'limit': limit.toString(),
-      },
-    );
+    final uri = Uri.parse("${ApiConfig.baseUrl}${ApiEndpoints.starredFolders}")
+        .replace(
+          queryParameters: {'page': page.toString(), 'limit': limit.toString()},
+        );
 
     final response = await http.get(
       uri,
@@ -655,9 +719,7 @@ class FolderService {
   }
 
   // ✅ حساب حجم مجلد معين
-  Future<Map<String, dynamic>> getFolderSize({
-    required String folderId,
-  }) async {
+  Future<Map<String, dynamic>> getFolderSize({required String folderId}) async {
     final token = await StorageService.getToken();
 
     final response = await http.get(
@@ -683,7 +745,9 @@ class FolderService {
     final token = await StorageService.getToken();
 
     final response = await http.get(
-      Uri.parse("${ApiConfig.baseUrl}${ApiEndpoints.folderFilesCount(folderId)}"),
+      Uri.parse(
+        "${ApiConfig.baseUrl}${ApiEndpoints.folderFilesCount(folderId)}",
+      ),
       headers: {
         'Authorization': 'Bearer $token',
         'Content-Type': 'application/json',
@@ -694,7 +758,9 @@ class FolderService {
       return jsonDecode(response.body);
     } else {
       final errorData = jsonDecode(response.body);
-      throw Exception(errorData['message'] ?? 'Failed to get folder files count');
+      throw Exception(
+        errorData['message'] ?? 'Failed to get folder files count',
+      );
     }
   }
 
@@ -716,8 +782,83 @@ class FolderService {
       return jsonDecode(response.body);
     } else {
       final errorData = jsonDecode(response.body);
-      throw Exception(errorData['message'] ?? 'Failed to get folder statistics');
+      throw Exception(
+        errorData['message'] ?? 'Failed to get folder statistics',
+      );
     }
   }
 
+  /// ✅ تحميل مجلد خاص بالمستخدم كـ ZIP
+  /// Returns: Map with 'success' and 'filePath' or 'error'
+  Future<Map<String, dynamic>> downloadFolder({
+    required String folderId,
+    String? folderName,
+  }) async {
+    try {
+      final token = await StorageService.getToken();
+
+      // ✅ طلب صلاحية الكتابة للتخزين
+      if (Platform.isAndroid || Platform.isIOS) {
+        final status = await Permission.storage.request();
+        if (!status.isGranted) {
+          return {'success': false, 'error': 'تم رفض صلاحية التخزين'};
+        }
+      }
+
+      final url =
+          "${ApiConfig.baseUrl}${ApiEndpoints.downloadFolder(folderId)}";
+      print("Downloading folder from: $url");
+
+      final dio = Dio();
+      dio.options.headers['Authorization'] = 'Bearer $token';
+
+      // ✅ الحصول على مجلد التحميلات
+      final directory = await getExternalStorageDirectory();
+      if (directory == null) {
+        return {'success': false, 'error': 'فشل في الحصول على مجلد التحميلات'};
+      }
+
+      final downloadPath = '${directory.path}/Downloads';
+      final downloadDir = Directory(downloadPath);
+      if (!await downloadDir.exists()) {
+        await downloadDir.create(recursive: true);
+      }
+
+      final finalFileName = folderName ?? 'folder_$folderId.zip';
+      final filePath = '$downloadPath/$finalFileName';
+
+      // ✅ تحميل الملف
+      await dio.download(
+        url,
+        filePath,
+        onReceiveProgress: (received, total) {
+          if (total != -1) {
+            final progress = (received / total * 100).toStringAsFixed(0);
+            print('Download progress: $progress%');
+          }
+        },
+      );
+
+      return {'success': true, 'filePath': filePath, 'fileName': finalFileName};
+    } on DioException catch (e) {
+      print("Download error: ${e.response?.statusCode} - ${e.message}");
+      if (e.response?.statusCode == 403) {
+        return {'success': false, 'error': 'ليس لديك صلاحية لتحميل هذا المجلد'};
+      } else if (e.response?.statusCode == 404) {
+        return {'success': false, 'error': 'المجلد غير موجود'};
+      } else if (e.response?.statusCode == 400) {
+        return {'success': false, 'error': 'المجلد فارغ'};
+      }
+      return {
+        'success': false,
+        'error': e.response?.data?['message'] ?? 'فشل تحميل المجلد',
+      };
+    } catch (e) {
+      print("Download error: $e");
+      return {
+        'success': false,
+        'error': 'خطأ في تحميل المجلد: ${e.toString()}',
+      };
+    }
+  }
 }

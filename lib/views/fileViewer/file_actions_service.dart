@@ -1,6 +1,7 @@
 import 'package:filevo/controllers/folders/files_controller.dart';
 import 'package:filevo/controllers/folders/room_controller.dart';
 import 'package:filevo/services/storage_service.dart';
+import 'package:filevo/services/file_service.dart';
 import 'package:filevo/views/folders/share_file_with_room_page.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -24,7 +25,10 @@ class FileActionsService {
   }
 
   /// فتح الملف (فقط يستدعي callback)
-  static void openFile(Map<String, dynamic> file, void Function(Map<String, dynamic>)? onFileTap) {
+  static void openFile(
+    Map<String, dynamic> file,
+    void Function(Map<String, dynamic>)? onFileTap,
+  ) {
     if (onFileTap != null) onFileTap(file);
   }
 
@@ -32,20 +36,34 @@ class FileActionsService {
   static void editFile(BuildContext context, Map<String, dynamic> file) {
     final fileController = Provider.of<FileController>(context, listen: false);
     final originalName = file['originalData']['name'] ?? '';
-    final originalExtension = originalName.contains('.') ? '.' + originalName.split('.').last : '';
-    final baseName = originalExtension.isNotEmpty ? originalName.replaceAll(originalExtension, '') : originalName;
+    final originalExtension = originalName.contains('.')
+        ? '.' + originalName.split('.').last
+        : '';
+    final baseName = originalExtension.isNotEmpty
+        ? originalName.replaceAll(originalExtension, '')
+        : originalName;
 
-    final TextEditingController nameCtrl = TextEditingController(text: baseName);
-    final TextEditingController descCtrl = TextEditingController(text: file['originalData']['description'] ?? '');
+    final TextEditingController nameCtrl = TextEditingController(
+      text: baseName,
+    );
+    final TextEditingController descCtrl = TextEditingController(
+      text: file['originalData']['description'] ?? '',
+    );
     final TextEditingController tagsCtrl = TextEditingController(
-        text: (file['originalData']['tags'] as List?)?.join(', ') ?? '');
+      text: (file['originalData']['tags'] as List?)?.join(', ') ?? '',
+    );
 
     showDialog(
       context: context,
       builder: (context) {
         return AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-          title: const Text("تعديل الملف", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(15),
+          ),
+          title: const Text(
+            "تعديل الملف",
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+          ),
           content: SizedBox(
             width: 350,
             child: SingleChildScrollView(
@@ -63,22 +81,32 @@ class FileActionsService {
                   TextField(
                     controller: descCtrl,
                     maxLines: 2,
-                    decoration: const InputDecoration(labelText: "الوصف", border: OutlineInputBorder()),
+                    decoration: const InputDecoration(
+                      labelText: "الوصف",
+                      border: OutlineInputBorder(),
+                    ),
                   ),
                   const SizedBox(height: 12),
                   TextField(
                     controller: tagsCtrl,
                     decoration: const InputDecoration(
-                        labelText: "الوسوم (افصل بينها بفاصلة)", border: OutlineInputBorder()),
+                      labelText: "الوسوم (افصل بينها بفاصلة)",
+                      border: OutlineInputBorder(),
+                    ),
                   ),
                 ],
               ),
             ),
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(context), child: const Text("إلغاء")),
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text("إلغاء"),
+            ),
             ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.blueAccent),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.blueAccent,
+              ),
               onPressed: () async {
                 final token = await StorageService.getToken();
                 if (token == null) return;
@@ -88,18 +116,28 @@ class FileActionsService {
                   token: token,
                   name: nameCtrl.text.trim() + originalExtension,
                   description: descCtrl.text.trim(),
-                  tags: tagsCtrl.text.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList(),
+                  tags: tagsCtrl.text
+                      .split(',')
+                      .map((e) => e.trim())
+                      .where((e) => e.isNotEmpty)
+                      .toList(),
                 );
 
                 Navigator.pop(context);
 
                 if (success == true) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text("✅ تم حفظ التعديلات بنجاح"), backgroundColor: Colors.green),
+                    const SnackBar(
+                      content: Text("✅ تم حفظ التعديلات بنجاح"),
+                      backgroundColor: Colors.green,
+                    ),
                   );
                 } else {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text("❌ فشل حفظ التعديلات"), backgroundColor: Colors.red),
+                    const SnackBar(
+                      content: Text("❌ فشل حفظ التعديلات"),
+                      backgroundColor: Colors.red,
+                    ),
                   );
                 }
               },
@@ -129,10 +167,7 @@ class FileActionsService {
       MaterialPageRoute(
         builder: (_) => ChangeNotifierProvider(
           create: (_) => RoomController(),
-          child: ShareFileWithRoomPage(
-            fileId: fileId,
-            fileName: fileName,
-          ),
+          child: ShareFileWithRoomPage(fileId: fileId, fileName: fileName),
         ),
       ),
     );
@@ -156,7 +191,10 @@ class FileActionsService {
           title: const Text("حذف الملف"),
           content: Text("هل أنت متأكد من حذف الملف '${file['name']}'؟"),
           actions: [
-            TextButton(onPressed: () => Navigator.of(ctx).pop(false), child: const Text("إلغاء")),
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(false),
+              child: const Text("إلغاء"),
+            ),
             ElevatedButton(
               style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
               onPressed: () => Navigator.of(ctx).pop(true),
@@ -173,7 +211,10 @@ class FileActionsService {
     if (token == null) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("❌ خطأ: لا يوجد توكن."), backgroundColor: Colors.red),
+        const SnackBar(
+          content: Text("❌ خطأ: لا يوجد توكن."),
+          backgroundColor: Colors.red,
+        ),
       );
       return;
     }
@@ -192,14 +233,19 @@ class FileActionsService {
 
       if (success) {
         fileController.starredFiles.removeWhere(
-            (f) => f['_id'] == (file['_id'] ?? file['originalData']?['_id']));
+          (f) => f['_id'] == (file['_id'] ?? file['originalData']?['_id']),
+        );
         if (onLocalUpdate != null) onLocalUpdate();
 
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("✅ تم حذف الملف '${file['name']}' بنجاح"), backgroundColor: Colors.green),
+          SnackBar(
+            content: Text("✅ تم حذف الملف '${file['name']}' بنجاح"),
+            backgroundColor: Colors.green,
+          ),
         );
       } else {
-        final errorMsg = fileController.errorMessage ?? "❌ حدث خطأ أثناء حذف الملف";
+        final errorMsg =
+            fileController.errorMessage ?? "❌ حدث خطأ أثناء حذف الملف";
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(errorMsg), backgroundColor: Colors.red),
         );
@@ -207,7 +253,10 @@ class FileActionsService {
     } catch (e) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("❌ حدث خطأ أثناء حذف الملف: $e"), backgroundColor: Colors.red),
+        SnackBar(
+          content: Text("❌ حدث خطأ أثناء حذف الملف: $e"),
+          backgroundColor: Colors.red,
+        ),
       );
     } finally {
       fileController.setLoading(false);
@@ -249,9 +298,14 @@ class FileActionsService {
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text("إلغاء مشاركة الملف"),
-        content: const Text("هل أنت متأكد من إلغاء مشاركة هذا الملف مع جميع المستخدمين؟"),
+        content: const Text(
+          "هل أنت متأكد من إلغاء مشاركة هذا الملف مع جميع المستخدمين؟",
+        ),
         actions: [
-          TextButton(onPressed: () => Navigator.of(ctx).pop(false), child: const Text("إلغاء")),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text("إلغاء"),
+          ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
             onPressed: () => Navigator.of(ctx).pop(true),
@@ -283,37 +337,153 @@ class FileActionsService {
       onLocalUpdate?.call();
       _showSuccessSnackBar(context, "✅ تم إلغاء مشاركة الملف");
     } else {
-      _showErrorSnackBar(context, fileController.errorMessage ?? "فشل إلغاء المشاركة");
+      _showErrorSnackBar(
+        context,
+        fileController.errorMessage ?? "فشل إلغاء المشاركة",
+      );
     }
   }
 
   /// toggle favorite بدون ريفريش كامل
- /// toggle favorite بدون ريفريش كامل
-/// toggle favorite بدون ريفريش كامل
-/// toggle favorite بدون ريفريش كامل
-/// toggle favorite بدون ريفريش كامل
-static Future<void> toggleStar(
-  BuildContext context, 
-  FileController controller, 
-  Map<String, dynamic> file,
-  {VoidCallback? onToggle}
-) async {
-  final fileId = file['originalData']['_id'];
-  if (fileId == null) return;
+  /// toggle favorite بدون ريفريش كامل
+  /// toggle favorite بدون ريفريش كامل
+  /// toggle favorite بدون ريفريش كامل
+  /// toggle favorite بدون ريفريش كامل
+  static Future<void> toggleStar(
+    BuildContext context,
+    FileController controller,
+    Map<String, dynamic> file, {
+    VoidCallback? onToggle,
+  }) async {
+    final fileId = file['originalData']['_id'];
+    if (fileId == null) return;
 
-  try {
-    final token = await StorageService.getToken();
-    if (token == null) {
-      _showErrorSnackBar(context, "❌ خطأ: لا يوجد توكن");
+    try {
+      final token = await StorageService.getToken();
+      if (token == null) {
+        _showErrorSnackBar(context, "❌ خطأ: لا يوجد توكن");
+        return;
+      }
+
+      // ✅ إظهار مؤشر التحميل (مثل المجلدات)
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                ),
+              ),
+              SizedBox(width: 12),
+              Text('جاري التحديث...'),
+            ],
+          ),
+          duration: Duration(seconds: 2),
+        ),
+      );
+
+      // ✅ نستدعي الـ backend ونجيب النتيجة (Map بدلاً من bool)
+      final result = await controller.toggleStar(fileId: fileId, token: token);
+
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+
+      if (result['success'] == true) {
+        final isStarred = result['isStarred'] as bool? ?? false;
+        final updatedFile = result['file'] as Map<String, dynamic>?;
+
+        // ✅ نحدث البيانات المحلية بالقيمة الحقيقية من الـ backend
+        if (updatedFile != null) {
+          file['originalData'] = updatedFile;
+          file['originalData']['isStarred'] = isStarred;
+        } else {
+          file['originalData']['isStarred'] = isStarred;
+        }
+
+        // ✅ نستدعي الـ callback عشان يحدث الـ UI
+        onToggle?.call();
+
+        // ✅ عرض رسالة نجاح
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                isStarred
+                    ? '✅ تم إضافة الملف إلى المفضلة'
+                    : '✅ تم إزالة الملف من المفضلة',
+              ),
+              backgroundColor: Colors.green,
+              duration: Duration(seconds: 2),
+            ),
+          );
+        }
+
+        print('✅ Star updated successfully to: $isStarred');
+      } else {
+        _showErrorSnackBar(
+          context,
+          result['message'] ?? "❌ حدث خطأ أثناء التحديث",
+        );
+      }
+    } catch (e) {
+      print('❌ Error in toggleStar: $e');
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      _showErrorSnackBar(context, "❌ حدث خطأ أثناء التحديث");
+    }
+  }
+
+  static void _showErrorSnackBar(BuildContext context, String message) {
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.red,
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
+
+  // ✅ إضافة helper للرسائل الإيجابية
+  static void _showSuccessSnackBar(BuildContext context, String message) {
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.green,
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
+
+  /// ✅ تحميل ملف خاص بالمستخدم
+  static Future<void> downloadFile(
+    BuildContext context,
+    Map<String, dynamic> file,
+  ) async {
+    final fileId = file['originalData']?['_id'] ?? file['_id'];
+    final fileName = file['name'] ?? file['originalData']?['name'] ?? 'file';
+
+    if (fileId == null) {
+      _showErrorSnackBar(context, 'لا يمكن تحديد الملف');
       return;
     }
 
-    // ✅ إظهار مؤشر التحميل (مثل المجلدات)
+    final token = await StorageService.getToken();
+    if (token == null) {
+      _showErrorSnackBar(context, '❌ خطأ: يجب تسجيل الدخول أولاً');
+      return;
+    }
+
+    // ✅ إظهار مؤشر التحميل
+    if (!context.mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Row(
           children: [
-            SizedBox(
+            const SizedBox(
               width: 20,
               height: 20,
               child: CircularProgressIndicator(
@@ -321,86 +491,92 @@ static Future<void> toggleStar(
                 valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
               ),
             ),
-            SizedBox(width: 12),
-            Text('جاري التحديث...'),
+            const SizedBox(width: 16),
+            const Text('جاري تحميل الملف...'),
           ],
         ),
-        duration: Duration(seconds: 2),
+        duration: const Duration(seconds: 30),
       ),
     );
 
-    // ✅ نستدعي الـ backend ونجيب النتيجة (Map بدلاً من bool)
-    final result = await controller.toggleStar(fileId: fileId, token: token);
+    try {
+      final fileService = FileService();
+      final result = await fileService.downloadFile(
+        fileId: fileId,
+        token: token,
+        fileName: fileName,
+      );
 
-    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
 
-    if (result['success'] == true) {
-      final isStarred = result['isStarred'] as bool? ?? false;
-      final updatedFile = result['file'] as Map<String, dynamic>?;
-
-      // ✅ نحدث البيانات المحلية بالقيمة الحقيقية من الـ backend
-      if (updatedFile != null) {
-        file['originalData'] = updatedFile;
-        file['originalData']['isStarred'] = isStarred;
-      } else {
-        file['originalData']['isStarred'] = isStarred;
-      }
-      
-      // ✅ نستدعي الـ callback عشان يحدث الـ UI
-      onToggle?.call();
-
-      // ✅ عرض رسالة نجاح
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              isStarred
-                ? '✅ تم إضافة الملف إلى المفضلة'
-                : '✅ تم إزالة الملف من المفضلة',
-            ),
-            backgroundColor: Colors.green,
-            duration: Duration(seconds: 2),
-          ),
+      if (result['success'] == true) {
+        _showSuccessSnackBar(
+          context,
+          '✅ تم تحميل الملف بنجاح: ${result['fileName']}',
         );
+      } else {
+        _showErrorSnackBar(context, result['error'] ?? 'فشل تحميل الملف');
       }
-
-      print('✅ Star updated successfully to: $isStarred');
-    } else {
-      _showErrorSnackBar(context, result['message'] ?? "❌ حدث خطأ أثناء التحديث");
+    } catch (e) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      _showErrorSnackBar(context, '❌ خطأ في تحميل الملف: ${e.toString()}');
     }
-
-  } catch (e) {
-    print('❌ Error in toggleStar: $e');
-    ScaffoldMessenger.of(context).hideCurrentSnackBar();
-    _showErrorSnackBar(context, "❌ حدث خطأ أثناء التحديث");
   }
-}
 
-static void _showErrorSnackBar(BuildContext context, String message) {
-  if (!context.mounted) return;
-  ScaffoldMessenger.of(context).showSnackBar(
-    SnackBar(
-      content: Text(message), 
-      backgroundColor: Colors.red, 
-      duration: const Duration(seconds: 2)
-    ),
-  );
-}
+  /// ✅ تحميل ملف مشترك في الروم
+  static Future<void> downloadRoomFile(
+    BuildContext context,
+    RoomController roomController,
+    String roomId,
+    String fileId,
+    String? fileName,
+  ) async {
+    // ✅ إظهار مؤشر التحميل
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            const SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+              ),
+            ),
+            const SizedBox(width: 16),
+            const Text('جاري تحميل الملف...'),
+          ],
+        ),
+        duration: const Duration(seconds: 30),
+      ),
+    );
 
-// ✅ إضافة helper للرسائل الإيجابية
-static void _showSuccessSnackBar(BuildContext context, String message) {
-  if (!context.mounted) return;
-  ScaffoldMessenger.of(context).showSnackBar(
-    SnackBar(
-      content: Text(message), 
-      backgroundColor: Colors.green, 
-      duration: const Duration(seconds: 2)
-    ),
-  );
-}
+    try {
+      final result = await roomController.downloadRoomFile(
+        roomId: roomId,
+        fileId: fileId,
+        fileName: fileName,
+      );
 
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
 
-
-
- 
+      if (result['success'] == true) {
+        _showSuccessSnackBar(
+          context,
+          '✅ تم تحميل الملف بنجاح: ${result['fileName']}',
+        );
+      } else {
+        _showErrorSnackBar(context, result['error'] ?? 'فشل تحميل الملف');
+      }
+    } catch (e) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      _showErrorSnackBar(context, '❌ خطأ في تحميل الملف: ${e.toString()}');
+    }
+  }
 }

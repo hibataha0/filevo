@@ -7,14 +7,39 @@ class StorageService {
   
   // حفظ الـ token
   static Future<void> saveToken(String token) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_tokenKey, token);
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_tokenKey, token);
+      print('✅ [StorageService] Token saved successfully');
+      print('   Token length: ${token.length}');
+      // التحقق من أن التوكن تم حفظه فعلاً
+      final savedToken = await prefs.getString(_tokenKey);
+      if (savedToken != null && savedToken == token) {
+        print('✅ [StorageService] Token verified - saved correctly');
+      } else {
+        print('⚠️ [StorageService] Token verification failed');
+      }
+    } catch (e) {
+      print('❌ [StorageService] Error saving token: $e');
+      rethrow;
+    }
   }
   
   // استرجاع الـ token
   static Future<String?> getToken() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getString(_tokenKey);
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString(_tokenKey);
+      if (token != null) {
+        print('✅ [StorageService] Token retrieved successfully (length: ${token.length})');
+      } else {
+        print('⚠️ [StorageService] No token found in storage');
+      }
+      return token;
+    } catch (e) {
+      print('❌ [StorageService] Error retrieving token: $e');
+      return null;
+    }
   }
   
   // حذف الـ token (للخروج)
@@ -44,7 +69,9 @@ class StorageService {
   // التحقق من وجود token (المستخدم مسجل دخول)
   static Future<bool> isLoggedIn() async {
     final token = await getToken();
-    return token != null && token.isNotEmpty;
+    final isLoggedIn = token != null && token.isNotEmpty;
+    print('🔑 [StorageService] isLoggedIn check: $isLoggedIn');
+    return isLoggedIn;
   }
 
   // ✅ حفظ المود (Dark/Light)

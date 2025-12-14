@@ -7,7 +7,9 @@ import 'package:provider/provider.dart';
 import 'package:filevo/controllers/auth/auth_controller.dart';
 import 'package:filevo/views/settings/trash_files_page.dart';
 import 'package:filevo/views/settings/trash_folders_page.dart';
+import 'package:filevo/views/settings/activity_log_page.dart';
 import 'package:filevo/controllers/folders/folders_controller.dart';
+import 'package:filevo/controllers/activity_controller.dart';
 import 'package:filevo/services/storage_service.dart';
 import 'package:filevo/controllers/ThemeController.dart';
 import 'package:filevo/constants/app_colors.dart';
@@ -30,10 +32,7 @@ class _SettingsPageState extends State<SettingsPage> {
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(false),
-              child: Text(
-                'إلغاء',
-                style: TextStyle(color: Colors.grey[600]),
-              ),
+              child: Text('إلغاء', style: TextStyle(color: Colors.grey[600])),
             ),
             TextButton(
               onPressed: () => Navigator.of(context).pop(true),
@@ -59,10 +58,9 @@ class _SettingsPageState extends State<SettingsPage> {
           ),
         );
 
-        Navigator.of(context).pushNamedAndRemoveUntil(
-          'LogInPage',
-          (route) => false,
-        );
+        Navigator.of(
+          context,
+        ).pushNamedAndRemoveUntil('LogInPage', (route) => false);
       }
     }
   }
@@ -124,9 +122,11 @@ class _SettingsPageState extends State<SettingsPage> {
   Widget build(BuildContext context) {
     final themeController = context.watch<ThemeController>();
     final isDarkMode = themeController.isDarkMode;
-    
+
     return Scaffold(
-      backgroundColor: isDarkMode ? AppColors.darkAppBar : AppColors.lightAppBar,
+      backgroundColor: isDarkMode
+          ? AppColors.darkAppBar
+          : AppColors.lightAppBar,
       body: Padding(
         padding: EdgeInsets.only(top: MediaQuery.of(context).padding.top),
         child: Column(
@@ -153,10 +153,12 @@ class _SettingsPageState extends State<SettingsPage> {
                     margin: EdgeInsets.zero,
                     clipBehavior: Clip.antiAlias,
                     shape: const RoundedRectangleBorder(
-                      borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
+                      borderRadius: BorderRadius.vertical(
+                        top: Radius.circular(30),
+                      ),
                     ),
-                    color: themeController.isDarkMode 
-                        ? const Color(0xFF121212) 
+                    color: themeController.isDarkMode
+                        ? const Color(0xFF121212)
                         : const Color(0xFFE9E9E9),
                     child: SingleChildScrollView(
                       physics: const BouncingScrollPhysics(),
@@ -190,7 +192,9 @@ class _SettingsPageState extends State<SettingsPage> {
                                       activeColor: AppColors.lightAppBar,
                                     ),
                                     onTap: () {
-                                      themeController.toggleTheme(!themeController.isDarkMode);
+                                      themeController.toggleTheme(
+                                        !themeController.isDarkMode,
+                                      );
                                     },
                                   );
                                 },
@@ -234,14 +238,17 @@ class _SettingsPageState extends State<SettingsPage> {
                               SettingsItem(
                                 icon: Icons.delete_outline,
                                 title: 'المحذوفات',
-                                subtitle: 'عرض الملفات والمجلدات المحذوفة وإدارتها',
+                                subtitle:
+                                    'عرض الملفات والمجلدات المحذوفة وإدارتها',
                                 onTap: () async {
                                   final token = await StorageService.getToken();
 
                                   if (token == null) {
                                     ScaffoldMessenger.of(context).showSnackBar(
                                       SnackBar(
-                                        content: Text(S.of(context).tokenNotFound),
+                                        content: Text(
+                                          S.of(context).tokenNotFound,
+                                        ),
                                       ),
                                     );
                                     return;
@@ -256,35 +263,63 @@ class _SettingsPageState extends State<SettingsPage> {
                                         mainAxisSize: MainAxisSize.min,
                                         children: [
                                           ListTile(
-                                            leading: const Icon(Icons.insert_drive_file),
-                                            title: Text(S.of(context).deletedFiles),
+                                            leading: const Icon(
+                                              Icons.insert_drive_file,
+                                            ),
+                                            title: Text(
+                                              S.of(context).deletedFiles,
+                                            ),
                                             onTap: () {
                                               Navigator.pop(context);
                                               Navigator.push(
                                                 context,
                                                 MaterialPageRoute(
-                                                  builder: (_) => TrashFilesPage(token: token),
+                                                  builder: (_) =>
+                                                      TrashFilesPage(
+                                                        token: token,
+                                                      ),
                                                 ),
                                               );
                                             },
                                           ),
                                           ListTile(
                                             leading: const Icon(Icons.folder),
-                                            title: Text(S.of(context).deletedFolders),
+                                            title: Text(
+                                              S.of(context).deletedFolders,
+                                            ),
                                             onTap: () {
                                               Navigator.pop(context);
                                               Navigator.push(
                                                 context,
                                                 MaterialPageRoute(
-                                                  builder: (_) => ChangeNotifierProvider(
-                                                    create: (_) => FolderController(),
-                                                    child: const TrashFoldersPage(),
-                                                  ),
+                                                  builder: (_) =>
+                                                      ChangeNotifierProvider(
+                                                        create: (_) =>
+                                                            FolderController(),
+                                                        child:
+                                                            const TrashFoldersPage(),
+                                                      ),
                                                 ),
                                               );
                                             },
                                           ),
                                         ],
+                                      ),
+                                    ),
+                                  );
+                                },
+                              ),
+                              SettingsItem(
+                                icon: Icons.history,
+                                title: 'سجل النشاط',
+                                subtitle: 'عرض جميع أنشطتك في التطبيق',
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => ChangeNotifierProvider(
+                                        create: (_) => ActivityController(),
+                                        child: const ActivityLogPage(),
                                       ),
                                     ),
                                   );

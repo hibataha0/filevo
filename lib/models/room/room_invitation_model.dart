@@ -6,6 +6,7 @@ class RoomInvitationModel {
   final RoomInvitationUser sender;
   final RoomInvitationUser receiver;
   final String role; // "owner", "editor", "viewer", "commenter"
+  final bool canShare; // صلاحية المشاركة
   final String? message;
   final String status; // "pending", "accepted", "rejected", "cancelled"
   final DateTime? respondedAt;
@@ -18,6 +19,7 @@ class RoomInvitationModel {
     required this.sender,
     required this.receiver,
     required this.role,
+    this.canShare = false,
     this.message,
     required this.status,
     this.respondedAt,
@@ -32,22 +34,23 @@ class RoomInvitationModel {
       sender: RoomInvitationUser.fromJson(json["sender"] ?? {}),
       receiver: RoomInvitationUser.fromJson(json["receiver"] ?? {}),
       role: json["role"] ?? 'viewer',
+      canShare: json["canShare"] ?? false,
       message: json["message"],
       status: json["status"] ?? 'pending',
       respondedAt: json["respondedAt"] != null
           ? (json["respondedAt"] is String
-              ? DateTime.parse(json["respondedAt"])
-              : json["respondedAt"] as DateTime)
+                ? DateTime.parse(json["respondedAt"])
+                : json["respondedAt"] as DateTime)
           : null,
       createdAt: json["createdAt"] != null
           ? (json["createdAt"] is String
-              ? DateTime.parse(json["createdAt"])
-              : json["createdAt"] as DateTime)
+                ? DateTime.parse(json["createdAt"])
+                : json["createdAt"] as DateTime)
           : DateTime.now(),
       updatedAt: json["updatedAt"] != null
           ? (json["updatedAt"] is String
-              ? DateTime.parse(json["updatedAt"])
-              : json["updatedAt"] as DateTime)
+                ? DateTime.parse(json["updatedAt"])
+                : json["updatedAt"] as DateTime)
           : DateTime.now(),
     );
   }
@@ -59,6 +62,7 @@ class RoomInvitationModel {
       "sender": sender.toJson(),
       "receiver": receiver.toJson(),
       "role": role,
+      "canShare": canShare,
       "message": message,
       "status": status,
       "respondedAt": respondedAt?.toIso8601String(),
@@ -78,11 +82,7 @@ class RoomInvitationRoom {
   final String? name;
   final String? description;
 
-  RoomInvitationRoom({
-    required this.id,
-    this.name,
-    this.description,
-  });
+  RoomInvitationRoom({required this.id, this.name, this.description});
 
   factory RoomInvitationRoom.fromJson(Map<String, dynamic> json) {
     return RoomInvitationRoom(
@@ -93,11 +93,7 @@ class RoomInvitationRoom {
   }
 
   Map<String, dynamic> toJson() {
-    return {
-      "_id": id,
-      "name": name,
-      "description": description,
-    };
+    return {"_id": id, "name": name, "description": description};
   }
 }
 
@@ -106,11 +102,7 @@ class RoomInvitationUser {
   final String? name;
   final String? email;
 
-  RoomInvitationUser({
-    required this.id,
-    this.name,
-    this.email,
-  });
+  RoomInvitationUser({required this.id, this.name, this.email});
 
   factory RoomInvitationUser.fromJson(Map<String, dynamic> json) {
     return RoomInvitationUser(
@@ -121,19 +113,6 @@ class RoomInvitationUser {
   }
 
   Map<String, dynamic> toJson() {
-    return {
-      "_id": id,
-      "name": name,
-      "email": email,
-    };
+    return {"_id": id, "name": name, "email": email};
   }
 }
-
-
-
-
-
-
-
-
-

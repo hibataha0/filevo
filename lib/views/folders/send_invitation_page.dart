@@ -16,13 +16,17 @@ class _SendInvitationPageState extends State<SendInvitationPage> {
   final _emailController = TextEditingController();
   final _messageController = TextEditingController();
   String _selectedRole = 'viewer';
+  bool _canShare = false;
 
   @override
   void initState() {
     super.initState();
     // ✅ مسح رسالة الخطأ عند فتح الصفحة
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final roomController = Provider.of<RoomController>(context, listen: false);
+      final roomController = Provider.of<RoomController>(
+        context,
+        listen: false,
+      );
       roomController.setError(null);
     });
   }
@@ -31,7 +35,10 @@ class _SendInvitationPageState extends State<SendInvitationPage> {
   void dispose() {
     // ✅ مسح رسالة الخطأ عند الخروج من الصفحة
     try {
-      final roomController = Provider.of<RoomController>(context, listen: false);
+      final roomController = Provider.of<RoomController>(
+        context,
+        listen: false,
+      );
       roomController.setError(null);
     } catch (e) {
       // ✅ إذا لم يكن context متاحاً، لا مشكلة
@@ -43,8 +50,11 @@ class _SendInvitationPageState extends State<SendInvitationPage> {
 
   Future<void> _sendInvitation() async {
     if (_formKey.currentState!.validate()) {
-      final roomController = Provider.of<RoomController>(context, listen: false);
-      
+      final roomController = Provider.of<RoomController>(
+        context,
+        listen: false,
+      );
+
       // ✅ مسح رسالة الخطأ السابقة قبل إرسال دعوة جديدة
       roomController.setError(null);
 
@@ -52,6 +62,7 @@ class _SendInvitationPageState extends State<SendInvitationPage> {
         roomId: widget.roomId,
         email: _emailController.text.trim(),
         role: _selectedRole,
+        canShare: _canShare,
         message: _messageController.text.trim().isEmpty
             ? null
             : _messageController.text.trim(),
@@ -135,7 +146,10 @@ class _SendInvitationPageState extends State<SendInvitationPage> {
                 ),
                 onChanged: (value) {
                   // ✅ مسح رسالة الخطأ عند بدء الكتابة
-                  final roomController = Provider.of<RoomController>(context, listen: false);
+                  final roomController = Provider.of<RoomController>(
+                    context,
+                    listen: false,
+                  );
                   if (roomController.errorMessage != null) {
                     roomController.setError(null);
                   }
@@ -157,10 +171,7 @@ class _SendInvitationPageState extends State<SendInvitationPage> {
               // Role
               Text(
                 'الدور',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                ),
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
               ),
               SizedBox(height: 8),
               Container(
@@ -175,7 +186,8 @@ class _SendInvitationPageState extends State<SendInvitationPage> {
                       subtitle: Text('يمكنه عرض الملفات فقط'),
                       value: 'viewer',
                       groupValue: _selectedRole,
-                      onChanged: (value) => setState(() => _selectedRole = value!),
+                      onChanged: (value) =>
+                          setState(() => _selectedRole = value!),
                     ),
                     Divider(height: 1),
                     RadioListTile<String>(
@@ -183,7 +195,8 @@ class _SendInvitationPageState extends State<SendInvitationPage> {
                       subtitle: Text('يمكنه تعديل الملفات'),
                       value: 'editor',
                       groupValue: _selectedRole,
-                      onChanged: (value) => setState(() => _selectedRole = value!),
+                      onChanged: (value) =>
+                          setState(() => _selectedRole = value!),
                     ),
                     Divider(height: 1),
                     RadioListTile<String>(
@@ -191,7 +204,49 @@ class _SendInvitationPageState extends State<SendInvitationPage> {
                       subtitle: Text('يمكنه التعليق على الملفات'),
                       value: 'commenter',
                       groupValue: _selectedRole,
-                      onChanged: (value) => setState(() => _selectedRole = value!),
+                      onChanged: (value) =>
+                          setState(() => _selectedRole = value!),
+                    ),
+                  ],
+                ),
+              ),
+              SizedBox(height: 20),
+
+              // Can Share Checkbox
+              Container(
+                padding: EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  border: Border.all(color: Colors.grey[300]!),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  children: [
+                    Checkbox(
+                      value: _canShare,
+                      onChanged: (value) =>
+                          setState(() => _canShare = value ?? false),
+                    ),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'السماح بالمشاركة',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          SizedBox(height: 4),
+                          Text(
+                            'يمكن للمستخدم مشاركة ملفات ومجلدات في هذه الغرفة',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey[600],
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ],
                 ),
@@ -247,7 +302,9 @@ class _SendInvitationPageState extends State<SendInvitationPage> {
               Consumer<RoomController>(
                 builder: (context, roomController, child) {
                   return ElevatedButton(
-                    onPressed: roomController.isLoading ? null : _sendInvitation,
+                    onPressed: roomController.isLoading
+                        ? null
+                        : _sendInvitation,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Color(0xff28336f),
                       padding: EdgeInsets.symmetric(vertical: 16),
@@ -261,7 +318,9 @@ class _SendInvitationPageState extends State<SendInvitationPage> {
                             width: 20,
                             child: CircularProgressIndicator(
                               strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                Colors.white,
+                              ),
                             ),
                           )
                         : Row(
@@ -289,11 +348,3 @@ class _SendInvitationPageState extends State<SendInvitationPage> {
     );
   }
 }
-
-
-
-
-
-
-
-

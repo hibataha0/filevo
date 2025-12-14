@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:filevo/controllers/folders/room_controller.dart';
+import 'package:filevo/utils/room_permissions.dart';
 
 class RoomCommentsPage extends StatefulWidget {
   final String roomId;
@@ -23,7 +24,9 @@ class _RoomCommentsPageState extends State<RoomCommentsPage> {
   bool isLoading = true;
   final TextEditingController _commentController = TextEditingController();
   String _selectedTargetType = 'room'; // ✅ افتراضي: تعليقات عامة على الروم
-  String _selectedTargetId = ''; // ✅ إذا كان فارغاً، يعني تعليقات عامة على الروم
+  String _selectedTargetId =
+      ''; // ✅ إذا كان فارغاً، يعني تعليقات عامة على الروم
+  Map<String, dynamic>? roomData; // ✅ بيانات الغرفة للتحقق من الصلاحيات
 
   @override
   void initState() {
@@ -35,12 +38,28 @@ class _RoomCommentsPageState extends State<RoomCommentsPage> {
     } else {
       // ✅ إذا لم يكن محدداً، يعني تعليقات عامة على الروم
       _selectedTargetType = 'room';
-      _selectedTargetId = widget.roomId; // ✅ استخدام roomId كـ targetId للتعليقات العامة
+      _selectedTargetId =
+          widget.roomId; // ✅ استخدام roomId كـ targetId للتعليقات العامة
     }
     // ✅ تأجيل تحميل البيانات حتى بعد اكتمال البناء الأولي
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadRoomData();
       _loadComments();
     });
+  }
+
+  // ✅ جلب بيانات الغرفة للتحقق من الصلاحيات
+  Future<void> _loadRoomData() async {
+    if (!mounted) return;
+
+    final roomController = Provider.of<RoomController>(context, listen: false);
+    final response = await roomController.getRoomById(widget.roomId);
+
+    if (mounted) {
+      setState(() {
+        roomData = response?['room'];
+      });
+    }
   }
 
   @override
@@ -84,6 +103,26 @@ class _RoomCommentsPageState extends State<RoomCommentsPage> {
   }
 
   Future<void> _addComment() async {
+    // ✅ التحقق من الصلاحيات
+    if (roomData == null) {
+      await _loadRoomData();
+    }
+
+    if (roomData != null) {
+      final canAdd = await RoomPermissions.canAddComments(roomData!);
+      if (!canAdd) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              '❌ ليس لديك صلاحية لإضافة تعليقات. فقط المالك والمحرر والمعلق يمكنهم إضافة تعليقات',
+            ),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
+    }
+
     if (_commentController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -159,7 +198,10 @@ class _RoomCommentsPageState extends State<RoomCommentsPage> {
     );
 
     if (confirmed == true && mounted) {
-      final roomController = Provider.of<RoomController>(context, listen: false);
+      final roomController = Provider.of<RoomController>(
+        context,
+        listen: false,
+      );
       final success = await roomController.deleteComment(
         roomId: widget.roomId,
         commentId: commentId,
@@ -214,10 +256,7 @@ class _RoomCommentsPageState extends State<RoomCommentsPage> {
                 children: [
                   Text(
                     'اختر ملف أو مجلد',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                    ),
+                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
                   ),
                   SizedBox(height: 8),
                   Row(
@@ -228,12 +267,21 @@ class _RoomCommentsPageState extends State<RoomCommentsPage> {
                           decoration: InputDecoration(
                             labelText: 'النوع',
                             border: OutlineInputBorder(),
-                            contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                            contentPadding: EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 8,
+                            ),
                           ),
                           items: [
                             DropdownMenuItem(value: 'file', child: Text('ملف')),
-                            DropdownMenuItem(value: 'folder', child: Text('مجلد')),
-                            DropdownMenuItem(value: 'room', child: Text('الروم')),
+                            DropdownMenuItem(
+                              value: 'folder',
+                              child: Text('مجلد'),
+                            ),
+                            DropdownMenuItem(
+                              value: 'room',
+                              child: Text('الروم'),
+                            ),
                           ],
                           onChanged: (value) {
                             setState(() {
@@ -256,7 +304,10 @@ class _RoomCommentsPageState extends State<RoomCommentsPage> {
                             decoration: InputDecoration(
                               labelText: 'معرف الملف/المجلد',
                               border: OutlineInputBorder(),
-                              contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                              contentPadding: EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 8,
+                              ),
                             ),
                             onChanged: (value) {
                               setState(() => _selectedTargetId = value);
@@ -280,109 +331,139 @@ class _RoomCommentsPageState extends State<RoomCommentsPage> {
           Expanded(
             child: isLoading
                 ? Center(child: CircularProgressIndicator())
-                : (_selectedTargetId.isEmpty && widget.targetId == null && _selectedTargetType != 'room')
-                    ? Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(Icons.comment_outlined, size: 64, color: Colors.grey),
-                            SizedBox(height: 16),
-                            Text(
-                              'اختر ملف أو مجلد لعرض التعليقات',
-                              style: TextStyle(
-                                fontSize: 16,
-                                color: Colors.grey[600],
-                              ),
-                            ),
-                          ],
+                : (_selectedTargetId.isEmpty &&
+                      widget.targetId == null &&
+                      _selectedTargetType != 'room')
+                ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.comment_outlined,
+                          size: 64,
+                          color: Colors.grey,
                         ),
-                      )
-                    : comments.isEmpty
-                        ? Center(
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(Icons.comment_outlined, size: 64, color: Colors.grey),
-                                SizedBox(height: 16),
-                                Text(
-                                  'لا توجد تعليقات',
-                                  style: TextStyle(
-                                    fontSize: 18,
-                                    color: Colors.grey[600],
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                                SizedBox(height: 8),
-                                Text(
-                                  'كن أول من يعلق',
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    color: Colors.grey[500],
-                                  ),
-                                ),
-                              ],
-                            ),
-                          )
-                        : RefreshIndicator(
-                            onRefresh: _loadComments,
-                            child: ListView.builder(
-                              padding: EdgeInsets.all(16),
-                              itemCount: comments.length,
-                              itemBuilder: (context, index) {
-                                return _buildCommentCard(comments[index]);
-                              },
-                            ),
+                        SizedBox(height: 16),
+                        Text(
+                          'اختر ملف أو مجلد لعرض التعليقات',
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: Colors.grey[600],
                           ),
+                        ),
+                      ],
+                    ),
+                  )
+                : comments.isEmpty
+                ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.comment_outlined,
+                          size: 64,
+                          color: Colors.grey,
+                        ),
+                        SizedBox(height: 16),
+                        Text(
+                          'لا توجد تعليقات',
+                          style: TextStyle(
+                            fontSize: 18,
+                            color: Colors.grey[600],
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        SizedBox(height: 8),
+                        Text(
+                          'كن أول من يعلق',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.grey[500],
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
+                : RefreshIndicator(
+                    onRefresh: _loadComments,
+                    child: ListView.builder(
+                      padding: EdgeInsets.all(16),
+                      itemCount: comments.length,
+                      itemBuilder: (context, index) {
+                        return _buildCommentCard(comments[index]);
+                      },
+                    ),
+                  ),
           ),
 
           // ✅ Add Comment Section - متاح دائماً للتعليقات العامة أو عند تحديد ملف/مجلد
-          if (_selectedTargetType == 'room' || _selectedTargetId.isNotEmpty || widget.targetId != null)
-            Container(
-              padding: EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
-                    blurRadius: 10,
-                    offset: Offset(0, -2),
-                  ),
-                ],
-              ),
-              child: SafeArea(
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: TextField(
-                        controller: _commentController,
-                        decoration: InputDecoration(
-                          hintText: 'اكتب تعليقاً...',
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(24),
-                          ),
-                          contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                        ),
-                        maxLines: null,
+          // ✅ لكن فقط للذين لديهم صلاحية إضافة تعليقات
+          if (_selectedTargetType == 'room' ||
+              _selectedTargetId.isNotEmpty ||
+              widget.targetId != null)
+            FutureBuilder<bool>(
+              future: roomData != null
+                  ? RoomPermissions.canAddComments(roomData!)
+                  : Future.value(false),
+              builder: (context, snapshot) {
+                final canAdd = snapshot.data ?? false;
+                if (!canAdd) return SizedBox.shrink();
+
+                return Container(
+                  padding: EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.05),
+                        blurRadius: 10,
+                        offset: Offset(0, -2),
                       ),
+                    ],
+                  ),
+                  child: SafeArea(
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: _commentController,
+                            decoration: InputDecoration(
+                              hintText: 'اكتب تعليقاً...',
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(24),
+                              ),
+                              contentPadding: EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 8,
+                              ),
+                            ),
+                            maxLines: null,
+                          ),
+                        ),
+                        SizedBox(width: 8),
+                        Consumer<RoomController>(
+                          builder: (context, roomController, child) {
+                            return IconButton(
+                              icon: roomController.isLoading
+                                  ? SizedBox(
+                                      width: 24,
+                                      height: 24,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                      ),
+                                    )
+                                  : Icon(Icons.send, color: Color(0xff28336f)),
+                              onPressed: roomController.isLoading
+                                  ? null
+                                  : _addComment,
+                            );
+                          },
+                        ),
+                      ],
                     ),
-                    SizedBox(width: 8),
-                    Consumer<RoomController>(
-                      builder: (context, roomController, child) {
-                        return IconButton(
-                          icon: roomController.isLoading
-                              ? SizedBox(
-                                  width: 24,
-                                  height: 24,
-                                  child: CircularProgressIndicator(strokeWidth: 2),
-                                )
-                              : Icon(Icons.send, color: Color(0xff28336f)),
-                          onPressed: roomController.isLoading ? null : _addComment,
-                        );
-                      },
-                    ),
-                  ],
-                ),
-              ),
+                  ),
+                );
+              },
             ),
         ],
       ),
@@ -394,15 +475,18 @@ class _RoomCommentsPageState extends State<RoomCommentsPage> {
     final content = comment['content'] ?? '';
     final createdAt = comment['createdAt'];
 
-    // TODO: Check if current user can delete (owner or comment author)
-    final canDelete = true; // Replace with actual check
+    // ✅ استخراج commentUserId للتحقق من الصلاحيات
+    String? commentUserId;
+    if (user is Map<String, dynamic>) {
+      commentUserId = user['_id']?.toString() ?? user['id']?.toString();
+    } else {
+      commentUserId = user?.toString();
+    }
 
     return Card(
       margin: EdgeInsets.only(bottom: 12),
       elevation: 1,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: Padding(
         padding: EdgeInsets.all(16),
         child: Column(
@@ -412,10 +496,7 @@ class _RoomCommentsPageState extends State<RoomCommentsPage> {
               children: [
                 CircleAvatar(
                   backgroundColor: Color(0xff28336f).withOpacity(0.1),
-                  child: Icon(
-                    Icons.person,
-                    color: Color(0xff28336f),
-                  ),
+                  child: Icon(Icons.person, color: Color(0xff28336f)),
                 ),
                 SizedBox(width: 12),
                 Expanded(
@@ -431,26 +512,36 @@ class _RoomCommentsPageState extends State<RoomCommentsPage> {
                       ),
                       Text(
                         _formatDate(createdAt),
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey[600],
-                        ),
+                        style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                       ),
                     ],
                   ),
                 ),
-                if (canDelete)
-                  IconButton(
-                    icon: Icon(Icons.delete_outline, size: 20, color: Colors.red),
-                    onPressed: () => _deleteComment(comment['_id']),
-                  ),
+                FutureBuilder<bool>(
+                  future: roomData != null && commentUserId != null
+                      ? RoomPermissions.canDeleteComment(
+                          roomData!,
+                          commentUserId,
+                        )
+                      : Future.value(false),
+                  builder: (context, snapshot) {
+                    final canDelete = snapshot.data ?? false;
+                    if (!canDelete) return SizedBox.shrink();
+
+                    return IconButton(
+                      icon: Icon(
+                        Icons.delete_outline,
+                        size: 20,
+                        color: Colors.red,
+                      ),
+                      onPressed: () => _deleteComment(comment['_id']),
+                    );
+                  },
+                ),
               ],
             ),
             SizedBox(height: 12),
-            Text(
-              content,
-              style: TextStyle(fontSize: 14),
-            ),
+            Text(content, style: TextStyle(fontSize: 14)),
           ],
         ),
       ),
@@ -478,4 +569,3 @@ class _RoomCommentsPageState extends State<RoomCommentsPage> {
     }
   }
 }
-

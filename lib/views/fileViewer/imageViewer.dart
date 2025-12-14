@@ -1,7 +1,11 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:photo_view/photo_view.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:filevo/views/folders/room_comments_page.dart';
+import 'package:filevo/services/storage_service.dart';
+import 'package:http/http.dart' as http;
+import 'package:path_provider/path_provider.dart';
 
 class ImageViewer extends StatefulWidget {
   final String imageUrl;
@@ -23,21 +27,95 @@ class _ImageViewerState extends State<ImageViewer> {
   late PhotoViewController _photoViewController;
   bool _hasError = false;
   String _errorMessage = '';
+  String? _localImagePath;
+  bool _isLoadingLocal = false;
 
   @override
   void initState() {
     super.initState();
     _photoViewController = PhotoViewController();
     _checkImageUrl();
+    _loadImageWithToken();
+  }
+
+  Future<void> _loadImageWithToken() async {
+    // ✅ إذا كان URL يحتاج token، حمله محلياً
+    if (widget.imageUrl.startsWith('http') &&
+        widget.imageUrl.contains('/api/v1/')) {
+      setState(() {
+        _isLoadingLocal = true;
+      });
+
+      try {
+        final token = await StorageService.getToken();
+        if (token == null) {
+          setState(() {
+            _hasError = true;
+            _errorMessage = 'يجب تسجيل الدخول أولاً';
+            _isLoadingLocal = false;
+          });
+          return;
+        }
+
+        final response = await http.get(
+          Uri.parse(widget.imageUrl),
+          headers: {'Authorization': 'Bearer $token'},
+        );
+
+        if (response.statusCode == 200) {
+          final tempDir = await getTemporaryDirectory();
+          final fileName = widget.imageUrl.split('/').last.split('?').first;
+          final tempFile = File('${tempDir.path}/$fileName');
+          await tempFile.writeAsBytes(response.bodyBytes);
+
+          setState(() {
+            _localImagePath = tempFile.path;
+            _isLoadingLocal = false;
+          });
+        } else {
+          setState(() {
+            _hasError = true;
+            _errorMessage = 'فشل تحميل الصورة (${response.statusCode})';
+            _isLoadingLocal = false;
+          });
+        }
+      } catch (e) {
+        setState(() {
+          _hasError = true;
+          _errorMessage = 'خطأ في تحميل الصورة: ${e.toString()}';
+          _isLoadingLocal = false;
+        });
+      }
+    }
   }
 
   void _checkImageUrl() {
     print('Image URL: ${widget.imageUrl}');
-    
-    if (!widget.imageUrl.startsWith('http')) {
+
+    // ✅ التحقق من أن imageUrl هو URL أو مسار ملف محلي صالح
+    final isLocalFile =
+        widget.imageUrl.startsWith('/') ||
+        widget.imageUrl.startsWith('file://');
+    final isUrl = widget.imageUrl.startsWith('http');
+
+    if (!isUrl && !isLocalFile) {
       setState(() {
         _hasError = true;
         _errorMessage = 'رابط الصورة غير صالح';
+      });
+    } else if (isLocalFile) {
+      // ✅ التحقق من وجود الملف المحلي
+      final filePath = widget.imageUrl.startsWith('file://')
+          ? widget.imageUrl.replaceFirst('file://', '')
+          : widget.imageUrl;
+      final file = File(filePath);
+      file.exists().then((exists) {
+        if (!exists && mounted) {
+          setState(() {
+            _hasError = true;
+            _errorMessage = 'الملف غير موجود: $filePath';
+          });
+        }
       });
     }
   }
@@ -46,7 +124,9 @@ class _ImageViewerState extends State<ImageViewer> {
     setState(() {
       _hasError = false;
       _errorMessage = '';
+      _localImagePath = null;
     });
+    _loadImageWithToken();
   }
 
   Future<void> _openComments(BuildContext context) async {
@@ -94,23 +174,50 @@ class _ImageViewerState extends State<ImageViewer> {
             ),
         ],
       ),
-      body: _hasError
+      body: _isLoadingLocal
+          ? Center(child: CircularProgressIndicator())
+          : _hasError
           ? _buildErrorWidget()
           : _buildPhotoView(),
     );
   }
 
   Widget _buildPhotoView() {
+    // ✅ التحقق من أن imageUrl هو URL أم مسار ملف محلي
+    final isLocalFile =
+        widget.imageUrl.startsWith('/') ||
+        widget.imageUrl.startsWith('file://');
+
+    ImageProvider imageProvider;
+
+    if (isLocalFile) {
+      // ✅ استخدام FileImage للملفات المحلية
+      final filePath = widget.imageUrl.startsWith('file://')
+          ? widget.imageUrl.replaceFirst('file://', '')
+          : widget.imageUrl;
+      imageProvider = FileImage(File(filePath));
+    } else {
+      // ✅ إذا كان لدينا ملف محلي (تم تحميله مع token)، استخدمه
+      if (_localImagePath != null) {
+        imageProvider = FileImage(File(_localImagePath!));
+      } else if (widget.imageUrl.startsWith('http') &&
+          widget.imageUrl.contains('/api/v1/')) {
+        // ✅ إذا كان URL يحتاج token لكن لم يتم تحميله بعد، استخدم placeholder
+        imageProvider = const AssetImage('assets/placeholder.png');
+      } else {
+        // ✅ استخدام CachedNetworkImage للـ URLs العامة
+        imageProvider = CachedNetworkImageProvider(
+          widget.imageUrl,
+          maxWidth: null,
+          maxHeight: null,
+          cacheKey: widget.imageUrl,
+        );
+      }
+    }
+
     return Center(
       child: PhotoView(
-        // ✅ استخدام CachedNetworkImage للعرض المباشر مع cache قوي
-        imageProvider: CachedNetworkImageProvider(
-          widget.imageUrl,
-          maxWidth: null, // عرض الصورة بالحجم الكامل للتفاصيل
-          maxHeight: null,
-          // ✅ إعدادات cache قوية لمنع إعادة التحميل
-          cacheKey: widget.imageUrl, // ✅ مفتاح cache فريد
-        ),
+        imageProvider: imageProvider,
         controller: _photoViewController,
         loadingBuilder: (context, progress) {
           return Center(
@@ -124,7 +231,7 @@ class _ImageViewerState extends State<ImageViewer> {
                       value: progress == null
                           ? null
                           : progress.cumulativeBytesLoaded /
-                              (progress.expectedTotalBytes ?? 1),
+                                (progress.expectedTotalBytes ?? 1),
                       color: Colors.white,
                     ),
                   ),
@@ -195,7 +302,10 @@ class _ImageViewerState extends State<ImageViewer> {
                 const SizedBox(width: 10),
                 TextButton(
                   onPressed: () => Navigator.pop(context),
-                  child: const Text('عودة', style: TextStyle(color: Colors.white54)),
+                  child: const Text(
+                    'عودة',
+                    style: TextStyle(color: Colors.white54),
+                  ),
                 ),
               ],
             ),

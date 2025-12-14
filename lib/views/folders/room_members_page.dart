@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:filevo/controllers/folders/room_controller.dart';
+import 'package:filevo/utils/room_permissions.dart';
 
 class RoomMembersPage extends StatefulWidget {
   final String roomId;
@@ -27,7 +28,7 @@ class _RoomMembersPageState extends State<RoomMembersPage> {
 
   Future<void> _loadRoomData() async {
     if (!mounted) return;
-    
+
     final roomController = Provider.of<RoomController>(context, listen: false);
     final response = await roomController.getRoomById(widget.roomId);
 
@@ -39,34 +40,39 @@ class _RoomMembersPageState extends State<RoomMembersPage> {
     }
   }
 
-  Future<void> _updateMemberRole(String memberId, String role) async {
+  Future<void> _updateMemberRole(
+    String memberId,
+    String role, {
+    bool? canShare,
+  }) async {
     final roomController = Provider.of<RoomController>(context, listen: false);
 
     final success = await roomController.updateMemberRole(
       roomId: widget.roomId,
       memberId: memberId,
       role: role,
+      canShare: canShare,
     );
 
-      if (mounted) {
-        if (success) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('✅ تم تحديث الدور بنجاح'),
-              backgroundColor: Colors.green,
-            ),
-          );
-          _loadRoomData();
-          _hasChanges = true; // ✅ تم تسجيل تغيير
-        } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(roomController.errorMessage ?? '❌ فشل تحديث الدور'),
-              backgroundColor: Colors.red,
-            ),
-          );
-        }
+    if (mounted) {
+      if (success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('✅ تم تحديث الدور بنجاح'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        _loadRoomData();
+        _hasChanges = true; // ✅ تم تسجيل تغيير
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(roomController.errorMessage ?? '❌ فشل تحديث الدور'),
+            backgroundColor: Colors.red,
+          ),
+        );
       }
+    }
   }
 
   Future<void> _removeMember(String memberId, String memberName) async {
@@ -89,7 +95,10 @@ class _RoomMembersPageState extends State<RoomMembersPage> {
     );
 
     if (confirmed == true && mounted) {
-      final roomController = Provider.of<RoomController>(context, listen: false);
+      final roomController = Provider.of<RoomController>(
+        context,
+        listen: false,
+      );
       final success = await roomController.removeMember(
         roomId: widget.roomId,
         memberId: memberId,
@@ -118,19 +127,30 @@ class _RoomMembersPageState extends State<RoomMembersPage> {
     }
   }
 
-  void _showMemberOptions(Map<String, dynamic> member) {
+  void _showMemberOptions(Map<String, dynamic> member) async {
+    if (roomData == null) return;
+
     final user = member['user'] ?? {};
     final memberId = member['_id']?.toString() ?? '';
     final currentRole = member['role'] ?? 'viewer';
+    final currentCanShare = member['canShare'] ?? false;
     final isOwner = currentRole == 'owner';
+
+    // ✅ التحقق من الصلاحيات
+    final canUpdateRoles = await RoomPermissions.canUpdateMemberRoles(
+      roomData!,
+    );
+    final canRemoveMembers = await RoomPermissions.canRemoveMembers(roomData!);
 
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (context) => Container(
         padding: EdgeInsets.all(20),
+        child: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -158,10 +178,7 @@ class _RoomMembersPageState extends State<RoomMembersPage> {
                       ),
                       Text(
                         currentRole,
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.grey[600],
-                        ),
+                        style: TextStyle(fontSize: 14, color: Colors.grey[600]),
                       ),
                     ],
                   ),
@@ -170,45 +187,103 @@ class _RoomMembersPageState extends State<RoomMembersPage> {
             ),
             SizedBox(height: 24),
             if (!isOwner) ...[
-              Text(
-                'تحديث الدور',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
+              // ✅ تحديث الدور - owner فقط
+              if (canUpdateRoles) ...[
+                Text(
+                  'تحديث الدور',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                 ),
-              ),
-              SizedBox(height: 12),
-              Wrap(
-                spacing: 8,
-                children: [
-                  _buildRoleChip('viewer', currentRole, () {
-                    _updateMemberRole(memberId, 'viewer');
-                    Navigator.pop(context);
-                  }),
-                  _buildRoleChip('editor', currentRole, () {
-                    _updateMemberRole(memberId, 'editor');
-                    Navigator.pop(context);
-                  }),
-                  _buildRoleChip('commenter', currentRole, () {
-                    _updateMemberRole(memberId, 'commenter');
-                    Navigator.pop(context);
-                  }),
-                ],
-              ),
-              SizedBox(height: 24),
-              Divider(),
-              SizedBox(height: 12),
-              ListTile(
-                leading: Icon(Icons.person_remove, color: Colors.red),
-                title: Text(
-                  'إزالة من الغرفة',
-                  style: TextStyle(color: Colors.red),
+                SizedBox(height: 12),
+                Wrap(
+                  spacing: 8,
+                  children: [
+                    _buildRoleChip('viewer', currentRole, () {
+                      _updateMemberRole(memberId, 'viewer');
+                      Navigator.pop(context);
+                    }),
+                    _buildRoleChip('editor', currentRole, () {
+                      _updateMemberRole(memberId, 'editor');
+                      Navigator.pop(context);
+                    }),
+                    _buildRoleChip('commenter', currentRole, () {
+                      _updateMemberRole(memberId, 'commenter');
+                      Navigator.pop(context);
+                    }),
+                  ],
                 ),
-                onTap: () {
-                  Navigator.pop(context);
-                  _removeMember(memberId, user['name'] ?? user['email'] ?? 'العضو');
-                },
-              ),
+                SizedBox(height: 24),
+                Divider(),
+                SizedBox(height: 12),
+                // ✅ تحديث صلاحية المشاركة
+                Text(
+                  'صلاحيات المشاركة',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                ),
+                SizedBox(height: 12),
+                Container(
+                  padding: EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    border: Border.all(color: Colors.grey[300]!),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    children: [
+                      Checkbox(
+                        value: currentCanShare,
+                        onChanged: (value) {
+                          _updateMemberRole(
+                            memberId,
+                            currentRole,
+                            canShare: value ?? false,
+                          );
+                          Navigator.pop(context);
+                        },
+                      ),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'السماح بالمشاركة',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            SizedBox(height: 4),
+                            Text(
+                              'يمكن للمستخدم مشاركة ملفات ومجلدات في هذه الغرفة',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey[600],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                SizedBox(height: 24),
+                Divider(),
+                SizedBox(height: 12),
+              ],
+              // ✅ إزالة من الغرفة - owner فقط
+              if (canRemoveMembers)
+                ListTile(
+                  leading: Icon(Icons.person_remove, color: Colors.red),
+                  title: Text(
+                    'إزالة من الغرفة',
+                    style: TextStyle(color: Colors.red),
+                  ),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _removeMember(
+                      memberId,
+                      user['name'] ?? user['email'] ?? 'العضو',
+                    );
+                  },
+                ),
             ] else
               Container(
                 padding: EdgeInsets.all(16),
@@ -230,6 +305,7 @@ class _RoomMembersPageState extends State<RoomMembersPage> {
                 ),
               ),
           ],
+          ),
         ),
       ),
     );
@@ -276,18 +352,18 @@ class _RoomMembersPageState extends State<RoomMembersPage> {
       body: isLoading
           ? Center(child: CircularProgressIndicator())
           : roomData == null
-              ? Center(child: Text('فشل تحميل بيانات الغرفة'))
-              : RefreshIndicator(
-                  onRefresh: _loadRoomData,
-                  child: ListView.builder(
-                    padding: EdgeInsets.all(16),
-                    itemCount: (roomData!['members'] as List?)?.length ?? 0,
-                    itemBuilder: (context, index) {
-                      final member = roomData!['members'][index];
-                      return _buildMemberCard(member);
-                    },
-                  ),
-                ),
+          ? Center(child: Text('فشل تحميل بيانات الغرفة'))
+          : RefreshIndicator(
+              onRefresh: _loadRoomData,
+              child: ListView.builder(
+                padding: EdgeInsets.all(16),
+                itemCount: (roomData!['members'] as List?)?.length ?? 0,
+                itemBuilder: (context, index) {
+                  final member = roomData!['members'][index];
+                  return _buildMemberCard(member);
+                },
+              ),
+            ),
     );
   }
 
@@ -299,16 +375,11 @@ class _RoomMembersPageState extends State<RoomMembersPage> {
     return Card(
       margin: EdgeInsets.only(bottom: 12),
       elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: ListTile(
         leading: CircleAvatar(
           backgroundColor: _getRoleColor(role).withOpacity(0.2),
-          child: Icon(
-            _getRoleIcon(role),
-            color: _getRoleColor(role),
-          ),
+          child: Icon(_getRoleIcon(role), color: _getRoleColor(role)),
         ),
         title: Text(
           user['name'] ?? user['email'] ?? '—',
@@ -375,6 +446,4 @@ class _RoomMembersPageState extends State<RoomMembersPage> {
         return Icons.person;
     }
   }
-
 }
-

@@ -6,6 +6,8 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Build
 import android.provider.DocumentsContract
+import android.provider.MediaStore
+import android.content.ContentValues
 import androidx.annotation.NonNull
 import androidx.core.content.FileProvider
 import io.flutter.embedding.android.FlutterActivity
@@ -13,10 +15,12 @@ import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
 import java.io.File
 import java.io.InputStream
+import java.io.FileInputStream
 
 class MainActivity: FlutterActivity() {
     private val CHANNEL = "com.example.filevo/saf"
     private val FILE_CHOOSER_CHANNEL = "file_chooser_channel"
+    private val DOWNLOAD_CHANNEL = "com.example.filevo/download"
     private var pendingFolderPickerResult: MethodChannel.Result? = null
     private val FOLDER_PICKER_REQUEST_CODE = 1001
 
@@ -36,6 +40,26 @@ class MainActivity: FlutterActivity() {
                     }
                 } else {
                     result.notImplemented()
+                }
+            }
+        
+        // ✅ MethodChannel لإضافة الملف إلى MediaStore (للظهور في التحميلات)
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, DOWNLOAD_CHANNEL)
+            .setMethodCallHandler { call, result ->
+                when (call.method) {
+                    "addToDownloads" -> {
+                        val filePath = call.argument<String>("filePath")
+                        val fileName = call.argument<String>("fileName")
+                        if (filePath != null && fileName != null) {
+                            val success = addFileToDownloads(filePath, fileName)
+                            result.success(success)
+                        } else {
+                            result.error("INVALID_ARGUMENT", "filePath or fileName is null", null)
+                        }
+                    }
+                    else -> {
+                        result.notImplemented()
+                    }
                 }
             }
         
@@ -339,5 +363,65 @@ class MainActivity: FlutterActivity() {
         intent.setDataAndType(uri, contentResolver.getType(uri))
         intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
         startActivity(Intent.createChooser(intent, "Open with"))
+    }
+    
+    // ✅ إضافة الملف إلى MediaStore للظهور في التحميلات
+    private fun addFileToDownloads(filePath: String, fileName: String): Boolean {
+        try {
+            val file = File(filePath)
+            if (!file.exists()) {
+                android.util.Log.e("Download", "File does not exist: $filePath")
+                return false
+            }
+            
+            val contentResolver = applicationContext.contentResolver
+            val contentValues = ContentValues().apply {
+                put(MediaStore.Downloads.DISPLAY_NAME, fileName)
+                put(MediaStore.Downloads.RELATIVE_PATH, "Download/")
+                put(MediaStore.Downloads.IS_PENDING, 1)
+            }
+            
+            val uri = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                contentResolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, contentValues)
+            } else {
+                // ✅ Android 9 وأقل
+                val downloadsDir = android.os.Environment.getExternalStoragePublicDirectory(
+                    android.os.Environment.DIRECTORY_DOWNLOADS
+                )
+                val downloadFile = File(downloadsDir, fileName)
+                file.copyTo(downloadFile, overwrite = true)
+                
+                // ✅ إعلام النظام بالملف الجديد
+                val intent = Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE)
+                intent.data = Uri.fromFile(downloadFile)
+                applicationContext.sendBroadcast(intent)
+                
+                android.util.Log.d("Download", "File added to downloads (Android 9-): ${downloadFile.absolutePath}")
+                return true
+            }
+            
+            if (uri != null) {
+                // ✅ نسخ الملف إلى MediaStore
+                contentResolver.openOutputStream(uri)?.use { outputStream ->
+                    FileInputStream(file).use { inputStream ->
+                        inputStream.copyTo(outputStream)
+                    }
+                }
+                
+                // ✅ تحديث حالة الملف (إزالة IS_PENDING)
+                contentValues.clear()
+                contentValues.put(MediaStore.Downloads.IS_PENDING, 0)
+                contentResolver.update(uri, contentValues, null, null)
+                
+                android.util.Log.d("Download", "File added to downloads (Android 10+): $uri")
+                return true
+            } else {
+                android.util.Log.e("Download", "Failed to create URI in MediaStore")
+                return false
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("Download", "Error adding file to downloads: ${e.message}", e)
+            return false
+        }
     }
 }

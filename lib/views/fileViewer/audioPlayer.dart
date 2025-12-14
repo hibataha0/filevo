@@ -4,7 +4,11 @@ import 'package:audioplayers/audioplayers.dart';
 class AudioPlayerPage extends StatefulWidget {
   final String audioUrl;
   final String fileName;
-  const AudioPlayerPage({Key? key, required this.audioUrl, required this.fileName}) : super(key: key);
+  const AudioPlayerPage({
+    Key? key,
+    required this.audioUrl,
+    required this.fileName,
+  }) : super(key: key);
 
   @override
   State<AudioPlayerPage> createState() => _AudioPlayerPageState();
@@ -58,10 +62,29 @@ class _AudioPlayerPageState extends State<AudioPlayerPage> {
 
       // تحميل الملف الصوتي
       print('جاري تحميل الملف: ${widget.audioUrl}');
-      
-      final source = UrlSource(widget.audioUrl);
+
+      // ✅ التحقق من أن audioUrl هو URL أم مسار ملف محلي
+      final isLocalFile =
+          widget.audioUrl.startsWith('/') ||
+          widget.audioUrl.startsWith('file://') ||
+          !widget.audioUrl.startsWith('http');
+
+      Source source;
+      if (isLocalFile) {
+        // ✅ استخدام DeviceFileSource للملفات المحلية
+        final filePath = widget.audioUrl.startsWith('file://')
+            ? widget.audioUrl.replaceFirst('file://', '')
+            : widget.audioUrl;
+        print('📁 Using local file: $filePath');
+        source = DeviceFileSource(filePath);
+      } else {
+        // ✅ استخدام UrlSource للـ URLs
+        print('🌐 Using URL: ${widget.audioUrl}');
+        source = UrlSource(widget.audioUrl);
+      }
+
       await _player.setSource(source);
-      
+
       // الحصول على المدة بعد تحميل الملف
       final duration = await _player.getDuration();
       if (duration != null) {
@@ -74,7 +97,6 @@ class _AudioPlayerPageState extends State<AudioPlayerPage> {
       } else {
         throw Exception('تعذر الحصول على مدة الملف الصوتي');
       }
-
     } catch (e) {
       print('❌ خطأ في تحميل الملف الصوتي: $e');
       if (mounted) {
@@ -89,12 +111,28 @@ class _AudioPlayerPageState extends State<AudioPlayerPage> {
   Future<void> _playAudio() async {
     try {
       print('جاري تشغيل الملف الصوتي');
-      
+
       // إذا كان المشغل في حالة stopped، نحتاج إلى إعادة تعيين المصدر
       if (_playerState == PlayerState.stopped) {
-        await _player.setSource(UrlSource(widget.audioUrl));
+        // ✅ التحقق من نوع المصدر (محلي أم URL)
+        final isLocalFile =
+            widget.audioUrl.startsWith('/') ||
+            widget.audioUrl.startsWith('file://') ||
+            !widget.audioUrl.startsWith('http');
+
+        Source source;
+        if (isLocalFile) {
+          final filePath = widget.audioUrl.startsWith('file://')
+              ? widget.audioUrl.replaceFirst('file://', '')
+              : widget.audioUrl;
+          source = DeviceFileSource(filePath);
+        } else {
+          source = UrlSource(widget.audioUrl);
+        }
+
+        await _player.setSource(source);
       }
-      
+
       await _player.resume();
     } catch (e) {
       print('❌ خطأ في التشغيل: $e');
@@ -134,7 +172,7 @@ class _AudioPlayerPageState extends State<AudioPlayerPage> {
     try {
       final newPosition = Duration(seconds: value.toInt());
       await _player.seek(newPosition);
-      
+
       // تحديث الموضع مباشرة بعد السحب
       if (mounted) {
         setState(() {
@@ -159,7 +197,7 @@ class _AudioPlayerPageState extends State<AudioPlayerPage> {
       _isSeeking = false;
     });
     await _seekAudio(value);
-    
+
     // إذا كان التشغيل نشطاً قبل السحب، نستأنف التشغيل
     if (_isPlaying) {
       await _playAudio();
@@ -247,264 +285,289 @@ class _AudioPlayerPageState extends State<AudioPlayerPage> {
               ),
             )
           : _hasError
-              ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
+          ? Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.error_outline, color: Colors.red, size: 64),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'فشل تحميل الملف الصوتي',
+                    style: TextStyle(fontSize: 16, color: Colors.red),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'تأكد من اتصال الإنترنت وصحة الرابط',
+                    style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 20),
+                  ElevatedButton.icon(
+                    onPressed: _retryLoading,
+                    icon: const Icon(Icons.refresh),
+                    label: const Text('إعادة المحاولة'),
+                  ),
+                ],
+              ),
+            )
+          : Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  // أيقونة الملف الصوتي مع تأثير
+                  Container(
+                    width: 150,
+                    height: 150,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          Colors.blueAccent.withOpacity(0.8),
+                          Colors.purpleAccent.withOpacity(0.6),
+                        ],
+                      ),
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.blueAccent.withOpacity(0.3),
+                          blurRadius: 15,
+                          spreadRadius: 5,
+                        ),
+                      ],
+                    ),
+                    child: const Icon(
+                      Icons.audiotrack,
+                      size: 80,
+                      color: Colors.white,
+                    ),
+                  ),
+                  const SizedBox(height: 30),
+
+                  // اسم الملف
+                  Text(
+                    widget.fileName,
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black87,
+                    ),
+                    textAlign: TextAlign.center,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 30),
+
+                  // شريط التقدم
+                  Column(
                     children: [
-                      const Icon(Icons.error_outline, color: Colors.red, size: 64),
-                      const SizedBox(height: 16),
-                      const Text(
-                        'فشل تحميل الملف الصوتي',
-                        style: TextStyle(fontSize: 16, color: Colors.red),
-                        textAlign: TextAlign.center,
+                      // التوقيت
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            _formatDuration(_position),
+                            style: const TextStyle(
+                              fontSize: 14,
+                              color: Colors.grey,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          Text(
+                            _formatDuration(_duration),
+                            style: const TextStyle(
+                              fontSize: 14,
+                              color: Colors.grey,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
                       ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'تأكد من اتصال الإنترنت وصحة الرابط',
-                        style: TextStyle(fontSize: 14, color: Colors.grey[600]),
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 20),
-                      ElevatedButton.icon(
-                        onPressed: _retryLoading,
-                        icon: const Icon(Icons.refresh),
-                        label: const Text('إعادة المحاولة'),
+                      const SizedBox(height: 10),
+
+                      // السلايدر
+                      Slider(
+                        min: 0,
+                        max: _duration.inSeconds.toDouble(),
+                        value: _position.inSeconds
+                            .clamp(0, _duration.inSeconds)
+                            .toDouble(),
+                        onChanged: (value) {
+                          // تحديث الواجهة فقط أثناء السحب
+                          setState(() {
+                            _position = Duration(seconds: value.toInt());
+                          });
+                        },
+                        onChangeStart: _onSliderChangeStart,
+                        onChangeEnd: _onSliderChangeEnd,
+                        activeColor: Colors.blueAccent,
+                        inactiveColor: Colors.grey[300],
+                        thumbColor: Colors.blueAccent,
                       ),
                     ],
                   ),
-                )
-              : Padding(
-                  padding: const EdgeInsets.all(20),
-                  child: Column(
+                  const SizedBox(height: 30),
+
+                  // أزرار التحكم
+                  Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      // أيقونة الملف الصوتي مع تأثير
+                      // زر إعادة التشغيل
+                      IconButton(
+                        iconSize: 40,
+                        icon: const Icon(Icons.replay),
+                        color: Colors.grey[700],
+                        onPressed: _stopAudio,
+                        tooltip: 'إعادة التشغيل من البداية',
+                      ),
+                      const SizedBox(width: 20),
+
+                      // زر التشغيل/الإيقاف الرئيسي
                       Container(
-                        width: 150,
-                        height: 150,
                         decoration: BoxDecoration(
                           gradient: LinearGradient(
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                            colors: [
-                              Colors.blueAccent.withOpacity(0.8),
-                              Colors.purpleAccent.withOpacity(0.6),
-                            ],
+                            colors: [Colors.blueAccent, Colors.purpleAccent],
                           ),
                           shape: BoxShape.circle,
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.blueAccent.withOpacity(0.3),
+                              color: Colors.blueAccent.withOpacity(0.4),
                               blurRadius: 15,
                               spreadRadius: 5,
                             ),
                           ],
                         ),
-                        child: const Icon(
-                          Icons.audiotrack,
-                          size: 80,
-                          color: Colors.white,
+                        child: IconButton(
+                          iconSize: 50,
+                          icon: Icon(
+                            _isPlaying ? Icons.pause : Icons.play_arrow,
+                            color: Colors.white,
+                          ),
+                          onPressed: _isPlaying ? _pauseAudio : _playAudio,
+                          tooltip: _isPlaying ? 'إيقاف' : 'تشغيل',
                         ),
                       ),
-                      const SizedBox(height: 30),
-                      
-                      // اسم الملف
-                      Text(
-                        widget.fileName,
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black87,
-                        ),
-                        textAlign: TextAlign.center,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 30),
-                      
-                      // شريط التقدم
-                      Column(
-                        children: [
-                          // التوقيت
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(
-                                _formatDuration(_position),
-                                style: const TextStyle(fontSize: 14, color: Colors.grey, fontWeight: FontWeight.w500),
-                              ),
-                              Text(
-                                _formatDuration(_duration),
-                                style: const TextStyle(fontSize: 14, color: Colors.grey, fontWeight: FontWeight.w500),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 10),
-                          
-                          // السلايدر
-                          Slider(
-                            min: 0,
-                            max: _duration.inSeconds.toDouble(),
-                            value: _position.inSeconds.clamp(0, _duration.inSeconds).toDouble(),
-                            onChanged: (value) {
-                              // تحديث الواجهة فقط أثناء السحب
-                              setState(() {
-                                _position = Duration(seconds: value.toInt());
-                              });
-                            },
-                            onChangeStart: _onSliderChangeStart,
-                            onChangeEnd: _onSliderChangeEnd,
-                            activeColor: Colors.blueAccent,
-                            inactiveColor: Colors.grey[300],
-                            thumbColor: Colors.blueAccent,
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 30),
-                      
-                      // أزرار التحكم
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          // زر إعادة التشغيل
-                          IconButton(
-                            iconSize: 40,
-                            icon: const Icon(Icons.replay),
-                            color: Colors.grey[700],
-                            onPressed: _stopAudio,
-                            tooltip: 'إعادة التشغيل من البداية',
-                          ),
-                          const SizedBox(width: 20),
-                          
-                          // زر التشغيل/الإيقاف الرئيسي
-                          Container(
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                colors: [
-                                  Colors.blueAccent,
-                                  Colors.purpleAccent,
-                                ],
-                              ),
-                              shape: BoxShape.circle,
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.blueAccent.withOpacity(0.4),
-                                  blurRadius: 15,
-                                  spreadRadius: 5,
-                                ),
-                              ],
-                            ),
-                            child: IconButton(
-                              iconSize: 50,
-                              icon: Icon(
-                                _isPlaying ? Icons.pause : Icons.play_arrow,
-                                color: Colors.white,
-                              ),
-                              onPressed: _isPlaying ? _pauseAudio : _playAudio,
-                              tooltip: _isPlaying ? 'إيقاف' : 'تشغيل',
-                            ),
-                          ),
-                          const SizedBox(width: 20),
-                          
-                          // زر التوقف
-                          IconButton(
-                            iconSize: 40,
-                            icon: const Icon(Icons.stop),
-                            color: Colors.grey[700],
-                            onPressed: _stopAudio,
-                            tooltip: 'توقف',
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 30),
-                      
-                      // إعدادات السرعة
-                      Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: Colors.grey[50],
-                          borderRadius: BorderRadius.circular(15),
-                          border: Border.all(color: Colors.grey[300]!),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.grey.withOpacity(0.1),
-                              blurRadius: 10,
-                              offset: const Offset(0, 5),
-                            ),
-                          ],
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            const Row(
-                              children: [
-                                Icon(Icons.speed, color: Colors.blueAccent),
-                                SizedBox(width: 8),
-                                Text(
-                                  'سرعة التشغيل:',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                              decoration: BoxDecoration(
-                                color: Colors.blueAccent.withOpacity(0.1),
-                                borderRadius: BorderRadius.circular(20),
-                                border: Border.all(color: Colors.blueAccent.withOpacity(0.3)),
-                              ),
-                              child: DropdownButton<double>(
-                                value: _speed,
-                                underline: const SizedBox(),
-                                icon: const Icon(Icons.arrow_drop_down, color: Colors.blueAccent),
-                                style: const TextStyle(color: Colors.blueAccent, fontWeight: FontWeight.w500),
-                                items: [0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0]
-                                    .map((speed) => DropdownMenuItem(
-                                          value: speed,
-                                          child: Text(
-                                            '${speed}x',
-                                            style: const TextStyle(fontSize: 14),
-                                          ),
-                                        ))
-                                    .toList(),
-                                onChanged: (value) {
-                                  if (value != null) {
-                                    _changeSpeed(value);
-                                  }
-                                },
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      
-                      // حالة التشغيل
-                      const SizedBox(height: 20),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                        decoration: BoxDecoration(
-                          color: _isPlaying ? Colors.green.withOpacity(0.1) : Colors.grey.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Text(
-                          _isPlaying 
-                              ? '🎵 جاري التشغيل...' 
-                              : _playerState == PlayerState.paused
-                                  ? '⏸️ متوقف مؤقتاً'
-                                  : '⏹️ متوقف',
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: _isPlaying ? Colors.green : Colors.grey[600],
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
+                      const SizedBox(width: 20),
+
+                      // زر التوقف
+                      IconButton(
+                        iconSize: 40,
+                        icon: const Icon(Icons.stop),
+                        color: Colors.grey[700],
+                        onPressed: _stopAudio,
+                        tooltip: 'توقف',
                       ),
                     ],
                   ),
-                ),
+                  const SizedBox(height: 30),
+
+                  // إعدادات السرعة
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.grey[50],
+                      borderRadius: BorderRadius.circular(15),
+                      border: Border.all(color: Colors.grey[300]!),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.grey.withOpacity(0.1),
+                          blurRadius: 10,
+                          offset: const Offset(0, 5),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Row(
+                          children: [
+                            Icon(Icons.speed, color: Colors.blueAccent),
+                            SizedBox(width: 8),
+                            Text(
+                              'سرعة التشغيل:',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 6,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.blueAccent.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                              color: Colors.blueAccent.withOpacity(0.3),
+                            ),
+                          ),
+                          child: DropdownButton<double>(
+                            value: _speed,
+                            underline: const SizedBox(),
+                            icon: const Icon(
+                              Icons.arrow_drop_down,
+                              color: Colors.blueAccent,
+                            ),
+                            style: const TextStyle(
+                              color: Colors.blueAccent,
+                              fontWeight: FontWeight.w500,
+                            ),
+                            items: [0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0]
+                                .map(
+                                  (speed) => DropdownMenuItem(
+                                    value: speed,
+                                    child: Text(
+                                      '${speed}x',
+                                      style: const TextStyle(fontSize: 14),
+                                    ),
+                                  ),
+                                )
+                                .toList(),
+                            onChanged: (value) {
+                              if (value != null) {
+                                _changeSpeed(value);
+                              }
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  // حالة التشغيل
+                  const SizedBox(height: 20),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
+                    decoration: BoxDecoration(
+                      color: _isPlaying
+                          ? Colors.green.withOpacity(0.1)
+                          : Colors.grey.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      _isPlaying
+                          ? '🎵 جاري التشغيل...'
+                          : _playerState == PlayerState.paused
+                          ? '⏸️ متوقف مؤقتاً'
+                          : '⏹️ متوقف',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: _isPlaying ? Colors.green : Colors.grey[600],
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
     );
   }
 }

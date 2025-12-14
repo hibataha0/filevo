@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:filevo/controllers/folders/room_controller.dart';
-import 'package:filevo/services/storage_service.dart';
 import 'package:filevo/constants/app_colors.dart';
 import 'package:filevo/generated/l10n.dart';
 
@@ -38,48 +37,119 @@ class _ShareFileWithRoomPageState extends State<ShareFileWithRoomPage> {
     if (!mounted) return;
 
     final roomController = Provider.of<RoomController>(context, listen: false);
-    final success = await roomController.getRooms();
+    await roomController.getRooms();
 
     if (mounted) {
+      final roomsList = roomController.rooms;
+
+      // ✅ تحميل تفاصيل كل روم بشكل متوازي للحصول على الملفات المشتركة
+      final roomsWithDetails = await Future.wait(
+        roomsList.map((room) async {
+          try {
+            final roomId = room['_id']?.toString();
+            if (roomId != null) {
+              // ✅ تحميل تفاصيل الروم للحصول على الملفات
+              final roomDetails = await roomController.getRoomById(roomId);
+              if (roomDetails != null && roomDetails['room'] != null) {
+                return roomDetails['room'] as Map<String, dynamic>;
+              }
+            }
+            // ✅ إذا فشل تحميل التفاصيل، استخدم البيانات الأساسية
+            return room;
+          } catch (e) {
+            print('⚠️ Error loading room details for ${room['name']}: $e');
+            // ✅ في حالة الخطأ، استخدم البيانات الأساسية
+            return room;
+          }
+        }),
+      );
+
       setState(() {
-        rooms = roomController.rooms;
+        rooms = roomsWithDetails;
         isLoading = false;
       });
     }
   }
 
   Future<void> _shareFileWithRoom(String roomId) async {
-    final roomController = Provider.of<RoomController>(context, listen: false);
-    final success = await roomController.shareFileWithRoom(
-      roomId: roomId,
-      fileId: widget.fileId,
-      isOneTime: isOneTimeShare,
-      expiresInHours: isOneTimeShare ? (expiresInHours ?? 24) : null,
+    if (!mounted) return;
+
+    // ✅ إظهار loading indicator
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => Center(child: CircularProgressIndicator()),
     );
- 
-    print('ShareFileWithRoomPage: shareFileWithRoom response success: $success (one-time: $isOneTimeShare)');
-    if (mounted) {
+
+    try {
+      final roomController = Provider.of<RoomController>(
+        context,
+        listen: false,
+      );
+      final success = await roomController.shareFileWithRoom(
+        roomId: roomId,
+        fileId: widget.fileId,
+        isOneTime: isOneTimeShare,
+        expiresInHours: isOneTimeShare ? (expiresInHours ?? 24) : null,
+      );
+
+      if (!mounted) return;
+
+      // ✅ إغلاق loading indicator
+      Navigator.of(context).pop();
+
+      print(
+        'ShareFileWithRoomPage: shareFileWithRoom response success: $success (one-time: $isOneTimeShare)',
+      );
+
       if (success) {
+        // ✅ التحقق من رسالة الخطأ لمعرفة إذا كان الملف مشارك بالفعل
+        final errorMessage = roomController.errorMessage ?? '';
+        final isAlreadyShared =
+            errorMessage.toLowerCase().contains('already shared') ||
+            errorMessage.toLowerCase().contains('مشارك بالفعل');
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(isOneTimeShare 
-                ? '✅ تم مشاركة الملف مع الغرفة (لمرة واحدة) بنجاح'
-                : '✅ تم مشاركة الملف مع الغرفة بنجاح'),
-            backgroundColor: Colors.green,
+            content: Text(
+              isAlreadyShared
+                  ? 'ℹ️ الملف مشارك بالفعل مع هذه الغرفة'
+                  : isOneTimeShare
+                  ? '✅ تم مشاركة الملف مع الغرفة (لمرة واحدة) بنجاح'
+                  : '✅ تم مشاركة الملف مع الغرفة بنجاح',
+            ),
+            backgroundColor: isAlreadyShared ? Colors.blue : Colors.green,
+            duration: Duration(seconds: 2),
           ),
         );
         Navigator.pop(context, true);
       } else {
+        final errorMessage =
+            roomController.errorMessage ?? '❌ فشل مشاركة الملف';
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(roomController.errorMessage ?? '❌ فشل مشاركة الملف'),
+            content: Text(errorMessage),
             backgroundColor: Colors.red,
+            duration: Duration(seconds: 3),
           ),
         );
       }
+    } catch (e) {
+      if (!mounted) return;
+
+      // ✅ إغلاق loading indicator في حالة الخطأ
+      Navigator.of(context).pop();
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('❌ حدث خطأ: ${e.toString()}'),
+          backgroundColor: Colors.red,
+          duration: Duration(seconds: 3),
+        ),
+      );
     }
   }
-  
+
   void _showOneTimeShareDialog() {
     showDialog(
       context: context,
@@ -188,278 +258,399 @@ class _ShareFileWithRoomPageState extends State<ShareFileWithRoomPage> {
             child: isLoading
                 ? Center(child: CircularProgressIndicator())
                 : rooms.isEmpty
-                    ? Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(Icons.meeting_room_outlined,
-                                size: 64, color: Colors.grey),
-                            SizedBox(height: 16),
-                            Text(
-                              S.of(context).noRoomsAvailable,
-                              style: TextStyle(
-                                fontSize: 18,
-                                color: Colors.grey[600],
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            SizedBox(height: 8),
-                            Text(
-                              S.of(context).createRoomFirst,
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: Colors.grey[500],
-                              ),
-                              textAlign: TextAlign.center,
-                            ),
-                          ],
+                ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.meeting_room_outlined,
+                          size: 64,
+                          color: Colors.grey,
                         ),
-                      )
-                    : RefreshIndicator(
-                        onRefresh: _loadRooms,
-                        child: ListView.builder(
-                          padding: EdgeInsets.all(16),
-                          itemCount: rooms.length,
-                          itemBuilder: (context, index) {
-                            final room = rooms[index];
-                            final isSelected = selectedRoomId == room['_id'];
-                            final membersCount =
-                                (room['members'] as List?)?.length ?? 0;
-                            // ✅ ملاحظة: الـ backend يقوم بفلترة الملفات المشتركة لمرة واحدة تلقائياً
-                            final filesCount =
-                                (room['files'] as List?)?.length ?? 0;
+                        SizedBox(height: 16),
+                        Text(
+                          S.of(context).noRoomsAvailable,
+                          style: TextStyle(
+                            fontSize: 18,
+                            color: Colors.grey[600],
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        SizedBox(height: 8),
+                        Text(
+                          S.of(context).createRoomFirst,
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.grey[500],
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
+                    ),
+                  )
+                : RefreshIndicator(
+                    onRefresh: _loadRooms,
+                    child: ListView.builder(
+                      padding: EdgeInsets.all(16),
+                      itemCount: rooms.length,
+                      itemBuilder: (context, index) {
+                        final room = rooms[index];
+                        final isSelected = selectedRoomId == room['_id'];
+                        final membersCount =
+                            (room['members'] as List?)?.length ?? 0;
+                        // ✅ ملاحظة: الـ backend يقوم بفلترة الملفات المشتركة لمرة واحدة تلقائياً
+                        final filesCount =
+                            (room['files'] as List?)?.length ?? 0;
 
-                            // Check if file is already shared with this room
-                            final isAlreadyShared = (room['files'] as List?)
-                                    ?.any((f) {
-                                      final fileIdRef = f['fileId'];
-                                      if (fileIdRef == null) return false;
-                                      
-                                      // إذا كان fileId هو String مباشرة
-                                      if (fileIdRef is String) {
-                                        return fileIdRef == widget.fileId;
-                                      }
-                                      
-                                      // إذا كان fileId هو Map/Object
-                                      if (fileIdRef is Map<String, dynamic>) {
-                                        final fileId = fileIdRef['_id']?.toString();
-                                        return fileId == widget.fileId ||
-                                            fileIdRef['_id'] == widget.fileId;
-                                      }
-                                      
-                                      // إذا كان fileId هو ObjectId أو أي نوع آخر
-                                      return fileIdRef.toString() == widget.fileId;
-                                    }) ??
-                                false;
+                        // ✅ التحقق من أن الملف مشارك بالفعل مع هذه الغرفة
+                        final isAlreadyShared = _checkIfFileIsShared(
+                          room,
+                          widget.fileId,
+                        );
 
-                            return Card(
-                              margin: EdgeInsets.only(bottom: 12),
-                              elevation: isSelected ? 4 : 1,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(16),
-                                side: BorderSide(
-                                  color: isSelected
-                                      ? AppColors.lightAppBar
-                                      : Colors.transparent,
-                                  width: isSelected ? 2 : 0,
-                                ),
-                              ),
-                              child: InkWell(
-                                onTap: () {
-                                  setState(() {
-                                    selectedRoomId = room['_id'];
-                                  });
-                                },
-                                borderRadius: BorderRadius.circular(16),
-                                child: Padding(
-                                  padding: EdgeInsets.all(16),
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
+                        return Card(
+                          margin: EdgeInsets.only(bottom: 12),
+                          elevation: isSelected ? 4 : (isAlreadyShared ? 2 : 1),
+                          color: isAlreadyShared
+                              ? Colors.green.shade50.withOpacity(0.3)
+                              : null,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                            side: BorderSide(
+                              color: isSelected
+                                  ? AppColors.lightAppBar
+                                  : isAlreadyShared
+                                  ? Colors.green.shade300
+                                  : Colors.transparent,
+                              width: isSelected ? 2 : (isAlreadyShared ? 1 : 0),
+                            ),
+                          ),
+                          child: InkWell(
+                            onTap: () {
+                              setState(() {
+                                selectedRoomId = room['_id'];
+                              });
+                            },
+                            borderRadius: BorderRadius.circular(16),
+                            child: Padding(
+                              padding: EdgeInsets.all(16),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
                                     children: [
-                                      Row(
-                                        children: [
-                                          Container(
-                                            width: 50,
-                                            height: 50,
-                                            decoration: BoxDecoration(
-                                              color: Color(0xff28336f)
-                                                  .withOpacity(0.1),
-                                              borderRadius:
-                                                  BorderRadius.circular(12),
-                                            ),
-                                            child: Icon(
-                                              isAlreadyShared
-                                                  ? Icons.check_circle
-                                                  : Icons.meeting_room,
-                                              color: isAlreadyShared
-                                                  ? Colors.green
-                                                  : AppColors.lightAppBar,
-                                            ),
+                                      Container(
+                                        width: 50,
+                                        height: 50,
+                                        decoration: BoxDecoration(
+                                          color: Color(
+                                            0xff28336f,
+                                          ).withOpacity(0.1),
+                                          borderRadius: BorderRadius.circular(
+                                            12,
                                           ),
-                                          SizedBox(width: 12),
-                                          Expanded(
-                                            child: Column(
-                                              crossAxisAlignment:
-                                                  CrossAxisAlignment.start,
-                                              children: [
-                                                Text(
-                                                  room['name'] ?? 'بدون اسم',
-                                                  style: TextStyle(
-                                                    fontSize: 16,
-                                                    fontWeight: FontWeight.bold,
-                                                  ),
-                                                ),
-                                                if (room['description'] !=
-                                                        null &&
-                                                    room['description']
-                                                        .toString()
-                                                        .isNotEmpty) ...[
-                                                  SizedBox(height: 4),
-                                                  Text(
-                                                    room['description'],
-                                                    style: TextStyle(
-                                                      fontSize: 12,
-                                                      color: Colors.grey[600],
-                                                    ),
-                                                    maxLines: 1,
-                                                    overflow:
-                                                        TextOverflow.ellipsis,
-                                                  ),
-                                                ],
-                                              ],
-                                            ),
-                                          ),
-                                          if (isSelected)
-                                            Icon(Icons.check_circle,
-                                                color: AppColors.lightAppBar),
-                                          if (isAlreadyShared)
-                                            Container(
-                                              padding: EdgeInsets.symmetric(
-                                                  horizontal: 8, vertical: 4),
-                                              decoration: BoxDecoration(
-                                                color: Colors.green.shade50,
-                                                borderRadius:
-                                                    BorderRadius.circular(8),
-                                              ),
-                                              child: Text(
-                                                S.of(context).shared,
-                                                style: TextStyle(
-                                                  fontSize: 10,
-                                                  color: Colors.green.shade700,
-                                                  fontWeight: FontWeight.w600,
-                                                ),
-                                              ),
-                                            ),
-                                        ],
+                                        ),
+                                        child: Icon(
+                                          isAlreadyShared
+                                              ? Icons.check_circle
+                                              : Icons.meeting_room,
+                                          color: isAlreadyShared
+                                              ? Colors.green
+                                              : AppColors.lightAppBar,
+                                        ),
                                       ),
-                                      SizedBox(height: 12),
-                                      Row(
-                                        children: [
-                                          _buildStatChip(
-                                            Icons.people,
-                                            '$membersCount',
-                                            'أعضاء',
-                                          ),
-                                          SizedBox(width: 12),
-                                          _buildStatChip(
-                                            Icons.insert_drive_file,
-                                            '$filesCount',
-                                            S.of(context).files,
-                                          ),
-                                        ],
-                                      ),
-                                      if (isSelected && !isAlreadyShared) ...[
-                                        SizedBox(height: 12),
-                                        // ✅ خيار المشاركة لمرة واحدة
-                                        Row(
+                                      SizedBox(width: 12),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
                                           children: [
-                                            Expanded(
-                                              child: CheckboxListTile(
-                                                title: Text(
-                                                  S.of(context).oneTimeShare,
-                                                  style: TextStyle(fontSize: 14),
-                                                ),
-                                                subtitle: isOneTimeShare
-                                                    ? Text(
-                                                        S.of(context).expiresInHours('${expiresInHours ?? 24}')
-,
-                                                        style: TextStyle(fontSize: 12),
-                                                      )
-                                                    : null,
-                                                value: isOneTimeShare,
-                                                onChanged: (value) {
-                                                  setState(() {
-                                                    isOneTimeShare = value ?? false;
-                                                    if (isOneTimeShare && expiresInHours == null) {
-                                                      expiresInHours = 24;
-                                                    }
-                                                  });
-                                                  if (value == true) {
-                                                    _showOneTimeShareDialog();
-                                                  }
-                                                },
-                                                contentPadding: EdgeInsets.zero,
-                                                controlAffinity: ListTileControlAffinity.leading,
+                                            Text(
+                                              room['name'] ?? 'بدون اسم',
+                                              style: TextStyle(
+                                                fontSize: 16,
+                                                fontWeight: FontWeight.bold,
                                               ),
                                             ),
+                                            if (room['description'] != null &&
+                                                room['description']
+                                                    .toString()
+                                                    .isNotEmpty) ...[
+                                              SizedBox(height: 4),
+                                              Text(
+                                                room['description'],
+                                                style: TextStyle(
+                                                  fontSize: 12,
+                                                  color: Colors.grey[600],
+                                                ),
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
+                                              ),
+                                            ],
                                           ],
                                         ),
-                                        SizedBox(height: 8),
-                                        SizedBox(
-                                          width: double.infinity,
-                                          child: Consumer<RoomController>(
-                                            builder: (context, roomController,
-                                                child) {
-                                              return ElevatedButton.icon(
-                                                onPressed:
-                                                    roomController.isLoading
-                                                        ? null
-                                                        : () =>
-                                                            _shareFileWithRoom(
-                                                                room['_id']),
-                                                icon: roomController.isLoading
-                                                    ? SizedBox(
-                                                        width: 16,
-                                                        height: 16,
-                                                        child:
-                                                            CircularProgressIndicator(
-                                                          strokeWidth: 2,
-                                                          valueColor:
-                                                              AlwaysStoppedAnimation<
-                                                                      Color>(
-                                                                  Colors.white),
-                                                        ),
-                                                      )
-                                                    : Icon(Icons.share),
-                                                label: Text(isOneTimeShare 
-                                                    ? S.of(context).oneTimeShare
-                                                    : S.of(context).share),
-                                                style: ElevatedButton.styleFrom(
-                                                  backgroundColor:
-                                                      Color(0xff28336f),
-                                                  foregroundColor: Colors.white,
-                                                  padding:
-                                                      EdgeInsets.symmetric(
-                                                          vertical: 12),
+                                      ),
+                                      if (isAlreadyShared)
+                                        Container(
+                                          padding: EdgeInsets.symmetric(
+                                            horizontal: 10,
+                                            vertical: 6,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: Colors.green.shade100,
+                                            borderRadius: BorderRadius.circular(
+                                              12,
+                                            ),
+                                            border: Border.all(
+                                              color: Colors.green.shade300,
+                                              width: 1,
+                                            ),
+                                          ),
+                                          child: Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              Icon(
+                                                Icons.check_circle,
+                                                size: 14,
+                                                color: Colors.green.shade700,
+                                              ),
+                                              SizedBox(width: 4),
+                                              Text(
+                                                S.of(context).shared,
+                                                style: TextStyle(
+                                                  fontSize: 11,
+                                                  color: Colors.green.shade700,
+                                                  fontWeight: FontWeight.w700,
                                                 ),
-                                              );
+                                              ),
+                                            ],
+                                          ),
+                                        )
+                                      else if (isSelected)
+                                        Icon(
+                                          Icons.check_circle,
+                                          color: AppColors.lightAppBar,
+                                        ),
+                                    ],
+                                  ),
+                                  SizedBox(height: 12),
+                                  Row(
+                                    children: [
+                                      _buildStatChip(
+                                        Icons.people,
+                                        '$membersCount',
+                                        'أعضاء',
+                                      ),
+                                      SizedBox(width: 12),
+                                      _buildStatChip(
+                                        Icons.insert_drive_file,
+                                        '$filesCount',
+                                        S.of(context).files,
+                                      ),
+                                    ],
+                                  ),
+                                  // ✅ إظهار معلومات إضافية إذا كان الملف مشارك
+                                  if (isAlreadyShared) ...[
+                                    SizedBox(height: 8),
+                                    Container(
+                                      padding: EdgeInsets.all(12),
+                                      decoration: BoxDecoration(
+                                        color: Colors.green.shade50,
+                                        borderRadius: BorderRadius.circular(8),
+                                        border: Border.all(
+                                          color: Colors.green.shade200,
+                                          width: 1,
+                                        ),
+                                      ),
+                                      child: Row(
+                                        children: [
+                                          Icon(
+                                            Icons.check_circle_outline,
+                                            size: 20,
+                                            color: Colors.green.shade700,
+                                          ),
+                                          SizedBox(width: 8),
+                                          Expanded(
+                                            child: Text(
+                                              'هذا الملف مشارك بالفعل مع هذه الغرفة',
+                                              style: TextStyle(
+                                                fontSize: 13,
+                                                color: Colors.green.shade800,
+                                                fontWeight: FontWeight.w600,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                  // ✅ إظهار خيارات المشاركة إذا كان الملف غير مشارك
+                                  if (isSelected && !isAlreadyShared) ...[
+                                    SizedBox(height: 12),
+                                    // ✅ خيار المشاركة لمرة واحدة
+                                    Row(
+                                      children: [
+                                        Expanded(
+                                          child: CheckboxListTile(
+                                            title: Text(
+                                              S.of(context).oneTimeShare,
+                                              style: TextStyle(fontSize: 14),
+                                            ),
+                                            subtitle: isOneTimeShare
+                                                ? Text(
+                                                    S
+                                                        .of(context)
+                                                        .expiresInHours(
+                                                          '${expiresInHours ?? 24}',
+                                                        ),
+                                                    style: TextStyle(
+                                                      fontSize: 12,
+                                                    ),
+                                                  )
+                                                : null,
+                                            value: isOneTimeShare,
+                                            onChanged: (value) {
+                                              setState(() {
+                                                isOneTimeShare = value ?? false;
+                                                if (isOneTimeShare &&
+                                                    expiresInHours == null) {
+                                                  expiresInHours = 24;
+                                                }
+                                              });
+                                              if (value == true) {
+                                                _showOneTimeShareDialog();
+                                              }
                                             },
+                                            contentPadding: EdgeInsets.zero,
+                                            controlAffinity:
+                                                ListTileControlAffinity.leading,
                                           ),
                                         ),
                                       ],
-                                    ],
-                                  ),
-                                ),
+                                    ),
+                                    SizedBox(height: 8),
+                                    SizedBox(
+                                      width: double.infinity,
+                                      child: Consumer<RoomController>(
+                                        builder: (context, roomController, child) {
+                                          return ElevatedButton.icon(
+                                            onPressed: roomController.isLoading
+                                                ? null
+                                                : () => _shareFileWithRoom(
+                                                    room['_id'],
+                                                  ),
+                                            icon: roomController.isLoading
+                                                ? SizedBox(
+                                                    width: 16,
+                                                    height: 16,
+                                                    child: CircularProgressIndicator(
+                                                      strokeWidth: 2,
+                                                      valueColor:
+                                                          AlwaysStoppedAnimation<
+                                                            Color
+                                                          >(Colors.white),
+                                                    ),
+                                                  )
+                                                : Icon(Icons.share),
+                                            label: Text(
+                                              isOneTimeShare
+                                                  ? S.of(context).oneTimeShare
+                                                  : S.of(context).share,
+                                            ),
+                                            style: ElevatedButton.styleFrom(
+                                              backgroundColor: Color(
+                                                0xff28336f,
+                                              ),
+                                              foregroundColor: Colors.white,
+                                              padding: EdgeInsets.symmetric(
+                                                vertical: 12,
+                                              ),
+                                            ),
+                                          );
+                                        },
+                                      ),
+                                    ),
+                                  ],
+                                ],
                               ),
-                            );
-                          },
-                        ),
-                      ),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
           ),
         ],
       ),
     );
+  }
+
+  /// ✅ التحقق من أن الملف مشارك مع الغرفة
+  bool _checkIfFileIsShared(Map<String, dynamic> room, String fileId) {
+    print('🔍 [checkIfFileIsShared] Checking fileId: $fileId');
+    print('🔍 [checkIfFileIsShared] Room: ${room['name']}');
+
+    final files = room['files'] as List?;
+    print('🔍 [checkIfFileIsShared] Files count: ${files?.length ?? 0}');
+
+    if (files == null || files.isEmpty) {
+      print('❌ [checkIfFileIsShared] No files in room');
+      return false;
+    }
+
+    // ✅ طباعة جميع الملفات للتحقق
+    for (int i = 0; i < files.length; i++) {
+      final f = files[i];
+      print('📄 [checkIfFileIsShared] File $i: $f');
+    }
+
+    final isShared = files.any((f) {
+      if (f == null) {
+        return false;
+      }
+
+      final fileIdRef = f['fileId'];
+      if (fileIdRef == null) {
+        return false;
+      }
+
+      String? actualFileId;
+
+      // ✅ إذا كان fileId هو String مباشرة
+      if (fileIdRef is String) {
+        actualFileId = fileIdRef;
+      }
+      // ✅ إذا كان fileId هو Map/Object
+      else if (fileIdRef is Map<String, dynamic>) {
+        // ✅ محاولة قراءة _id بطرق مختلفة
+        actualFileId =
+            fileIdRef['_id']?.toString() ?? fileIdRef['id']?.toString();
+
+        // ✅ إذا كان _id نفسه Map (nested)
+        if (actualFileId == null && fileIdRef['_id'] is Map) {
+          final nestedId = fileIdRef['_id'] as Map;
+          actualFileId =
+              nestedId['_id']?.toString() ?? nestedId['id']?.toString();
+        }
+      }
+      // ✅ إذا كان fileId هو ObjectId أو أي نوع آخر
+      else {
+        actualFileId = fileIdRef.toString();
+      }
+
+      if (actualFileId == null) {
+        return false;
+      }
+
+      final matches = actualFileId == fileId;
+      if (matches) {
+        print('✅ [checkIfFileIsShared] Found match: $actualFileId == $fileId');
+      }
+      return matches;
+    });
+
+    print('${isShared ? "✅" : "❌"} [checkIfFileIsShared] Result: $isShared');
+    return isShared;
   }
 
   Widget _buildStatChip(IconData icon, String value, String label) {
@@ -476,15 +667,8 @@ class _ShareFileWithRoomPageState extends State<ShareFileWithRoomPage> {
           ),
         ),
         SizedBox(width: 4),
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 12,
-            color: Colors.grey[600],
-          ),
-        ),
+        Text(label, style: TextStyle(fontSize: 12, color: Colors.grey[600])),
       ],
     );
   }
 }
-
