@@ -6,6 +6,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:filevo/controllers/profile/profile_controller.dart';
 import 'package:filevo/config/api_config.dart';
 import 'package:provider/provider.dart';
+import 'package:filevo/generated/l10n.dart';
 
 class ProfilePic extends StatefulWidget {
   const ProfilePic({Key? key}) : super(key: key);
@@ -35,8 +36,8 @@ class _ProfilePicState extends State<ProfilePic> {
             if (!storageStatus.isGranted && !status.isGranted) {
               if (mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('يجب السماح بالوصول إلى الصور'),
+                  SnackBar(
+                    content: Text(S.of(context).mustAllowPhotosAccess),
                     backgroundColor: Colors.orange,
                   ),
                 );
@@ -110,15 +111,15 @@ class _ProfilePicState extends State<ProfilePic> {
           });
 
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('✅ تم رفع الصورة بنجاح'),
+            SnackBar(
+              content: Text(S.of(context).profileImageUploadedSuccessfully),
               backgroundColor: Colors.green,
             ),
           );
         }
       } else {
         if (mounted) {
-          final errorMsg = profileController.errorMessage ?? 'فشل رفع الصورة';
+          final errorMsg = profileController.errorMessage ?? S.of(context).failedToUploadProfileImage;
           print('❌ Upload failed: $errorMsg');
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -135,7 +136,7 @@ class _ProfilePicState extends State<ProfilePic> {
         print('❌ Stack trace: $stackTrace');
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('خطأ في رفع الصورة: ${e.toString()}'),
+            content: Text(S.of(context).errorUploadingProfileImage(e.toString())),
             backgroundColor: Colors.red,
             duration: const Duration(seconds: 5),
           ),
@@ -151,8 +152,8 @@ class _ProfilePicState extends State<ProfilePic> {
       if (!cameraStatus.isGranted) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('يجب السماح بالوصول إلى الكاميرا'),
+            SnackBar(
+              content: Text(S.of(context).mustAllowCameraAccess),
               backgroundColor: Colors.orange,
             ),
           );
@@ -221,8 +222,8 @@ class _ProfilePicState extends State<ProfilePic> {
           });
 
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('تم رفع الصورة بنجاح'),
+            SnackBar(
+              content: Text(S.of(context).profileImageUploadedSuccessfully),
               backgroundColor: Colors.green,
             ),
           );
@@ -233,7 +234,7 @@ class _ProfilePicState extends State<ProfilePic> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
-                'فشل رفع الصورة: ${profileController.errorMessage ?? 'خطأ غير معروف'}',
+                '${S.of(context).failedToUploadProfileImage}: ${profileController.errorMessage ?? S.of(context).unknownError}',
               ),
               backgroundColor: Colors.red,
             ),
@@ -245,7 +246,7 @@ class _ProfilePicState extends State<ProfilePic> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('خطأ: ${e.toString()}'),
+            content: Text('${S.of(context).error}: ${e.toString()}'),
             backgroundColor: Colors.red,
           ),
         );
@@ -262,7 +263,7 @@ class _ProfilePicState extends State<ProfilePic> {
             children: [
               ListTile(
                 leading: const Icon(Icons.photo_library),
-                title: const Text('اختيار من المعرض'),
+                title: Text(S.of(context).chooseFromGallery),
                 onTap: () {
                   Navigator.pop(context);
                   _pickImageFromGallery();
@@ -270,7 +271,7 @@ class _ProfilePicState extends State<ProfilePic> {
               ),
               ListTile(
                 leading: const Icon(Icons.camera_alt),
-                title: const Text('التقاط صورة من الكاميرا'),
+                title: Text(S.of(context).takePhotoFromCamera),
                 onTap: () {
                   Navigator.pop(context);
                   _pickImageFromCamera();
@@ -278,7 +279,7 @@ class _ProfilePicState extends State<ProfilePic> {
               ),
               ListTile(
                 leading: const Icon(Icons.cancel),
-                title: const Text('إلغاء'),
+                title: Text(S.of(context).cancel),
                 onTap: () => Navigator.pop(context),
               ),
             ],

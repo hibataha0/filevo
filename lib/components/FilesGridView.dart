@@ -10,7 +10,8 @@ import 'package:filevo/generated/l10n.dart';
 // ✅ Helper functions للتعامل مع إجراءات المجلد
 void _showFolderInfo(BuildContext context, Map<String, dynamic> folder) async {
   final folderId = folder['folderId'] as String?;
-  final folderName = folder['title']?.toString() ?? folder['name']?.toString() ?? 'مجلد';
+  final folderName =
+      folder['title']?.toString() ?? folder['name']?.toString() ?? 'مجلد';
   final folderColor = folder['color'] as Color? ?? Colors.blue;
 
   if (folderId == null) {
@@ -345,7 +346,8 @@ void _showCategoryDetails(BuildContext context, Map<String, dynamic> category) {
 }
 
 void _showRenameDialog(BuildContext context, Map<String, dynamic> folder) {
-  final folderName = folder['title']?.toString() ?? folder['name']?.toString() ?? 'مجلد';
+  final folderName =
+      folder['title']?.toString() ?? folder['name']?.toString() ?? 'مجلد';
   final folderId = folder['folderId'] as String?;
   final folderData = folder['folderData'] as Map<String, dynamic>?;
 
@@ -492,7 +494,8 @@ void _performUpdate(
 
 void _showShareDialog(BuildContext context, Map<String, dynamic> folder) async {
   final folderId = folder['folderId'] as String?;
-  final folderName = folder['title']?.toString() ?? folder['name']?.toString() ?? 'مجلد';
+  final folderName =
+      folder['title']?.toString() ?? folder['name']?.toString() ?? 'مجلد';
 
   if (folderId == null) {
     ScaffoldMessenger.of(
@@ -907,7 +910,10 @@ class FilesGridView extends StatelessWidget {
                   }
                 },
                 child: FolderFileCard(
-                  title: item['title']?.toString() ?? item['name']?.toString() ?? '',
+                  title:
+                      item['title']?.toString() ??
+                      item['name']?.toString() ??
+                      '',
                   fileCount: (item['fileCount'] is int)
                       ? item['fileCount'] as int
                       : (item['fileCount'] is num)

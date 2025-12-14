@@ -63,19 +63,26 @@ class _CategoryPageState extends State<CategoryPage> {
   // دالة تحديد نوع الملف
   String _getFileType(String fileName) {
     final name = fileName.toLowerCase();
-    
-    if (name.endsWith('.jpg') || name.endsWith('.jpeg') || 
-        name.endsWith('.png') || name.endsWith('.gif') || 
-        name.endsWith('.bmp') || name.endsWith('.webp')) {
+
+    if (name.endsWith('.jpg') ||
+        name.endsWith('.jpeg') ||
+        name.endsWith('.png') ||
+        name.endsWith('.gif') ||
+        name.endsWith('.bmp') ||
+        name.endsWith('.webp')) {
       return 'image';
-    } else if (name.endsWith('.mp4') || name.endsWith('.mov') || 
-               name.endsWith('.avi') || name.endsWith('.mkv') || 
-               name.endsWith('.wmv')) {
+    } else if (name.endsWith('.mp4') ||
+        name.endsWith('.mov') ||
+        name.endsWith('.avi') ||
+        name.endsWith('.mkv') ||
+        name.endsWith('.wmv')) {
       return 'video';
     } else if (name.endsWith('.pdf')) {
       return 'pdf';
-    } else if (name.endsWith('.mp3') || name.endsWith('.wav') || 
-               name.endsWith('.aac') || name.endsWith('.ogg')) {
+    } else if (name.endsWith('.mp3') ||
+        name.endsWith('.wav') ||
+        name.endsWith('.aac') ||
+        name.endsWith('.ogg')) {
       return 'audio';
     } else {
       return 'file';
@@ -85,10 +92,10 @@ class _CategoryPageState extends State<CategoryPage> {
   // دالة معالجة وتقصير اسم الملف
   String _formatFileName(String fileName) {
     if (fileName.isEmpty) return 'ملف بدون اسم';
-    
+
     // إصلاح الرموز العربية إذا كانت موجودة
     String fixedName = _fixArabicText(fileName);
-    
+
     // تقصير الاسم إذا كان طويلاً
     return _truncateFileName(fixedName, 20);
   }
@@ -133,13 +140,13 @@ class _CategoryPageState extends State<CategoryPage> {
   // دالة تقصير اسم الملف
   String _truncateFileName(String fileName, int maxLength) {
     if (fileName.length <= maxLength) return fileName;
-    
+
     // البحث عن آخر مسافة قبل الحد الأقصى لتجنب قطع الكلمات
     int lastSpace = fileName.lastIndexOf(' ', maxLength);
     if (lastSpace > maxLength ~/ 2) {
       return '${fileName.substring(0, lastSpace)}...';
     }
-    
+
     return '${fileName.substring(0, maxLength)}...';
   }
 
@@ -151,8 +158,10 @@ class _CategoryPageState extends State<CategoryPage> {
       });
 
       if (_token != null && _token!.isNotEmpty) {
-        final fileController =
-            Provider.of<FileController>(context, listen: false);
+        final fileController = Provider.of<FileController>(
+          context,
+          listen: false,
+        );
         await fileController.getFilesByCategory(
           category: widget.category,
           token: _token!,
@@ -174,7 +183,9 @@ class _CategoryPageState extends State<CategoryPage> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('${S.of(context).errorFetchingData}: ${e.toString()}'),
+            content: Text(
+              '${S.of(context).errorFetchingData}: ${e.toString()}',
+            ),
             behavior: SnackBarBehavior.floating,
             backgroundColor: Colors.red,
           ),
@@ -196,7 +207,9 @@ class _CategoryPageState extends State<CategoryPage> {
     }
 
     final base = ApiConfig.baseUrl.replaceAll('/api/v1', '');
-    String baseClean = base.endsWith('/') ? base.substring(0, base.length - 1) : base;
+    String baseClean = base.endsWith('/')
+        ? base.substring(0, base.length - 1)
+        : base;
     String finalUrl = '$baseClean/$cleanPath';
 
     print('Generated URL: $finalUrl');
@@ -237,12 +250,17 @@ class _CategoryPageState extends State<CategoryPage> {
     final maxHeight = 120.0;
     final minHeight = 80.0;
     final scrollRange = 100.0;
-    
+
     double height = maxHeight;
     double opacity = 1.0;
-    
+
     if (_scrollOffset > 0) {
-      height = maxHeight - (_scrollOffset / scrollRange * (maxHeight - minHeight)).clamp(0.0, maxHeight - minHeight);
+      height =
+          maxHeight -
+          (_scrollOffset / scrollRange * (maxHeight - minHeight)).clamp(
+            0.0,
+            maxHeight - minHeight,
+          );
       opacity = 1.0 - (_scrollOffset / scrollRange).clamp(0.0, 1.0);
     }
 
@@ -253,10 +271,7 @@ class _CategoryPageState extends State<CategoryPage> {
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            widget.color,
-            widget.color.withOpacity(0.8),
-          ],
+          colors: [widget.color, widget.color.withOpacity(0.8)],
         ),
         borderRadius: const BorderRadius.only(
           bottomLeft: Radius.circular(20),
@@ -278,11 +293,7 @@ class _CategoryPageState extends State<CategoryPage> {
             top: -50,
             child: Opacity(
               opacity: 0.1,
-              child: Icon(
-                widget.icon,
-                size: 150,
-                color: Colors.white,
-              ),
+              child: Icon(widget.icon, size: 150, color: Colors.white),
             ),
           ),
           Center(
@@ -291,11 +302,7 @@ class _CategoryPageState extends State<CategoryPage> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(
-                    widget.icon,
-                    size: height * 0.4,
-                    color: Colors.white,
-                  ),
+                  Icon(widget.icon, size: height * 0.4, color: Colors.white),
                 ],
               ),
             ),
@@ -423,10 +430,7 @@ class _CategoryPageState extends State<CategoryPage> {
               padding: const EdgeInsets.symmetric(horizontal: 40),
               child: Text(
                 error,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 16,
-                ),
+                style: const TextStyle(color: Colors.white, fontSize: 16),
                 textAlign: TextAlign.center,
               ),
             ),
@@ -439,7 +443,10 @@ class _CategoryPageState extends State<CategoryPage> {
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
-                padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 30,
+                  vertical: 12,
+                ),
               ),
               child: Text(S.of(context).retry),
             ),
@@ -469,10 +476,7 @@ class _CategoryPageState extends State<CategoryPage> {
         const SizedBox(height: 20),
         Text(
           S.of(context).noFilesInCategory,
-          style: TextStyle(
-            color: Colors.white.withOpacity(0.7),
-            fontSize: 18,
-          ),
+          style: TextStyle(color: Colors.white.withOpacity(0.7), fontSize: 18),
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: 20),
@@ -576,153 +580,208 @@ class _CategoryPageState extends State<CategoryPage> {
                 ),
               )
             : fileController.errorMessage != null
-                ? _buildErrorState(fileController.errorMessage!)
-                : fileController.uploadedFiles.isEmpty
-                    ? _buildEmptyState()
-                    : Container(
-                        decoration: const BoxDecoration(
-                          color: Colors.transparent,
-                        ),
-                        child: Column(
-                          children: [
-                            _buildFileCountCard(fileController.uploadedFiles.length),
-                            Expanded(
-                              child: Consumer<FileController>(
-                                builder: (context, fileController, child) {
-                                  // ✅ استخدام Consumer للاستماع للتغييرات في FileController
-                                  return _isGridView
-                                      ? FilesGrid(
-                                          files: fileController.uploadedFiles
-                                          .where((f) => f['path'] != null && (f['path'] as String).isNotEmpty)
-                                          .map((f) {
-                                            final fileName = f['name']?.toString() ?? 'ملف بدون اسم';
-                                            final filePath = f['path']?.toString() ?? '';
-                                            final formattedName = _formatFileName(fileName);
-                                            
-                                            // ✅ حساب updatedAtTimestamp أولاً
-                                            final updatedAtTimestamp = f['updatedAtTimestamp'] ?? 
-                                                (f['updatedAt'] != null 
-                                                    ? (f['updatedAt'] is String 
-                                                        ? DateTime.parse(f['updatedAt']).millisecondsSinceEpoch 
-                                                        : (f['updatedAt'] as DateTime).millisecondsSinceEpoch)
-                                                    : DateTime.now().millisecondsSinceEpoch);
-                                            
-                                            // ✅ إضافة cache busting للصور باستخدام updatedAtTimestamp
-                                            String imageUrl = getFileUrl(filePath);
-                                            if (_getFileType(fileName) == 'image') {
-                                              // ✅ استخدام updatedAtTimestamp من البيانات لضمان cache busting صحيح
-                                              final urlWithoutParams = imageUrl.split('?').first;
-                                              imageUrl = '$urlWithoutParams?v=$updatedAtTimestamp';
-                                            }
-                                            
-                                            return {
-                                              'name': formattedName,
-                                              'url': imageUrl, // ✅ URL مع cache busting
-                                              'type': _getFileType(fileName),
-                                              'size': _formatFileSize(f['size']?.toString() ?? '0'),
-                                              'createdAt': f['createdAt'],
-                                              'updatedAt': f['updatedAt'],
-                                              'updatedAtTimestamp': updatedAtTimestamp, // ✅ إضافة updatedAtTimestamp للاستخدام في ValueKey
-                                              'path': filePath,
-                                              'originalData': f,
-                                              'originalName': fileName,
-                                            };
-                                          })
-                                          .toList(),
-                                      onFileTap: (file) {
-                                        print('Tapped file: ${file['name']}');
-                                        final originalData = file['originalData'] ?? file;
-                                        print('Original data: $originalData');
-                                        _handleFileTap(originalData, context);
-                                      },
-                                      onFileRemoved: () async {
-                                        // ✅ إعادة تحميل الملفات بعد نقل الملف
-                                        if (mounted && _token != null && _token!.isNotEmpty) {
-                                          final fileController = Provider.of<FileController>(context, listen: false);
-                                          // ✅ إعادة جلب الملفات من API (من الجذر فقط)
-                                          await fileController.getFilesByCategory(
-                                            category: widget.category,
-                                            token: _token!,
-                                            parentFolderId: null, // ✅ فقط الملفات من الجذر
-                                          );
-                                          if (mounted) {
-                                            setState(() {}); // ✅ تحديث الواجهة
-                                          }
+            ? _buildErrorState(fileController.errorMessage!)
+            : fileController.uploadedFiles.isEmpty
+            ? _buildEmptyState()
+            : Container(
+                decoration: const BoxDecoration(color: Colors.transparent),
+                child: Column(
+                  children: [
+                    _buildFileCountCard(fileController.uploadedFiles.length),
+                    Expanded(
+                      child: Consumer<FileController>(
+                        builder: (context, fileController, child) {
+                          // ✅ استخدام Consumer للاستماع للتغييرات في FileController
+                          return _isGridView
+                              ? FilesGrid(
+                                  files: fileController.uploadedFiles
+                                      .where(
+                                        (f) =>
+                                            f['path'] != null &&
+                                            (f['path'] as String).isNotEmpty,
+                                      )
+                                      .map((f) {
+                                        final fileName =
+                                            f['name']?.toString() ??
+                                            'ملف بدون اسم';
+                                        final filePath =
+                                            f['path']?.toString() ?? '';
+                                        final formattedName = _formatFileName(
+                                          fileName,
+                                        );
+
+                                        // ✅ حساب updatedAtTimestamp أولاً
+                                        final updatedAtTimestamp =
+                                            f['updatedAtTimestamp'] ??
+                                            (f['updatedAt'] != null
+                                                ? (f['updatedAt'] is String
+                                                      ? DateTime.parse(
+                                                          f['updatedAt'],
+                                                        ).millisecondsSinceEpoch
+                                                      : (f['updatedAt']
+                                                                as DateTime)
+                                                            .millisecondsSinceEpoch)
+                                                : DateTime.now()
+                                                      .millisecondsSinceEpoch);
+
+                                        // ✅ إضافة cache busting للصور باستخدام updatedAtTimestamp
+                                        String imageUrl = getFileUrl(filePath);
+                                        if (_getFileType(fileName) == 'image') {
+                                          // ✅ استخدام updatedAtTimestamp من البيانات لضمان cache busting صحيح
+                                          final urlWithoutParams = imageUrl
+                                              .split('?')
+                                              .first;
+                                          imageUrl =
+                                              '$urlWithoutParams?v=$updatedAtTimestamp';
                                         }
-                                      },
-                                      onFileUpdated: () {
-                                        // ✅ إعادة تحميل الملفات بعد تحديث الملف
-                                        // ✅ استخدام Future.microtask لتأجيل الاستدعاء وتجنب التعليق
-                                        Future.microtask(() async {
-                                          // ✅ مسح cache الصور قبل إعادة التحميل
-                                          PaintingBinding.instance.imageCache.clear();
-                                          PaintingBinding.instance.imageCache.clearLiveImages();
-                                          print('✅ [CategoryFiles] Image cache cleared, reloading files...');
-                                          if (mounted && _token != null && _token!.isNotEmpty) {
-                                            try {
-                                              final fileController = Provider.of<FileController>(context, listen: false);
-                                              await fileController.getFilesByCategory(
+
+                                        return {
+                                          'name': formattedName,
+                                          'url':
+                                              imageUrl, // ✅ URL مع cache busting
+                                          'type': _getFileType(fileName),
+                                          'size': _formatFileSize(
+                                            f['size']?.toString() ?? '0',
+                                          ),
+                                          'createdAt': f['createdAt'],
+                                          'updatedAt': f['updatedAt'],
+                                          'updatedAtTimestamp':
+                                              updatedAtTimestamp, // ✅ إضافة updatedAtTimestamp للاستخدام في ValueKey
+                                          'path': filePath,
+                                          'originalData': f,
+                                          'originalName': fileName,
+                                        };
+                                      })
+                                      .toList(),
+                                  onFileTap: (file) {
+                                    print('Tapped file: ${file['name']}');
+                                    final originalData =
+                                        file['originalData'] ?? file;
+                                    print('Original data: $originalData');
+                                    _handleFileTap(originalData, context);
+                                  },
+                                  onFileRemoved: () async {
+                                    // ✅ إعادة تحميل الملفات بعد نقل الملف
+                                    if (mounted &&
+                                        _token != null &&
+                                        _token!.isNotEmpty) {
+                                      final fileController =
+                                          Provider.of<FileController>(
+                                            context,
+                                            listen: false,
+                                          );
+                                      // ✅ إعادة جلب الملفات من API (من الجذر فقط)
+                                      await fileController.getFilesByCategory(
+                                        category: widget.category,
+                                        token: _token!,
+                                        parentFolderId:
+                                            null, // ✅ فقط الملفات من الجذر
+                                      );
+                                      if (mounted) {
+                                        setState(() {}); // ✅ تحديث الواجهة
+                                      }
+                                    }
+                                  },
+                                  onFileUpdated: () {
+                                    // ✅ إعادة تحميل الملفات بعد تحديث الملف
+                                    // ✅ استخدام Future.microtask لتأجيل الاستدعاء وتجنب التعليق
+                                    Future.microtask(() async {
+                                      // ✅ مسح cache الصور قبل إعادة التحميل
+                                      PaintingBinding.instance.imageCache
+                                          .clear();
+                                      PaintingBinding.instance.imageCache
+                                          .clearLiveImages();
+                                      print(
+                                        '✅ [CategoryFiles] Image cache cleared, reloading files...',
+                                      );
+                                      if (mounted &&
+                                          _token != null &&
+                                          _token!.isNotEmpty) {
+                                        try {
+                                          final fileController =
+                                              Provider.of<FileController>(
+                                                context,
+                                                listen: false,
+                                              );
+                                          await fileController
+                                              .getFilesByCategory(
                                                 category: widget.category,
                                                 token: _token!,
                                                 parentFolderId: null,
                                               );
-                                              if (mounted) {
-                                                setState(() {}); // ✅ تحديث الواجهة
-                                              }
-                                            } catch (e) {
-                                              print('❌ [CategoryFiles] Error reloading files: $e');
-                                            }
-                                          }
-                                        });
-                                      },
-                                    )
-                                  : FilesListView(
-                                      items: fileController.uploadedFiles
-                                          .map((f) {
-                                            final fileName = f['name']?.toString() ?? 'ملف بدون اسم';
-                                            final formattedName = _formatFileName(fileName);
-                                            
-                                            return {
-                                              'title': formattedName,
-                                              'size': _formatFileSize(f['size']?.toString() ?? '0'),
-                                              'path': f['path'],
-                                              'createdAt': f['createdAt'],
-                                              'originalName': fileName,
-                                              '_id': f['_id']?.toString(),
-                                              'originalData': f,
-                                            };
-                                          })
-                                          .toList(),
-                                      onItemTap: (item) => _handleFileTap(item, context),
-                                      onFileRemoved: () async {
-                                        // ✅ إعادة تحميل الملفات بعد نقل الملف
-                                        if (mounted && _token != null && _token!.isNotEmpty) {
-                                          final fileController = Provider.of<FileController>(context, listen: false);
-                                          // ✅ إعادة جلب الملفات من API
-                                          await fileController.getFilesByCategory(
-                                            category: widget.category,
-                                            token: _token!,
-                                            parentFolderId: null, // ✅ فقط الملفات من الجذر
-                                          );
                                           if (mounted) {
                                             setState(() {}); // ✅ تحديث الواجهة
                                           }
+                                        } catch (e) {
+                                          print(
+                                            '❌ [CategoryFiles] Error reloading files: $e',
+                                          );
                                         }
-                                      },
+                                      }
+                                    });
+                                  },
+                                )
+                              : FilesListView(
+                                  items: fileController.uploadedFiles.map((f) {
+                                    final fileName =
+                                        f['name']?.toString() ?? 'ملف بدون اسم';
+                                    final formattedName = _formatFileName(
+                                      fileName,
                                     );
-                                },
-                              ),
-                            ),
-                          ],
-                        ),
+
+                                    return {
+                                      'title': formattedName,
+                                      'size': _formatFileSize(
+                                        f['size']?.toString() ?? '0',
+                                      ),
+                                      'path': f['path'],
+                                      'createdAt': f['createdAt'],
+                                      'originalName': fileName,
+                                      '_id': f['_id']?.toString(),
+                                      'originalData': f,
+                                    };
+                                  }).toList(),
+                                  onItemTap: (item) =>
+                                      _handleFileTap(item, context),
+                                  onFileRemoved: () async {
+                                    // ✅ إعادة تحميل الملفات بعد نقل الملف
+                                    if (mounted &&
+                                        _token != null &&
+                                        _token!.isNotEmpty) {
+                                      final fileController =
+                                          Provider.of<FileController>(
+                                            context,
+                                            listen: false,
+                                          );
+                                      // ✅ إعادة جلب الملفات من API
+                                      await fileController.getFilesByCategory(
+                                        category: widget.category,
+                                        token: _token!,
+                                        parentFolderId:
+                                            null, // ✅ فقط الملفات من الجذر
+                                      );
+                                      if (mounted) {
+                                        setState(() {}); // ✅ تحديث الواجهة
+                                      }
+                                    }
+                                  },
+                                );
+                        },
                       ),
+                    ),
+                  ],
+                ),
+              ),
       ),
     );
   }
 
-  Future<void> _handleFileTap(Map<String, dynamic> file, BuildContext context) async {
+  Future<void> _handleFileTap(
+    Map<String, dynamic> file,
+    BuildContext context,
+  ) async {
     print('Handling tap for file: $file');
-    
+
     final filePath = file['path'] as String?;
     if (filePath == null || filePath.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -734,14 +793,16 @@ class _CategoryPageState extends State<CategoryPage> {
       );
       return;
     }
-       print(file['originalData']);
+    print(file['originalData']);
     // ✅ استخدام الاسم الأصلي إذا كان متوفراً
     final originalName = file['name'] as String?;
     print('Original name: $originalName');
-    final name = (originalName ?? file['title']?.toString() ?? '').toLowerCase();
+    final name = (originalName ?? file['title']?.toString() ?? '')
+        .toLowerCase();
     print('Name (lowercase): $name');
-    final fileName = originalName ?? file['title']?.toString() ?? 'ملف بدون اسم';
-    
+    final fileName =
+        originalName ?? file['title']?.toString() ?? 'ملف بدون اسم';
+
     // ✅ الحصول على extension من عدة مصادر
     String? getFileExtension() {
       // 1. من originalData إذا كان متوفراً
@@ -749,11 +810,14 @@ class _CategoryPageState extends State<CategoryPage> {
         final originalData = file['originalData'] as Map<String, dynamic>;
         final origName = originalData['name']?.toString();
         if (origName != null && origName.contains('.')) {
-          return origName.substring(origName.lastIndexOf('.') + 1).toLowerCase();
+          return origName
+              .substring(origName.lastIndexOf('.') + 1)
+              .toLowerCase();
         }
         // 2. من contentType أو mimeType
-        final contentType = originalData['contentType']?.toString() ?? 
-                           originalData['mimeType']?.toString();
+        final contentType =
+            originalData['contentType']?.toString() ??
+            originalData['mimeType']?.toString();
         if (contentType != null) {
           if (contentType.contains('image')) {
             if (contentType.contains('jpeg')) return 'jpg';
@@ -785,7 +849,7 @@ class _CategoryPageState extends State<CategoryPage> {
       }
       return null;
     }
-    
+
     final extension = getFileExtension();
     print('File extension: $extension');
 
@@ -806,32 +870,61 @@ class _CategoryPageState extends State<CategoryPage> {
 
     try {
       final client = http.Client();
-      final response = await client.get(Uri.parse(url), headers: {'Range': 'bytes=0-511'});
+      final response = await client.get(
+        Uri.parse(url),
+        headers: {'Range': 'bytes=0-511'},
+      );
       if (mounted) Navigator.pop(context);
 
       if (response.statusCode == 200 || response.statusCode == 206) {
         final bytes = response.bodyBytes;
         final isPdf = _isValidPdf(bytes);
-        final contentType = response.headers['content-type']?.toLowerCase() ?? '';
+        final contentType =
+            response.headers['content-type']?.toLowerCase() ?? '';
 
         // ✅ التحقق من نوع الملف من extension أو contentType
         bool isImageFile() {
           if (extension != null) {
-            return ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp'].contains(extension);
+            return [
+              'jpg',
+              'jpeg',
+              'png',
+              'gif',
+              'bmp',
+              'webp',
+            ].contains(extension);
           }
           return contentType.startsWith('image/');
         }
-        
+
         bool isVideoFile() {
           if (extension != null) {
-            return ['mp4', 'mov', 'mkv', 'avi', 'wmv', 'webm', 'm4v', '3gp', 'flv'].contains(extension);
+            return [
+              'mp4',
+              'mov',
+              'mkv',
+              'avi',
+              'wmv',
+              'webm',
+              'm4v',
+              '3gp',
+              'flv',
+            ].contains(extension);
           }
           return contentType.startsWith('video/');
         }
-        
+
         bool isAudioFile() {
           if (extension != null) {
-            return ['mp3', 'wav', 'aac', 'ogg', 'm4a', 'wma', 'flac'].contains(extension);
+            return [
+              'mp3',
+              'wav',
+              'aac',
+              'ogg',
+              'm4a',
+              'wma',
+              'flac',
+            ].contains(extension);
           }
           return contentType.startsWith('audio/');
         }
@@ -841,59 +934,74 @@ class _CategoryPageState extends State<CategoryPage> {
           print('Opening PDF: $fileName from $url');
           Navigator.push(
             context,
-            MaterialPageRoute(builder: (_) => PdfViewerPage(pdfUrl: url, fileName: fileName)),
+            MaterialPageRoute(
+              builder: (_) => PdfViewerPage(pdfUrl: url, fileName: fileName),
+            ),
           );
         }
         // فيديو
         else if (isVideoFile()) {
           print('Opening Video: $fileName from $url');
-          Navigator.push(context, MaterialPageRoute(builder: (_) => VideoViewer(url: url)));
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => VideoViewer(url: url)),
+          );
         }
         // صورة
         else if (isImageFile()) {
           print('Opening Image: $fileName from $url');
-          final fileId = file['_id']?.toString() ?? 
-                         (file['originalData'] is Map ? file['originalData']['_id']?.toString() : null);
+          final fileId =
+              file['_id']?.toString() ??
+              (file['originalData'] is Map
+                  ? file['originalData']['_id']?.toString()
+                  : null);
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (_) => ImageViewer(
-                imageUrl: url,
-                fileId: fileId,
-              ),
+              builder: (_) => ImageViewer(imageUrl: url, fileId: fileId),
             ),
           );
         }
         // نص
-        else if (TextViewerPage.isTextFile(fileName) || contentType.startsWith('text/')) {
+        else if (TextViewerPage.isTextFile(fileName) ||
+            contentType.startsWith('text/')) {
           _showLoadingDialog(context);
           try {
             // ✅ إضافة timestamp للـ URL لتجنب الـ cache
-            final cacheBustingUrl = url.contains('?') 
+            final cacheBustingUrl = url.contains('?')
                 ? '$url&_t=${DateTime.now().millisecondsSinceEpoch}'
                 : '$url?_t=${DateTime.now().millisecondsSinceEpoch}';
-            
+
             final fullResponse = await http.get(Uri.parse(cacheBustingUrl));
             if (mounted) Navigator.pop(context);
             if (fullResponse.statusCode == 200) {
               final tempDir = await getTemporaryDirectory();
-              
+
               // ✅ استخراج fileId من بيانات الملف
-              final fileId = file['_id']?.toString() ?? 
-                             (file['originalData'] is Map ? file['originalData']['_id']?.toString() : null);
-              
+              final fileId =
+                  file['_id']?.toString() ??
+                  (file['originalData'] is Map
+                      ? file['originalData']['_id']?.toString()
+                      : null);
+
               // ✅ استخدام اسم الملف الأصلي فقط (بدون timestamp) للعرض
               // ✅ لكن نستخدم fileId في اسم الملف المؤقت لتجنب التعارض
-              final tempFileName = fileId != null 
+              final tempFileName = fileId != null
                   ? '${fileId}_$fileName'
                   : fileName;
               final tempFile = File('${tempDir.path}/$tempFileName');
-              
+
               // ✅ حذف الملف المؤقت القديم إذا كان موجوداً (نفس fileId)
               if (fileId != null) {
                 try {
-                  final oldFiles = tempDir.listSync()
-                      .where((f) => f is File && f.path.contains('${fileId}_') && f.path != tempFile.path)
+                  final oldFiles = tempDir
+                      .listSync()
+                      .where(
+                        (f) =>
+                            f is File &&
+                            f.path.contains('${fileId}_') &&
+                            f.path != tempFile.path,
+                      )
                       .cast<File>();
                   for (final oldFile in oldFiles) {
                     try {
@@ -907,10 +1015,10 @@ class _CategoryPageState extends State<CategoryPage> {
                   print('⚠️ خطأ في حذف الملفات المؤقتة القديمة: $e');
                 }
               }
-              
+
               // ✅ كتابة الملف المؤقت
               await tempFile.writeAsBytes(fullResponse.bodyBytes);
-              
+
               // ✅ التحقق من وجود الملف قبل فتحه
               if (!await tempFile.exists()) {
                 if (mounted) {
@@ -923,7 +1031,7 @@ class _CategoryPageState extends State<CategoryPage> {
                 }
                 return;
               }
-              
+
               // ✅ الانتظار حتى يتم إغلاق TextViewerPage ثم إعادة تحميل الملفات
               final result = await Navigator.push(
                 context,
@@ -936,10 +1044,16 @@ class _CategoryPageState extends State<CategoryPage> {
                   ),
                 ),
               );
-              
+
               // ✅ إذا تم حفظ الملف (result == true)، أعد تحميل قائمة الملفات
-              if (result == true && mounted && _token != null && _token!.isNotEmpty) {
-                final fileController = Provider.of<FileController>(context, listen: false);
+              if (result == true &&
+                  mounted &&
+                  _token != null &&
+                  _token!.isNotEmpty) {
+                final fileController = Provider.of<FileController>(
+                  context,
+                  listen: false,
+                );
                 await fileController.getFilesByCategory(
                   category: widget.category,
                   token: _token!,
@@ -954,7 +1068,13 @@ class _CategoryPageState extends State<CategoryPage> {
               if (mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: Text(S.of(context).failedToLoadFileStatus(fullResponse.statusCode)),
+                    content: Text(
+                      S
+                          .of(context)
+                          .failedToLoadFileStatus(
+                            fullResponse.statusCode.toString(),
+                          ),
+                    ),
                     backgroundColor: Colors.red,
                   ),
                 );
@@ -977,14 +1097,17 @@ class _CategoryPageState extends State<CategoryPage> {
           print('Opening Audio: $fileName from $url');
           Navigator.push(
             context,
-            MaterialPageRoute(builder: (_) => AudioPlayerPage(audioUrl: url, fileName: fileName)),
+            MaterialPageRoute(
+              builder: (_) =>
+                  AudioPlayerPage(audioUrl: url, fileName: fileName),
+            ),
           );
-        } 
+        }
         // ✅ باقي الملفات (Office, ZIP, إلخ) - تفتح خارج التطبيق
         else {
           // ✅ إظهار Loading Dialog للملفات الخارجية
           _showLoadingDialog(context);
-          
+
           await OfficeFileOpener.openAnyFile(
             url: url,
             context: context,
@@ -999,13 +1122,17 @@ class _CategoryPageState extends State<CategoryPage> {
               }
             },
           );
-          
+
           // ✅ لا حاجة لإغلاق Loading Dialog يدوياً - يتم إغلاقه تلقائياً في OfficeFileOpener
         }
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(S.of(context).fileNotAvailableError(response.statusCode)),
+            content: Text(
+              S
+                  .of(context)
+                  .fileNotAvailableError(response.statusCode.toString()),
+            ),
             behavior: SnackBarBehavior.floating,
             backgroundColor: Colors.red,
           ),

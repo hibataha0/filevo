@@ -22,78 +22,140 @@ class MessageLookup extends MessageLookupByLibrary {
 
   static String m0(version) => "App version ${version}";
 
-  static String m1(folderName) =>
-      "Are you sure you want to remove \"${folderName}\" from this room?";
+  static String m1(fileName) =>
+      "Are you sure you want to delete the file \'${fileName}\'?";
 
-  static String m2(memberName) =>
+  static String m2(folderName) =>
+      "Are you sure you want to delete the folder \'${folderName}\'? All files and subfolders will also be deleted.";
+
+  static String m3(folderName) =>
+      "Are you sure you want to permanently delete the folder \'${folderName}\'? This action cannot be undone. All files and subfolders will be permanently deleted.";
+
+  static String m4(folderName) =>
+      "Are you sure you want to remove the folder \'${folderName}\' from the room?";
+
+  static String m5(memberName) =>
       "Are you sure you want to remove ${memberName} from the room?";
 
-  static String m3(roomName) =>
-      "Are you sure you want to delete \"${roomName}\"? All data associated with the room will be deleted.";
+  static String m6(roomName) =>
+      "Are you sure you want to delete \"${roomName}\"? All shared files and folders will also be deleted.";
 
-  static String m4(email) => "Enter the 6-digit code sent to ${email}";
+  static String m7(email) => "Enter the 6-digit code sent to ${email}";
 
-  static String m5(error) => "Error: ${error}";
+  static String m8(error) => "Error: ${error}";
 
-  static String m6(error) => "Error fetching subfolders: ${error}";
+  static String m9(error) => "Error accessing edited file: ${error}";
 
-  static String m7(error) => "Error loading file: ${error}";
+  static String m10(error) => "❌ Error deleting file: ${error}";
 
-  static String m8(error) => "Error loading text file: ${error}";
+  static String m11(error) =>
+      "❌ Error occurred while deleting folder: ${error}";
 
-  static String m9(error) => "Error opening file: ${error}";
+  static String m12(error) => "❌ Error downloading file: ${error}";
 
-  static String m10(error) => "Error verifying image: ${error}";
+  static String m13(error) => "❌ Error downloading folder: ${error}";
 
-  static String m11(error) => "Error verifying video: ${error}";
+  static String m14(error) => "Error fetching subfolders: ${error}";
 
-  static String m12(hours) => "Expires in ${hours} hours";
+  static String m15(error) => "Error loading file: ${error}";
 
-  static String m13(statusCode) => "Failed to load audio file (${statusCode})";
+  static String m16(error) => "Error loading file data: ${error}";
 
-  static String m14(statusCode) => "Failed to load file: ${statusCode}";
+  static String m17(error) => "Error loading text file: ${error}";
 
-  static String m15(error) => "Failed to load PDF file: ${error}";
+  static String m18(error) => "❌ Error: ${error}";
 
-  static String m16(error) => "Failed to load PDF for display: ${error}";
+  static String m19(error) => "Error opening file: ${error}";
 
-  static String m17(statusCode) => "Failed to load video (${statusCode})";
+  static String m20(error) =>
+      "❌ Error occurred while permanently deleting folder: ${error}";
 
-  static String m18(error) => "Failed to open file: ${error}";
+  static String m21(error) =>
+      "❌ Error occurred while restoring folder: ${error}";
 
-  static String m19(statusCode) => "File not available (error ${statusCode})";
+  static String m22(error) => "❌ Error uploading profile image: ${error}";
 
-  static String m20(statusCode) => "File not available (error ${statusCode})";
+  static String m23(error) => "Error verifying image: ${error}";
 
-  static String m21(folderName) =>
-      "Folder \"${folderName}\" created successfully";
+  static String m24(error) => "Error verifying video: ${error}";
 
-  static String m22(roomName) =>
+  static String m25(hours) => "Expires in ${hours} hours";
+
+  static String m26(statusCode) => "Failed to load audio file (${statusCode})";
+
+  static String m27(error) => "Failed to load file status: ${error}";
+
+  static String m28(error) => "Failed to load PDF file: ${error}";
+
+  static String m29(error) => "Failed to load PDF for display: ${error}";
+
+  static String m30(statusCode) => "Failed to load video (${statusCode})";
+
+  static String m31(error) => "Failed to open file: ${error}";
+
+  static String m32(fileName) => "✅ File \'${fileName}\' deleted successfully";
+
+  static String m33(fileName) => "✅ File downloaded successfully: ${fileName}";
+
+  static String m34(error) => "File not available: ${error}";
+
+  static String m35(folderName) => "Folder created successfully: ${folderName}";
+
+  static String m36(folderName) =>
+      "✅ Folder \'${folderName}\' deleted successfully";
+
+  static String m37(fileName) =>
+      "✅ Folder downloaded successfully: ${fileName}";
+
+  static String m38(folderName) =>
+      "✅ Folder \'${folderName}\' permanently deleted successfully";
+
+  static String m39(folderName) =>
+      "✅ Folder \'${folderName}\' restored successfully";
+
+  static String m40(size) => "Font size: ${size}";
+
+  static String m41(height) => "Height: ${height}";
+
+  static String m42(roomName) =>
       "Are you sure you want to leave \"${roomName}\"? You will not be able to access this room after leaving.";
 
-  static String m23(fileName) => "Open file as text: ${fileName}";
+  static String m43(fileName) => "Open file as text: ${fileName}";
 
-  static String m24(countdown) =>
-      "Please wait ${countdown} seconds before resending";
+  static String m44(pageNumber) => "Page: ${pageNumber}";
 
-  static String m31(fileName) =>
+  static String m45(statusCode) => "Failed to load PDF file (${statusCode})";
+
+  static String m46(seconds) =>
+      "Please wait ${seconds} seconds before resending";
+
+  static String m47(x) => "Position X: ${x}";
+
+  static String m48(y) => "Position Y: ${y}";
+
+  static String m49(fileName) =>
       "Are you sure you want to remove \"${fileName}\" from this room?";
 
-  static String m25(countdown) => "Resend (${countdown})";
+  static String m50(seconds) => "Resend (${seconds})";
 
-  static String m26(roomName) => "${roomName}";
+  static String m51(roomName) => "${roomName}";
 
-  static String m27(error) => "Search error: ${error}";
+  static String m52(error) => "Search error: ${error}";
 
-  static String m28(folderName) => "Select \"${folderName}\"";
+  static String m53(folderName) => "Select \"${folderName}\"";
 
-  static String m29(count) => "Shared Files (${count})";
+  static String m54(count) => "Shared Files (${count})";
 
-  static String m30(email) =>
-      "A 6-digit verification code has been sent to:\n${email}";
+  static String m55(duration) => "Total duration: ${duration}";
+
+  static String m56(email) => "Verification code sent to ${email}";
+
+  static String m57(width) => "Width: ${width}";
 
   final messages = _notInlinedMessages(_notInlinedMessages);
   static Map<String, Function> _notInlinedMessages(_) => <String, Function>{
+    "aacDescription": MessageLookupByLibrary.simpleMessage("Very good quality"),
+    "aacFormat": MessageLookupByLibrary.simpleMessage("AAC"),
     "about": MessageLookupByLibrary.simpleMessage("About"),
     "accept": MessageLookupByLibrary.simpleMessage("Accept"),
     "accessTokenNotFound": MessageLookupByLibrary.simpleMessage(
@@ -101,25 +163,30 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "accessed": MessageLookupByLibrary.simpleMessage("Accessed"),
     "accountActivatedSuccessfully": MessageLookupByLibrary.simpleMessage(
-      "Account activated successfully. You can now login",
+      "✅ Account activated successfully",
     ),
     "accountCreatedSuccessfully": MessageLookupByLibrary.simpleMessage(
       "Account created successfully!",
     ),
     "active": MessageLookupByLibrary.simpleMessage("Active"),
     "activityLog": MessageLookupByLibrary.simpleMessage("Activity Log"),
+    "add": MessageLookupByLibrary.simpleMessage("Add"),
     "addFile": MessageLookupByLibrary.simpleMessage("Add File"),
     "addFileToRoom": MessageLookupByLibrary.simpleMessage("Add File to Room"),
     "addFilesToFavorites": MessageLookupByLibrary.simpleMessage(
-      "You can add files to favorites through the menu",
+      "Add files to favorites",
     ),
     "addFolder": MessageLookupByLibrary.simpleMessage("Add Folder"),
     "addFolderToRoom": MessageLookupByLibrary.simpleMessage(
       "Add Folder to Room",
     ),
+    "addTextAnnotation": MessageLookupByLibrary.simpleMessage(
+      "Add Text (Annotation)",
+    ),
     "addToFavorites": MessageLookupByLibrary.simpleMessage("Add to Favorites"),
+    "adjustVolume": MessageLookupByLibrary.simpleMessage("Adjust Volume"),
     "all": MessageLookupByLibrary.simpleMessage("All"),
-    "allActivities": MessageLookupByLibrary.simpleMessage("All"),
+    "allActivities": MessageLookupByLibrary.simpleMessage("All Activities"),
     "allItems": MessageLookupByLibrary.simpleMessage("All Items"),
     "alreadyHaveAccount": MessageLookupByLibrary.simpleMessage(
       "Already have an account? ",
@@ -135,7 +202,7 @@ class MessageLookup extends MessageLookupByLibrary {
       "Basic app settings",
     ),
     "canViewPdfAndSearch": MessageLookupByLibrary.simpleMessage(
-      "You can view PDF and search in it.",
+      "You can view PDF and search in it",
     ),
     "cancel": MessageLookupByLibrary.simpleMessage("Cancel"),
     "cannotAccessFile": MessageLookupByLibrary.simpleMessage(
@@ -144,12 +211,29 @@ class MessageLookup extends MessageLookupByLibrary {
     "cannotAddSharedFilesToFavorites": MessageLookupByLibrary.simpleMessage(
       "Cannot add shared files in room to favorites",
     ),
-    "category": MessageLookupByLibrary.simpleMessage("Category"),
+    "cannotIdentifyFile": MessageLookupByLibrary.simpleMessage(
+      "Cannot identify file",
+    ),
+    "cannotIdentifyFolder": MessageLookupByLibrary.simpleMessage(
+      "❌ Error: Cannot identify folder",
+    ),
+    "cannotIdentifyUsers": MessageLookupByLibrary.simpleMessage(
+      "Cannot identify users to unshare",
+    ),
     "changePassword": MessageLookupByLibrary.simpleMessage("Change Password"),
-    "chooseFileOrFolder": MessageLookupByLibrary.simpleMessage(
-      "Choose file or folder",
+    "changesSaveFailed": MessageLookupByLibrary.simpleMessage(
+      "❌ Failed to save changes",
+    ),
+    "changesSavedSuccessfully": MessageLookupByLibrary.simpleMessage(
+      "✅ Changes saved successfully",
+    ),
+    "chooseFromGallery": MessageLookupByLibrary.simpleMessage(
+      "Choose from Gallery",
     ),
     "chooseLanguage": MessageLookupByLibrary.simpleMessage("Choose Language"),
+    "chooseOutputFormat": MessageLookupByLibrary.simpleMessage(
+      "Choose output format:",
+    ),
     "chooseRoomToShare": MessageLookupByLibrary.simpleMessage(
       "Choose a room to share this file",
     ),
@@ -157,7 +241,7 @@ class MessageLookup extends MessageLookupByLibrary {
       "Choose time in seconds:",
     ),
     "chooseTimeToExtractImage": MessageLookupByLibrary.simpleMessage(
-      "Choose Time to Extract Image",
+      "Choose time to extract image",
     ),
     "code": MessageLookupByLibrary.simpleMessage("Code"),
     "codeResent": MessageLookupByLibrary.simpleMessage(
@@ -167,9 +251,10 @@ class MessageLookup extends MessageLookupByLibrary {
     "codeVerified": MessageLookupByLibrary.simpleMessage(
       "Code verified successfully",
     ),
+    "color": MessageLookupByLibrary.simpleMessage("Color:"),
     "commenter": MessageLookupByLibrary.simpleMessage("Commenter"),
     "commenterDescription": MessageLookupByLibrary.simpleMessage(
-      "Can comment on files",
+      "User can comment on files",
     ),
     "comments": MessageLookupByLibrary.simpleMessage("Comments"),
     "completed": MessageLookupByLibrary.simpleMessage("Completed"),
@@ -178,10 +263,16 @@ class MessageLookup extends MessageLookupByLibrary {
     "confirmDeleteComment": MessageLookupByLibrary.simpleMessage(
       "Are you sure you want to delete this comment?",
     ),
+    "confirmDeleteFile": m1,
+    "confirmDeleteFolder": m2,
     "confirmNewPassword": MessageLookupByLibrary.simpleMessage(
       "Confirm New Password",
     ),
     "confirmPassword": MessageLookupByLibrary.simpleMessage("Confirm Password"),
+    "confirmPermanentDelete": MessageLookupByLibrary.simpleMessage(
+      "Confirm Permanent Delete",
+    ),
+    "confirmPermanentDeleteFolder": m3,
     "confirmRejectInvitation": MessageLookupByLibrary.simpleMessage(
       "Are you sure you want to reject this invitation?",
     ),
@@ -191,8 +282,9 @@ class MessageLookup extends MessageLookupByLibrary {
     "confirmRemoveFolderFromRoom": MessageLookupByLibrary.simpleMessage(
       "Are you sure you want to remove this folder from the room?",
     ),
-    "confirmRemoveFolderFromRoomWithName": m1,
-    "confirmRemoveMember": m2,
+    "confirmRemoveFolderFromRoomWithName": m4,
+    "confirmRemoveMember": m5,
+    "convertFormat": MessageLookupByLibrary.simpleMessage("Convert Format"),
     "copyContent": MessageLookupByLibrary.simpleMessage("Copy Content"),
     "create": MessageLookupByLibrary.simpleMessage("Create"),
     "createAccount": MessageLookupByLibrary.simpleMessage("Create account"),
@@ -220,8 +312,9 @@ class MessageLookup extends MessageLookupByLibrary {
     "delete": MessageLookupByLibrary.simpleMessage("Delete"),
     "deleteComment": MessageLookupByLibrary.simpleMessage("Delete Comment"),
     "deleteFile": MessageLookupByLibrary.simpleMessage("Delete File"),
+    "deleteFolder": MessageLookupByLibrary.simpleMessage("Delete Folder"),
     "deleteRoom": MessageLookupByLibrary.simpleMessage("Delete Room"),
-    "deleteRoomConfirm": m3,
+    "deleteRoomConfirm": m6,
     "deletedFiles": MessageLookupByLibrary.simpleMessage("Deleted Files"),
     "deletedFolders": MessageLookupByLibrary.simpleMessage("Deleted Folders"),
     "description": MessageLookupByLibrary.simpleMessage("Description"),
@@ -235,14 +328,32 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "download": MessageLookupByLibrary.simpleMessage("Download"),
     "downloadFile": MessageLookupByLibrary.simpleMessage("Download File"),
+    "downloadingFile": MessageLookupByLibrary.simpleMessage(
+      "Downloading file...",
+    ),
+    "downloadingFolder": MessageLookupByLibrary.simpleMessage(
+      "Downloading folder...",
+    ),
     "edit": MessageLookupByLibrary.simpleMessage("Edit"),
     "editEmail": MessageLookupByLibrary.simpleMessage("Edit Email"),
     "editFile": MessageLookupByLibrary.simpleMessage("Edit File"),
+    "editFileMetadata": MessageLookupByLibrary.simpleMessage("Edit File"),
     "editImage": MessageLookupByLibrary.simpleMessage("Edit Image"),
     "editText": MessageLookupByLibrary.simpleMessage("Edit Text"),
     "editUsername": MessageLookupByLibrary.simpleMessage("Edit Username"),
+    "editedFileNotFound": MessageLookupByLibrary.simpleMessage(
+      "Edited file not found. Please edit again",
+    ),
+    "editedImageIsEmpty": MessageLookupByLibrary.simpleMessage(
+      "⚠️ Edited image is empty",
+    ),
+    "editedVideoIsEmpty": MessageLookupByLibrary.simpleMessage(
+      "⚠️ Edited video is empty",
+    ),
     "editor": MessageLookupByLibrary.simpleMessage("Editor"),
-    "editorDescription": MessageLookupByLibrary.simpleMessage("Can edit files"),
+    "editorDescription": MessageLookupByLibrary.simpleMessage(
+      "User can edit files",
+    ),
     "email": MessageLookupByLibrary.simpleMessage("Email"),
     "emailVerification": MessageLookupByLibrary.simpleMessage(
       "Email Verification",
@@ -251,7 +362,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "enter6DigitCode": MessageLookupByLibrary.simpleMessage(
       "Please enter a 6-digit code",
     ),
-    "enterCodeToEmail": m4,
+    "enterCodeToEmail": m7,
     "enterConfirmPassword": MessageLookupByLibrary.simpleMessage(
       "Please confirm your password",
     ),
@@ -277,31 +388,49 @@ class MessageLookup extends MessageLookupByLibrary {
     "enterUsernameOrEmail": MessageLookupByLibrary.simpleMessage(
       "Please enter your username or email",
     ),
-    "error": m5,
+    "error": m8,
+    "errorAccessingEditedFile": m9,
     "errorAccessingFile": MessageLookupByLibrary.simpleMessage(
       "Error accessing file",
     ),
+    "errorDeletingFile": m10,
+    "errorDeletingFolder": MessageLookupByLibrary.simpleMessage(
+      "❌ Error occurred while deleting folder",
+    ),
+    "errorDeletingFolderWithError": m11,
+    "errorDownloadingFile": m12,
+    "errorDownloadingFolder": m13,
     "errorFetchingData": MessageLookupByLibrary.simpleMessage(
       "Error fetching data",
     ),
-    "errorFetchingSubfolders": m6,
-    "errorLoadingFile": m7,
-    "errorLoadingFileData": MessageLookupByLibrary.simpleMessage(
-      "Error loading file data",
-    ),
+    "errorFetchingSubfolders": m14,
+    "errorLoadingFile": m15,
+    "errorLoadingFileData": m16,
     "errorLoadingRoomDetails": MessageLookupByLibrary.simpleMessage(
       "Error loading room details",
     ),
     "errorLoadingSubfolders": MessageLookupByLibrary.simpleMessage(
       "Error loading subfolders",
     ),
-    "errorLoadingTextFile": m8,
-    "errorOpeningFile": m9,
-    "errorVerifyingImage": m10,
-    "errorVerifyingVideo": m11,
+    "errorLoadingTextFile": m17,
+    "errorOccurred": m18,
+    "errorOpeningFile": m19,
+    "errorPermanentlyDeletingFolder": MessageLookupByLibrary.simpleMessage(
+      "❌ Error occurred while permanently deleting folder",
+    ),
+    "errorPermanentlyDeletingFolderWithError": m20,
+    "errorRestoringFolder": MessageLookupByLibrary.simpleMessage(
+      "❌ Error occurred while restoring folder",
+    ),
+    "errorRestoringFolderWithError": m21,
+    "errorUpdating": MessageLookupByLibrary.simpleMessage("❌ Error updating"),
+    "errorUploadingProfileImage": m22,
+    "errorVerifyingImage": m23,
+    "errorVerifyingVideo": m24,
     "exit": MessageLookupByLibrary.simpleMessage("Exit"),
-    "expiresInHours": m12,
+    "expiresInHours": m25,
     "extension": MessageLookupByLibrary.simpleMessage("Extension"),
+    "extract": MessageLookupByLibrary.simpleMessage("Extract"),
     "extractText": MessageLookupByLibrary.simpleMessage("Extract Text"),
     "extractingImage": MessageLookupByLibrary.simpleMessage(
       "Extracting image...",
@@ -324,16 +453,19 @@ class MessageLookup extends MessageLookupByLibrary {
     "failedToCreateTempFile": MessageLookupByLibrary.simpleMessage(
       "Failed to create temporary file",
     ),
+    "failedToDownloadFile": MessageLookupByLibrary.simpleMessage(
+      "Failed to download file",
+    ),
+    "failedToDownloadFolder": MessageLookupByLibrary.simpleMessage(
+      "Failed to download folder",
+    ),
     "failedToExtractImage": MessageLookupByLibrary.simpleMessage(
       "Failed to extract image",
     ),
     "failedToExtractTextFromPdf": MessageLookupByLibrary.simpleMessage(
-      "Failed to extract text from PDF.",
+      "Failed to extract text from PDF",
     ),
-    "failedToFetchFolderInfo": MessageLookupByLibrary.simpleMessage(
-      "Failed to fetch folder information",
-    ),
-    "failedToLoadAudio": m13,
+    "failedToLoadAudio": m26,
     "failedToLoadAudioFile": MessageLookupByLibrary.simpleMessage(
       "Failed to load audio file",
     ),
@@ -346,15 +478,15 @@ class MessageLookup extends MessageLookupByLibrary {
     "failedToLoadFileData": MessageLookupByLibrary.simpleMessage(
       "Failed to load file data",
     ),
-    "failedToLoadFileStatus": m14,
+    "failedToLoadFileStatus": m27,
     "failedToLoadImage": MessageLookupByLibrary.simpleMessage(
       "Failed to load image",
     ),
     "failedToLoadPdf": MessageLookupByLibrary.simpleMessage(
-      "Failed to load PDF file",
+      "Failed to load PDF",
     ),
-    "failedToLoadPdfFile": m15,
-    "failedToLoadPdfForDisplay": m16,
+    "failedToLoadPdfFile": m28,
+    "failedToLoadPdfForDisplay": m29,
     "failedToLoadPreview": MessageLookupByLibrary.simpleMessage(
       "Failed to load preview",
     ),
@@ -364,19 +496,25 @@ class MessageLookup extends MessageLookupByLibrary {
     "failedToLoadRoomDetails": MessageLookupByLibrary.simpleMessage(
       "Failed to load room details",
     ),
-    "failedToLoadVideo": m17,
+    "failedToLoadVideo": m30,
     "failedToMergeVideos": MessageLookupByLibrary.simpleMessage(
-      "Failed to merge clips",
+      "Failed to merge videos",
     ),
     "failedToMoveFile": MessageLookupByLibrary.simpleMessage(
       "Failed to move file",
     ),
-    "failedToOpenFile": m18,
+    "failedToOpenFile": m31,
     "failedToRemoveFile": MessageLookupByLibrary.simpleMessage(
       "Failed to remove file from room",
     ),
     "failedToResendCode": MessageLookupByLibrary.simpleMessage(
-      "Failed to resend verification code",
+      "❌ Failed to resend verification code",
+    ),
+    "failedToSaveEditedImage": MessageLookupByLibrary.simpleMessage(
+      "⚠️ Failed to save edited image",
+    ),
+    "failedToSaveEditedVideo": MessageLookupByLibrary.simpleMessage(
+      "⚠️ Failed to save edited video",
     ),
     "failedToSaveFile": MessageLookupByLibrary.simpleMessage(
       "Failed to save file",
@@ -390,45 +528,58 @@ class MessageLookup extends MessageLookupByLibrary {
     "failedToSaveTempVideo": MessageLookupByLibrary.simpleMessage(
       "Failed to save temporary video",
     ),
+    "failedToUploadProfileImage": MessageLookupByLibrary.simpleMessage(
+      "❌ Failed to upload profile image",
+    ),
     "favoriteFiles": MessageLookupByLibrary.simpleMessage("Favorite Files"),
     "featureUnderDevelopment": MessageLookupByLibrary.simpleMessage(
-      "Information feature under development",
+      "This feature is under development",
     ),
     "fieldRequired": MessageLookupByLibrary.simpleMessage(
       "This field is required",
     ),
     "file": MessageLookupByLibrary.simpleMessage("File"),
+    "fileAddedToFavorites": MessageLookupByLibrary.simpleMessage(
+      "✅ File added to favorites",
+    ),
     "fileAlreadyAccessed": MessageLookupByLibrary.simpleMessage(
       "You have already accessed this file. One-time share only.",
     ),
     "fileAlreadyShared": MessageLookupByLibrary.simpleMessage(
       "This file is already shared with this room",
     ),
+    "fileDeletedSuccessfully": m32,
+    "fileDescription": MessageLookupByLibrary.simpleMessage("Description"),
+    "fileDownloadedSuccessfully": m33,
     "fileIdNotAvailable": MessageLookupByLibrary.simpleMessage(
       "File ID not available",
     ),
-    "fileIdNotFound": MessageLookupByLibrary.simpleMessage(
-      "Error: File ID not found",
-    ),
+    "fileIdNotFound": MessageLookupByLibrary.simpleMessage("File ID not found"),
     "fileInfo": MessageLookupByLibrary.simpleMessage("File Information"),
     "fileIsEmpty": MessageLookupByLibrary.simpleMessage("File is empty"),
     "fileLinkNotAvailable": MessageLookupByLibrary.simpleMessage(
       "File link not available",
     ),
     "fileLinkNotAvailableNoPath": MessageLookupByLibrary.simpleMessage(
-      "File link not available - no path or _id",
+      "File link not available (no path)",
     ),
     "fileMovedSuccessfully": MessageLookupByLibrary.simpleMessage(
       "File moved successfully",
     ),
-    "fileNotAvailable": m19,
-    "fileNotAvailableError": m20,
+    "fileName": MessageLookupByLibrary.simpleMessage("File Name"),
+    "fileNotAvailableError": m34,
     "fileNotLoaded": MessageLookupByLibrary.simpleMessage("File not loaded"),
     "fileNotValidPdf": MessageLookupByLibrary.simpleMessage(
-      "This file is not a valid PDF or may be corrupted.",
+      "File is not a valid PDF",
+    ),
+    "fileRemovedFromFavorites": MessageLookupByLibrary.simpleMessage(
+      "✅ File removed from favorites",
     ),
     "fileRemovedFromRoom": MessageLookupByLibrary.simpleMessage(
       "File removed from room successfully",
+    ),
+    "fileReplacedSuccessfully": MessageLookupByLibrary.simpleMessage(
+      "✅ File replaced successfully",
     ),
     "fileSavedAndUploaded": MessageLookupByLibrary.simpleMessage(
       "File saved and uploaded to server successfully",
@@ -439,6 +590,9 @@ class MessageLookup extends MessageLookupByLibrary {
     "fileSavedSuccessfully": MessageLookupByLibrary.simpleMessage(
       "File saved successfully",
     ),
+    "fileUpdatedSuccessfully": MessageLookupByLibrary.simpleMessage(
+      "✅ File updated successfully",
+    ),
     "fileUrlNotAvailable": MessageLookupByLibrary.simpleMessage(
       "File URL not available",
     ),
@@ -446,20 +600,28 @@ class MessageLookup extends MessageLookupByLibrary {
       "File without name",
     ),
     "files": MessageLookupByLibrary.simpleMessage("Files"),
-    "filesCount": MessageLookupByLibrary.simpleMessage("Number of Files"),
+    "filesCount": MessageLookupByLibrary.simpleMessage("Files Count"),
     "filter": MessageLookupByLibrary.simpleMessage("Filter"),
     "filterActivity": MessageLookupByLibrary.simpleMessage("Filter Activity"),
     "folder": MessageLookupByLibrary.simpleMessage("Folder"),
-    "folderCreatedSuccessfully": m21,
+    "folderCreatedSuccessfully": m35,
+    "folderDeletedSuccessfully": m36,
+    "folderDownloadedSuccessfully": m37,
     "folderIdNotAvailable": MessageLookupByLibrary.simpleMessage(
-      "Folder ID not available",
+      "❌ Error: Folder ID not available.",
     ),
-    "folderInfo": MessageLookupByLibrary.simpleMessage("Folder Information"),
+    "folderIdNotFound": MessageLookupByLibrary.simpleMessage(
+      "Error: Folder ID not found",
+    ),
+    "folderInfo": MessageLookupByLibrary.simpleMessage("Folder Info"),
     "folderNameHint": MessageLookupByLibrary.simpleMessage("Folder Name"),
+    "folderPermanentlyDeletedSuccessfully": m38,
+    "folderRestoredSuccessfully": m39,
     "folderWithoutName": MessageLookupByLibrary.simpleMessage(
       "Folder without name",
     ),
     "folders": MessageLookupByLibrary.simpleMessage("Folders"),
+    "fontSize": m40,
     "forAdvancedSearchFeature": MessageLookupByLibrary.simpleMessage(
       "To benefit from advanced search feature, we recommend using:",
     ),
@@ -477,14 +639,26 @@ class MessageLookup extends MessageLookupByLibrary {
     "getHelpSupport": MessageLookupByLibrary.simpleMessage(
       "Get help and support",
     ),
+    "height": m41,
     "helpSupport": MessageLookupByLibrary.simpleMessage("Help & Support"),
+    "highlight": MessageLookupByLibrary.simpleMessage("Highlight"),
     "highlightSelectedText": MessageLookupByLibrary.simpleMessage(
       "Highlight selected text",
     ),
-    "highlights": MessageLookupByLibrary.simpleMessage("highlight"),
+    "highlightText": MessageLookupByLibrary.simpleMessage("Highlight Text"),
+    "highlights": MessageLookupByLibrary.simpleMessage("Highlights"),
     "image": MessageLookupByLibrary.simpleMessage("Image"),
-    "imageEdited": MessageLookupByLibrary.simpleMessage("Image Edited"),
-    "imageExtracted": MessageLookupByLibrary.simpleMessage("Image Extracted"),
+    "imageAddedSuccessfully": MessageLookupByLibrary.simpleMessage(
+      "✅ Image added successfully",
+    ),
+    "imageEdited": MessageLookupByLibrary.simpleMessage("Image edited"),
+    "imageEditedSuccessfully": MessageLookupByLibrary.simpleMessage(
+      "✅ Image edited successfully",
+    ),
+    "imageExtracted": MessageLookupByLibrary.simpleMessage("Image extracted"),
+    "imageExtractedSuccessfully": MessageLookupByLibrary.simpleMessage(
+      "✅ Image extracted successfully",
+    ),
     "images": MessageLookupByLibrary.simpleMessage("Images"),
     "invalidCredentials": MessageLookupByLibrary.simpleMessage(
       "Invalid credentials",
@@ -495,7 +669,9 @@ class MessageLookup extends MessageLookupByLibrary {
     "invalidOrExpiredCode": MessageLookupByLibrary.simpleMessage(
       "Invalid or expired code",
     ),
-    "invalidPdfFile": MessageLookupByLibrary.simpleMessage("Invalid PDF file"),
+    "invalidPdfFile": MessageLookupByLibrary.simpleMessage(
+      "This file is not a valid PDF or may be corrupted.",
+    ),
     "invalidPhone": MessageLookupByLibrary.simpleMessage(
       "Please enter a valid phone number (10-15 digits)",
     ),
@@ -512,7 +688,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "lastYear": MessageLookupByLibrary.simpleMessage("Last year"),
     "leave": MessageLookupByLibrary.simpleMessage("Leave"),
     "leaveRoom": MessageLookupByLibrary.simpleMessage("Leave Room"),
-    "leaveRoomConfirm": m22,
+    "leaveRoomConfirm": m42,
     "legalPolicies": MessageLookupByLibrary.simpleMessage("Legal & Policies"),
     "loadMore": MessageLookupByLibrary.simpleMessage("Load More"),
     "loadedAudioIsEmpty": MessageLookupByLibrary.simpleMessage(
@@ -542,7 +718,7 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "logout": MessageLookupByLibrary.simpleMessage("Logout"),
     "logoutSuccess": MessageLookupByLibrary.simpleMessage(
-      "Logged out successfully",
+      "✅ Logged out successfully",
     ),
     "manageNotifications": MessageLookupByLibrary.simpleMessage(
       "Manage notifications",
@@ -555,17 +731,16 @@ class MessageLookup extends MessageLookupByLibrary {
       "Merging audio files... This may take some time",
     ),
     "mergingVideos": MessageLookupByLibrary.simpleMessage(
-      "Merging clips... This may take some time",
+      "Merging videos... This may take some time",
     ),
     "microphonePermissionRequired": MessageLookupByLibrary.simpleMessage(
-      "Microphone Permission Required",
+      "Microphone permission required",
     ),
     "mobile": MessageLookupByLibrary.simpleMessage("Mobile"),
     "modified": MessageLookupByLibrary.simpleMessage("Modified"),
     "move": MessageLookupByLibrary.simpleMessage("Move"),
-    "moveFile": MessageLookupByLibrary.simpleMessage("Move File"),
     "moveFolderToRoot": MessageLookupByLibrary.simpleMessage(
-      "Move folder to main folder",
+      "Move Folder to Root",
     ),
     "moveToRoot": MessageLookupByLibrary.simpleMessage("Move to Root"),
     "moveToRootDescription": MessageLookupByLibrary.simpleMessage(
@@ -576,18 +751,34 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "movingFile": MessageLookupByLibrary.simpleMessage("Moving file..."),
     "movingFolder": MessageLookupByLibrary.simpleMessage("Moving folder..."),
+    "mp3Description": MessageLookupByLibrary.simpleMessage(
+      "Good quality, small size",
+    ),
+    "mp3Format": MessageLookupByLibrary.simpleMessage("MP3"),
+    "mustAllowCameraAccess": MessageLookupByLibrary.simpleMessage(
+      "Must allow camera access",
+    ),
     "mustAllowMicrophoneAccess": MessageLookupByLibrary.simpleMessage(
-      "You must allow microphone access for voice search.",
+      "Must allow microphone access",
+    ),
+    "mustAllowPhotosAccess": MessageLookupByLibrary.simpleMessage(
+      "Must allow photos access",
     ),
     "mustLogin": MessageLookupByLibrary.simpleMessage("You must log in first"),
     "mustLoginFirst": MessageLookupByLibrary.simpleMessage(
-      "You must login first",
+      "You must log in first",
+    ),
+    "mustLoginFirstError": MessageLookupByLibrary.simpleMessage(
+      "Error: You must log in first",
     ),
     "mustSelectAtLeastTwoAudioFiles": MessageLookupByLibrary.simpleMessage(
-      "Must select at least two audio files to merge",
+      "You must select at least two audio files to merge",
     ),
     "myFiles": MessageLookupByLibrary.simpleMessage("My Files"),
     "myFolders": MessageLookupByLibrary.simpleMessage("My Folders"),
+    "newCopySavedSuccessfully": MessageLookupByLibrary.simpleMessage(
+      "✅ New copy saved successfully",
+    ),
     "newPassword": MessageLookupByLibrary.simpleMessage("New Password"),
     "newPasswordRequired": MessageLookupByLibrary.simpleMessage(
       "New password is required",
@@ -615,6 +806,12 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "noSharedFiles": MessageLookupByLibrary.simpleMessage("No shared files"),
     "noSubfolders": MessageLookupByLibrary.simpleMessage("No subfolders"),
+    "noTokenError": MessageLookupByLibrary.simpleMessage(
+      "❌ Error: No token found.",
+    ),
+    "noUsersSharedWith": MessageLookupByLibrary.simpleMessage(
+      "No users shared with this file",
+    ),
     "notifications": MessageLookupByLibrary.simpleMessage("Notifications"),
     "numberOfFiles": MessageLookupByLibrary.simpleMessage("Number of files:"),
     "ok": MessageLookupByLibrary.simpleMessage("OK"),
@@ -631,13 +828,7 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "open": MessageLookupByLibrary.simpleMessage("Open"),
     "openAsText": MessageLookupByLibrary.simpleMessage("Open as Text"),
-    "openFileAsText": m23,
-    "openFileDetailsToShare": MessageLookupByLibrary.simpleMessage(
-      "Please open the file details page and share it with the room from there",
-    ),
-    "openFolderDetailsToShare": MessageLookupByLibrary.simpleMessage(
-      "Please open the folder details page and share it with the room from there",
-    ),
+    "openFileAsText": m43,
     "openImageEditor": MessageLookupByLibrary.simpleMessage(
       "Open Image Editor",
     ),
@@ -648,6 +839,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "ownerCannotLeave": MessageLookupByLibrary.simpleMessage(
       "Room owner cannot leave. Please delete the room instead",
     ),
+    "page": m44,
     "password": MessageLookupByLibrary.simpleMessage("Password"),
     "passwordConfirmationRequired": MessageLookupByLibrary.simpleMessage(
       "Password confirmation is required",
@@ -656,17 +848,15 @@ class MessageLookup extends MessageLookupByLibrary {
       "Password must be at least 6 characters",
     ),
     "passwordMinLength": MessageLookupByLibrary.simpleMessage(
-      "Password must be at least 6 characters",
-    ),
-    "passwordUpdateFailed": MessageLookupByLibrary.simpleMessage(
-      "Failed to update password",
+      "Password must be at least 8 characters",
     ),
     "passwordUpdatedSuccessfully": MessageLookupByLibrary.simpleMessage(
-      "Password updated successfully",
+      "✅ Password updated successfully",
     ),
     "passwordsDoNotMatch": MessageLookupByLibrary.simpleMessage(
       "Passwords do not match",
     ),
+    "pdfLoadFailed": m45,
     "pdfTextExtractionNote": MessageLookupByLibrary.simpleMessage(
       "Note: Text extraction may not be available for all PDF files.",
     ),
@@ -676,28 +866,28 @@ class MessageLookup extends MessageLookupByLibrary {
     "pendingInvitations": MessageLookupByLibrary.simpleMessage(
       "Pending Invitations",
     ),
+    "permanentDelete": MessageLookupByLibrary.simpleMessage("Permanent Delete"),
     "permissionDenied": MessageLookupByLibrary.simpleMessage(
-      "Permission denied. You must allow microphone access for voice search.",
+      "Permission denied",
     ),
     "pleaseEnter6DigitCode": MessageLookupByLibrary.simpleMessage(
       "Please enter the 6-digit verification code",
-    ),
-    "pleaseEnterComment": MessageLookupByLibrary.simpleMessage(
-      "Please enter a comment",
     ),
     "pleaseEnterFolderName": MessageLookupByLibrary.simpleMessage(
       "Please enter folder name",
     ),
     "pleaseEnterRoomName": MessageLookupByLibrary.simpleMessage(
-      "Please enter a room name",
+      "Please enter room name",
     ),
     "pleaseLoginAgain": MessageLookupByLibrary.simpleMessage(
       "Please login again",
     ),
     "pleaseSelectFileOrFolder": MessageLookupByLibrary.simpleMessage(
-      "Please select a file/folder to comment on",
+      "Please select a file or folder",
     ),
-    "pleaseWaitBeforeResend": m24,
+    "pleaseWaitBeforeResend": m46,
+    "positionX": m47,
+    "positionY": m48,
     "preferences": MessageLookupByLibrary.simpleMessage("Preferences"),
     "previous": MessageLookupByLibrary.simpleMessage("Previous"),
     "privacySecurity": MessageLookupByLibrary.simpleMessage(
@@ -705,6 +895,9 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "privacySettings": MessageLookupByLibrary.simpleMessage("Privacy settings"),
     "profile": MessageLookupByLibrary.simpleMessage("Profile"),
+    "profileImageUploadedSuccessfully": MessageLookupByLibrary.simpleMessage(
+      "✅ Profile image uploaded successfully",
+    ),
     "recentFiles": MessageLookupByLibrary.simpleMessage("Recent Files"),
     "recentFolders": MessageLookupByLibrary.simpleMessage("Recent Folders"),
     "reject": MessageLookupByLibrary.simpleMessage("Reject"),
@@ -721,7 +914,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "removeFileFromRoom": MessageLookupByLibrary.simpleMessage(
       "Remove File from Room",
     ),
-    "removeFileFromRoomConfirm": m31,
+    "removeFileFromRoomConfirm": m49,
     "removeFolderFromRoom": MessageLookupByLibrary.simpleMessage(
       "Remove Folder from Room",
     ),
@@ -730,9 +923,12 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "removeFromRoom": MessageLookupByLibrary.simpleMessage("Remove from Room"),
     "removeMember": MessageLookupByLibrary.simpleMessage("Remove Member"),
+    "replaceOldVersion": MessageLookupByLibrary.simpleMessage(
+      "Replace old version",
+    ),
     "resend": MessageLookupByLibrary.simpleMessage("Resend"),
     "resendCode": MessageLookupByLibrary.simpleMessage("Resend Code"),
-    "resendWithCountdown": m25,
+    "resendWithCountdown": m50,
     "reset": MessageLookupByLibrary.simpleMessage("Reset"),
     "resetPassword": MessageLookupByLibrary.simpleMessage("Reset Password"),
     "retry": MessageLookupByLibrary.simpleMessage("Retry"),
@@ -741,10 +937,15 @@ class MessageLookup extends MessageLookupByLibrary {
     "roomInfo": MessageLookupByLibrary.simpleMessage("Room Info"),
     "roomLabel": MessageLookupByLibrary.simpleMessage("Room"),
     "roomMembers": MessageLookupByLibrary.simpleMessage("Room Members"),
-    "roomName": m26,
+    "roomName": m51,
     "roomNamePlaceholder": MessageLookupByLibrary.simpleMessage("No name"),
-    "root": MessageLookupByLibrary.simpleMessage("Root"),
     "save": MessageLookupByLibrary.simpleMessage("Save"),
+    "saveChanges": MessageLookupByLibrary.simpleMessage("Save Changes"),
+    "saveNewCopy": MessageLookupByLibrary.simpleMessage("Save new copy"),
+    "saveOptions": MessageLookupByLibrary.simpleMessage("Save Options"),
+    "saveOptionsDescription": MessageLookupByLibrary.simpleMessage(
+      "How do you want to save the edited image?\n\n• Save new copy: The edited image will be saved as a new file\n• Replace old version: The old file will be deleted and replaced with the edited image",
+    ),
     "saveThisImage": MessageLookupByLibrary.simpleMessage(
       "Do you want to save this image?",
     ),
@@ -753,19 +954,19 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "saveToRoot": MessageLookupByLibrary.simpleMessage("Save to Root"),
     "savingFolder": MessageLookupByLibrary.simpleMessage("Saving folder..."),
-    "searchError": m27,
+    "searchError": m52,
     "searchHint": MessageLookupByLibrary.simpleMessage("Search anything here"),
     "searchInPdf": MessageLookupByLibrary.simpleMessage("Search in PDF"),
     "searchInPdfNotAvailableMessage": MessageLookupByLibrary.simpleMessage(
-      "Search in PDF is not currently available. You can open the file in an external app to search.",
+      "PDF search is not currently available. You can open the file in an external app to search.",
     ),
     "seeAll": MessageLookupByLibrary.simpleMessage("See all"),
-    "selectFolder": m28,
+    "selectFolder": m53,
     "selectFolderDescription": MessageLookupByLibrary.simpleMessage(
       "Move to this folder",
     ),
-    "selectTargetFolder": MessageLookupByLibrary.simpleMessage(
-      "Select Target Folder",
+    "selectImagePosition": MessageLookupByLibrary.simpleMessage(
+      "Select Image Position",
     ),
     "sendCode": MessageLookupByLibrary.simpleMessage("Send Code"),
     "sendInvitation": MessageLookupByLibrary.simpleMessage("Send Invitation"),
@@ -779,10 +980,13 @@ class MessageLookup extends MessageLookupByLibrary {
       "Share File with Room",
     ),
     "shareFilesWithRoom": MessageLookupByLibrary.simpleMessage(
-      "Share files with this room",
+      "Share Files with Room",
     ),
     "shareFolderWithRoom": MessageLookupByLibrary.simpleMessage(
       "Share Folder with Room",
+    ),
+    "shareRequestSent": MessageLookupByLibrary.simpleMessage(
+      "✅ Share request sent to room",
     ),
     "shareWithRoom": MessageLookupByLibrary.simpleMessage("Share with Room"),
     "shareWithThisRoom": MessageLookupByLibrary.simpleMessage(
@@ -795,7 +999,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "sharedFilesContent": MessageLookupByLibrary.simpleMessage(
       "Shared files content will be here",
     ),
-    "sharedFilesCount": m29,
+    "sharedFilesCount": m54,
     "signIn": MessageLookupByLibrary.simpleMessage("Sign In"),
     "signInWith": MessageLookupByLibrary.simpleMessage("Sign in with"),
     "signOut": MessageLookupByLibrary.simpleMessage(
@@ -806,7 +1010,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "size": MessageLookupByLibrary.simpleMessage("Size"),
     "smartSearch": MessageLookupByLibrary.simpleMessage("Smart Search"),
     "speechRecognitionNotAvailable": MessageLookupByLibrary.simpleMessage(
-      "Speech recognition service not available",
+      "Speech recognition not available",
     ),
     "startAddingFiles": MessageLookupByLibrary.simpleMessage(
       "Start adding new files",
@@ -819,46 +1023,66 @@ class MessageLookup extends MessageLookupByLibrary {
     "storageOverview": MessageLookupByLibrary.simpleMessage("Storage Overview"),
     "storageUsed": MessageLookupByLibrary.simpleMessage("Used"),
     "storageUsedValue": MessageLookupByLibrary.simpleMessage("60%"),
-    "subfoldersCount": MessageLookupByLibrary.simpleMessage(
-      "Number of Subfolders",
-    ),
+    "subfoldersCount": MessageLookupByLibrary.simpleMessage("Subfolders Count"),
     "support": MessageLookupByLibrary.simpleMessage("Support"),
     "switchThemes": MessageLookupByLibrary.simpleMessage(
       "Switch between themes",
     ),
     "system": MessageLookupByLibrary.simpleMessage("System"),
     "tags": MessageLookupByLibrary.simpleMessage("Tags"),
+    "tagsSeparatedByComma": MessageLookupByLibrary.simpleMessage(
+      "Tags (separate with comma)",
+    ),
+    "takePhotoFromCamera": MessageLookupByLibrary.simpleMessage(
+      "Take Photo from Camera",
+    ),
     "termsPrivacyPolicy": MessageLookupByLibrary.simpleMessage(
       "Terms of service & privacy policy",
     ),
-    "textEdited": MessageLookupByLibrary.simpleMessage("Text Edited"),
+    "textAddedSuccessfully": MessageLookupByLibrary.simpleMessage(
+      "✅ Text added successfully",
+    ),
+    "textEdited": MessageLookupByLibrary.simpleMessage("Text edited"),
+    "textEditedSuccessfully": MessageLookupByLibrary.simpleMessage(
+      "✅ Text edited successfully. Press \"Save Changes\" to upload to server",
+    ),
     "textHighlighted": MessageLookupByLibrary.simpleMessage(
       "Selected text highlighted",
+    ),
+    "textHighlightedSuccessfully": MessageLookupByLibrary.simpleMessage(
+      "✅ Text highlighted successfully",
     ),
     "textNotExtractedYet": MessageLookupByLibrary.simpleMessage(
       "Text not extracted yet",
     ),
     "timeAndDate": MessageLookupByLibrary.simpleMessage("Time & Date"),
-    "tokenNotFound": MessageLookupByLibrary.simpleMessage("Token not found"),
+    "tokenNotFound": MessageLookupByLibrary.simpleMessage(
+      "❌ Error: Token not found",
+    ),
+    "totalDuration": m55,
     "trash": MessageLookupByLibrary.simpleMessage("Trash"),
+    "trim": MessageLookupByLibrary.simpleMessage("Trim"),
+    "trimAudio": MessageLookupByLibrary.simpleMessage("Trim Audio"),
     "type": MessageLookupByLibrary.simpleMessage("Type"),
-    "typeLabel": MessageLookupByLibrary.simpleMessage("Type"),
     "unclassified": MessageLookupByLibrary.simpleMessage("Unclassified"),
-    "unknownFile": MessageLookupByLibrary.simpleMessage("Unknown file"),
+    "unknownError": MessageLookupByLibrary.simpleMessage("Unknown error"),
     "unsavedChanges": MessageLookupByLibrary.simpleMessage("Unsaved changes"),
     "unsavedChangesMessage": MessageLookupByLibrary.simpleMessage(
       "You have unsaved changes. Do you want to exit without saving?",
     ),
     "unshare": MessageLookupByLibrary.simpleMessage("Unshare"),
+    "unshareFailed": MessageLookupByLibrary.simpleMessage("Failed to unshare"),
     "unshareFile": MessageLookupByLibrary.simpleMessage("Unshare File"),
     "unshareFileConfirm": MessageLookupByLibrary.simpleMessage(
       "Are you sure you want to unshare this file with all users?",
     ),
+    "unshareFileSuccess": MessageLookupByLibrary.simpleMessage(
+      "✅ File unshared successfully",
+    ),
     "unsupportedFile": MessageLookupByLibrary.simpleMessage("Unsupported File"),
-    "updateFailed": MessageLookupByLibrary.simpleMessage("Failed to update"),
     "updated": MessageLookupByLibrary.simpleMessage("Updated"),
     "updatedSuccessfully": MessageLookupByLibrary.simpleMessage(
-      "Updated successfully",
+      "✅ Updated successfully",
     ),
     "updating": MessageLookupByLibrary.simpleMessage("Updating..."),
     "uploadFile": MessageLookupByLibrary.simpleMessage("Upload File"),
@@ -868,7 +1092,6 @@ class MessageLookup extends MessageLookupByLibrary {
     "used": MessageLookupByLibrary.simpleMessage("Used"),
     "usedStorage": MessageLookupByLibrary.simpleMessage("Used storage:"),
     "usedStorageValue": MessageLookupByLibrary.simpleMessage("149.5 GB"),
-    "user": MessageLookupByLibrary.simpleMessage("User"),
     "userLabel": MessageLookupByLibrary.simpleMessage("User"),
     "username": MessageLookupByLibrary.simpleMessage("Username"),
     "usernameAllowedChars": MessageLookupByLibrary.simpleMessage(
@@ -887,24 +1110,35 @@ class MessageLookup extends MessageLookupByLibrary {
       "Please enter a valid email",
     ),
     "validEmailRequired": MessageLookupByLibrary.simpleMessage(
-      "Please enter a valid email address",
+      "Invalid email address",
     ),
     "verificationCodeSent": MessageLookupByLibrary.simpleMessage(
-      "Verification code sent to your email",
+      "✅ Verification code sent successfully",
     ),
-    "verificationCodeSentTo": m30,
+    "verificationCodeSentTo": m56,
     "verify": MessageLookupByLibrary.simpleMessage("Verify"),
     "verifyCodeTitle": MessageLookupByLibrary.simpleMessage("Verify Code"),
     "video": MessageLookupByLibrary.simpleMessage("Video"),
+    "videoEditedSuccessfully": MessageLookupByLibrary.simpleMessage(
+      "✅ Video edited successfully",
+    ),
+    "videoMergedSuccessfully": MessageLookupByLibrary.simpleMessage(
+      "✅ Videos merged successfully",
+    ),
     "videos": MessageLookupByLibrary.simpleMessage("Videos"),
     "viewAll": MessageLookupByLibrary.simpleMessage("View All"),
     "viewDetails": MessageLookupByLibrary.simpleMessage("View Details"),
     "viewInfo": MessageLookupByLibrary.simpleMessage("View Info"),
     "viewOnly": MessageLookupByLibrary.simpleMessage("View Only"),
     "viewOnlyDescription": MessageLookupByLibrary.simpleMessage(
-      "Can only view files",
+      "User can only view files",
     ),
     "viewedByAll": MessageLookupByLibrary.simpleMessage("Viewed by all"),
+    "wavDescription": MessageLookupByLibrary.simpleMessage(
+      "High quality, large size",
+    ),
+    "wavFormat": MessageLookupByLibrary.simpleMessage("WAV"),
+    "width": m57,
     "yesterday": MessageLookupByLibrary.simpleMessage("Yesterday"),
     "youAreOwner": MessageLookupByLibrary.simpleMessage("You are the owner"),
   };

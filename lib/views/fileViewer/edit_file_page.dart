@@ -348,9 +348,9 @@ class _EditFilePageState extends State<EditFilePage> {
       final fileId = originalData['_id'] ?? originalData['id'];
 
       if (fileId == null) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(S.of(context).fileIdNotAvailable)));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(S.of(context).fileIdNotAvailable)),
+        );
         return;
       }
 
@@ -365,9 +365,9 @@ class _EditFilePageState extends State<EditFilePage> {
       );
 
       if (response.statusCode != 200) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(S.of(context).failedToLoadImage)));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(S.of(context).failedToLoadImage)),
+        );
         return;
       }
 
@@ -381,18 +381,18 @@ class _EditFilePageState extends State<EditFilePage> {
 
       // ✅ التحقق من وجود الملف قبل استخدامه
       if (!await tempFile.exists()) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(S.of(context).failedToSaveTempImage)));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(S.of(context).failedToSaveTempImage)),
+        );
         return;
       }
 
       // ✅ التحقق من حجم الملف
       final fileSize = await tempFile.length();
       if (fileSize == 0) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(S.of(context).loadedImageIsEmpty)));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(S.of(context).loadedImageIsEmpty)),
+        );
         return;
       }
 
@@ -417,8 +417,8 @@ class _EditFilePageState extends State<EditFilePage> {
                 });
 
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('✅ تم تعديل الصورة بنجاح'),
+                  SnackBar(
+                    content: Text(S.of(context).imageEditedSuccessfully),
                     backgroundColor: Colors.green,
                   ),
                 );
@@ -426,8 +426,8 @@ class _EditFilePageState extends State<EditFilePage> {
             } else {
               if (mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('⚠️ الصورة المعدلة فارغة'),
+                  SnackBar(
+                    content: Text(S.of(context).editedImageIsEmpty),
                     backgroundColor: Colors.orange,
                   ),
                 );
@@ -436,8 +436,8 @@ class _EditFilePageState extends State<EditFilePage> {
           } else {
             if (mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('⚠️ فشل حفظ الصورة المعدلة'),
+                SnackBar(
+                  content: Text(S.of(context).failedToSaveEditedImage),
                   backgroundColor: Colors.orange,
                 ),
               );
@@ -456,9 +456,9 @@ class _EditFilePageState extends State<EditFilePage> {
         }
       }
     } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(S.of(context).error(e.toString()))));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(S.of(context).error(e.toString()))),
+      );
     }
   }
 
@@ -474,9 +474,9 @@ class _EditFilePageState extends State<EditFilePage> {
 
       if (fileId == null) {
         print('❌ [EditFilePage] File ID is null');
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(S.of(context).fileIdNotAvailable)));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(S.of(context).fileIdNotAvailable)),
+        );
         return;
       }
 
@@ -542,9 +542,9 @@ class _EditFilePageState extends State<EditFilePage> {
       // ✅ التحقق من وجود الملف قبل استخدامه
       if (!await tempFile.exists()) {
         print('❌ [EditFilePage] Temp file does not exist');
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(S.of(context).failedToSaveTempVideo)));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(S.of(context).failedToSaveTempVideo)),
+        );
         return;
       }
 
@@ -554,9 +554,9 @@ class _EditFilePageState extends State<EditFilePage> {
 
       if (fileSize == 0) {
         print('❌ [EditFilePage] Temp file is empty');
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(S.of(context).loadedVideoIsEmpty)));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(S.of(context).loadedVideoIsEmpty)),
+        );
         return;
       }
 
@@ -586,8 +586,8 @@ class _EditFilePageState extends State<EditFilePage> {
                 });
 
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('✅ تم تعديل الفيديو بنجاح'),
+                  SnackBar(
+                    content: Text(S.of(context).videoEditedSuccessfully),
                     backgroundColor: Colors.green,
                   ),
                 );
@@ -596,8 +596,8 @@ class _EditFilePageState extends State<EditFilePage> {
               print('⚠️ [EditFilePage] Edited video file is empty');
               if (mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('⚠️ الفيديو المعدل فارغ'),
+                  SnackBar(
+                    content: Text(S.of(context).editedVideoIsEmpty),
                     backgroundColor: Colors.orange,
                   ),
                 );
@@ -607,8 +607,8 @@ class _EditFilePageState extends State<EditFilePage> {
             print('⚠️ [EditFilePage] Edited file does not exist');
             if (mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('⚠️ فشل حفظ الفيديو المعدل'),
+                SnackBar(
+                  content: Text(S.of(context).failedToSaveEditedVideo),
                   backgroundColor: Colors.orange,
                 ),
               );
@@ -633,7 +633,7 @@ class _EditFilePageState extends State<EditFilePage> {
       print('❌ [EditFilePage] Stack trace: $stackTrace');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('خطأ: ${e.toString()}'),
+          content: Text(S.of(context).errorOccurred(e.toString())),
           backgroundColor: Colors.red,
           duration: const Duration(seconds: 5),
         ),
@@ -650,9 +650,9 @@ class _EditFilePageState extends State<EditFilePage> {
       final fileId = originalData['_id'] ?? originalData['id'];
 
       if (fileId == null) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(S.of(context).fileIdNotAvailable)));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(S.of(context).fileIdNotAvailable)),
+        );
         return;
       }
 
@@ -683,7 +683,9 @@ class _EditFilePageState extends State<EditFilePage> {
 
       if (response.statusCode != 200) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('فشل تحميل الفيديو (${response.statusCode})')),
+          SnackBar(
+            content: Text(S.of(context).failedToLoadVideo(response.statusCode)),
+          ),
         );
         return;
       }
@@ -740,17 +742,17 @@ class _EditFilePageState extends State<EditFilePage> {
             });
 
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('✅ تم استخراج الصورة بنجاح'),
+              SnackBar(
+                content: Text(S.of(context).imageExtractedSuccessfully),
                 backgroundColor: Colors.green,
               ),
             );
           }
         }
       } else {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(S.of(context).failedToExtractImage)));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(S.of(context).failedToExtractImage)),
+        );
       }
 
       // ✅ حذف الملف المؤقت
@@ -759,9 +761,9 @@ class _EditFilePageState extends State<EditFilePage> {
       }
     } catch (e) {
       print('❌ [EditFilePage] Error extracting frame: $e');
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(S.of(context).error(e.toString()))));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(S.of(context).error(e.toString()))),
+      );
     }
   }
 
@@ -812,7 +814,7 @@ class _EditFilePageState extends State<EditFilePage> {
 
       if (response.statusCode != 200) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('فشل تحميل الفيديو (${response.statusCode})')),
+          SnackBar(content: Text(S.of(context).failedToLoadVideo(response.statusCode))),
         );
         return;
       }
@@ -850,7 +852,7 @@ class _EditFilePageState extends State<EditFilePage> {
         
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('✅ تم دمج المقاطع بنجاح'),
+            content: Text(S.of(context).videoMergedSuccessfully),
             backgroundColor: Colors.green,
           ),
         );
@@ -889,9 +891,9 @@ class _EditFilePageState extends State<EditFilePage> {
       final fileId = originalData['_id'] ?? originalData['id'];
 
       if (fileId == null) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(S.of(context).fileIdNotAvailable)));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(S.of(context).fileIdNotAvailable)),
+        );
         return;
       }
 
@@ -902,9 +904,9 @@ class _EditFilePageState extends State<EditFilePage> {
       final token = await StorageService.getToken();
       if (token == null) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(S.of(context).mustLoginFirst)),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(S.of(context).mustLoginFirst)));
         }
         setState(() {
           _isLoading = false;
@@ -927,7 +929,9 @@ class _EditFilePageState extends State<EditFilePage> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(S.of(context).failedToLoadAudio(response.statusCode)),
+              content: Text(
+                S.of(context).failedToLoadAudio(response.statusCode),
+              ),
             ),
           );
         }
@@ -1003,9 +1007,7 @@ class _EditFilePageState extends State<EditFilePage> {
       if (startTime >= endTime) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(S.of(context).startTimeMustBeBeforeEndTime),
-            ),
+            SnackBar(content: Text(S.of(context).startTimeMustBeBeforeEndTime)),
           );
         }
         await tempFile.delete();
@@ -1038,7 +1040,7 @@ class _EditFilePageState extends State<EditFilePage> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('خطأ: ${e.toString()}'),
+            content: Text(S.of(context).errorOccurred(e.toString())),
             backgroundColor: Colors.red,
             duration: const Duration(seconds: 5),
           ),
@@ -1063,9 +1065,9 @@ class _EditFilePageState extends State<EditFilePage> {
       final fileId = originalData['_id'] ?? originalData['id'];
 
       if (fileId == null) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(S.of(context).fileIdNotAvailable)));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(S.of(context).fileIdNotAvailable)),
+        );
         return;
       }
 
@@ -1076,9 +1078,9 @@ class _EditFilePageState extends State<EditFilePage> {
       final token = await StorageService.getToken();
       if (token == null) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(S.of(context).mustLoginFirst)),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(S.of(context).mustLoginFirst)));
         }
         setState(() {
           _isLoading = false;
@@ -1096,7 +1098,9 @@ class _EditFilePageState extends State<EditFilePage> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(S.of(context).failedToLoadAudio(response.statusCode)),
+              content: Text(
+                S.of(context).failedToLoadAudio(response.statusCode),
+              ),
             ),
           );
         }
@@ -1176,7 +1180,7 @@ class _EditFilePageState extends State<EditFilePage> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('خطأ: ${e.toString()}'),
+            content: Text(S.of(context).errorOccurred(e.toString())),
             backgroundColor: Colors.red,
           ),
         );
@@ -1202,9 +1206,9 @@ class _EditFilePageState extends State<EditFilePage> {
       final fileId = originalData['_id'] ?? originalData['id'];
 
       if (fileId == null) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(S.of(context).fileIdNotAvailable)));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(S.of(context).fileIdNotAvailable)),
+        );
         return;
       }
 
@@ -1215,9 +1219,9 @@ class _EditFilePageState extends State<EditFilePage> {
       final token = await StorageService.getToken();
       if (token == null) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(S.of(context).mustLoginFirst)),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(S.of(context).mustLoginFirst)));
         }
         setState(() {
           _isLoading = false;
@@ -1235,7 +1239,9 @@ class _EditFilePageState extends State<EditFilePage> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(S.of(context).failedToLoadAudio(response.statusCode)),
+              content: Text(
+                S.of(context).failedToLoadAudio(response.statusCode),
+              ),
             ),
           );
         }
@@ -1361,7 +1367,7 @@ class _EditFilePageState extends State<EditFilePage> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('خطأ: ${e.toString()}'),
+            content: Text(S.of(context).errorOccurred(e.toString())),
             backgroundColor: Colors.red,
           ),
         );
@@ -1385,9 +1391,9 @@ class _EditFilePageState extends State<EditFilePage> {
       final fileId = originalData['_id'] ?? originalData['id'];
 
       if (fileId == null) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(S.of(context).fileIdNotAvailable)));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(S.of(context).fileIdNotAvailable)),
+        );
         return;
       }
 
@@ -1398,9 +1404,9 @@ class _EditFilePageState extends State<EditFilePage> {
       final token = await StorageService.getToken();
       if (token == null) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(S.of(context).mustLoginFirst)),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(S.of(context).mustLoginFirst)));
         }
         setState(() {
           _isLoading = false;
@@ -1418,7 +1424,9 @@ class _EditFilePageState extends State<EditFilePage> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(S.of(context).failedToLoadAudio(response.statusCode)),
+              content: Text(
+                S.of(context).failedToLoadAudio(response.statusCode),
+              ),
             ),
           );
         }
@@ -1507,7 +1515,7 @@ class _EditFilePageState extends State<EditFilePage> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('خطأ: ${e.toString()}'),
+            content: Text(S.of(context).errorOccurred(e.toString())),
             backgroundColor: Colors.red,
           ),
         );
@@ -1533,9 +1541,9 @@ class _EditFilePageState extends State<EditFilePage> {
       final fileId = originalData['_id'] ?? originalData['id'];
 
       if (fileId == null) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(S.of(context).fileIdNotAvailable)));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(S.of(context).fileIdNotAvailable)),
+        );
         return;
       }
 
@@ -1546,9 +1554,9 @@ class _EditFilePageState extends State<EditFilePage> {
       final token = await StorageService.getToken();
       if (token == null) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(S.of(context).mustLoginFirst)),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(S.of(context).mustLoginFirst)));
         }
         setState(() {
           _isLoading = false;
@@ -1566,7 +1574,7 @@ class _EditFilePageState extends State<EditFilePage> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('فشل تحميل ملف PDF (${response.statusCode})'),
+              content: Text(S.of(context).pdfLoadFailed(response.statusCode)),
             ),
           );
         }
@@ -1584,9 +1592,9 @@ class _EditFilePageState extends State<EditFilePage> {
 
       if (!await tempFile.exists() || await tempFile.length() == 0) {
         if (mounted) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(SnackBar(content: Text(S.of(context).failedToLoadPdf)));
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(S.of(context).failedToLoadPdf)),
+          );
         }
         setState(() {
           _isLoading = false;
@@ -1617,7 +1625,7 @@ class _EditFilePageState extends State<EditFilePage> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('خطأ: ${e.toString()}'),
+            content: Text(S.of(context).errorOccurred(e.toString())),
             backgroundColor: Colors.red,
           ),
         );
@@ -1640,9 +1648,9 @@ class _EditFilePageState extends State<EditFilePage> {
       final fileId = originalData['_id'] ?? originalData['id'];
 
       if (fileId == null) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(S.of(context).fileIdNotAvailable)));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(S.of(context).fileIdNotAvailable)),
+        );
         return;
       }
 
@@ -1653,9 +1661,9 @@ class _EditFilePageState extends State<EditFilePage> {
       final token = await StorageService.getToken();
       if (token == null) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(S.of(context).mustLoginFirst)),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(S.of(context).mustLoginFirst)));
         }
         setState(() {
           _isLoading = false;
@@ -1673,7 +1681,7 @@ class _EditFilePageState extends State<EditFilePage> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('فشل تحميل ملف PDF (${response.statusCode})'),
+              content: Text(S.of(context).pdfLoadFailed(response.statusCode)),
             ),
           );
         }
@@ -1691,9 +1699,9 @@ class _EditFilePageState extends State<EditFilePage> {
 
       if (!await tempFile.exists() || await tempFile.length() == 0) {
         if (mounted) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(SnackBar(content: Text(S.of(context).failedToLoadPdf)));
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(S.of(context).failedToLoadPdf)),
+          );
         }
         setState(() {
           _isLoading = false;
@@ -1765,8 +1773,8 @@ class _EditFilePageState extends State<EditFilePage> {
             _editedFile = outputFile;
           });
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('✅ تم إضافة النص بنجاح'),
+            SnackBar(
+              content: Text(S.of(context).textAddedSuccessfully),
               backgroundColor: Colors.green,
             ),
           );
@@ -1778,7 +1786,7 @@ class _EditFilePageState extends State<EditFilePage> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('خطأ: ${e.toString()}'),
+            content: Text(S.of(context).errorOccurred(e.toString())),
             backgroundColor: Colors.red,
           ),
         );
@@ -1801,9 +1809,9 @@ class _EditFilePageState extends State<EditFilePage> {
       final fileId = originalData['_id'] ?? originalData['id'];
 
       if (fileId == null) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(S.of(context).fileIdNotAvailable)));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(S.of(context).fileIdNotAvailable)),
+        );
         return;
       }
 
@@ -1814,9 +1822,9 @@ class _EditFilePageState extends State<EditFilePage> {
       final token = await StorageService.getToken();
       if (token == null) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(S.of(context).mustLoginFirst)),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(S.of(context).mustLoginFirst)));
         }
         setState(() {
           _isLoading = false;
@@ -1834,7 +1842,7 @@ class _EditFilePageState extends State<EditFilePage> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('فشل تحميل ملف PDF (${response.statusCode})'),
+              content: Text(S.of(context).pdfLoadFailed(response.statusCode)),
             ),
           );
         }
@@ -1852,9 +1860,9 @@ class _EditFilePageState extends State<EditFilePage> {
 
       if (!await tempFile.exists() || await tempFile.length() == 0) {
         if (mounted) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(SnackBar(content: Text(S.of(context).failedToLoadPdf)));
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(S.of(context).failedToLoadPdf)),
+          );
         }
         setState(() {
           _isLoading = false;
@@ -1941,8 +1949,8 @@ class _EditFilePageState extends State<EditFilePage> {
             _editedFile = outputFile;
           });
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('✅ تم إضافة الصورة بنجاح'),
+            SnackBar(
+              content: Text(S.of(context).imageAddedSuccessfully),
               backgroundColor: Colors.green,
             ),
           );
@@ -1954,7 +1962,7 @@ class _EditFilePageState extends State<EditFilePage> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('خطأ: ${e.toString()}'),
+            content: Text(S.of(context).errorOccurred(e.toString())),
             backgroundColor: Colors.red,
           ),
         );
@@ -1977,9 +1985,9 @@ class _EditFilePageState extends State<EditFilePage> {
       final fileId = originalData['_id'] ?? originalData['id'];
 
       if (fileId == null) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(S.of(context).fileIdNotAvailable)));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(S.of(context).fileIdNotAvailable)),
+        );
         return;
       }
 
@@ -1990,9 +1998,9 @@ class _EditFilePageState extends State<EditFilePage> {
       final token = await StorageService.getToken();
       if (token == null) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(S.of(context).mustLoginFirst)),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(S.of(context).mustLoginFirst)));
         }
         setState(() {
           _isLoading = false;
@@ -2010,7 +2018,7 @@ class _EditFilePageState extends State<EditFilePage> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('فشل تحميل ملف PDF (${response.statusCode})'),
+              content: Text(S.of(context).pdfLoadFailed(response.statusCode)),
             ),
           );
         }
@@ -2030,9 +2038,9 @@ class _EditFilePageState extends State<EditFilePage> {
 
       if (!await tempFile.exists() || await tempFile.length() == 0) {
         if (mounted) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(SnackBar(content: Text(S.of(context).failedToLoadPdf)));
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(S.of(context).failedToLoadPdf)),
+          );
         }
         setState(() {
           _isLoading = false;
@@ -2102,8 +2110,8 @@ class _EditFilePageState extends State<EditFilePage> {
             _editedFile = outputFile;
           });
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('✅ تم تظليل النص بنجاح'),
+            SnackBar(
+              content: Text(S.of(context).textHighlightedSuccessfully),
               backgroundColor: Colors.green,
             ),
           );
@@ -2115,7 +2123,7 @@ class _EditFilePageState extends State<EditFilePage> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('خطأ: ${e.toString()}'),
+            content: Text(S.of(context).errorOccurred(e.toString())),
             backgroundColor: Colors.red,
           ),
         );
@@ -2136,9 +2144,9 @@ class _EditFilePageState extends State<EditFilePage> {
       final fileId = originalData['_id'] ?? originalData['id'];
 
       if (fileId == null) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(S.of(context).fileIdNotAvailable)));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(S.of(context).fileIdNotAvailable)),
+        );
         return;
       }
 
@@ -2185,10 +2193,10 @@ class _EditFilePageState extends State<EditFilePage> {
           setState(() {
             _editedFile = editedTextFile;
           });
-          
+
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('✅ تم تعديل النص بنجاح. اضغط على "حفظ التغييرات" لرفعه على السيرفر'),
+            SnackBar(
+              content: Text(S.of(context).textEditedSuccessfully),
               backgroundColor: Colors.green,
               duration: Duration(seconds: 3),
             ),
@@ -2196,9 +2204,9 @@ class _EditFilePageState extends State<EditFilePage> {
         }
       }
     } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(S.of(context).error(e.toString()))));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(S.of(context).error(e.toString()))),
+      );
     }
   }
 
@@ -2208,24 +2216,20 @@ class _EditFilePageState extends State<EditFilePage> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Text('خيارات الحفظ'),
-          content: const Text(
-            'كيف تريد حفظ الصورة المعدلة؟\n\n'
-            '• حفظ نسخة جديدة: سيتم حفظ الصورة المعدلة كملف جديد\n'
-            '• استبدال النسخة القديمة: سيتم حذف الملف القديم واستبداله بالصورة المعدلة',
-          ),
+          title: Text(S.of(context).saveOptions),
+          content: Text(S.of(context).saveOptionsDescription),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(null),
-              child: const Text('إلغاء'),
+              child: Text(S.of(context).cancel),
             ),
             TextButton(
               onPressed: () => Navigator.of(context).pop('new'),
-              child: const Text('حفظ نسخة جديدة'),
+              child: Text(S.of(context).saveNewCopy),
             ),
             ElevatedButton(
               onPressed: () => Navigator.of(context).pop('replace'),
-              child: const Text('استبدال النسخة القديمة'),
+              child: Text(S.of(context).replaceOldVersion),
             ),
           ],
         );
@@ -2241,7 +2245,7 @@ class _EditFilePageState extends State<EditFilePage> {
     if (token == null) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('يجب تسجيل الدخول أولاً')));
+      ).showSnackBar(SnackBar(content: Text(S.of(context).mustLoginFirst)));
       return;
     }
 
@@ -2251,7 +2255,7 @@ class _EditFilePageState extends State<EditFilePage> {
     if (fileId == null) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('معرف الملف غير متوفر')));
+      ).showSnackBar(SnackBar(content: Text(S.of(context).fileIdNotAvailable)));
       return;
     }
 
@@ -2261,8 +2265,8 @@ class _EditFilePageState extends State<EditFilePage> {
       try {
         if (!await _editedFile!.exists()) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('الملف المعدل غير موجود. يرجى إعادة التعديل'),
+            SnackBar(
+              content: Text(S.of(context).editedFileNotFound),
               backgroundColor: Colors.orange,
             ),
           );
@@ -2275,7 +2279,7 @@ class _EditFilePageState extends State<EditFilePage> {
         print('❌ Error checking edited file: $e');
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('خطأ في الوصول للملف المعدل: ${e.toString()}'),
+            content: Text(S.of(context).errorAccessingEditedFile(e.toString())),
             backgroundColor: Colors.red,
           ),
         );
@@ -2303,23 +2307,28 @@ class _EditFilePageState extends State<EditFilePage> {
 
         if (saveOption == 'replace') {
           // ✅ التحقق من نوع الملف
-          final category = originalData['category']?.toString().toLowerCase() ?? '';
+          final category =
+              originalData['category']?.toString().toLowerCase() ?? '';
           final fileType = originalData['type']?.toString().toLowerCase() ?? '';
-          final isImage = category == 'images' || 
-                         fileType.startsWith('image/') ||
-                         _fileType == 'image';
-          
+          final isImage =
+              category == 'images' ||
+              fileType.startsWith('image/') ||
+              _fileType == 'image';
+
           // ✅ التحقق من أن الملف مشترك (isShared أو sharedWith) أو في غرفة (roomId)
-          final isShared = originalData['isShared'] == true ||
+          final isShared =
+              originalData['isShared'] == true ||
               (originalData['sharedWith'] != null &&
                   (originalData['sharedWith'] as List).isNotEmpty);
-          final hasRoomId = widget.file['roomId'] != null || 
-                           originalData['roomId'] != null;
-          
+          final hasRoomId =
+              widget.file['roomId'] != null || originalData['roomId'] != null;
+
           // ✅ استخدام updateFileContent للصور (الباك إند يجعل replaceMode افتراضياً true للصور)
           // ✅ أو للملفات المشتركة أو في غرفة
           if (isImage || isShared || hasRoomId) {
-            print('📝 [EditFilePage] File is image/shared/in room, using updateFileContent');
+            print(
+              '📝 [EditFilePage] File is image/shared/in room, using updateFileContent',
+            );
             print('   - isImage: $isImage');
             print('   - isShared: $isShared');
             print('   - hasRoomId: $hasRoomId');
@@ -2327,22 +2336,23 @@ class _EditFilePageState extends State<EditFilePage> {
               fileId: fileId,
               file: _editedFile!,
               token: token,
-              replaceMode: true, // ✅ استبدال تلقائي (الباك إند يجعلها افتراضية للصور)
+              replaceMode:
+                  true, // ✅ استبدال تلقائي (الباك إند يجعلها افتراضية للصور)
             );
 
             if (updateSuccess) {
               print('✅ [EditFilePage] File content updated successfully');
-              
+
               // ✅ مسح cache الصور في Flutter بعد التحديث الناجح
               // ✅ هذا يضمن أن الصور المحدثة يتم إعادة تحميلها
               // ✅ استخدام PaintingBinding.instance.imageCache بدلاً من imageCache مباشرة
               PaintingBinding.instance.imageCache.clear();
               PaintingBinding.instance.imageCache.clearLiveImages();
               print('✅ [EditFilePage] Image cache cleared');
-              
+
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('✅ تم تحديث الملف بنجاح'),
+                SnackBar(
+                  content: Text(S.of(context).fileUpdatedSuccessfully),
                   backgroundColor: Colors.green,
                 ),
               );
@@ -2350,7 +2360,9 @@ class _EditFilePageState extends State<EditFilePage> {
               Navigator.pop(context, true);
               return;
             } else {
-              print('❌ [EditFilePage] Failed to update file content: ${fileController.errorMessage}');
+              print(
+                '❌ [EditFilePage] Failed to update file content: ${fileController.errorMessage}',
+              );
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content: Text(
@@ -2362,7 +2374,9 @@ class _EditFilePageState extends State<EditFilePage> {
             }
           } else {
             // ✅ للملفات غير المشتركة وغير الصور: استخدام الطريقة القديمة (رفع ملف جديد وحذف القديم)
-            print('📝 [EditFilePage] File is not image/shared, using upload + delete');
+            print(
+              '📝 [EditFilePage] File is not image/shared, using upload + delete',
+            );
             // أولاً: رفع الملف الجديد
             final uploadSuccess = await fileController.uploadSingleFile(
               file: _editedFile!,
@@ -2379,8 +2393,8 @@ class _EditFilePageState extends State<EditFilePage> {
 
               if (deleteSuccess) {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('✅ تم استبدال الملف بنجاح'),
+                  SnackBar(
+                    content: Text(S.of(context).fileReplacedSuccessfully),
                     backgroundColor: Colors.green,
                   ),
                 );
@@ -2417,8 +2431,8 @@ class _EditFilePageState extends State<EditFilePage> {
 
           if (uploadSuccess) {
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('✅ تم حفظ النسخة الجديدة بنجاح'),
+              SnackBar(
+                content: Text(S.of(context).newCopySavedSuccessfully),
                 backgroundColor: Colors.green,
               ),
             );
@@ -2438,7 +2452,7 @@ class _EditFilePageState extends State<EditFilePage> {
       } catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('خطأ: ${e.toString()}'),
+            content: Text(S.of(context).errorOccurred(e.toString())),
             backgroundColor: Colors.red,
           ),
         );
@@ -2480,8 +2494,8 @@ class _EditFilePageState extends State<EditFilePage> {
 
       if (success) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('✅ تم حفظ التغييرات بنجاح'),
+          SnackBar(
+            content: Text(S.of(context).changesSavedSuccessfully),
             backgroundColor: Colors.green,
           ),
         );
@@ -2497,7 +2511,7 @@ class _EditFilePageState extends State<EditFilePage> {
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('خطأ: ${e.toString()}'),
+          content: Text(S.of(context).errorOccurred(e.toString())),
           backgroundColor: Colors.red,
         ),
       );
@@ -2587,11 +2601,11 @@ class _FrameExtractionDialogState extends State<_FrameExtractionDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text('إلغاء'),
+          child: Text(S.of(context).cancel),
         ),
         ElevatedButton(
           onPressed: () => Navigator.pop(context, _selectedSeconds),
-          child: const Text('استخراج'),
+          child: Text(S.of(context).extract),
         ),
       ],
     );
@@ -2657,7 +2671,7 @@ class _AudioTrimDialogState extends State<_AudioTrimDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text('قص الصوت'),
+      title: Text(S.of(context).trimAudio),
       content: _isLoading
           ? const SizedBox(
               height: 200,
@@ -2668,7 +2682,11 @@ class _AudioTrimDialogState extends State<_AudioTrimDialog> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text('المدة الكلية: ${_formatDuration(_audioDuration)}'),
+                  Text(
+                    S
+                        .of(context)
+                        .totalDuration(_formatDuration(_audioDuration)),
+                  ),
                   const SizedBox(height: 24),
                   const Text(
                     'وقت البداية:',
@@ -2725,7 +2743,7 @@ class _AudioTrimDialogState extends State<_AudioTrimDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text('إلغاء'),
+          child: Text(S.of(context).cancel),
         ),
         ElevatedButton(
           onPressed: _isLoading
@@ -2734,7 +2752,7 @@ class _AudioTrimDialogState extends State<_AudioTrimDialog> {
                   'start': _startTime,
                   'end': _endTime,
                 }),
-          child: const Text('قص'),
+          child: Text(S.of(context).trim),
         ),
       ],
     );
@@ -2753,7 +2771,7 @@ class _AudioVolumeDialogState extends State<_AudioVolumeDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text('تعديل مستوى الصوت'),
+      title: Text(S.of(context).adjustVolume),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -2789,11 +2807,11 @@ class _AudioVolumeDialogState extends State<_AudioVolumeDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text('إلغاء'),
+          child: Text(S.of(context).cancel),
         ),
         ElevatedButton(
           onPressed: () => Navigator.pop(context, _volumeMultiplier),
-          child: const Text('تطبيق'),
+          child: Text(S.of(context).apply),
         ),
       ],
     );
@@ -2825,30 +2843,30 @@ class _AudioFormatDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text('تحويل الصيغة'),
+      title: Text(S.of(context).convertFormat),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Text('اختر صيغة الإخراج:'),
+          Text(S.of(context).chooseOutputFormat),
           const SizedBox(height: 16),
           ListTile(
             leading: const Icon(Icons.audiotrack, color: Colors.blue),
-            title: const Text('WAV'),
-            subtitle: const Text('جودة عالية، حجم كبير'),
+            title: Text(S.of(context).wavFormat),
+            subtitle: Text(S.of(context).wavDescription),
             onTap: () => Navigator.pop(context, '.wav'),
             selected: currentExtension.toLowerCase() == '.wav',
           ),
           ListTile(
             leading: const Icon(Icons.audiotrack, color: Colors.orange),
-            title: const Text('MP3'),
-            subtitle: const Text('جودة جيدة، حجم صغير'),
+            title: Text(S.of(context).mp3Format),
+            subtitle: Text(S.of(context).mp3Description),
             onTap: () => Navigator.pop(context, '.mp3'),
             selected: currentExtension.toLowerCase() == '.mp3',
           ),
           ListTile(
             leading: const Icon(Icons.audiotrack, color: Colors.green),
-            title: const Text('AAC'),
-            subtitle: const Text('جودة جيدة جداً'),
+            title: Text(S.of(context).aacFormat),
+            subtitle: Text(S.of(context).aacDescription),
             onTap: () => Navigator.pop(context, '.aac'),
             selected: currentExtension.toLowerCase() == '.aac',
           ),
@@ -2857,7 +2875,7 @@ class _AudioFormatDialog extends StatelessWidget {
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text('إلغاء'),
+          child: Text(S.of(context).cancel),
         ),
       ],
     );
@@ -2887,7 +2905,7 @@ class _PdfAnnotationDialogState extends State<_PdfAnnotationDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text('إضافة نص (Annotation)'),
+      title: Text(S.of(context).addTextAnnotation),
       content: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -2900,28 +2918,28 @@ class _PdfAnnotationDialogState extends State<_PdfAnnotationDialog> {
               ),
             ),
             const SizedBox(height: 16),
-            Text('الموضع X: ${_x.toStringAsFixed(0)}'),
+            Text(S.of(context).positionX(_x.toStringAsFixed(0))),
             Slider(
               value: _x,
               min: 0,
               max: 200,
               onChanged: (value) => setState(() => _x = value),
             ),
-            Text('الموضع Y: ${_y.toStringAsFixed(0)}'),
+            Text(S.of(context).positionY(_y.toStringAsFixed(0))),
             Slider(
               value: _y,
               min: 0,
               max: 200,
               onChanged: (value) => setState(() => _y = value),
             ),
-            Text('حجم الخط: ${_fontSize.toStringAsFixed(0)}'),
+            Text(S.of(context).fontSize(_fontSize.toStringAsFixed(0))),
             Slider(
               value: _fontSize,
               min: 8,
               max: 48,
               onChanged: (value) => setState(() => _fontSize = value),
             ),
-            Text('الصفحة: $_page'),
+            Text(S.of(context).page(_page.toString())),
             Slider(
               value: _page.toDouble(),
               min: 0,
@@ -2935,7 +2953,7 @@ class _PdfAnnotationDialogState extends State<_PdfAnnotationDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text('إلغاء'),
+          child: Text(S.of(context).cancel),
         ),
         ElevatedButton(
           onPressed: () => Navigator.pop(context, {
@@ -2946,7 +2964,7 @@ class _PdfAnnotationDialogState extends State<_PdfAnnotationDialog> {
             'page': _page,
             'color': _color,
           }),
-          child: const Text('إضافة'),
+          child: Text(S.of(context).add),
         ),
       ],
     );
@@ -2970,19 +2988,19 @@ class _PdfImagePositionDialogState extends State<_PdfImagePositionDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text('تحديد موضع الصورة'),
+      title: Text(S.of(context).selectImagePosition),
       content: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text('الموضع X: ${_x.toStringAsFixed(0)}'),
+            Text(S.of(context).positionX(_x.toStringAsFixed(0))),
             Slider(
               value: _x,
               min: 0,
               max: 200,
               onChanged: (value) => setState(() => _x = value),
             ),
-            Text('الموضع Y: ${_y.toStringAsFixed(0)}'),
+            Text(S.of(context).positionY(_y.toStringAsFixed(0))),
             Slider(
               value: _y,
               min: 0,
@@ -3003,7 +3021,7 @@ class _PdfImagePositionDialogState extends State<_PdfImagePositionDialog> {
               max: 200,
               onChanged: (value) => setState(() => _height = value),
             ),
-            Text('الصفحة: $_page'),
+            Text(S.of(context).page(_page.toString())),
             Slider(
               value: _page.toDouble(),
               min: 0,
@@ -3017,7 +3035,7 @@ class _PdfImagePositionDialogState extends State<_PdfImagePositionDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text('إلغاء'),
+          child: Text(S.of(context).cancel),
         ),
         ElevatedButton(
           onPressed: () => Navigator.pop(context, {
@@ -3027,7 +3045,7 @@ class _PdfImagePositionDialogState extends State<_PdfImagePositionDialog> {
             'height': _height,
             'page': _page,
           }),
-          child: const Text('إضافة'),
+          child: Text(S.of(context).add),
         ),
       ],
     );
@@ -3051,19 +3069,19 @@ class _PdfHighlightDialogState extends State<_PdfHighlightDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text('تظليل النص (Highlight)'),
+      title: Text(S.of(context).highlightText),
       content: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text('الموضع X: ${_x.toStringAsFixed(0)}'),
+            Text(S.of(context).positionX(_x.toStringAsFixed(0))),
             Slider(
               value: _x,
               min: 0,
               max: 200,
               onChanged: (value) => setState(() => _x = value),
             ),
-            Text('الموضع Y: ${_y.toStringAsFixed(0)}'),
+            Text(S.of(context).positionY(_y.toStringAsFixed(0))),
             Slider(
               value: _y,
               min: 0,
@@ -3084,7 +3102,7 @@ class _PdfHighlightDialogState extends State<_PdfHighlightDialog> {
               max: 50,
               onChanged: (value) => setState(() => _height = value),
             ),
-            Text('الصفحة: $_page'),
+            Text(S.of(context).page(_page.toString())),
             Slider(
               value: _page.toDouble(),
               min: 0,
@@ -3093,7 +3111,7 @@ class _PdfHighlightDialogState extends State<_PdfHighlightDialog> {
               onChanged: (value) => setState(() => _page = value.toInt()),
             ),
             const SizedBox(height: 16),
-            const Text('اللون:'),
+            Text(S.of(context).color),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
@@ -3109,7 +3127,7 @@ class _PdfHighlightDialogState extends State<_PdfHighlightDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text('إلغاء'),
+          child: Text(S.of(context).cancel),
         ),
         ElevatedButton(
           onPressed: () => Navigator.pop(context, {
@@ -3120,7 +3138,7 @@ class _PdfHighlightDialogState extends State<_PdfHighlightDialog> {
             'page': _page,
             'color': _color,
           }),
-          child: const Text('تظليل'),
+          child: Text(S.of(context).highlight),
         ),
       ],
     );

@@ -25,12 +25,7 @@ import 'package:filevo/constants/app_colors.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  runApp(
-    DevicePreview(
-      enabled: !kReleaseMode,
-      builder: (context) => MyApp(),
-    ),
-  );
+  runApp(DevicePreview(enabled: !kReleaseMode, builder: (context) => MyApp()));
 }
 
 class MyApp extends StatefulWidget {
@@ -62,51 +57,131 @@ class _MyAppState extends State<MyApp> {
     });
   }
 
-  // ✅ بناء Light Theme
+  // ✅ بناء Light Theme - نظام ألوان متناسق
   ThemeData _buildLightTheme() {
     return ThemeData(
       useMaterial3: false, // ✅ استخدام Material 2 لتجنب مشاكل الألوان
       brightness: Brightness.light,
-      primaryColor: AppColors.lightAppBar,
+      primaryColor: AppColors.lightPrimary,
       scaffoldBackgroundColor: AppColors.lightBackground,
       cardColor: AppColors.lightCardBackground,
+      dividerColor: AppColors.lightDivider,
       appBarTheme: const AppBarTheme(
         backgroundColor: AppColors.lightAppBar,
         foregroundColor: Colors.white,
         elevation: 0,
         iconTheme: IconThemeData(color: Colors.white),
+        titleTextStyle: TextStyle(
+          color: Colors.white,
+          fontSize: 20,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+      cardTheme: CardThemeData(
+        color: AppColors.lightCardBackground,
+        elevation: 2,
+        shadowColor: AppColors.shadowLight,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+          side: BorderSide(color: AppColors.lightBorder, width: 0.5),
+        ),
       ),
       textTheme: const TextTheme(
-        displayLarge: TextStyle(color: AppColors.lightTextPrimary),
-        displayMedium: TextStyle(color: AppColors.lightTextPrimary),
-        displaySmall: TextStyle(color: AppColors.lightTextPrimary),
-        headlineLarge: TextStyle(color: AppColors.lightTextPrimary),
-        headlineMedium: TextStyle(color: AppColors.lightTextPrimary),
-        headlineSmall: TextStyle(color: AppColors.lightTextPrimary),
-        titleLarge: TextStyle(color: AppColors.lightTextPrimary),
-        titleMedium: TextStyle(color: AppColors.lightTextPrimary),
-        titleSmall: TextStyle(color: AppColors.lightTextPrimary),
+        displayLarge: TextStyle(
+          color: AppColors.lightTextPrimary,
+          fontWeight: FontWeight.bold,
+        ),
+        displayMedium: TextStyle(
+          color: AppColors.lightTextPrimary,
+          fontWeight: FontWeight.bold,
+        ),
+        displaySmall: TextStyle(
+          color: AppColors.lightTextPrimary,
+          fontWeight: FontWeight.bold,
+        ),
+        headlineLarge: TextStyle(
+          color: AppColors.lightTextPrimary,
+          fontWeight: FontWeight.w600,
+        ),
+        headlineMedium: TextStyle(
+          color: AppColors.lightTextPrimary,
+          fontWeight: FontWeight.w600,
+        ),
+        headlineSmall: TextStyle(
+          color: AppColors.lightTextPrimary,
+          fontWeight: FontWeight.w600,
+        ),
+        titleLarge: TextStyle(
+          color: AppColors.lightTextPrimary,
+          fontWeight: FontWeight.w600,
+        ),
+        titleMedium: TextStyle(
+          color: AppColors.lightTextPrimary,
+          fontWeight: FontWeight.w500,
+        ),
+        titleSmall: TextStyle(
+          color: AppColors.lightTextPrimary,
+          fontWeight: FontWeight.w500,
+        ),
         bodyLarge: TextStyle(color: AppColors.lightTextPrimary),
         bodyMedium: TextStyle(color: AppColors.lightTextPrimary),
         bodySmall: TextStyle(color: AppColors.lightTextSecondary),
-        labelLarge: TextStyle(color: AppColors.lightTextPrimary),
+        labelLarge: TextStyle(
+          color: AppColors.lightTextPrimary,
+          fontWeight: FontWeight.w500,
+        ),
         labelMedium: TextStyle(color: AppColors.lightTextPrimary),
         labelSmall: TextStyle(color: AppColors.lightTextSecondary),
       ),
       colorScheme: const ColorScheme.light(
-        primary: AppColors.lightAppBar,
-        secondary: AppColors.accent,
+        primary: AppColors.lightPrimary,
+        primaryContainer: AppColors.lightPrimaryVariant,
+        secondary: AppColors.lightSecondary,
         surface: AppColors.lightSurface,
         background: AppColors.lightBackground,
+        error: AppColors.error,
         onPrimary: Colors.white,
         onSecondary: Colors.white,
         onSurface: AppColors.lightTextPrimary,
         onBackground: AppColors.lightTextPrimary,
+        onError: Colors.white,
+        outline: AppColors.lightBorder,
+      ),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AppColors.lightPrimary,
+          foregroundColor: Colors.white,
+          elevation: 2,
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        ),
+      ),
+      textButtonTheme: TextButtonThemeData(
+        style: TextButton.styleFrom(
+          foregroundColor: AppColors.lightPrimary,
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        ),
+      ),
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: AppColors.lightCardBackground,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: BorderSide(color: AppColors.lightBorder),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: BorderSide(color: AppColors.lightBorder),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: BorderSide(color: AppColors.lightPrimary, width: 2),
+        ),
       ),
     );
   }
 
-  // ✅ بناء Dark Theme
+  // ✅ بناء Dark Theme - نظام ألوان متناسق
   ThemeData _buildDarkTheme() {
     return ThemeData(
       useMaterial3: false, // ✅ استخدام Material 2 لتجنب مشاكل الألوان
@@ -114,38 +189,118 @@ class _MyAppState extends State<MyApp> {
       primaryColor: AppColors.darkPrimary,
       scaffoldBackgroundColor: AppColors.darkBackground,
       cardColor: AppColors.darkCardBackground,
+      dividerColor: AppColors.darkDivider,
       appBarTheme: const AppBarTheme(
         backgroundColor: AppColors.darkAppBar,
         foregroundColor: Colors.white,
         elevation: 0,
         iconTheme: IconThemeData(color: Colors.white),
+        titleTextStyle: TextStyle(
+          color: Colors.white,
+          fontSize: 20,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+      cardTheme: CardThemeData(
+        color: AppColors.darkCardBackground,
+        elevation: 4,
+        shadowColor: AppColors.shadowDark,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+          side: BorderSide(color: AppColors.darkBorder, width: 0.5),
+        ),
       ),
       textTheme: const TextTheme(
-        displayLarge: TextStyle(color: AppColors.darkTextPrimary),
-        displayMedium: TextStyle(color: AppColors.darkTextPrimary),
-        displaySmall: TextStyle(color: AppColors.darkTextPrimary),
-        headlineLarge: TextStyle(color: AppColors.darkTextPrimary),
-        headlineMedium: TextStyle(color: AppColors.darkTextPrimary),
-        headlineSmall: TextStyle(color: AppColors.darkTextPrimary),
-        titleLarge: TextStyle(color: AppColors.darkTextPrimary),
-        titleMedium: TextStyle(color: AppColors.darkTextPrimary),
-        titleSmall: TextStyle(color: AppColors.darkTextPrimary),
+        displayLarge: TextStyle(
+          color: AppColors.darkTextPrimary,
+          fontWeight: FontWeight.bold,
+        ),
+        displayMedium: TextStyle(
+          color: AppColors.darkTextPrimary,
+          fontWeight: FontWeight.bold,
+        ),
+        displaySmall: TextStyle(
+          color: AppColors.darkTextPrimary,
+          fontWeight: FontWeight.bold,
+        ),
+        headlineLarge: TextStyle(
+          color: AppColors.darkTextPrimary,
+          fontWeight: FontWeight.w600,
+        ),
+        headlineMedium: TextStyle(
+          color: AppColors.darkTextPrimary,
+          fontWeight: FontWeight.w600,
+        ),
+        headlineSmall: TextStyle(
+          color: AppColors.darkTextPrimary,
+          fontWeight: FontWeight.w600,
+        ),
+        titleLarge: TextStyle(
+          color: AppColors.darkTextPrimary,
+          fontWeight: FontWeight.w600,
+        ),
+        titleMedium: TextStyle(
+          color: AppColors.darkTextPrimary,
+          fontWeight: FontWeight.w500,
+        ),
+        titleSmall: TextStyle(
+          color: AppColors.darkTextPrimary,
+          fontWeight: FontWeight.w500,
+        ),
         bodyLarge: TextStyle(color: AppColors.darkTextPrimary),
         bodyMedium: TextStyle(color: AppColors.darkTextPrimary),
         bodySmall: TextStyle(color: AppColors.darkTextSecondary),
-        labelLarge: TextStyle(color: AppColors.darkTextPrimary),
+        labelLarge: TextStyle(
+          color: AppColors.darkTextPrimary,
+          fontWeight: FontWeight.w500,
+        ),
         labelMedium: TextStyle(color: AppColors.darkTextPrimary),
         labelSmall: TextStyle(color: AppColors.darkTextSecondary),
       ),
       colorScheme: const ColorScheme.dark(
         primary: AppColors.darkPrimary,
-        secondary: AppColors.accent,
+        primaryContainer: AppColors.darkPrimaryVariant,
+        secondary: AppColors.darkSecondary,
         surface: AppColors.darkSurface,
         background: AppColors.darkBackground,
+        error: AppColors.error,
         onPrimary: Colors.white,
         onSecondary: Colors.white,
         onSurface: AppColors.darkTextPrimary,
         onBackground: AppColors.darkTextPrimary,
+        onError: Colors.white,
+        outline: AppColors.darkBorder,
+      ),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AppColors.darkPrimary,
+          foregroundColor: Colors.white,
+          elevation: 2,
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        ),
+      ),
+      textButtonTheme: TextButtonThemeData(
+        style: TextButton.styleFrom(
+          foregroundColor: AppColors.darkPrimary,
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        ),
+      ),
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: AppColors.darkCardBackground,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: BorderSide(color: AppColors.darkBorder),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: BorderSide(color: AppColors.darkBorder),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: BorderSide(color: AppColors.darkPrimary, width: 2),
+        ),
       ),
     );
   }
@@ -177,7 +332,7 @@ class _MyAppState extends State<MyApp> {
           );
           return MaterialApp(
             locale: _locale ?? const Locale('en'),
-            localizationsDelegates: const [
+            localizationsDelegates: [
               S.delegate,
               GlobalMaterialLocalizations.delegate,
               GlobalWidgetsLocalizations.delegate,
@@ -207,16 +362,14 @@ class _MyAppState extends State<MyApp> {
                 // أثناء التحميل، عرض شاشة تحميل
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return Scaffold(
-                    body: Center(
-                      child: CircularProgressIndicator(),
-                    ),
+                    body: Center(child: CircularProgressIndicator()),
                   );
                 }
-                
+
                 // التحقق من وجود التوكن
                 final isLoggedIn = snapshot.data ?? false;
                 print('🔑 [MyApp] Checking login status: $isLoggedIn');
-                
+
                 if (isLoggedIn) {
                   print('✅ [MyApp] User is logged in, navigating to Main');
                   return MainPage();

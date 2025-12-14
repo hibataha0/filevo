@@ -534,9 +534,14 @@ class S {
     return Intl.message('Custom', name: 'custom', desc: '', args: []);
   }
 
-  /// `Used`
-  String get used {
-    return Intl.message('Used', name: 'used', desc: '', args: []);
+  /// `Used storage:`
+  String get usedStorage {
+    return Intl.message(
+      'Used storage:',
+      name: 'usedStorage',
+      desc: '',
+      args: [],
+    );
   }
 
   /// `Storage Overview`
@@ -544,16 +549,6 @@ class S {
     return Intl.message(
       'Storage Overview',
       name: 'storageOverview',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Used storage:`
-  String get usedStorage {
-    return Intl.message(
-      'Used storage:',
-      name: 'usedStorage',
       desc: '',
       args: [],
     );
@@ -1029,11 +1024,6 @@ class S {
     );
   }
 
-  /// `Cancel`
-  String get cancel {
-    return Intl.message('Cancel', name: 'cancel', desc: '', args: []);
-  }
-
   /// `File ID not available`
   String get fileIdNotAvailable {
     return Intl.message(
@@ -1109,10 +1099,10 @@ class S {
     );
   }
 
-  /// `Invalid PDF file`
+  /// `This file is not a valid PDF or may be corrupted.`
   String get invalidPdfFile {
     return Intl.message(
-      'Invalid PDF file',
+      'This file is not a valid PDF or may be corrupted.',
       name: 'invalidPdfFile',
       desc: '',
       args: [],
@@ -1264,26 +1254,6 @@ class S {
     return Intl.message('Leave Room', name: 'leaveRoom', desc: '', args: []);
   }
 
-  /// `Are you sure you want to delete "{roomName}"? All data associated with the room will be deleted.`
-  String deleteRoomConfirm(String roomName) {
-    return Intl.message(
-      'Are you sure you want to delete "$roomName"? All data associated with the room will be deleted.',
-      name: 'deleteRoomConfirm',
-      desc: '',
-      args: [roomName],
-    );
-  }
-
-  /// `Are you sure you want to leave "{roomName}"? You will not be able to access this room after leaving.`
-  String leaveRoomConfirm(String roomName) {
-    return Intl.message(
-      'Are you sure you want to leave "$roomName"? You will not be able to access this room after leaving.',
-      name: 'leaveRoomConfirm',
-      desc: '',
-      args: [roomName],
-    );
-  }
-
   /// `{roomName}`
   String roomName(Object roomName) {
     return Intl.message(
@@ -1375,22 +1345,12 @@ class S {
   }
 
   /// `Shared Files ({count})`
-  String sharedFilesCount(String count) {
+  String sharedFilesCount(Object count) {
     return Intl.message(
       'Shared Files ($count)',
       name: 'sharedFilesCount',
       desc: '',
       args: [count],
-    );
-  }
-
-  /// `Number of Files`
-  String get filesCount {
-    return Intl.message(
-      'Number of Files',
-      name: 'filesCount',
-      desc: '',
-      args: [],
     );
   }
 
@@ -1409,21 +1369,6 @@ class S {
     );
   }
 
-  /// `Please open the file details page and share it with the room from there`
-  String get openFileDetailsToShare {
-    return Intl.message(
-      'Please open the file details page and share it with the room from there',
-      name: 'openFileDetailsToShare',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `OK`
-  String get ok {
-    return Intl.message('OK', name: 'ok', desc: '', args: []);
-  }
-
   /// `Add Folder`
   String get addFolder {
     return Intl.message('Add Folder', name: 'addFolder', desc: '', args: []);
@@ -1439,501 +1384,6 @@ class S {
     );
   }
 
-  /// `Please open the folder details page and share it with the room from there`
-  String get openFolderDetailsToShare {
-    return Intl.message(
-      'Please open the folder details page and share it with the room from there',
-      name: 'openFolderDetailsToShare',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Folder ID not available`
-  String get folderIdNotAvailable {
-    return Intl.message(
-      'Folder ID not available',
-      name: 'folderIdNotAvailable',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Failed to load room details`
-  String get failedToLoadRoomDetails {
-    return Intl.message(
-      'Failed to load room details',
-      name: 'failedToLoadRoomDetails',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Error loading room details`
-  String get errorLoadingRoomDetails {
-    return Intl.message(
-      'Error loading room details',
-      name: 'errorLoadingRoomDetails',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Profile`
-  String get profile {
-    return Intl.message('Profile', name: 'profile', desc: '', args: []);
-  }
-
-  /// `Edit Username`
-  String get editUsername {
-    return Intl.message(
-      'Edit Username',
-      name: 'editUsername',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Edit Email`
-  String get editEmail {
-    return Intl.message('Edit Email', name: 'editEmail', desc: '', args: []);
-  }
-
-  /// `Change Password`
-  String get changePassword {
-    return Intl.message(
-      'Change Password',
-      name: 'changePassword',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Current Password`
-  String get currentPassword {
-    return Intl.message(
-      'Current Password',
-      name: 'currentPassword',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `New Password`
-  String get newPassword {
-    return Intl.message(
-      'New Password',
-      name: 'newPassword',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Confirm New Password`
-  String get confirmNewPassword {
-    return Intl.message(
-      'Confirm New Password',
-      name: 'confirmNewPassword',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Current password is required`
-  String get currentPasswordRequired {
-    return Intl.message(
-      'Current password is required',
-      name: 'currentPasswordRequired',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `New password is required`
-  String get newPasswordRequired {
-    return Intl.message(
-      'New password is required',
-      name: 'newPasswordRequired',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Password confirmation is required`
-  String get passwordConfirmationRequired {
-    return Intl.message(
-      'Password confirmation is required',
-      name: 'passwordConfirmationRequired',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Password must be at least 6 characters`
-  String get passwordMinLength {
-    return Intl.message(
-      'Password must be at least 6 characters',
-      name: 'passwordMinLength',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `This field is required`
-  String get fieldRequired {
-    return Intl.message(
-      'This field is required',
-      name: 'fieldRequired',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Please enter a valid email address`
-  String get validEmailRequired {
-    return Intl.message(
-      'Please enter a valid email address',
-      name: 'validEmailRequired',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Updated successfully`
-  String get updatedSuccessfully {
-    return Intl.message(
-      'Updated successfully',
-      name: 'updatedSuccessfully',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Failed to update`
-  String get updateFailed {
-    return Intl.message(
-      'Failed to update',
-      name: 'updateFailed',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Password updated successfully`
-  String get passwordUpdatedSuccessfully {
-    return Intl.message(
-      'Password updated successfully',
-      name: 'passwordUpdatedSuccessfully',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Failed to update password`
-  String get passwordUpdateFailed {
-    return Intl.message(
-      'Failed to update password',
-      name: 'passwordUpdateFailed',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Trash`
-  String get trash {
-    return Intl.message('Trash', name: 'trash', desc: '', args: []);
-  }
-
-  /// `Deleted Files`
-  String get deletedFiles {
-    return Intl.message(
-      'Deleted Files',
-      name: 'deletedFiles',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Deleted Folders`
-  String get deletedFolders {
-    return Intl.message(
-      'Deleted Folders',
-      name: 'deletedFolders',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Token not found`
-  String get tokenNotFound {
-    return Intl.message(
-      'Token not found',
-      name: 'tokenNotFound',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Logged out successfully`
-  String get logoutSuccess {
-    return Intl.message(
-      'Logged out successfully',
-      name: 'logoutSuccess',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `No shared files`
-  String get noSharedFiles {
-    return Intl.message(
-      'No shared files',
-      name: 'noSharedFiles',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Share files with this room`
-  String get shareFilesWithRoom {
-    return Intl.message(
-      'Share files with this room',
-      name: 'shareFilesWithRoom',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `File`
-  String get file {
-    return Intl.message('File', name: 'file', desc: '', args: []);
-  }
-
-  /// `File not available (error {statusCode})`
-  String fileNotAvailable(Object statusCode) {
-    return Intl.message(
-      'File not available (error $statusCode)',
-      name: 'fileNotAvailable',
-      desc: '',
-      args: [statusCode],
-    );
-  }
-
-  /// `Error loading file: {error}`
-  String errorLoadingFile(String error) {
-    return Intl.message(
-      'Error loading file: $error',
-      name: 'errorLoadingFile',
-      desc: '',
-      args: [error],
-    );
-  }
-
-  /// `Error opening file: {error}`
-  String errorOpeningFile(String error) {
-    return Intl.message(
-      'Error opening file: $error',
-      name: 'errorOpeningFile',
-      desc: '',
-      args: [error],
-    );
-  }
-
-  /// `Unknown file`
-  String get unknownFile {
-    return Intl.message(
-      'Unknown file',
-      name: 'unknownFile',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `User`
-  String get user {
-    return Intl.message('User', name: 'user', desc: '', args: []);
-  }
-
-  /// `Viewed by all`
-  String get viewedByAll {
-    return Intl.message(
-      'Viewed by all',
-      name: 'viewedByAll',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Active`
-  String get active {
-    return Intl.message('Active', name: 'active', desc: '', args: []);
-  }
-
-  /// `Accessed`
-  String get accessed {
-    return Intl.message('Accessed', name: 'accessed', desc: '', args: []);
-  }
-
-  /// `Completed`
-  String get completed {
-    return Intl.message('Completed', name: 'completed', desc: '', args: []);
-  }
-
-  /// `Shared by`
-  String get sharedBy {
-    return Intl.message('Shared by', name: 'sharedBy', desc: '', args: []);
-  }
-
-  /// `Modified`
-  String get modified {
-    return Intl.message('Modified', name: 'modified', desc: '', args: []);
-  }
-
-  /// `No files`
-  String get noFiles {
-    return Intl.message('No files', name: 'noFiles', desc: '', args: []);
-  }
-
-  /// `Start adding new files`
-  String get startAddingFiles {
-    return Intl.message(
-      'Start adding new files',
-      name: 'startAddingFiles',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Remove File from Room`
-  String get removeFileFromRoom {
-    return Intl.message(
-      'Remove File from Room',
-      name: 'removeFileFromRoom',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Are you sure you want to remove "{fileName}" from this room?`
-  String removeFileFromRoomConfirm(String fileName) {
-    return Intl.message(
-      'Are you sure you want to remove "$fileName" from this room?',
-      name: 'removeFileFromRoomConfirm',
-      desc: '',
-      args: [fileName],
-    );
-  }
-
-  /// `Remove`
-  String get remove {
-    return Intl.message('Remove', name: 'remove', desc: '', args: []);
-  }
-
-  /// `File removed from room successfully`
-  String get fileRemovedFromRoom {
-    return Intl.message(
-      'File removed from room successfully',
-      name: 'fileRemovedFromRoom',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Failed to remove file from room`
-  String get failedToRemoveFile {
-    return Intl.message(
-      'Failed to remove file from room',
-      name: 'failedToRemoveFile',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Error: File ID not found`
-  String get fileIdNotFound {
-    return Intl.message(
-      'Error: File ID not found',
-      name: 'fileIdNotFound',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `You must login first`
-  String get mustLoginFirst {
-    return Intl.message(
-      'You must login first',
-      name: 'mustLoginFirst',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Moving file...`
-  String get movingFile {
-    return Intl.message(
-      'Moving file...',
-      name: 'movingFile',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `File moved successfully`
-  String get fileMovedSuccessfully {
-    return Intl.message(
-      'File moved successfully',
-      name: 'fileMovedSuccessfully',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Failed to move file`
-  String get failedToMoveFile {
-    return Intl.message(
-      'Failed to move file',
-      name: 'failedToMoveFile',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Move File`
-  String get moveFile {
-    return Intl.message('Move File', name: 'moveFile', desc: '', args: []);
-  }
-
-  /// `Select Target Folder`
-  String get selectTargetFolder {
-    return Intl.message(
-      'Select Target Folder',
-      name: 'selectTargetFolder',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Root`
-  String get root {
-    return Intl.message('Root', name: 'root', desc: '', args: []);
-  }
-
-  /// `Move to Root`
-  String get moveToRoot {
-    return Intl.message('Move to Root', name: 'moveToRoot', desc: '', args: []);
-  }
-
-  /// `Move folder to main folder`
-  String get moveToRootDescription {
-    return Intl.message(
-      'Move folder to main folder',
-      name: 'moveToRootDescription',
-      desc: '',
-      args: [],
-    );
-  }
-
   /// `Select "{folderName}"`
   String selectFolder(String folderName) {
     return Intl.message(
@@ -1941,16 +1391,6 @@ class S {
       name: 'selectFolder',
       desc: '',
       args: [folderName],
-    );
-  }
-
-  /// `Move to this folder`
-  String get selectFolderDescription {
-    return Intl.message(
-      'Move to this folder',
-      name: 'selectFolderDescription',
-      desc: '',
-      args: [],
     );
   }
 
@@ -2062,11 +1502,6 @@ class S {
       desc: '',
       args: [],
     );
-  }
-
-  /// `Save`
-  String get save {
-    return Intl.message('Save', name: 'save', desc: '', args: []);
   }
 
   /// `Cannot add shared files in room to favorites`
@@ -2254,16 +1689,6 @@ class S {
     );
   }
 
-  /// `Error loading file data`
-  String get errorLoadingFileData {
-    return Intl.message(
-      'Error loading file data',
-      name: 'errorLoadingFileData',
-      desc: '',
-      args: [],
-    );
-  }
-
   /// `File Information`
   String get fileInfo {
     return Intl.message(
@@ -2272,11 +1697,6 @@ class S {
       desc: '',
       args: [],
     );
-  }
-
-  /// `Category`
-  String get category {
-    return Intl.message('Category', name: 'category', desc: '', args: []);
   }
 
   /// `Extension`
@@ -2334,16 +1754,6 @@ class S {
     return Intl.message('Document', name: 'document', desc: '', args: []);
   }
 
-  /// `Failed to load preview`
-  String get failedToLoadPreview {
-    return Intl.message(
-      'Failed to load preview',
-      name: 'failedToLoadPreview',
-      desc: '',
-      args: [],
-    );
-  }
-
   /// `Unclassified`
   String get unclassified {
     return Intl.message(
@@ -2359,26 +1769,6 @@ class S {
     return Intl.message(
       'Extracting text from PDF...',
       name: 'extractingTextFromPdf',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Note: Text extraction may not be available for all PDF files.`
-  String get pdfTextExtractionNote {
-    return Intl.message(
-      'Note: Text extraction may not be available for all PDF files.',
-      name: 'pdfTextExtractionNote',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `You can select and highlight text after extraction.`
-  String get pdfTextExtractionNote2 {
-    return Intl.message(
-      'You can select and highlight text after extraction.',
-      name: 'pdfTextExtractionNote2',
       desc: '',
       args: [],
     );
@@ -2424,271 +1814,16 @@ class S {
     );
   }
 
-  /// `Are you sure you want to unshare this file with all users?`
-  String get unshareFileConfirm {
-    return Intl.message(
-      'Are you sure you want to unshare this file with all users?',
-      name: 'unshareFileConfirm',
-      desc: '',
-      args: [],
-    );
-  }
-
   /// `Unshare`
   String get unshare {
     return Intl.message('Unshare', name: 'unshare', desc: '', args: []);
   }
 
-  /// `Failed to extract text from PDF.`
-  String get failedToExtractTextFromPdf {
+  /// `You must log in first`
+  String get mustLoginFirst {
     return Intl.message(
-      'Failed to extract text from PDF.',
-      name: 'failedToExtractTextFromPdf',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `You can view PDF and search in it.`
-  String get canViewPdfAndSearch {
-    return Intl.message(
-      'You can view PDF and search in it.',
-      name: 'canViewPdfAndSearch',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Failed to fetch folder information`
-  String get failedToFetchFolderInfo {
-    return Intl.message(
-      'Failed to fetch folder information',
-      name: 'failedToFetchFolderInfo',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Folder Information`
-  String get folderInfo {
-    return Intl.message(
-      'Folder Information',
-      name: 'folderInfo',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Number of Subfolders`
-  String get subfoldersCount {
-    return Intl.message(
-      'Number of Subfolders',
-      name: 'subfoldersCount',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Creation Date`
-  String get creationDate {
-    return Intl.message(
-      'Creation Date',
-      name: 'creationDate',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Folder without name`
-  String get folderWithoutName {
-    return Intl.message(
-      'Folder without name',
-      name: 'folderWithoutName',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Please enter the 6-digit verification code`
-  String get pleaseEnter6DigitCode {
-    return Intl.message(
-      'Please enter the 6-digit verification code',
-      name: 'pleaseEnter6DigitCode',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Account activated successfully. You can now login`
-  String get accountActivatedSuccessfully {
-    return Intl.message(
-      'Account activated successfully. You can now login',
-      name: 'accountActivatedSuccessfully',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Invalid verification code`
-  String get invalidVerificationCode {
-    return Intl.message(
-      'Invalid verification code',
-      name: 'invalidVerificationCode',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Please wait {countdown} seconds before resending`
-  String pleaseWaitBeforeResend(int countdown) {
-    return Intl.message(
-      'Please wait $countdown seconds before resending',
-      name: 'pleaseWaitBeforeResend',
-      desc: '',
-      args: [countdown],
-    );
-  }
-
-  /// `Verification code sent to your email`
-  String get verificationCodeSent {
-    return Intl.message(
-      'Verification code sent to your email',
-      name: 'verificationCodeSent',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Failed to resend verification code`
-  String get failedToResendCode {
-    return Intl.message(
-      'Failed to resend verification code',
-      name: 'failedToResendCode',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Email Verification`
-  String get emailVerification {
-    return Intl.message(
-      'Email Verification',
-      name: 'emailVerification',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `A 6-digit verification code has been sent to:\n{email}`
-  String verificationCodeSentTo(String email) {
-    return Intl.message(
-      'A 6-digit verification code has been sent to:\n$email',
-      name: 'verificationCodeSentTo',
-      desc: '',
-      args: [email],
-    );
-  }
-
-  /// `Didn't receive the code?`
-  String get didNotReceiveCode {
-    return Intl.message(
-      'Didn\'t receive the code?',
-      name: 'didNotReceiveCode',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Resend`
-  String get resend {
-    return Intl.message('Resend', name: 'resend', desc: '', args: []);
-  }
-
-  /// `Resend ({countdown})`
-  String resendWithCountdown(int countdown) {
-    return Intl.message(
-      'Resend ($countdown)',
-      name: 'resendWithCountdown',
-      desc: '',
-      args: [countdown],
-    );
-  }
-
-  /// `Search error: {error}`
-  String searchError(String error) {
-    return Intl.message(
-      'Search error: $error',
-      name: 'searchError',
-      desc: '',
-      args: [error],
-    );
-  }
-
-  /// `Load More`
-  String get loadMore {
-    return Intl.message('Load More', name: 'loadMore', desc: '', args: []);
-  }
-
-  /// `File not available (error {statusCode})`
-  String fileNotAvailableError(int statusCode) {
-    return Intl.message(
-      'File not available (error $statusCode)',
-      name: 'fileNotAvailableError',
-      desc: '',
-      args: [statusCode],
-    );
-  }
-
-  /// `Information feature under development`
-  String get featureUnderDevelopment {
-    return Intl.message(
-      'Information feature under development',
-      name: 'featureUnderDevelopment',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Updating...`
-  String get updating {
-    return Intl.message('Updating...', name: 'updating', desc: '', args: []);
-  }
-
-  /// `Moving folder...`
-  String get movingFolder {
-    return Intl.message(
-      'Moving folder...',
-      name: 'movingFolder',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Error fetching subfolders: {error}`
-  String errorFetchingSubfolders(String error) {
-    return Intl.message(
-      'Error fetching subfolders: $error',
-      name: 'errorFetchingSubfolders',
-      desc: '',
-      args: [error],
-    );
-  }
-
-  /// `Move folder to main folder`
-  String get moveFolderToRoot {
-    return Intl.message(
-      'Move folder to main folder',
-      name: 'moveFolderToRoot',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Move to this folder`
-  String get moveToThisFolder {
-    return Intl.message(
-      'Move to this folder',
-      name: 'moveToThisFolder',
+      'You must log in first',
+      name: 'mustLoginFirst',
       desc: '',
       args: [],
     );
@@ -2699,11 +1834,26 @@ class S {
     return Intl.message('Edit File', name: 'editFile', desc: '', args: []);
   }
 
+  /// `Edit Image`
+  String get editImage {
+    return Intl.message('Edit Image', name: 'editImage', desc: '', args: []);
+  }
+
   /// `Open Image Editor`
   String get openImageEditor {
     return Intl.message(
       'Open Image Editor',
       name: 'openImageEditor',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Image edited`
+  String get imageEdited {
+    return Intl.message(
+      'Image edited',
+      name: 'imageEdited',
       desc: '',
       args: [],
     );
@@ -2719,6 +1869,11 @@ class S {
     );
   }
 
+  /// `Edit Text`
+  String get editText {
+    return Intl.message('Edit Text', name: 'editText', desc: '', args: []);
+  }
+
   /// `Open Text Editor`
   String get openTextEditor {
     return Intl.message(
@@ -2727,6 +1882,11 @@ class S {
       desc: '',
       args: [],
     );
+  }
+
+  /// `Text edited`
+  String get textEdited {
+    return Intl.message('Text edited', name: 'textEdited', desc: '', args: []);
   }
 
   /// `Failed to load image`
@@ -2829,10 +1989,10 @@ class S {
     );
   }
 
-  /// `Image Extracted`
+  /// `Image extracted`
   String get imageExtracted {
     return Intl.message(
-      'Image Extracted',
+      'Image extracted',
       name: 'imageExtracted',
       desc: '',
       args: [],
@@ -2859,20 +2019,20 @@ class S {
     );
   }
 
-  /// `Merging clips... This may take some time`
+  /// `Merging videos... This may take some time`
   String get mergingVideos {
     return Intl.message(
-      'Merging clips... This may take some time',
+      'Merging videos... This may take some time',
       name: 'mergingVideos',
       desc: '',
       args: [],
     );
   }
 
-  /// `Failed to merge clips`
+  /// `Failed to merge videos`
   String get failedToMergeVideos {
     return Intl.message(
-      'Failed to merge clips',
+      'Failed to merge videos',
       name: 'failedToMergeVideos',
       desc: '',
       args: [],
@@ -2939,10 +2099,10 @@ class S {
     );
   }
 
-  /// `Must select at least two audio files to merge`
+  /// `You must select at least two audio files to merge`
   String get mustSelectAtLeastTwoAudioFiles {
     return Intl.message(
-      'Must select at least two audio files to merge',
+      'You must select at least two audio files to merge',
       name: 'mustSelectAtLeastTwoAudioFiles',
       desc: '',
       args: [],
@@ -2959,35 +2119,20 @@ class S {
     );
   }
 
-  /// `Edit Image`
-  String get editImage {
-    return Intl.message('Edit Image', name: 'editImage', desc: '', args: []);
-  }
-
-  /// `Image Edited`
-  String get imageEdited {
+  /// `Failed to load PDF file ({statusCode})`
+  String pdfLoadFailed(int statusCode) {
     return Intl.message(
-      'Image Edited',
-      name: 'imageEdited',
+      'Failed to load PDF file ($statusCode)',
+      name: 'pdfLoadFailed',
       desc: '',
-      args: [],
+      args: [statusCode],
     );
   }
 
-  /// `Edit Text`
-  String get editText {
-    return Intl.message('Edit Text', name: 'editText', desc: '', args: []);
-  }
-
-  /// `Text Edited`
-  String get textEdited {
-    return Intl.message('Text Edited', name: 'textEdited', desc: '', args: []);
-  }
-
-  /// `Failed to load PDF file`
+  /// `Failed to load PDF`
   String get failedToLoadPdf {
     return Intl.message(
-      'Failed to load PDF file',
+      'Failed to load PDF',
       name: 'failedToLoadPdf',
       desc: '',
       args: [],
@@ -3004,10 +2149,450 @@ class S {
     );
   }
 
-  /// `Choose Time to Extract Image`
+  /// `✅ Image edited successfully`
+  String get imageEditedSuccessfully {
+    return Intl.message(
+      '✅ Image edited successfully',
+      name: 'imageEditedSuccessfully',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `⚠️ Edited image is empty`
+  String get editedImageIsEmpty {
+    return Intl.message(
+      '⚠️ Edited image is empty',
+      name: 'editedImageIsEmpty',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `⚠️ Failed to save edited image`
+  String get failedToSaveEditedImage {
+    return Intl.message(
+      '⚠️ Failed to save edited image',
+      name: 'failedToSaveEditedImage',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `✅ Text edited successfully. Press "Save Changes" to upload to server`
+  String get textEditedSuccessfully {
+    return Intl.message(
+      '✅ Text edited successfully. Press "Save Changes" to upload to server',
+      name: 'textEditedSuccessfully',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Save Options`
+  String get saveOptions {
+    return Intl.message(
+      'Save Options',
+      name: 'saveOptions',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `How do you want to save the edited image?\n\n• Save new copy: The edited image will be saved as a new file\n• Replace old version: The old file will be deleted and replaced with the edited image`
+  String get saveOptionsDescription {
+    return Intl.message(
+      'How do you want to save the edited image?\n\n• Save new copy: The edited image will be saved as a new file\n• Replace old version: The old file will be deleted and replaced with the edited image',
+      name: 'saveOptionsDescription',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Save new copy`
+  String get saveNewCopy {
+    return Intl.message(
+      'Save new copy',
+      name: 'saveNewCopy',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Replace old version`
+  String get replaceOldVersion {
+    return Intl.message(
+      'Replace old version',
+      name: 'replaceOldVersion',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Extract`
+  String get extract {
+    return Intl.message('Extract', name: 'extract', desc: '', args: []);
+  }
+
+  /// `Trim Audio`
+  String get trimAudio {
+    return Intl.message('Trim Audio', name: 'trimAudio', desc: '', args: []);
+  }
+
+  /// `Total duration: {duration}`
+  String totalDuration(String duration) {
+    return Intl.message(
+      'Total duration: $duration',
+      name: 'totalDuration',
+      desc: '',
+      args: [duration],
+    );
+  }
+
+  /// `Trim`
+  String get trim {
+    return Intl.message('Trim', name: 'trim', desc: '', args: []);
+  }
+
+  /// `Adjust Volume`
+  String get adjustVolume {
+    return Intl.message(
+      'Adjust Volume',
+      name: 'adjustVolume',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Apply`
+  String get apply {
+    return Intl.message('Apply', name: 'apply', desc: '', args: []);
+  }
+
+  /// `Convert Format`
+  String get convertFormat {
+    return Intl.message(
+      'Convert Format',
+      name: 'convertFormat',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Choose output format:`
+  String get chooseOutputFormat {
+    return Intl.message(
+      'Choose output format:',
+      name: 'chooseOutputFormat',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `WAV`
+  String get wavFormat {
+    return Intl.message('WAV', name: 'wavFormat', desc: '', args: []);
+  }
+
+  /// `High quality, large size`
+  String get wavDescription {
+    return Intl.message(
+      'High quality, large size',
+      name: 'wavDescription',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `MP3`
+  String get mp3Format {
+    return Intl.message('MP3', name: 'mp3Format', desc: '', args: []);
+  }
+
+  /// `Good quality, small size`
+  String get mp3Description {
+    return Intl.message(
+      'Good quality, small size',
+      name: 'mp3Description',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `AAC`
+  String get aacFormat {
+    return Intl.message('AAC', name: 'aacFormat', desc: '', args: []);
+  }
+
+  /// `Very good quality`
+  String get aacDescription {
+    return Intl.message(
+      'Very good quality',
+      name: 'aacDescription',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Add Text (Annotation)`
+  String get addTextAnnotation {
+    return Intl.message(
+      'Add Text (Annotation)',
+      name: 'addTextAnnotation',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Position X: {x}`
+  String positionX(String x) {
+    return Intl.message(
+      'Position X: $x',
+      name: 'positionX',
+      desc: '',
+      args: [x],
+    );
+  }
+
+  /// `Position Y: {y}`
+  String positionY(String y) {
+    return Intl.message(
+      'Position Y: $y',
+      name: 'positionY',
+      desc: '',
+      args: [y],
+    );
+  }
+
+  /// `Font size: {size}`
+  String fontSize(String size) {
+    return Intl.message(
+      'Font size: $size',
+      name: 'fontSize',
+      desc: '',
+      args: [size],
+    );
+  }
+
+  /// `Page: {pageNumber}`
+  String page(String pageNumber) {
+    return Intl.message(
+      'Page: $pageNumber',
+      name: 'page',
+      desc: '',
+      args: [pageNumber],
+    );
+  }
+
+  /// `Add`
+  String get add {
+    return Intl.message('Add', name: 'add', desc: '', args: []);
+  }
+
+  /// `Select Image Position`
+  String get selectImagePosition {
+    return Intl.message(
+      'Select Image Position',
+      name: 'selectImagePosition',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Width: {width}`
+  String width(String width) {
+    return Intl.message(
+      'Width: $width',
+      name: 'width',
+      desc: '',
+      args: [width],
+    );
+  }
+
+  /// `Height: {height}`
+  String height(String height) {
+    return Intl.message(
+      'Height: $height',
+      name: 'height',
+      desc: '',
+      args: [height],
+    );
+  }
+
+  /// `Highlight Text`
+  String get highlightText {
+    return Intl.message(
+      'Highlight Text',
+      name: 'highlightText',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Color:`
+  String get color {
+    return Intl.message('Color:', name: 'color', desc: '', args: []);
+  }
+
+  /// `Highlight`
+  String get highlight {
+    return Intl.message('Highlight', name: 'highlight', desc: '', args: []);
+  }
+
+  /// `✅ Video edited successfully`
+  String get videoEditedSuccessfully {
+    return Intl.message(
+      '✅ Video edited successfully',
+      name: 'videoEditedSuccessfully',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `⚠️ Edited video is empty`
+  String get editedVideoIsEmpty {
+    return Intl.message(
+      '⚠️ Edited video is empty',
+      name: 'editedVideoIsEmpty',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `⚠️ Failed to save edited video`
+  String get failedToSaveEditedVideo {
+    return Intl.message(
+      '⚠️ Failed to save edited video',
+      name: 'failedToSaveEditedVideo',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `✅ Videos merged successfully`
+  String get videoMergedSuccessfully {
+    return Intl.message(
+      '✅ Videos merged successfully',
+      name: 'videoMergedSuccessfully',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `✅ Text added successfully`
+  String get textAddedSuccessfully {
+    return Intl.message(
+      '✅ Text added successfully',
+      name: 'textAddedSuccessfully',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `✅ Image added successfully`
+  String get imageAddedSuccessfully {
+    return Intl.message(
+      '✅ Image added successfully',
+      name: 'imageAddedSuccessfully',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `✅ Text highlighted successfully`
+  String get textHighlightedSuccessfully {
+    return Intl.message(
+      '✅ Text highlighted successfully',
+      name: 'textHighlightedSuccessfully',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `✅ File updated successfully`
+  String get fileUpdatedSuccessfully {
+    return Intl.message(
+      '✅ File updated successfully',
+      name: 'fileUpdatedSuccessfully',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `✅ File replaced successfully`
+  String get fileReplacedSuccessfully {
+    return Intl.message(
+      '✅ File replaced successfully',
+      name: 'fileReplacedSuccessfully',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `✅ New copy saved successfully`
+  String get newCopySavedSuccessfully {
+    return Intl.message(
+      '✅ New copy saved successfully',
+      name: 'newCopySavedSuccessfully',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `✅ Changes saved successfully`
+  String get changesSavedSuccessfully {
+    return Intl.message(
+      '✅ Changes saved successfully',
+      name: 'changesSavedSuccessfully',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `❌ Error: {error}`
+  String errorOccurred(String error) {
+    return Intl.message(
+      '❌ Error: $error',
+      name: 'errorOccurred',
+      desc: '',
+      args: [error],
+    );
+  }
+
+  /// `✅ Image extracted successfully`
+  String get imageExtractedSuccessfully {
+    return Intl.message(
+      '✅ Image extracted successfully',
+      name: 'imageExtractedSuccessfully',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Edited file not found. Please edit again`
+  String get editedFileNotFound {
+    return Intl.message(
+      'Edited file not found. Please edit again',
+      name: 'editedFileNotFound',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Error accessing edited file: {error}`
+  String errorAccessingEditedFile(String error) {
+    return Intl.message(
+      'Error accessing edited file: $error',
+      name: 'errorAccessingEditedFile',
+      desc: '',
+      args: [error],
+    );
+  }
+
+  /// `Choose time to extract image`
   String get chooseTimeToExtractImage {
     return Intl.message(
-      'Choose Time to Extract Image',
+      'Choose time to extract image',
       name: 'chooseTimeToExtractImage',
       desc: '',
       args: [],
@@ -3022,6 +2607,301 @@ class S {
       desc: '',
       args: [],
     );
+  }
+
+  /// `Save`
+  String get save {
+    return Intl.message('Save', name: 'save', desc: '', args: []);
+  }
+
+  /// `Cancel`
+  String get cancel {
+    return Intl.message('Cancel', name: 'cancel', desc: '', args: []);
+  }
+
+  /// `Edit File`
+  String get editFileMetadata {
+    return Intl.message(
+      'Edit File',
+      name: 'editFileMetadata',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `File Name`
+  String get fileName {
+    return Intl.message('File Name', name: 'fileName', desc: '', args: []);
+  }
+
+  /// `Description`
+  String get fileDescription {
+    return Intl.message(
+      'Description',
+      name: 'fileDescription',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Tags (separate with comma)`
+  String get tagsSeparatedByComma {
+    return Intl.message(
+      'Tags (separate with comma)',
+      name: 'tagsSeparatedByComma',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `❌ Failed to save changes`
+  String get changesSaveFailed {
+    return Intl.message(
+      '❌ Failed to save changes',
+      name: 'changesSaveFailed',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Are you sure you want to delete the file '{fileName}'?`
+  String confirmDeleteFile(String fileName) {
+    return Intl.message(
+      'Are you sure you want to delete the file \'$fileName\'?',
+      name: 'confirmDeleteFile',
+      desc: '',
+      args: [fileName],
+    );
+  }
+
+  /// `❌ Error: No token found.`
+  String get noTokenError {
+    return Intl.message(
+      '❌ Error: No token found.',
+      name: 'noTokenError',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `✅ File '{fileName}' deleted successfully`
+  String fileDeletedSuccessfully(String fileName) {
+    return Intl.message(
+      '✅ File \'$fileName\' deleted successfully',
+      name: 'fileDeletedSuccessfully',
+      desc: '',
+      args: [fileName],
+    );
+  }
+
+  /// `❌ Error deleting file: {error}`
+  String errorDeletingFile(String error) {
+    return Intl.message(
+      '❌ Error deleting file: $error',
+      name: 'errorDeletingFile',
+      desc: '',
+      args: [error],
+    );
+  }
+
+  /// `No users shared with this file`
+  String get noUsersSharedWith {
+    return Intl.message(
+      'No users shared with this file',
+      name: 'noUsersSharedWith',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Cannot identify users to unshare`
+  String get cannotIdentifyUsers {
+    return Intl.message(
+      'Cannot identify users to unshare',
+      name: 'cannotIdentifyUsers',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `✅ File unshared successfully`
+  String get unshareFileSuccess {
+    return Intl.message(
+      '✅ File unshared successfully',
+      name: 'unshareFileSuccess',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Failed to unshare`
+  String get unshareFailed {
+    return Intl.message(
+      'Failed to unshare',
+      name: 'unshareFailed',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `✅ File added to favorites`
+  String get fileAddedToFavorites {
+    return Intl.message(
+      '✅ File added to favorites',
+      name: 'fileAddedToFavorites',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `✅ File removed from favorites`
+  String get fileRemovedFromFavorites {
+    return Intl.message(
+      '✅ File removed from favorites',
+      name: 'fileRemovedFromFavorites',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `❌ Error updating`
+  String get errorUpdating {
+    return Intl.message(
+      '❌ Error updating',
+      name: 'errorUpdating',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Downloading file...`
+  String get downloadingFile {
+    return Intl.message(
+      'Downloading file...',
+      name: 'downloadingFile',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `✅ File downloaded successfully: {fileName}`
+  String fileDownloadedSuccessfully(String fileName) {
+    return Intl.message(
+      '✅ File downloaded successfully: $fileName',
+      name: 'fileDownloadedSuccessfully',
+      desc: '',
+      args: [fileName],
+    );
+  }
+
+  /// `Failed to download file`
+  String get failedToDownloadFile {
+    return Intl.message(
+      'Failed to download file',
+      name: 'failedToDownloadFile',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `❌ Error downloading file: {error}`
+  String errorDownloadingFile(String error) {
+    return Intl.message(
+      '❌ Error downloading file: $error',
+      name: 'errorDownloadingFile',
+      desc: '',
+      args: [error],
+    );
+  }
+
+  /// `Cannot identify file`
+  String get cannotIdentifyFile {
+    return Intl.message(
+      'Cannot identify file',
+      name: 'cannotIdentifyFile',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `✅ Share request sent to room`
+  String get shareRequestSent {
+    return Intl.message(
+      '✅ Share request sent to room',
+      name: 'shareRequestSent',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Are you sure you want to unshare this file with all users?`
+  String get unshareFileConfirm {
+    return Intl.message(
+      'Are you sure you want to unshare this file with all users?',
+      name: 'unshareFileConfirm',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Updating...`
+  String get updating {
+    return Intl.message('Updating...', name: 'updating', desc: '', args: []);
+  }
+
+  /// `Delete File`
+  String get deleteFile {
+    return Intl.message('Delete File', name: 'deleteFile', desc: '', args: []);
+  }
+
+  /// `Save Changes`
+  String get saveChanges {
+    return Intl.message(
+      'Save Changes',
+      name: 'saveChanges',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Error: You must log in first`
+  String get mustLoginFirstError {
+    return Intl.message(
+      'Error: You must log in first',
+      name: 'mustLoginFirstError',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Error loading file data: {error}`
+  String errorLoadingFileData(String error) {
+    return Intl.message(
+      'Error loading file data: $error',
+      name: 'errorLoadingFileData',
+      desc: '',
+      args: [error],
+    );
+  }
+
+  /// `File`
+  String get file {
+    return Intl.message('File', name: 'file', desc: '', args: []);
+  }
+
+  /// `Failed to load preview`
+  String get failedToLoadPreview {
+    return Intl.message(
+      'Failed to load preview',
+      name: 'failedToLoadPreview',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Modified`
+  String get modified {
+    return Intl.message('Modified', name: 'modified', desc: '', args: []);
   }
 
   /// `Failed to load PDF file: {error}`
@@ -3054,11 +2934,61 @@ class S {
     );
   }
 
+  /// `Note: Text extraction may not be available for all PDF files.`
+  String get pdfTextExtractionNote {
+    return Intl.message(
+      'Note: Text extraction may not be available for all PDF files.',
+      name: 'pdfTextExtractionNote',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `You can select and highlight text after extraction.`
+  String get pdfTextExtractionNote2 {
+    return Intl.message(
+      'You can select and highlight text after extraction.',
+      name: 'pdfTextExtractionNote2',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Failed to extract text from PDF`
+  String get failedToExtractTextFromPdf {
+    return Intl.message(
+      'Failed to extract text from PDF',
+      name: 'failedToExtractTextFromPdf',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `You can view PDF and search in it`
+  String get canViewPdfAndSearch {
+    return Intl.message(
+      'You can view PDF and search in it',
+      name: 'canViewPdfAndSearch',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `Selected text highlighted`
   String get textHighlighted {
     return Intl.message(
       'Selected text highlighted',
       name: 'textHighlighted',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `PDF search is not currently available. You can open the file in an external app to search.`
+  String get searchInPdfNotAvailableMessage {
+    return Intl.message(
+      'PDF search is not currently available. You can open the file in an external app to search.',
+      name: 'searchInPdfNotAvailableMessage',
       desc: '',
       args: [],
     );
@@ -3094,6 +3024,11 @@ class S {
     );
   }
 
+  /// `OK`
+  String get ok {
+    return Intl.message('OK', name: 'ok', desc: '', args: []);
+  }
+
   /// `Loading file...`
   String get loadingFile {
     return Intl.message(
@@ -3104,51 +3039,21 @@ class S {
     );
   }
 
-  /// `Extracting text...`
-  String get extractingText {
-    return Intl.message(
-      'Extracting text...',
-      name: 'extractingText',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Text not extracted yet`
-  String get textNotExtractedYet {
-    return Intl.message(
-      'Text not extracted yet',
-      name: 'textNotExtractedYet',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Extract Text`
-  String get extractText {
-    return Intl.message(
-      'Extract Text',
-      name: 'extractText',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Search in PDF is not currently available. You can open the file in an external app to search.`
-  String get searchInPdfNotAvailableMessage {
-    return Intl.message(
-      'Search in PDF is not currently available. You can open the file in an external app to search.',
-      name: 'searchInPdfNotAvailableMessage',
-      desc: '',
-      args: [],
-    );
-  }
-
   /// `File not loaded`
   String get fileNotLoaded {
     return Intl.message(
       'File not loaded',
       name: 'fileNotLoaded',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Extracting text...`
+  String get extractingText {
+    return Intl.message(
+      'Extracting text...',
+      name: 'extractingText',
       desc: '',
       args: [],
     );
@@ -3174,206 +3079,586 @@ class S {
     );
   }
 
-  /// `highlight`
+  /// `Highlights`
   String get highlights {
-    return Intl.message('highlight', name: 'highlights', desc: '', args: []);
+    return Intl.message('Highlights', name: 'highlights', desc: '', args: []);
   }
 
-  /// `Please login again`
-  String get pleaseLoginAgain {
+  /// `Text not extracted yet`
+  String get textNotExtractedYet {
     return Intl.message(
-      'Please login again',
-      name: 'pleaseLoginAgain',
+      'Text not extracted yet',
+      name: 'textNotExtractedYet',
       desc: '',
       args: [],
     );
   }
 
-  /// `Failed to load file: {statusCode}`
-  String failedToLoadFileStatus(int statusCode) {
+  /// `Extract Text`
+  String get extractText {
     return Intl.message(
-      'Failed to load file: $statusCode',
-      name: 'failedToLoadFileStatus',
-      desc: '',
-      args: [statusCode],
-    );
-  }
-
-  /// `This file is not a valid PDF or may be corrupted.`
-  String get fileNotValidPdf {
-    return Intl.message(
-      'This file is not a valid PDF or may be corrupted.',
-      name: 'fileNotValidPdf',
+      'Extract Text',
+      name: 'extractText',
       desc: '',
       args: [],
     );
   }
 
-  /// `Are you sure you want to remove this file from the room?`
-  String get confirmRemoveFileFromRoom {
+  /// `Remove File from Room`
+  String get removeFileFromRoom {
     return Intl.message(
-      'Are you sure you want to remove this file from the room?',
-      name: 'confirmRemoveFileFromRoom',
+      'Remove File from Room',
+      name: 'removeFileFromRoom',
       desc: '',
       args: [],
     );
   }
 
-  /// `Remove Folder from Room`
-  String get removeFolderFromRoom {
+  /// `Are you sure you want to remove "{fileName}" from this room?`
+  String removeFileFromRoomConfirm(String fileName) {
     return Intl.message(
-      'Remove Folder from Room',
-      name: 'removeFolderFromRoom',
+      'Are you sure you want to remove "$fileName" from this room?',
+      name: 'removeFileFromRoomConfirm',
+      desc: '',
+      args: [fileName],
+    );
+  }
+
+  /// `Remove`
+  String get remove {
+    return Intl.message('Remove', name: 'remove', desc: '', args: []);
+  }
+
+  /// `File removed from room successfully`
+  String get fileRemovedFromRoom {
+    return Intl.message(
+      'File removed from room successfully',
+      name: 'fileRemovedFromRoom',
       desc: '',
       args: [],
     );
   }
 
-  /// `Are you sure you want to remove this folder from the room?`
-  String get confirmRemoveFolderFromRoom {
+  /// `Failed to remove file from room`
+  String get failedToRemoveFile {
     return Intl.message(
-      'Are you sure you want to remove this folder from the room?',
-      name: 'confirmRemoveFolderFromRoom',
+      'Failed to remove file from room',
+      name: 'failedToRemoveFile',
       desc: '',
       args: [],
     );
   }
 
-  /// `Remove Member`
-  String get removeMember {
+  /// `File ID not found`
+  String get fileIdNotFound {
     return Intl.message(
-      'Remove Member',
-      name: 'removeMember',
+      'File ID not found',
+      name: 'fileIdNotFound',
       desc: '',
       args: [],
     );
   }
 
-  /// `Are you sure you want to remove {memberName} from the room?`
-  String confirmRemoveMember(String memberName) {
+  /// `Moving file...`
+  String get movingFile {
     return Intl.message(
-      'Are you sure you want to remove $memberName from the room?',
-      name: 'confirmRemoveMember',
-      desc: '',
-      args: [memberName],
-    );
-  }
-
-  /// `Room Members`
-  String get roomMembers {
-    return Intl.message(
-      'Room Members',
-      name: 'roomMembers',
+      'Moving file...',
+      name: 'movingFile',
       desc: '',
       args: [],
     );
   }
 
-  /// `Failed to load room data`
-  String get failedToLoadRoomData {
+  /// `File moved successfully`
+  String get fileMovedSuccessfully {
     return Intl.message(
-      'Failed to load room data',
-      name: 'failedToLoadRoomData',
+      'File moved successfully',
+      name: 'fileMovedSuccessfully',
       desc: '',
       args: [],
     );
   }
 
-  /// `Please enter a comment`
-  String get pleaseEnterComment {
+  /// `Failed to move file`
+  String get failedToMoveFile {
     return Intl.message(
-      'Please enter a comment',
-      name: 'pleaseEnterComment',
+      'Failed to move file',
+      name: 'failedToMoveFile',
       desc: '',
       args: [],
     );
   }
 
-  /// `Please select a file/folder to comment on`
-  String get pleaseSelectFileOrFolder {
+  /// `No files`
+  String get noFiles {
+    return Intl.message('No files', name: 'noFiles', desc: '', args: []);
+  }
+
+  /// `Start adding new files`
+  String get startAddingFiles {
     return Intl.message(
-      'Please select a file/folder to comment on',
-      name: 'pleaseSelectFileOrFolder',
+      'Start adding new files',
+      name: 'startAddingFiles',
       desc: '',
       args: [],
     );
   }
 
-  /// `Delete Comment`
-  String get deleteComment {
+  /// `Viewed by all`
+  String get viewedByAll {
     return Intl.message(
-      'Delete Comment',
-      name: 'deleteComment',
+      'Viewed by all',
+      name: 'viewedByAll',
       desc: '',
       args: [],
     );
   }
 
-  /// `Are you sure you want to delete this comment?`
-  String get confirmDeleteComment {
+  /// `Active`
+  String get active {
+    return Intl.message('Active', name: 'active', desc: '', args: []);
+  }
+
+  /// `Accessed`
+  String get accessed {
+    return Intl.message('Accessed', name: 'accessed', desc: '', args: []);
+  }
+
+  /// `Completed`
+  String get completed {
+    return Intl.message('Completed', name: 'completed', desc: '', args: []);
+  }
+
+  /// `Shared by`
+  String get sharedBy {
+    return Intl.message('Shared by', name: 'sharedBy', desc: '', args: []);
+  }
+
+  /// `Move to Root`
+  String get moveToRoot {
+    return Intl.message('Move to Root', name: 'moveToRoot', desc: '', args: []);
+  }
+
+  /// `Move folder to main folder`
+  String get moveToRootDescription {
     return Intl.message(
-      'Are you sure you want to delete this comment?',
-      name: 'confirmDeleteComment',
+      'Move folder to main folder',
+      name: 'moveToRootDescription',
       desc: '',
       args: [],
     );
   }
 
-  /// `Room`
-  String get room {
-    return Intl.message('Room', name: 'room', desc: '', args: []);
-  }
-
-  /// `Create New Folder`
-  String get createNewFolder {
+  /// `Move to this folder`
+  String get selectFolderDescription {
     return Intl.message(
-      'Create New Folder',
-      name: 'createNewFolder',
+      'Move to this folder',
+      name: 'selectFolderDescription',
       desc: '',
       args: [],
     );
   }
 
-  /// `Saving folder...`
-  String get savingFolder {
+  /// `Move to this folder`
+  String get moveToThisFolder {
     return Intl.message(
-      'Saving folder...',
-      name: 'savingFolder',
+      'Move to this folder',
+      name: 'moveToThisFolder',
       desc: '',
       args: [],
     );
   }
 
-  /// `Save to Root`
-  String get saveToRoot {
-    return Intl.message('Save to Root', name: 'saveToRoot', desc: '', args: []);
+  /// `Are you sure you want to leave "{roomName}"? You will not be able to access this room after leaving.`
+  String leaveRoomConfirm(String roomName) {
+    return Intl.message(
+      'Are you sure you want to leave "$roomName"? You will not be able to access this room after leaving.',
+      name: 'leaveRoomConfirm',
+      desc: '',
+      args: [roomName],
+    );
   }
 
-  /// `Are you sure you want to remove "{folderName}" from this room?`
-  String confirmRemoveFolderFromRoomWithName(String folderName) {
+  /// `Delete Folder`
+  String get deleteFolder {
     return Intl.message(
-      'Are you sure you want to remove "$folderName" from this room?',
-      name: 'confirmRemoveFolderFromRoomWithName',
+      'Delete Folder',
+      name: 'deleteFolder',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Are you sure you want to delete the folder '{folderName}'? All files and subfolders will also be deleted.`
+  String confirmDeleteFolder(String folderName) {
+    return Intl.message(
+      'Are you sure you want to delete the folder \'$folderName\'? All files and subfolders will also be deleted.',
+      name: 'confirmDeleteFolder',
       desc: '',
       args: [folderName],
     );
   }
 
-  /// `Share Folder with Room`
-  String get shareFolderWithRoom {
+  /// `❌ Error: Folder ID not available.`
+  String get folderIdNotAvailable {
     return Intl.message(
-      'Share Folder with Room',
-      name: 'shareFolderWithRoom',
+      '❌ Error: Folder ID not available.',
+      name: 'folderIdNotAvailable',
       desc: '',
       args: [],
     );
   }
 
-  /// `Share with this room`
-  String get shareWithThisRoom {
+  /// `✅ Folder '{folderName}' deleted successfully`
+  String folderDeletedSuccessfully(String folderName) {
     return Intl.message(
-      'Share with this room',
-      name: 'shareWithThisRoom',
+      '✅ Folder \'$folderName\' deleted successfully',
+      name: 'folderDeletedSuccessfully',
+      desc: '',
+      args: [folderName],
+    );
+  }
+
+  /// `❌ Error occurred while deleting folder`
+  String get errorDeletingFolder {
+    return Intl.message(
+      '❌ Error occurred while deleting folder',
+      name: 'errorDeletingFolder',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `❌ Error occurred while deleting folder: {error}`
+  String errorDeletingFolderWithError(String error) {
+    return Intl.message(
+      '❌ Error occurred while deleting folder: $error',
+      name: 'errorDeletingFolderWithError',
+      desc: '',
+      args: [error],
+    );
+  }
+
+  /// `✅ Folder '{folderName}' restored successfully`
+  String folderRestoredSuccessfully(String folderName) {
+    return Intl.message(
+      '✅ Folder \'$folderName\' restored successfully',
+      name: 'folderRestoredSuccessfully',
+      desc: '',
+      args: [folderName],
+    );
+  }
+
+  /// `❌ Error occurred while restoring folder`
+  String get errorRestoringFolder {
+    return Intl.message(
+      '❌ Error occurred while restoring folder',
+      name: 'errorRestoringFolder',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `❌ Error occurred while restoring folder: {error}`
+  String errorRestoringFolderWithError(String error) {
+    return Intl.message(
+      '❌ Error occurred while restoring folder: $error',
+      name: 'errorRestoringFolderWithError',
+      desc: '',
+      args: [error],
+    );
+  }
+
+  /// `Confirm Permanent Delete`
+  String get confirmPermanentDelete {
+    return Intl.message(
+      'Confirm Permanent Delete',
+      name: 'confirmPermanentDelete',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Are you sure you want to permanently delete the folder '{folderName}'? This action cannot be undone. All files and subfolders will be permanently deleted.`
+  String confirmPermanentDeleteFolder(String folderName) {
+    return Intl.message(
+      'Are you sure you want to permanently delete the folder \'$folderName\'? This action cannot be undone. All files and subfolders will be permanently deleted.',
+      name: 'confirmPermanentDeleteFolder',
+      desc: '',
+      args: [folderName],
+    );
+  }
+
+  /// `Permanent Delete`
+  String get permanentDelete {
+    return Intl.message(
+      'Permanent Delete',
+      name: 'permanentDelete',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `✅ Folder '{folderName}' permanently deleted successfully`
+  String folderPermanentlyDeletedSuccessfully(String folderName) {
+    return Intl.message(
+      '✅ Folder \'$folderName\' permanently deleted successfully',
+      name: 'folderPermanentlyDeletedSuccessfully',
+      desc: '',
+      args: [folderName],
+    );
+  }
+
+  /// `❌ Error occurred while permanently deleting folder`
+  String get errorPermanentlyDeletingFolder {
+    return Intl.message(
+      '❌ Error occurred while permanently deleting folder',
+      name: 'errorPermanentlyDeletingFolder',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `❌ Error occurred while permanently deleting folder: {error}`
+  String errorPermanentlyDeletingFolderWithError(String error) {
+    return Intl.message(
+      '❌ Error occurred while permanently deleting folder: $error',
+      name: 'errorPermanentlyDeletingFolderWithError',
+      desc: '',
+      args: [error],
+    );
+  }
+
+  /// `❌ Error: Cannot identify folder`
+  String get cannotIdentifyFolder {
+    return Intl.message(
+      '❌ Error: Cannot identify folder',
+      name: 'cannotIdentifyFolder',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Downloading folder...`
+  String get downloadingFolder {
+    return Intl.message(
+      'Downloading folder...',
+      name: 'downloadingFolder',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `✅ Folder downloaded successfully: {fileName}`
+  String folderDownloadedSuccessfully(String fileName) {
+    return Intl.message(
+      '✅ Folder downloaded successfully: $fileName',
+      name: 'folderDownloadedSuccessfully',
+      desc: '',
+      args: [fileName],
+    );
+  }
+
+  /// `Failed to download folder`
+  String get failedToDownloadFolder {
+    return Intl.message(
+      'Failed to download folder',
+      name: 'failedToDownloadFolder',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `❌ Error downloading folder: {error}`
+  String errorDownloadingFolder(String error) {
+    return Intl.message(
+      '❌ Error downloading folder: $error',
+      name: 'errorDownloadingFolder',
+      desc: '',
+      args: [error],
+    );
+  }
+
+  /// `Please enter the 6-digit verification code`
+  String get pleaseEnter6DigitCode {
+    return Intl.message(
+      'Please enter the 6-digit verification code',
+      name: 'pleaseEnter6DigitCode',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `✅ Account activated successfully`
+  String get accountActivatedSuccessfully {
+    return Intl.message(
+      '✅ Account activated successfully',
+      name: 'accountActivatedSuccessfully',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Invalid verification code`
+  String get invalidVerificationCode {
+    return Intl.message(
+      'Invalid verification code',
+      name: 'invalidVerificationCode',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Please wait {seconds} seconds before resending`
+  String pleaseWaitBeforeResend(int seconds) {
+    return Intl.message(
+      'Please wait $seconds seconds before resending',
+      name: 'pleaseWaitBeforeResend',
+      desc: '',
+      args: [seconds],
+    );
+  }
+
+  /// `✅ Verification code sent successfully`
+  String get verificationCodeSent {
+    return Intl.message(
+      '✅ Verification code sent successfully',
+      name: 'verificationCodeSent',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `❌ Failed to resend verification code`
+  String get failedToResendCode {
+    return Intl.message(
+      '❌ Failed to resend verification code',
+      name: 'failedToResendCode',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Email Verification`
+  String get emailVerification {
+    return Intl.message(
+      'Email Verification',
+      name: 'emailVerification',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Verification code sent to {email}`
+  String verificationCodeSentTo(String email) {
+    return Intl.message(
+      'Verification code sent to $email',
+      name: 'verificationCodeSentTo',
+      desc: '',
+      args: [email],
+    );
+  }
+
+  /// `Didn't receive the code?`
+  String get didNotReceiveCode {
+    return Intl.message(
+      'Didn\'t receive the code?',
+      name: 'didNotReceiveCode',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Resend ({seconds})`
+  String resendWithCountdown(int seconds) {
+    return Intl.message(
+      'Resend ($seconds)',
+      name: 'resendWithCountdown',
+      desc: '',
+      args: [seconds],
+    );
+  }
+
+  /// `Resend`
+  String get resend {
+    return Intl.message('Resend', name: 'resend', desc: '', args: []);
+  }
+
+  /// `Open file as text: {fileName}`
+  String openFileAsText(String fileName) {
+    return Intl.message(
+      'Open file as text: $fileName',
+      name: 'openFileAsText',
+      desc: '',
+      args: [fileName],
+    );
+  }
+
+  /// `File link not available`
+  String get fileLinkNotAvailable {
+    return Intl.message(
+      'File link not available',
+      name: 'fileLinkNotAvailable',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Failed to create temporary file`
+  String get failedToCreateTempFile {
+    return Intl.message(
+      'Failed to create temporary file',
+      name: 'failedToCreateTempFile',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Failed to load file status: {error}`
+  String failedToLoadFileStatus(String error) {
+    return Intl.message(
+      'Failed to load file status: $error',
+      name: 'failedToLoadFileStatus',
+      desc: '',
+      args: [error],
+    );
+  }
+
+  /// `Error opening file: {error}`
+  String errorOpeningFile(String error) {
+    return Intl.message(
+      'Error opening file: $error',
+      name: 'errorOpeningFile',
+      desc: '',
+      args: [error],
+    );
+  }
+
+  /// `File not available: {error}`
+  String fileNotAvailableError(String error) {
+    return Intl.message(
+      'File not available: $error',
+      name: 'fileNotAvailableError',
+      desc: '',
+      args: [error],
+    );
+  }
+
+  /// `Error loading file: {error}`
+  String errorLoadingFile(String error) {
+    return Intl.message(
+      'Error loading file: $error',
+      name: 'errorLoadingFile',
+      desc: '',
+      args: [error],
+    );
+  }
+
+  /// `File is not a valid PDF`
+  String get fileNotValidPdf {
+    return Intl.message(
+      'File is not a valid PDF',
+      name: 'fileNotValidPdf',
       desc: '',
       args: [],
     );
@@ -3389,56 +3674,106 @@ class S {
     );
   }
 
-  /// `Please enter a room name`
+  /// `Please enter room name`
   String get pleaseEnterRoomName {
     return Intl.message(
-      'Please enter a room name',
+      'Please enter room name',
       name: 'pleaseEnterRoomName',
       desc: '',
       args: [],
     );
   }
 
-  /// `View Only`
-  String get viewOnly {
-    return Intl.message('View Only', name: 'viewOnly', desc: '', args: []);
+  /// `Search error: {error}`
+  String searchError(String error) {
+    return Intl.message(
+      'Search error: $error',
+      name: 'searchError',
+      desc: '',
+      args: [error],
+    );
   }
 
-  /// `Can only view files`
-  String get viewOnlyDescription {
+  /// `Folder Info`
+  String get folderInfo {
+    return Intl.message('Folder Info', name: 'folderInfo', desc: '', args: []);
+  }
+
+  /// `Load More`
+  String get loadMore {
+    return Intl.message('Load More', name: 'loadMore', desc: '', args: []);
+  }
+
+  /// `Files Count`
+  String get filesCount {
+    return Intl.message('Files Count', name: 'filesCount', desc: '', args: []);
+  }
+
+  /// `Subfolders Count`
+  String get subfoldersCount {
     return Intl.message(
-      'Can only view files',
-      name: 'viewOnlyDescription',
+      'Subfolders Count',
+      name: 'subfoldersCount',
       desc: '',
       args: [],
     );
   }
 
-  /// `Editor`
-  String get editor {
-    return Intl.message('Editor', name: 'editor', desc: '', args: []);
-  }
-
-  /// `Can edit files`
-  String get editorDescription {
+  /// `Creation Date`
+  String get creationDate {
     return Intl.message(
-      'Can edit files',
-      name: 'editorDescription',
+      'Creation Date',
+      name: 'creationDate',
       desc: '',
       args: [],
     );
   }
 
-  /// `Commenter`
-  String get commenter {
-    return Intl.message('Commenter', name: 'commenter', desc: '', args: []);
+  /// `This feature is under development`
+  String get featureUnderDevelopment {
+    return Intl.message(
+      'This feature is under development',
+      name: 'featureUnderDevelopment',
+      desc: '',
+      args: [],
+    );
   }
 
-  /// `Can comment on files`
-  String get commenterDescription {
+  /// `Folder without name`
+  String get folderWithoutName {
     return Intl.message(
-      'Can comment on files',
-      name: 'commenterDescription',
+      'Folder without name',
+      name: 'folderWithoutName',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Moving folder...`
+  String get movingFolder {
+    return Intl.message(
+      'Moving folder...',
+      name: 'movingFolder',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Error fetching subfolders: {error}`
+  String errorFetchingSubfolders(String error) {
+    return Intl.message(
+      'Error fetching subfolders: $error',
+      name: 'errorFetchingSubfolders',
+      desc: '',
+      args: [error],
+    );
+  }
+
+  /// `Move Folder to Root`
+  String get moveFolderToRoot {
+    return Intl.message(
+      'Move Folder to Root',
+      name: 'moveFolderToRoot',
       desc: '',
       args: [],
     );
@@ -3484,53 +3819,473 @@ class S {
     return Intl.message('Accept', name: 'accept', desc: '', args: []);
   }
 
-  /// `File link not available`
-  String get fileLinkNotAvailable {
+  /// `Please select a file or folder`
+  String get pleaseSelectFileOrFolder {
     return Intl.message(
-      'File link not available',
-      name: 'fileLinkNotAvailable',
+      'Please select a file or folder',
+      name: 'pleaseSelectFileOrFolder',
       desc: '',
       args: [],
     );
   }
 
-  /// `Open file as text: {fileName}`
-  String openFileAsText(String fileName) {
+  /// `Delete Comment`
+  String get deleteComment {
     return Intl.message(
-      'Open file as text: $fileName',
-      name: 'openFileAsText',
-      desc: '',
-      args: [fileName],
-    );
-  }
-
-  /// `Favorite Files`
-  String get favoriteFiles {
-    return Intl.message(
-      'Favorite Files',
-      name: 'favoriteFiles',
+      'Delete Comment',
+      name: 'deleteComment',
       desc: '',
       args: [],
     );
   }
 
-  /// `No favorite files`
-  String get noFavoriteFiles {
+  /// `Are you sure you want to delete this comment?`
+  String get confirmDeleteComment {
     return Intl.message(
-      'No favorite files',
-      name: 'noFavoriteFiles',
+      'Are you sure you want to delete this comment?',
+      name: 'confirmDeleteComment',
       desc: '',
       args: [],
     );
   }
 
-  /// `You can add files to favorites through the menu`
-  String get addFilesToFavorites {
+  /// `Room`
+  String get room {
+    return Intl.message('Room', name: 'room', desc: '', args: []);
+  }
+
+  /// `Error loading room details`
+  String get errorLoadingRoomDetails {
     return Intl.message(
-      'You can add files to favorites through the menu',
-      name: 'addFilesToFavorites',
+      'Error loading room details',
+      name: 'errorLoadingRoomDetails',
       desc: '',
       args: [],
+    );
+  }
+
+  /// `Failed to load room details`
+  String get failedToLoadRoomDetails {
+    return Intl.message(
+      'Failed to load room details',
+      name: 'failedToLoadRoomDetails',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Please login again`
+  String get pleaseLoginAgain {
+    return Intl.message(
+      'Please login again',
+      name: 'pleaseLoginAgain',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Are you sure you want to delete "{roomName}"? All shared files and folders will also be deleted.`
+  String deleteRoomConfirm(String roomName) {
+    return Intl.message(
+      'Are you sure you want to delete "$roomName"? All shared files and folders will also be deleted.',
+      name: 'deleteRoomConfirm',
+      desc: '',
+      args: [roomName],
+    );
+  }
+
+  /// `Are you sure you want to remove this file from the room?`
+  String get confirmRemoveFileFromRoom {
+    return Intl.message(
+      'Are you sure you want to remove this file from the room?',
+      name: 'confirmRemoveFileFromRoom',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Remove Folder from Room`
+  String get removeFolderFromRoom {
+    return Intl.message(
+      'Remove Folder from Room',
+      name: 'removeFolderFromRoom',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Are you sure you want to remove this folder from the room?`
+  String get confirmRemoveFolderFromRoom {
+    return Intl.message(
+      'Are you sure you want to remove this folder from the room?',
+      name: 'confirmRemoveFolderFromRoom',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Are you sure you want to remove the folder '{folderName}' from the room?`
+  String confirmRemoveFolderFromRoomWithName(String folderName) {
+    return Intl.message(
+      'Are you sure you want to remove the folder \'$folderName\' from the room?',
+      name: 'confirmRemoveFolderFromRoomWithName',
+      desc: '',
+      args: [folderName],
+    );
+  }
+
+  /// `Saving folder...`
+  String get savingFolder {
+    return Intl.message(
+      'Saving folder...',
+      name: 'savingFolder',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Save to Root`
+  String get saveToRoot {
+    return Intl.message('Save to Root', name: 'saveToRoot', desc: '', args: []);
+  }
+
+  /// `Failed to load room data`
+  String get failedToLoadRoomData {
+    return Intl.message(
+      'Failed to load room data',
+      name: 'failedToLoadRoomData',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `No shared files`
+  String get noSharedFiles {
+    return Intl.message(
+      'No shared files',
+      name: 'noSharedFiles',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Share Files with Room`
+  String get shareFilesWithRoom {
+    return Intl.message(
+      'Share Files with Room',
+      name: 'shareFilesWithRoom',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Create New Folder`
+  String get createNewFolder {
+    return Intl.message(
+      'Create New Folder',
+      name: 'createNewFolder',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Please enter folder name`
+  String get pleaseEnterFolderName {
+    return Intl.message(
+      'Please enter folder name',
+      name: 'pleaseEnterFolderName',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Folder created successfully: {folderName}`
+  String folderCreatedSuccessfully(String folderName) {
+    return Intl.message(
+      'Folder created successfully: $folderName',
+      name: 'folderCreatedSuccessfully',
+      desc: '',
+      args: [folderName],
+    );
+  }
+
+  /// `Failed to create folder`
+  String get failedToCreateFolder {
+    return Intl.message(
+      'Failed to create folder',
+      name: 'failedToCreateFolder',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Remove Member`
+  String get removeMember {
+    return Intl.message(
+      'Remove Member',
+      name: 'removeMember',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Are you sure you want to remove {memberName} from the room?`
+  String confirmRemoveMember(String memberName) {
+    return Intl.message(
+      'Are you sure you want to remove $memberName from the room?',
+      name: 'confirmRemoveMember',
+      desc: '',
+      args: [memberName],
+    );
+  }
+
+  /// `Room Members`
+  String get roomMembers {
+    return Intl.message(
+      'Room Members',
+      name: 'roomMembers',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `View Only`
+  String get viewOnly {
+    return Intl.message('View Only', name: 'viewOnly', desc: '', args: []);
+  }
+
+  /// `User can only view files`
+  String get viewOnlyDescription {
+    return Intl.message(
+      'User can only view files',
+      name: 'viewOnlyDescription',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Editor`
+  String get editor {
+    return Intl.message('Editor', name: 'editor', desc: '', args: []);
+  }
+
+  /// `User can edit files`
+  String get editorDescription {
+    return Intl.message(
+      'User can edit files',
+      name: 'editorDescription',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Commenter`
+  String get commenter {
+    return Intl.message('Commenter', name: 'commenter', desc: '', args: []);
+  }
+
+  /// `User can comment on files`
+  String get commenterDescription {
+    return Intl.message(
+      'User can comment on files',
+      name: 'commenterDescription',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Share Folder with Room`
+  String get shareFolderWithRoom {
+    return Intl.message(
+      'Share Folder with Room',
+      name: 'shareFolderWithRoom',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Share with this room`
+  String get shareWithThisRoom {
+    return Intl.message(
+      'Share with this room',
+      name: 'shareWithThisRoom',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Must allow photos access`
+  String get mustAllowPhotosAccess {
+    return Intl.message(
+      'Must allow photos access',
+      name: 'mustAllowPhotosAccess',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `✅ Profile image uploaded successfully`
+  String get profileImageUploadedSuccessfully {
+    return Intl.message(
+      '✅ Profile image uploaded successfully',
+      name: 'profileImageUploadedSuccessfully',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `❌ Failed to upload profile image`
+  String get failedToUploadProfileImage {
+    return Intl.message(
+      '❌ Failed to upload profile image',
+      name: 'failedToUploadProfileImage',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `❌ Error uploading profile image: {error}`
+  String errorUploadingProfileImage(String error) {
+    return Intl.message(
+      '❌ Error uploading profile image: $error',
+      name: 'errorUploadingProfileImage',
+      desc: '',
+      args: [error],
+    );
+  }
+
+  /// `Must allow camera access`
+  String get mustAllowCameraAccess {
+    return Intl.message(
+      'Must allow camera access',
+      name: 'mustAllowCameraAccess',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Unknown error`
+  String get unknownError {
+    return Intl.message(
+      'Unknown error',
+      name: 'unknownError',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Choose from Gallery`
+  String get chooseFromGallery {
+    return Intl.message(
+      'Choose from Gallery',
+      name: 'chooseFromGallery',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Take Photo from Camera`
+  String get takePhotoFromCamera {
+    return Intl.message(
+      'Take Photo from Camera',
+      name: 'takePhotoFromCamera',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Used`
+  String get used {
+    return Intl.message('Used', name: 'used', desc: '', args: []);
+  }
+
+  /// `Microphone permission required`
+  String get microphonePermissionRequired {
+    return Intl.message(
+      'Microphone permission required',
+      name: 'microphonePermissionRequired',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Open Settings`
+  String get openSettings {
+    return Intl.message(
+      'Open Settings',
+      name: 'openSettings',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Permission denied`
+  String get permissionDenied {
+    return Intl.message(
+      'Permission denied',
+      name: 'permissionDenied',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Must allow microphone access`
+  String get mustAllowMicrophoneAccess {
+    return Intl.message(
+      'Must allow microphone access',
+      name: 'mustAllowMicrophoneAccess',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Speech recognition not available`
+  String get speechRecognitionNotAvailable {
+    return Intl.message(
+      'Speech recognition not available',
+      name: 'speechRecognitionNotAvailable',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Enter search text`
+  String get enterSearchText {
+    return Intl.message(
+      'Enter search text',
+      name: 'enterSearchText',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Smart Search`
+  String get smartSearch {
+    return Intl.message(
+      'Smart Search',
+      name: 'smartSearch',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `File link not available (no path)`
+  String get fileLinkNotAvailableNoPath {
+    return Intl.message(
+      'File link not available (no path)',
+      name: 'fileLinkNotAvailableNoPath',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Error loading text file: {error}`
+  String errorLoadingTextFile(String error) {
+    return Intl.message(
+      'Error loading text file: $error',
+      name: 'errorLoadingTextFile',
+      desc: '',
+      args: [error],
     );
   }
 
@@ -3564,6 +4319,16 @@ class S {
     );
   }
 
+  /// `All Activities`
+  String get allActivities {
+    return Intl.message(
+      'All Activities',
+      name: 'allActivities',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `Upload File`
   String get uploadFile {
     return Intl.message('Upload File', name: 'uploadFile', desc: '', args: []);
@@ -3579,11 +4344,6 @@ class S {
     );
   }
 
-  /// `Delete File`
-  String get deleteFile {
-    return Intl.message('Delete File', name: 'deleteFile', desc: '', args: []);
-  }
-
   /// `Share File`
   String get shareFile {
     return Intl.message('Share File', name: 'shareFile', desc: '', args: []);
@@ -3594,9 +4354,19 @@ class S {
     return Intl.message('Login', name: 'login', desc: '', args: []);
   }
 
+  /// `User`
+  String get userLabel {
+    return Intl.message('User', name: 'userLabel', desc: '', args: []);
+  }
+
   /// `System`
   String get system {
     return Intl.message('System', name: 'system', desc: '', args: []);
+  }
+
+  /// `Room`
+  String get roomLabel {
+    return Intl.message('Room', name: 'roomLabel', desc: '', args: []);
   }
 
   /// `Reset`
@@ -3604,169 +4374,229 @@ class S {
     return Intl.message('Reset', name: 'reset', desc: '', args: []);
   }
 
-  /// `Apply`
-  String get apply {
-    return Intl.message('Apply', name: 'apply', desc: '', args: []);
-  }
-
-  /// `Microphone Permission Required`
-  String get microphonePermissionRequired {
+  /// `✅ Logged out successfully`
+  String get logoutSuccess {
     return Intl.message(
-      'Microphone Permission Required',
-      name: 'microphonePermissionRequired',
+      '✅ Logged out successfully',
+      name: 'logoutSuccess',
       desc: '',
       args: [],
     );
   }
 
-  /// `Open Settings`
-  String get openSettings {
+  /// `❌ Error: Token not found`
+  String get tokenNotFound {
     return Intl.message(
-      'Open Settings',
-      name: 'openSettings',
+      '❌ Error: Token not found',
+      name: 'tokenNotFound',
       desc: '',
       args: [],
     );
   }
 
-  /// `Permission denied. You must allow microphone access for voice search.`
-  String get permissionDenied {
+  /// `Trash`
+  String get trash {
+    return Intl.message('Trash', name: 'trash', desc: '', args: []);
+  }
+
+  /// `Deleted Files`
+  String get deletedFiles {
     return Intl.message(
-      'Permission denied. You must allow microphone access for voice search.',
-      name: 'permissionDenied',
+      'Deleted Files',
+      name: 'deletedFiles',
       desc: '',
       args: [],
     );
   }
 
-  /// `You must allow microphone access for voice search.`
-  String get mustAllowMicrophoneAccess {
+  /// `Deleted Folders`
+  String get deletedFolders {
     return Intl.message(
-      'You must allow microphone access for voice search.',
-      name: 'mustAllowMicrophoneAccess',
+      'Deleted Folders',
+      name: 'deletedFolders',
       desc: '',
       args: [],
     );
   }
 
-  /// `Speech recognition service not available`
-  String get speechRecognitionNotAvailable {
+  /// `Profile`
+  String get profile {
+    return Intl.message('Profile', name: 'profile', desc: '', args: []);
+  }
+
+  /// `Edit Username`
+  String get editUsername {
     return Intl.message(
-      'Speech recognition service not available',
-      name: 'speechRecognitionNotAvailable',
+      'Edit Username',
+      name: 'editUsername',
       desc: '',
       args: [],
     );
   }
 
-  /// `Enter search text`
-  String get enterSearchText {
+  /// `Edit Email`
+  String get editEmail {
+    return Intl.message('Edit Email', name: 'editEmail', desc: '', args: []);
+  }
+
+  /// `This field is required`
+  String get fieldRequired {
     return Intl.message(
-      'Enter search text',
-      name: 'enterSearchText',
+      'This field is required',
+      name: 'fieldRequired',
       desc: '',
       args: [],
     );
   }
 
-  /// `Smart Search`
-  String get smartSearch {
+  /// `Invalid email address`
+  String get validEmailRequired {
     return Intl.message(
-      'Smart Search',
-      name: 'smartSearch',
+      'Invalid email address',
+      name: 'validEmailRequired',
       desc: '',
       args: [],
     );
   }
 
-  /// `File link not available - no path or _id`
-  String get fileLinkNotAvailableNoPath {
+  /// `✅ Updated successfully`
+  String get updatedSuccessfully {
     return Intl.message(
-      'File link not available - no path or _id',
-      name: 'fileLinkNotAvailableNoPath',
+      '✅ Updated successfully',
+      name: 'updatedSuccessfully',
       desc: '',
       args: [],
     );
   }
 
-  /// `Failed to create temporary file`
-  String get failedToCreateTempFile {
+  /// `Change Password`
+  String get changePassword {
     return Intl.message(
-      'Failed to create temporary file',
-      name: 'failedToCreateTempFile',
+      'Change Password',
+      name: 'changePassword',
       desc: '',
       args: [],
     );
   }
 
-  /// `Error loading text file: {error}`
-  String errorLoadingTextFile(String error) {
+  /// `Current Password`
+  String get currentPassword {
     return Intl.message(
-      'Error loading text file: $error',
-      name: 'errorLoadingTextFile',
-      desc: '',
-      args: [error],
-    );
-  }
-
-  /// `Please enter folder name`
-  String get pleaseEnterFolderName {
-    return Intl.message(
-      'Please enter folder name',
-      name: 'pleaseEnterFolderName',
+      'Current Password',
+      name: 'currentPassword',
       desc: '',
       args: [],
     );
   }
 
-  /// `Folder "{folderName}" created successfully`
-  String folderCreatedSuccessfully(String folderName) {
+  /// `Current password is required`
+  String get currentPasswordRequired {
     return Intl.message(
-      'Folder "$folderName" created successfully',
-      name: 'folderCreatedSuccessfully',
-      desc: '',
-      args: [folderName],
-    );
-  }
-
-  /// `Failed to create folder`
-  String get failedToCreateFolder {
-    return Intl.message(
-      'Failed to create folder',
-      name: 'failedToCreateFolder',
+      'Current password is required',
+      name: 'currentPasswordRequired',
       desc: '',
       args: [],
     );
   }
 
-  /// `Choose file or folder`
-  String get chooseFileOrFolder {
+  /// `New Password`
+  String get newPassword {
     return Intl.message(
-      'Choose file or folder',
-      name: 'chooseFileOrFolder',
+      'New Password',
+      name: 'newPassword',
       desc: '',
       args: [],
     );
   }
 
-  /// `Type`
-  String get typeLabel {
-    return Intl.message('Type', name: 'typeLabel', desc: '', args: []);
+  /// `New password is required`
+  String get newPasswordRequired {
+    return Intl.message(
+      'New password is required',
+      name: 'newPasswordRequired',
+      desc: '',
+      args: [],
+    );
   }
 
-  /// `All`
-  String get allActivities {
-    return Intl.message('All', name: 'allActivities', desc: '', args: []);
+  /// `Password must be at least 8 characters`
+  String get passwordMinLength {
+    return Intl.message(
+      'Password must be at least 8 characters',
+      name: 'passwordMinLength',
+      desc: '',
+      args: [],
+    );
   }
 
-  /// `User`
-  String get userLabel {
-    return Intl.message('User', name: 'userLabel', desc: '', args: []);
+  /// `Confirm New Password`
+  String get confirmNewPassword {
+    return Intl.message(
+      'Confirm New Password',
+      name: 'confirmNewPassword',
+      desc: '',
+      args: [],
+    );
   }
 
-  /// `Room`
-  String get roomLabel {
-    return Intl.message('Room', name: 'roomLabel', desc: '', args: []);
+  /// `Password confirmation is required`
+  String get passwordConfirmationRequired {
+    return Intl.message(
+      'Password confirmation is required',
+      name: 'passwordConfirmationRequired',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `✅ Password updated successfully`
+  String get passwordUpdatedSuccessfully {
+    return Intl.message(
+      '✅ Password updated successfully',
+      name: 'passwordUpdatedSuccessfully',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Favorite Files`
+  String get favoriteFiles {
+    return Intl.message(
+      'Favorite Files',
+      name: 'favoriteFiles',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `No favorite files`
+  String get noFavoriteFiles {
+    return Intl.message(
+      'No favorite files',
+      name: 'noFavoriteFiles',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Add files to favorites`
+  String get addFilesToFavorites {
+    return Intl.message(
+      'Add files to favorites',
+      name: 'addFilesToFavorites',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Error: Folder ID not found`
+  String get folderIdNotFound {
+    return Intl.message(
+      'Error: Folder ID not found',
+      name: 'folderIdNotFound',
+      desc: 'Message shown when the folder ID is missing',
+      args: [],
+    );
   }
 }
 

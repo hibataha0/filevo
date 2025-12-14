@@ -7,6 +7,7 @@ import 'package:filevo/views/fileViewer/edit_file_page.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:filevo/generated/l10n.dart';
+import 'package:filevo/constants/app_colors.dart';
 
 class FileActionsService {
   static bool _isLoading = false;
@@ -36,25 +37,33 @@ class FileActionsService {
 
   /// تعديل الملف (يفتح صفحة التعديل الشاملة)
   /// ✅ ترجع Future<bool> للإشارة إلى ما إذا تم تحديث الملف
-  static Future<bool> editFile(BuildContext context, Map<String, dynamic> file, {String? roomId}) async {
+  static Future<bool> editFile(
+    BuildContext context,
+    Map<String, dynamic> file, {
+    String? roomId,
+  }) async {
     // ✅ إضافة roomId إلى بيانات الملف إذا كان موجوداً
     final fileWithRoomId = Map<String, dynamic>.from(file);
     if (roomId != null) {
       fileWithRoomId['roomId'] = roomId;
       // ✅ أيضاً إضافة roomId إلى originalData إذا كان موجوداً
       if (fileWithRoomId['originalData'] != null) {
-        final originalData = Map<String, dynamic>.from(fileWithRoomId['originalData']);
+        final originalData = Map<String, dynamic>.from(
+          fileWithRoomId['originalData'],
+        );
         originalData['roomId'] = roomId;
         fileWithRoomId['originalData'] = originalData;
       }
       // ✅ Logging للتحقق من إضافة roomId
       print('🔍 [FileActionsService] Added roomId to file: $roomId');
       print('   - roomId in fileWithRoomId: ${fileWithRoomId['roomId']}');
-      print('   - roomId in originalData: ${fileWithRoomId['originalData']?['roomId']}');
+      print(
+        '   - roomId in originalData: ${fileWithRoomId['originalData']?['roomId']}',
+      );
     } else {
       print('⚠️ [FileActionsService] No roomId provided');
     }
-    
+
     final result = await Navigator.push<bool>(
       context,
       MaterialPageRoute(
@@ -66,7 +75,10 @@ class FileActionsService {
   }
 
   /// تعديل metadata فقط (Dialog قديم - محفوظ للتوافق)
-  static void editFileMetadata(BuildContext context, Map<String, dynamic> file) {
+  static void editFileMetadata(
+    BuildContext context,
+    Map<String, dynamic> file,
+  ) {
     final fileController = Provider.of<FileController>(context, listen: false);
     final originalName = file['originalData']['name'] ?? '';
     final originalExtension = originalName.contains('.')
@@ -93,8 +105,8 @@ class FileActionsService {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(15),
           ),
-          title: const Text(
-            "تعديل الملف",
+          title: Text(
+            S.of(context).editFileMetadata,
             style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
           ),
           content: SizedBox(
@@ -105,7 +117,7 @@ class FileActionsService {
                   TextField(
                     controller: nameCtrl,
                     decoration: InputDecoration(
-                      labelText: "اسم الملف",
+                      labelText: S.of(context).fileName,
                       suffixText: originalExtension,
                       border: const OutlineInputBorder(),
                     ),
@@ -114,16 +126,16 @@ class FileActionsService {
                   TextField(
                     controller: descCtrl,
                     maxLines: 2,
-                    decoration: const InputDecoration(
-                      labelText: "الوصف",
+                    decoration: InputDecoration(
+                      labelText: S.of(context).fileDescription,
                       border: OutlineInputBorder(),
                     ),
                   ),
                   const SizedBox(height: 12),
                   TextField(
                     controller: tagsCtrl,
-                    decoration: const InputDecoration(
-                      labelText: "الوسوم (افصل بينها بفاصلة)",
+                    decoration: InputDecoration(
+                      labelText: S.of(context).tagsSeparatedByComma,
                       border: OutlineInputBorder(),
                     ),
                   ),
@@ -160,21 +172,21 @@ class FileActionsService {
 
                 if (success == true) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text("✅ تم حفظ التعديلات بنجاح"),
+                    SnackBar(
+                      content: Text(S.of(context).changesSavedSuccessfully),
                       backgroundColor: Colors.green,
                     ),
                   );
                 } else {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text("❌ فشل حفظ التعديلات"),
+                    SnackBar(
+                      content: Text(S.of(context).changesSaveFailed),
                       backgroundColor: Colors.red,
                     ),
                   );
                 }
               },
-              child: const Text("حفظ التعديلات"),
+              child: Text(S.of(context).saveChanges),
             ),
           ],
         );
@@ -206,7 +218,7 @@ class FileActionsService {
     );
 
     if (result == true && context.mounted) {
-      _showSuccessSnackBar(context, '✅ تم إرسال طلب المشاركة للغرفة');
+      _showSuccessSnackBar(context, S.of(context).shareRequestSent);
     }
   }
 
@@ -221,8 +233,8 @@ class FileActionsService {
       context: context,
       builder: (ctx) {
         return AlertDialog(
-          title: const Text("حذف الملف"),
-          content: Text("هل أنت متأكد من حذف الملف '${file['name']}'؟"),
+          title: Text(S.of(context).deleteFile),
+          content: Text(S.of(context).confirmDeleteFile(file['name'] ?? '')),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(ctx).pop(false),
@@ -244,8 +256,8 @@ class FileActionsService {
     if (token == null) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("❌ خطأ: لا يوجد توكن."),
+        SnackBar(
+          content: Text(S.of(context).noTokenError),
           backgroundColor: Colors.red,
         ),
       );
@@ -272,7 +284,9 @@ class FileActionsService {
 
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text("✅ تم حذف الملف '${file['name']}' بنجاح"),
+            content: Text(
+              S.of(context).fileDeletedSuccessfully(file['name'] ?? ''),
+            ),
             backgroundColor: Colors.green,
           ),
         );
@@ -280,14 +294,14 @@ class FileActionsService {
         final errorMsg =
             fileController.errorMessage ?? "❌ حدث خطأ أثناء حذف الملف";
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(errorMsg), backgroundColor: Colors.red),
+          SnackBar(content: Text(errorMsg), backgroundColor: AppColors.error),
         );
       }
     } catch (e) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text("❌ حدث خطأ أثناء حذف الملف: $e"),
+          content: Text(S.of(context).errorDeletingFile(e.toString())),
           backgroundColor: Colors.red,
         ),
       );
@@ -305,7 +319,7 @@ class FileActionsService {
   }) async {
     final sharedWith = (file['originalData']?['sharedWith'] as List?) ?? [];
     if (sharedWith.isEmpty) {
-      _showErrorSnackBar(context, "لا يوجد مستخدمون مشارك معهم الملف");
+      _showErrorSnackBar(context, S.of(context).noUsersSharedWith);
       return;
     }
 
@@ -323,7 +337,7 @@ class FileActionsService {
         .toList();
 
     if (userIds.isEmpty) {
-      _showErrorSnackBar(context, "لا يمكن تحديد المستخدمين لإلغاء المشاركة");
+      _showErrorSnackBar(context, S.of(context).cannotIdentifyUsers);
       return;
     }
 
@@ -366,11 +380,11 @@ class FileActionsService {
       file['originalData']['sharedWith'] = [];
       file['originalData']['isShared'] = false;
       onLocalUpdate?.call();
-      _showSuccessSnackBar(context, "✅ تم إلغاء مشاركة الملف");
+      _showSuccessSnackBar(context, S.of(context).unshareFileSuccess);
     } else {
       _showErrorSnackBar(
         context,
-        fileController.errorMessage ?? "فشل إلغاء المشاركة",
+        fileController.errorMessage ?? S.of(context).unshareFailed,
       );
     }
   }
@@ -410,7 +424,7 @@ class FileActionsService {
                 ),
               ),
               SizedBox(width: 12),
-              Text('جاري التحديث...'),
+              Text(S.of(context).updating),
             ],
           ),
           duration: Duration(seconds: 2),
@@ -443,8 +457,8 @@ class FileActionsService {
             SnackBar(
               content: Text(
                 isStarred
-                    ? '✅ تم إضافة الملف إلى المفضلة'
-                    : '✅ تم إزالة الملف من المفضلة',
+                    ? S.of(context).fileAddedToFavorites
+                    : S.of(context).fileRemovedFromFavorites,
               ),
               backgroundColor: Colors.green,
               duration: Duration(seconds: 2),
@@ -456,13 +470,13 @@ class FileActionsService {
       } else {
         _showErrorSnackBar(
           context,
-          result['message'] ?? "❌ حدث خطأ أثناء التحديث",
+          result['message'] ?? S.of(context).errorUpdating,
         );
       }
     } catch (e) {
       print('❌ Error in toggleStar: $e');
       ScaffoldMessenger.of(context).hideCurrentSnackBar();
-      _showErrorSnackBar(context, "❌ حدث خطأ أثناء التحديث");
+      _showErrorSnackBar(context, S.of(context).errorUpdating);
     }
   }
 
@@ -504,7 +518,7 @@ class FileActionsService {
 
     final token = await StorageService.getToken();
     if (token == null) {
-      _showErrorSnackBar(context, '❌ خطأ: يجب تسجيل الدخول أولاً');
+      _showErrorSnackBar(context, S.of(context).mustLoginFirstError);
       return;
     }
 
@@ -523,7 +537,7 @@ class FileActionsService {
               ),
             ),
             const SizedBox(width: 16),
-            const Text('جاري تحميل الملف...'),
+            Text(S.of(context).downloadingFile),
           ],
         ),
         duration: const Duration(seconds: 30),
@@ -544,15 +558,21 @@ class FileActionsService {
       if (result['success'] == true) {
         _showSuccessSnackBar(
           context,
-          '✅ تم تحميل الملف بنجاح: ${result['fileName']}',
+          S.of(context).fileDownloadedSuccessfully(result['fileName'] ?? ''),
         );
       } else {
-        _showErrorSnackBar(context, result['error'] ?? 'فشل تحميل الملف');
+        _showErrorSnackBar(
+          context,
+          result['error'] ?? S.of(context).failedToDownloadFile,
+        );
       }
     } catch (e) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).hideCurrentSnackBar();
-      _showErrorSnackBar(context, '❌ خطأ في تحميل الملف: ${e.toString()}');
+      _showErrorSnackBar(
+        context,
+        S.of(context).errorDownloadingFile(e.toString()),
+      );
     }
   }
 
@@ -579,7 +599,7 @@ class FileActionsService {
               ),
             ),
             const SizedBox(width: 16),
-            const Text('جاري تحميل الملف...'),
+            Text(S.of(context).downloadingFile),
           ],
         ),
         duration: const Duration(seconds: 30),
@@ -599,15 +619,21 @@ class FileActionsService {
       if (result['success'] == true) {
         _showSuccessSnackBar(
           context,
-          '✅ تم تحميل الملف بنجاح: ${result['fileName']}',
+          S.of(context).fileDownloadedSuccessfully(result['fileName'] ?? ''),
         );
       } else {
-        _showErrorSnackBar(context, result['error'] ?? 'فشل تحميل الملف');
+        _showErrorSnackBar(
+          context,
+          result['error'] ?? S.of(context).failedToDownloadFile,
+        );
       }
     } catch (e) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).hideCurrentSnackBar();
-      _showErrorSnackBar(context, '❌ خطأ في تحميل الملف: ${e.toString()}');
+      _showErrorSnackBar(
+        context,
+        S.of(context).errorDownloadingFile(e.toString()),
+      );
     }
   }
 }

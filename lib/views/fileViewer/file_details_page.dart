@@ -11,7 +11,8 @@ import 'package:filevo/generated/l10n.dart';
 
 class FileDetailsPage extends StatefulWidget {
   final String fileId;
-  final String? roomId; // ✅ معرف الروم (اختياري) - إذا كان موجوداً، نستخدم getSharedFileDetailsInRoom
+  final String?
+  roomId; // ✅ معرف الروم (اختياري) - إذا كان موجوداً، نستخدم getSharedFileDetailsInRoom
 
   const FileDetailsPage({super.key, required this.fileId, this.roomId});
 
@@ -32,7 +33,10 @@ class _FileDetailsPageState extends State<FileDetailsPage> {
 
   Future<void> _loadFileDetails() async {
     try {
-      final fileController = Provider.of<FileController>(context, listen: false);
+      final fileController = Provider.of<FileController>(
+        context,
+        listen: false,
+      );
       final token = await StorageService.getToken();
 
       if (token == null) {
@@ -41,7 +45,7 @@ class _FileDetailsPageState extends State<FileDetailsPage> {
       }
 
       print("🔄 Fetching details for file ID: ${widget.fileId}");
-      
+
       // ✅ إذا كان roomId موجوداً، استخدم getSharedFileDetailsInRoom
       final data = widget.roomId != null
           ? await fileController.getSharedFileDetailsInRoom(
@@ -64,7 +68,10 @@ class _FileDetailsPageState extends State<FileDetailsPage> {
           });
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(data['error'] ?? S.of(context).errorLoadingFileData),
+              content: Text(
+                data['error'] ??
+                    S.of(context).errorLoadingFileData(data['error'] ?? ''),
+              ),
               backgroundColor: Colors.red,
               duration: Duration(seconds: 3),
             ),
@@ -84,8 +91,11 @@ class _FileDetailsPageState extends State<FileDetailsPage> {
             print('📅 Last modified: ${fileData?['lastModified']}');
             print('📁 Path: ${fileData?['path']}');
             // ✅ إذا لم يكن path موجوداً، نحتاج لجلب تفاصيل الملف العادية للحصول على path
-            if (fileData?['path'] == null || fileData!['path'].toString().isEmpty) {
-              print('⚠️ Path not found in shared file details, fetching regular file details...');
+            if (fileData?['path'] == null ||
+                fileData!['path'].toString().isEmpty) {
+              print(
+                '⚠️ Path not found in shared file details, fetching regular file details...',
+              );
               // ✅ جلب path من تفاصيل الملف العادية
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 _loadFilePathFromRegularDetails();
@@ -96,7 +106,8 @@ class _FileDetailsPageState extends State<FileDetailsPage> {
       }
 
       // إذا كان الفيديو، إنشاء الثمبنيل
-      if (fileData != null && fileData!['category']?.toLowerCase() == "videos") {
+      if (fileData != null &&
+          fileData!['category']?.toLowerCase() == "videos") {
         final videoUrl = "http://10.0.2.2:8000/${fileData!['path'] ?? ''}";
         final thumbnail = await _getVideoThumbnail(videoUrl);
         if (mounted) {
@@ -113,7 +124,6 @@ class _FileDetailsPageState extends State<FileDetailsPage> {
       }
 
       print("📦 Final fileData used in UI: $fileData");
-
     } catch (e) {
       print("❌ Error fetching file details: $e");
       if (mounted) {
@@ -140,7 +150,10 @@ class _FileDetailsPageState extends State<FileDetailsPage> {
   // ✅ جلب path من تفاصيل الملف العادية إذا لم يكن موجوداً في shared details
   Future<void> _loadFilePathFromRegularDetails() async {
     try {
-      final fileController = Provider.of<FileController>(context, listen: false);
+      final fileController = Provider.of<FileController>(
+        context,
+        listen: false,
+      );
       final token = await StorageService.getToken();
 
       if (token == null) return;
@@ -150,7 +163,9 @@ class _FileDetailsPageState extends State<FileDetailsPage> {
         token: token,
       );
 
-      if (data != null && data['file'] != null && data['file']['path'] != null) {
+      if (data != null &&
+          data['file'] != null &&
+          data['file']['path'] != null) {
         if (mounted && fileData != null) {
           setState(() {
             fileData!['path'] = data['file']['path'];
@@ -199,9 +214,7 @@ class _FileDetailsPageState extends State<FileDetailsPage> {
         centerTitle: true,
         iconTheme: IconThemeData(color: Colors.white),
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(
-            bottom: Radius.circular(20),
-          ),
+          borderRadius: BorderRadius.vertical(bottom: Radius.circular(20)),
         ),
         actions: [
           PopupMenuButton<String>(
@@ -321,9 +334,7 @@ class _FileDetailsPageState extends State<FileDetailsPage> {
             SizedBox(height: 12),
             Text(
               'معرف الملف: ${widget.fileId}',
-              style: TextStyle(
-                color: Color(0xFF6B7280),
-              ),
+              style: TextStyle(color: Color(0xFF6B7280)),
               textAlign: TextAlign.center,
             ),
             SizedBox(height: 24),
@@ -360,8 +371,10 @@ class _FileDetailsPageState extends State<FileDetailsPage> {
       }
       fileUrl = "http://10.0.2.2:8000/$cleanPath";
     }
-    
-    print('🖼️ File preview - Name: $fileName, Type: $fileType, Path: $filePath, URL: $fileUrl');
+
+    print(
+      '🖼️ File preview - Name: $fileName, Type: $fileType, Path: $filePath, URL: $fileUrl',
+    );
 
     return SingleChildScrollView(
       physics: BouncingScrollPhysics(),
@@ -369,9 +382,9 @@ class _FileDetailsPageState extends State<FileDetailsPage> {
         children: [
           // File Preview Section
           _buildFilePreview(fileName, fileType, fileUrl),
-          
+
           SizedBox(height: 24),
-          
+
           // File Details Section
           _buildFileDetailsSection(),
         ],
@@ -405,14 +418,14 @@ class _FileDetailsPageState extends State<FileDetailsPage> {
             child: Container(
               height: 200,
               width: double.infinity,
-              child: fileUrl.isNotEmpty && fileType.toLowerCase() == "images" 
+              child: fileUrl.isNotEmpty && fileType.toLowerCase() == "images"
                   ? _buildImagePreview(fileUrl, fileType)
                   : fileUrl.isNotEmpty && fileType.toLowerCase() == "videos"
-                      ? _buildVideoPreview(fileUrl, fileType)
-                      : _buildFileIcon(fileType),
+                  ? _buildVideoPreview(fileUrl, fileType)
+                  : _buildFileIcon(fileType),
             ),
           ),
-          
+
           // File Name
           Container(
             padding: EdgeInsets.all(20),
@@ -602,11 +615,7 @@ class _FileDetailsPageState extends State<FileDetailsPage> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            Icons.videocam_rounded,
-            color: Colors.white,
-            size: 50,
-          ),
+          Icon(Icons.videocam_rounded, color: Colors.white, size: 50),
           SizedBox(height: 8),
           Text(
             'فيديو',
@@ -653,13 +662,15 @@ class _FileDetailsPageState extends State<FileDetailsPage> {
       },
     };
 
-    final config = categoryConfig[category.toLowerCase()] ?? {
-      "icon": Icons.folder_rounded,
-      "color": Color(0xFF6B7280),
-      "gradient": [Color(0xFF6B7280), Color(0xFF9CA3AF)],
-      "iconBg": Color(0xFF6B7280).withOpacity(0.2),
-      "label": S.of(context).file,
-    };
+    final config =
+        categoryConfig[category.toLowerCase()] ??
+        {
+          "icon": Icons.folder_rounded,
+          "color": Color(0xFF6B7280),
+          "gradient": [Color(0xFF6B7280), Color(0xFF9CA3AF)],
+          "iconBg": Color(0xFF6B7280).withOpacity(0.2),
+          "label": S.of(context).file,
+        };
 
     return Container(
       height: 200,
@@ -736,12 +747,15 @@ class _FileDetailsPageState extends State<FileDetailsPage> {
 
   Widget _buildFileDetailsSection() {
     // ✅ إذا كان ملف/مجلد مشترك في روم، اعرض معلومات محددة فقط
-    final isSharedInRoom = widget.roomId != null && fileData != null && fileData!['sharedBy'] != null;
-    
+    final isSharedInRoom =
+        widget.roomId != null &&
+        fileData != null &&
+        fileData!['sharedBy'] != null;
+
     if (isSharedInRoom) {
       return _buildSharedInRoomDetails();
     }
-    
+
     // ✅ عرض التفاصيل العادية للملفات/المجلدات العادية
     return Container(
       margin: EdgeInsets.symmetric(horizontal: 20),
@@ -789,20 +803,45 @@ class _FileDetailsPageState extends State<FileDetailsPage> {
               ),
             ],
           ),
-          
+
           SizedBox(height: 24),
-          
+
           // Details Grid
-          _buildDetailItem('folder', '📁', 'التصنيف', fileData!['category'] ?? '—'),
-          
+          _buildDetailItem(
+            'folder',
+            '📁',
+            'التصنيف',
+            fileData!['category'] ?? '—',
+          ),
+
           // ✅ عرض الامتداد إذا كان متاحاً
           if (fileData!['extension'] != null)
-            _buildDetailItem('extension', '📄', S.of(context).extension, fileData!['extension'] ?? '—'),
-          
-          _buildDetailItem('size', '📊', S.of(context).size, fileData!['sizeFormatted'] ?? _formatSize(fileData!['size']) ?? '—'),
-          _buildDetailItem('time', '🕒', S.of(context).createdAt, _formatDate(fileData!['createdAt'])),
-          _buildDetailItem('edit', '✏️', S.of(context).modified, _formatDate(fileData!['updatedAt'] ?? fileData!['lastModified'])),
-          
+            _buildDetailItem(
+              'extension',
+              '📄',
+              S.of(context).extension,
+              fileData!['extension'] ?? '—',
+            ),
+
+          _buildDetailItem(
+            'size',
+            '📊',
+            S.of(context).size,
+            fileData!['sizeFormatted'] ?? _formatSize(fileData!['size']) ?? '—',
+          ),
+          _buildDetailItem(
+            'time',
+            '🕒',
+            S.of(context).createdAt,
+            _formatDate(fileData!['createdAt']),
+          ),
+          _buildDetailItem(
+            'edit',
+            '✏️',
+            S.of(context).modified,
+            _formatDate(fileData!['updatedAt'] ?? fileData!['lastModified']),
+          ),
+
           // ✅ عرض معلومات المالك (owner)
           if (fileData!['owner'] != null)
             _buildDetailItem(
@@ -811,14 +850,25 @@ class _FileDetailsPageState extends State<FileDetailsPage> {
               S.of(context).owner,
               fileData!['owner']['name'] ?? fileData!['owner']['email'] ?? '—',
             ),
-          
-          _buildDetailItem('description', '📝', S.of(context).description, 
-              fileData!['description']?.isNotEmpty == true ? fileData!['description'] : "—"),
-          _buildDetailItem('tags', '🏷️', S.of(context).tags, 
-              (fileData!['tags'] as List?)?.join(', ') ?? "—"),
+
+          _buildDetailItem(
+            'description',
+            '📝',
+            S.of(context).description,
+            fileData!['description']?.isNotEmpty == true
+                ? fileData!['description']
+                : "—",
+          ),
+          _buildDetailItem(
+            'tags',
+            '🏷️',
+            S.of(context).tags,
+            (fileData!['tags'] as List?)?.join(', ') ?? "—",
+          ),
 
           // Shared With Section
-          if (fileData!['sharedWith'] != null && fileData!['sharedWith'].isNotEmpty)
+          if (fileData!['sharedWith'] != null &&
+              fileData!['sharedWith'].isNotEmpty)
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -828,26 +878,31 @@ class _FileDetailsPageState extends State<FileDetailsPage> {
                   '👥',
                   'تمت المشاركة مع (${fileData!['sharedWithCount'] ?? fileData!['sharedWith'].length})',
                   fileData!['sharedWith']
-                      .map<String>((u) {
-                        // ✅ محاولة الحصول على name أو email من user object
-                        if (u['user'] != null && u['user'] is Map) {
-                          return u['user']['name'] ?? u['user']['email'] ?? '';
-                        }
-                        return u['name'] ?? u['email'] ?? '';
-                      })
-                      .where((name) => name.isNotEmpty)
-                      .join(', ') ?? "—",
+                          .map<String>((u) {
+                            // ✅ محاولة الحصول على name أو email من user object
+                            if (u['user'] != null && u['user'] is Map) {
+                              return u['user']['name'] ??
+                                  u['user']['email'] ??
+                                  '';
+                            }
+                            return u['name'] ?? u['email'] ?? '';
+                          })
+                          .where((name) => name.isNotEmpty)
+                          .join(', ') ??
+                      "—",
                 ),
               ],
             ),
-          
+
           // ✅ عرض حالة الملف
           if (fileData!['isOwner'] != null)
             _buildDetailItem(
               'status',
               fileData!['isOwner'] == true ? '⭐' : '🔗',
               S.of(context).status,
-              fileData!['isOwner'] == true ? S.of(context).youAreOwner : S.of(context).sharedFile,
+              fileData!['isOwner'] == true
+                  ? S.of(context).youAreOwner
+                  : S.of(context).sharedFile,
             ),
         ],
       ),
@@ -902,28 +957,54 @@ class _FileDetailsPageState extends State<FileDetailsPage> {
               ),
             ],
           ),
-          
+
           SizedBox(height: 24),
-          
+
           // ✅ التصنيف
           if (fileData!['category'] != null)
-            _buildDetailItem('folder', '📁', 'التصنيف', fileData!['category'] ?? '—'),
-          
+            _buildDetailItem(
+              'folder',
+              '📁',
+              'التصنيف',
+              fileData!['category'] ?? '—',
+            ),
+
           // ✅ الامتداد
           if (fileData!['extension'] != null)
-            _buildDetailItem('extension', '📄', S.of(context).extension, fileData!['extension'] ?? '—'),
-          
+            _buildDetailItem(
+              'extension',
+              '📄',
+              S.of(context).extension,
+              fileData!['extension'] ?? '—',
+            ),
+
           // ✅ الحجم
-          _buildDetailItem('size', '📊', S.of(context).size, fileData!['sizeFormatted'] ?? _formatSize(fileData!['size']) ?? '—'),
-          
+          _buildDetailItem(
+            'size',
+            '📊',
+            S.of(context).size,
+            fileData!['sizeFormatted'] ?? _formatSize(fileData!['size']) ?? '—',
+          ),
+
           // ✅ تاريخ الإنشاء (إذا كان متاحاً)
           if (fileData!['createdAt'] != null || fileData!['uploadedAt'] != null)
-            _buildDetailItem('time', '🕒', S.of(context).createdAt, _formatDate(fileData!['createdAt'] ?? fileData!['uploadedAt'])),
-          
+            _buildDetailItem(
+              'time',
+              '🕒',
+              S.of(context).createdAt,
+              _formatDate(fileData!['createdAt'] ?? fileData!['uploadedAt']),
+            ),
+
           // ✅ تاريخ آخر تعديل
-          if (fileData!['lastModified'] != null || fileData!['updatedAt'] != null)
-            _buildDetailItem('edit', '✏️', S.of(context).modified, _formatDate(fileData!['lastModified'] ?? fileData!['updatedAt'])),
-          
+          if (fileData!['lastModified'] != null ||
+              fileData!['updatedAt'] != null)
+            _buildDetailItem(
+              'edit',
+              '✏️',
+              S.of(context).modified,
+              _formatDate(fileData!['lastModified'] ?? fileData!['updatedAt']),
+            ),
+
           // ✅ المالك (owner)
           if (fileData!['owner'] != null)
             _buildDetailItem(
@@ -932,46 +1013,74 @@ class _FileDetailsPageState extends State<FileDetailsPage> {
               S.of(context).owner,
               fileData!['owner']['name'] ?? fileData!['owner']['email'] ?? '—',
             ),
-          
+
           // ✅ من شارك الملف/المجلد (sharedBy)
           if (fileData!['sharedBy'] != null)
             _buildDetailItem(
               'sharedBy',
               '🔗',
               'شاركه',
-              fileData!['sharedBy']['name'] ?? fileData!['sharedBy']['email'] ?? '—',
+              fileData!['sharedBy']['name'] ??
+                  fileData!['sharedBy']['email'] ??
+                  '—',
             ),
-          
+
           // ✅ الوصف (إذا كان متاحاً)
-          _buildDetailItem('description', '📝', S.of(context).description, 
-              (fileData!['description'] != null && fileData!['description'].toString().isNotEmpty) 
-                  ? fileData!['description'].toString() 
-                  : "—"),
-          
+          _buildDetailItem(
+            'description',
+            '📝',
+            S.of(context).description,
+            (fileData!['description'] != null &&
+                    fileData!['description'].toString().isNotEmpty)
+                ? fileData!['description'].toString()
+                : "—",
+          ),
+
           // ✅ التاغات (إذا كانت متاحة)
-          _buildDetailItem('tags', '🏷️', S.of(context).tags, 
-              (fileData!['tags'] != null && (fileData!['tags'] as List?)?.isNotEmpty == true)
-                  ? (fileData!['tags'] as List).join(', ')
-                  : "—"),
+          _buildDetailItem(
+            'tags',
+            '🏷️',
+            S.of(context).tags,
+            (fileData!['tags'] != null &&
+                    (fileData!['tags'] as List?)?.isNotEmpty == true)
+                ? (fileData!['tags'] as List).join(', ')
+                : "—",
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildDetailItem(String type, String emoji, String label, String value) {
+  Widget _buildDetailItem(
+    String type,
+    String emoji,
+    String label,
+    String value,
+  ) {
     Color getIconColor() {
       switch (type) {
-        case 'folder': return Color(0xFF10B981);
-        case 'size': return Color(0xFFF59E0B);
-        case 'time': return Color(0xFFEF4444);
-        case 'edit': return Color(0xFF8B5CF6);
-        case 'description': return Color(0xFF4F6BED);
-        case 'tags': return Color(0xFFEC4899);
-        case 'share': return Color(0xFF06B6D4);
-        case 'owner': return Color(0xFF10B981);
-        case 'extension': return Color(0xFF8B5CF6);
-        case 'status': return Color(0xFFF59E0B);
-        default: return Color(0xFF6B7280);
+        case 'folder':
+          return Color(0xFF10B981);
+        case 'size':
+          return Color(0xFFF59E0B);
+        case 'time':
+          return Color(0xFFEF4444);
+        case 'edit':
+          return Color(0xFF8B5CF6);
+        case 'description':
+          return Color(0xFF4F6BED);
+        case 'tags':
+          return Color(0xFFEC4899);
+        case 'share':
+          return Color(0xFF06B6D4);
+        case 'owner':
+          return Color(0xFF10B981);
+        case 'extension':
+          return Color(0xFF8B5CF6);
+        case 'status':
+          return Color(0xFFF59E0B);
+        default:
+          return Color(0xFF6B7280);
       }
     }
 
@@ -987,12 +1096,7 @@ class _FileDetailsPageState extends State<FileDetailsPage> {
               color: getIconColor().withOpacity(0.1),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: Center(
-              child: Text(
-                emoji,
-                style: TextStyle(fontSize: 18),
-              ),
-            ),
+            child: Center(child: Text(emoji, style: TextStyle(fontSize: 18))),
           ),
           SizedBox(width: 16),
           Expanded(
@@ -1038,18 +1142,20 @@ class _FileDetailsPageState extends State<FileDetailsPage> {
   String? _formatSize(dynamic size) {
     if (size == null) return null;
     try {
-      final bytes = size is int ? size : (size is num ? size.toInt() : int.tryParse(size.toString()) ?? 0);
+      final bytes = size is int
+          ? size
+          : (size is num ? size.toInt() : int.tryParse(size.toString()) ?? 0);
       if (bytes == 0) return '0 B';
       const k = 1024;
       const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
       int i = 0;
       double sizeInUnit = bytes.toDouble();
-      
+
       while (sizeInUnit >= k && i < sizes.length - 1) {
         sizeInUnit /= k;
         i++;
       }
-      
+
       return '${sizeInUnit.toStringAsFixed(2)} ${sizes[i]}';
     } catch (e) {
       return null;

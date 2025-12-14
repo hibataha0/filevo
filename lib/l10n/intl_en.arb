@@ -167,7 +167,14 @@
   "addFileToRoom": "Add File to Room",
   "addFolder": "Add Folder",
   "addFolderToRoom": "Add Folder to Room",
-  "selectFolder": "Select",
+  "selectFolder": "Select \"{folderName}\"",
+  "@selectFolder": {
+    "placeholders": {
+      "folderName": {
+        "type": "String"
+      }
+    }
+  },
   "noFoldersAvailable": "No folders available",
   "noSubfolders": "No subfolders",
   "errorLoadingSubfolders": "Error loading subfolders",
@@ -221,5 +228,680 @@
   "youAreOwner": "You are the owner",
   "sharedFile": "Shared file",
   "unshareFile": "Unshare File",
-  "unshare": "Unshare"
+  "unshare": "Unshare",
+  "mustLoginFirst": "You must log in first",
+  "editFile": "Edit File",
+  "editImage": "Edit Image",
+  "openImageEditor": "Open Image Editor",
+  "imageEdited": "Image edited",
+  "reloadOriginalImage": "Reload Original Image",
+  "editText": "Edit Text",
+  "openTextEditor": "Open Text Editor",
+  "textEdited": "Text edited",
+  "failedToLoadImage": "Failed to load image",
+  "failedToSaveTempImage": "Failed to save temporary image",
+  "loadedImageIsEmpty": "Loaded image is empty",
+  "errorVerifyingImage": "Error verifying image: {error}",
+  "@errorVerifyingImage": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "error": "Error: {error}",
+  "@error": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "loadingVideo": "Loading video...",
+  "failedToLoadVideo": "Failed to load video ({statusCode})",
+  "@failedToLoadVideo": {
+    "placeholders": {
+      "statusCode": {
+        "type": "int"
+      }
+    }
+  },
+  "failedToSaveTempVideo": "Failed to save temporary video",
+  "loadedVideoIsEmpty": "Loaded video is empty",
+  "errorVerifyingVideo": "Error verifying video: {error}",
+  "@errorVerifyingVideo": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "extractingImage": "Extracting image...",
+  "imageExtracted": "Image extracted",
+  "saveThisImage": "Do you want to save this image?",
+  "failedToExtractImage": "Failed to extract image",
+  "mergingVideos": "Merging videos... This may take some time",
+  "failedToMergeVideos": "Failed to merge videos",
+  "failedToLoadAudio": "Failed to load audio file ({statusCode})",
+  "@failedToLoadAudio": {
+    "placeholders": {
+      "statusCode": {
+        "type": "int"
+      }
+    }
+  },
+  "failedToSaveTempAudio": "Failed to save temporary audio file",
+  "loadedAudioIsEmpty": "Loaded audio file is empty",
+  "startTimeMustBeBeforeEndTime": "Start time must be before end time",
+  "failedToLoadAudioFile": "Failed to load audio file",
+  "failedToLoadBaseAudio": "Failed to load base audio file",
+  "mustSelectAtLeastTwoAudioFiles": "You must select at least two audio files to merge",
+  "mergingAudioFiles": "Merging audio files... This may take some time",
+  "pdfLoadFailed": "Failed to load PDF file ({statusCode})",
+  "@pdfLoadFailed": {
+    "placeholders": {
+      "statusCode": {
+        "type": "int"
+      }
+    }
+  },
+  "failedToLoadPdf": "Failed to load PDF",
+  "failedToLoadFile": "Failed to load file",
+  "imageEditedSuccessfully": "✅ Image edited successfully",
+  "editedImageIsEmpty": "⚠️ Edited image is empty",
+  "failedToSaveEditedImage": "⚠️ Failed to save edited image",
+  "textEditedSuccessfully": "✅ Text edited successfully. Press \"Save Changes\" to upload to server",
+  "saveOptions": "Save Options",
+  "saveOptionsDescription": "How do you want to save the edited image?\n\n• Save new copy: The edited image will be saved as a new file\n• Replace old version: The old file will be deleted and replaced with the edited image",
+  "saveNewCopy": "Save new copy",
+  "replaceOldVersion": "Replace old version",
+  "extract": "Extract",
+  "trimAudio": "Trim Audio",
+  "totalDuration": "Total duration: {duration}",
+  "@totalDuration": {
+    "placeholders": {
+      "duration": {
+        "type": "String"
+      }
+    }
+  },
+  "trim": "Trim",
+  "adjustVolume": "Adjust Volume",
+  "apply": "Apply",
+  "convertFormat": "Convert Format",
+  "chooseOutputFormat": "Choose output format:",
+  "wavFormat": "WAV",
+  "wavDescription": "High quality, large size",
+  "mp3Format": "MP3",
+  "mp3Description": "Good quality, small size",
+  "aacFormat": "AAC",
+  "aacDescription": "Very good quality",
+  "addTextAnnotation": "Add Text (Annotation)",
+  "positionX": "Position X: {x}",
+  "@positionX": {
+    "placeholders": {
+      "x": {
+        "type": "String"
+      }
+    }
+  },
+  "positionY": "Position Y: {y}",
+  "@positionY": {
+    "placeholders": {
+      "y": {
+        "type": "String"
+      }
+    }
+  },
+  "fontSize": "Font size: {size}",
+  "@fontSize": {
+    "placeholders": {
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "page": "Page: {pageNumber}",
+  "@page": {
+    "placeholders": {
+      "pageNumber": {
+        "type": "String"
+      }
+    }
+  },
+  "add": "Add",
+  "selectImagePosition": "Select Image Position",
+  "width": "Width: {width}",
+  "@width": {
+    "placeholders": {
+      "width": {
+        "type": "String"
+      }
+    }
+  },
+  "height": "Height: {height}",
+  "@height": {
+    "placeholders": {
+      "height": {
+        "type": "String"
+      }
+    }
+  },
+  "highlightText": "Highlight Text",
+  "color": "Color:",
+  "highlight": "Highlight",
+  "videoEditedSuccessfully": "✅ Video edited successfully",
+  "editedVideoIsEmpty": "⚠️ Edited video is empty",
+  "failedToSaveEditedVideo": "⚠️ Failed to save edited video",
+  "videoMergedSuccessfully": "✅ Videos merged successfully",
+  "textAddedSuccessfully": "✅ Text added successfully",
+  "imageAddedSuccessfully": "✅ Image added successfully",
+  "textHighlightedSuccessfully": "✅ Text highlighted successfully",
+  "fileUpdatedSuccessfully": "✅ File updated successfully",
+  "fileReplacedSuccessfully": "✅ File replaced successfully",
+  "newCopySavedSuccessfully": "✅ New copy saved successfully",
+  "changesSavedSuccessfully": "✅ Changes saved successfully",
+  "errorOccurred": "❌ Error: {error}",
+  "@errorOccurred": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "imageExtractedSuccessfully": "✅ Image extracted successfully",
+  "editedFileNotFound": "Edited file not found. Please edit again",
+  "errorAccessingEditedFile": "Error accessing edited file: {error}",
+  "@errorAccessingEditedFile": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "chooseTimeToExtractImage": "Choose time to extract image",
+  "chooseTimeInSeconds": "Choose time in seconds:",
+  "save": "Save",
+  "cancel": "Cancel",
+  "editFileMetadata": "Edit File",
+  "fileName": "File Name",
+  "fileDescription": "Description",
+  "tagsSeparatedByComma": "Tags (separate with comma)",
+  "changesSaveFailed": "❌ Failed to save changes",
+  "confirmDeleteFile": "Are you sure you want to delete the file '{fileName}'?",
+  "@confirmDeleteFile": {
+    "placeholders": {
+      "fileName": {
+        "type": "String"
+      }
+    }
+  },
+  "noTokenError": "❌ Error: No token found.",
+  "fileDeletedSuccessfully": "✅ File '{fileName}' deleted successfully",
+  "@fileDeletedSuccessfully": {
+    "placeholders": {
+      "fileName": {
+        "type": "String"
+      }
+    }
+  },
+  "errorDeletingFile": "❌ Error deleting file: {error}",
+  "@errorDeletingFile": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "noUsersSharedWith": "No users shared with this file",
+  "cannotIdentifyUsers": "Cannot identify users to unshare",
+  "unshareFileSuccess": "✅ File unshared successfully",
+  "unshareFailed": "Failed to unshare",
+  "fileAddedToFavorites": "✅ File added to favorites",
+  "fileRemovedFromFavorites": "✅ File removed from favorites",
+  "errorUpdating": "❌ Error updating",
+  "downloadingFile": "Downloading file...",
+  "fileDownloadedSuccessfully": "✅ File downloaded successfully: {fileName}",
+  "@fileDownloadedSuccessfully": {
+    "placeholders": {
+      "fileName": {
+        "type": "String"
+      }
+    }
+  },
+  "failedToDownloadFile": "Failed to download file",
+  "errorDownloadingFile": "❌ Error downloading file: {error}",
+  "@errorDownloadingFile": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "cannotIdentifyFile": "Cannot identify file",
+  "shareRequestSent": "✅ Share request sent to room",
+  "unshareFileConfirm": "Are you sure you want to unshare this file with all users?",
+  "updating": "Updating...",
+  "deleteFile": "Delete File",
+  "saveChanges": "Save Changes",
+  "mustLoginFirstError": "Error: You must log in first",
+  "errorLoadingFileData": "Error loading file data: {error}",
+  "@errorLoadingFileData": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "file": "File",
+  "failedToLoadPreview": "Failed to load preview",
+  "modified": "Modified",
+  "failedToLoadPdfFile": "Failed to load PDF file: {error}",
+  "@failedToLoadPdfFile": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "failedToOpenFile": "Failed to open file: {error}",
+  "@failedToOpenFile": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "failedToLoadPdfForDisplay": "Failed to load PDF for display: {error}",
+  "@failedToLoadPdfForDisplay": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "pdfTextExtractionNote": "Note: Text extraction may not be available for all PDF files.",
+  "pdfTextExtractionNote2": "You can select and highlight text after extraction.",
+  "failedToExtractTextFromPdf": "Failed to extract text from PDF",
+  "canViewPdfAndSearch": "You can view PDF and search in it",
+  "textHighlighted": "Selected text highlighted",
+  "searchInPdfNotAvailableMessage": "PDF search is not currently available. You can open the file in an external app to search.",
+  "searchInPdf": "Search in PDF",
+  "forAdvancedSearchFeature": "To benefit from advanced search feature, we recommend using:",
+  "currentVersionSupports": "Current version supports:",
+  "ok": "OK",
+  "loadingFile": "Loading file...",
+  "fileNotLoaded": "File not loaded",
+  "extractingText": "Extracting text...",
+  "highlightSelectedText": "Highlight selected text",
+  "removeAllHighlights": "Remove all highlights",
+  "highlights": "Highlights",
+  "textNotExtractedYet": "Text not extracted yet",
+  "extractText": "Extract Text",
+  "removeFileFromRoom": "Remove File from Room",
+  "removeFileFromRoomConfirm": "Are you sure you want to remove \"{fileName}\" from this room?",
+  "@removeFileFromRoomConfirm": {
+    "placeholders": {
+      "fileName": {
+        "type": "String"
+      }
+    }
+  },
+  "remove": "Remove",
+  "fileRemovedFromRoom": "File removed from room successfully",
+  "failedToRemoveFile": "Failed to remove file from room",
+  "fileIdNotFound": "File ID not found",
+  "movingFile": "Moving file...",
+  "fileMovedSuccessfully": "File moved successfully",
+  "failedToMoveFile": "Failed to move file",
+  "noFiles": "No files",
+  "startAddingFiles": "Start adding new files",
+  "viewedByAll": "Viewed by all",
+  "active": "Active",
+  "accessed": "Accessed",
+  "completed": "Completed",
+  "sharedBy": "Shared by",
+  "moveToRoot": "Move to Root",
+  "moveToRootDescription": "Move folder to main folder",
+  "selectFolderDescription": "Move to this folder",
+  "moveToThisFolder": "Move to this folder",
+  "leaveRoomConfirm": "Are you sure you want to leave \"{roomName}\"? You will not be able to access this room after leaving.",
+  "@leaveRoomConfirm": {
+    "placeholders": {
+      "roomName": {
+        "type": "String"
+      }
+    }
+  },
+  "deleteFolder": "Delete Folder",
+  "confirmDeleteFolder": "Are you sure you want to delete the folder '{folderName}'? All files and subfolders will also be deleted.",
+  "@confirmDeleteFolder": {
+    "placeholders": {
+      "folderName": {
+        "type": "String"
+      }
+    }
+  },
+  "cancel": "Cancel",
+  "delete": "Delete",
+  "folderIdNotAvailable": "❌ Error: Folder ID not available.",
+  "folderDeletedSuccessfully": "✅ Folder '{folderName}' deleted successfully",
+  "@folderDeletedSuccessfully": {
+    "placeholders": {
+      "folderName": {
+        "type": "String"
+      }
+    }
+  },
+  "errorDeletingFolder": "❌ Error occurred while deleting folder",
+  "errorDeletingFolderWithError": "❌ Error occurred while deleting folder: {error}",
+  "@errorDeletingFolderWithError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "folderRestoredSuccessfully": "✅ Folder '{folderName}' restored successfully",
+  "@folderRestoredSuccessfully": {
+    "placeholders": {
+      "folderName": {
+        "type": "String"
+      }
+    }
+  },
+  "errorRestoringFolder": "❌ Error occurred while restoring folder",
+  "errorRestoringFolderWithError": "❌ Error occurred while restoring folder: {error}",
+  "@errorRestoringFolderWithError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "confirmPermanentDelete": "Confirm Permanent Delete",
+  "confirmPermanentDeleteFolder": "Are you sure you want to permanently delete the folder '{folderName}'? This action cannot be undone. All files and subfolders will be permanently deleted.",
+  "@confirmPermanentDeleteFolder": {
+    "placeholders": {
+      "folderName": {
+        "type": "String"
+      }
+    }
+  },
+  "permanentDelete": "Permanent Delete",
+  "folderPermanentlyDeletedSuccessfully": "✅ Folder '{folderName}' permanently deleted successfully",
+  "@folderPermanentlyDeletedSuccessfully": {
+    "placeholders": {
+      "folderName": {
+        "type": "String"
+      }
+    }
+  },
+  "errorPermanentlyDeletingFolder": "❌ Error occurred while permanently deleting folder",
+  "errorPermanentlyDeletingFolderWithError": "❌ Error occurred while permanently deleting folder: {error}",
+  "@errorPermanentlyDeletingFolderWithError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "cannotIdentifyFolder": "❌ Error: Cannot identify folder",
+  "downloadingFolder": "Downloading folder...",
+  "folderDownloadedSuccessfully": "✅ Folder downloaded successfully: {fileName}",
+  "@folderDownloadedSuccessfully": {
+    "placeholders": {
+      "fileName": {
+        "type": "String"
+      }
+    }
+  },
+  "failedToDownloadFolder": "Failed to download folder",
+  "errorDownloadingFolder": "❌ Error downloading folder: {error}",
+  "@errorDownloadingFolder": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "pleaseEnter6DigitCode": "Please enter the 6-digit verification code",
+  "accountActivatedSuccessfully": "✅ Account activated successfully",
+  "invalidVerificationCode": "Invalid verification code",
+  "pleaseWaitBeforeResend": "Please wait {seconds} seconds before resending",
+  "@pleaseWaitBeforeResend": {
+    "placeholders": {
+      "seconds": {
+        "type": "int"
+      }
+    }
+  },
+  "verificationCodeSent": "✅ Verification code sent successfully",
+  "failedToResendCode": "❌ Failed to resend verification code",
+  "emailVerification": "Email Verification",
+  "verificationCodeSentTo": "Verification code sent to {email}",
+  "@verificationCodeSentTo": {
+    "placeholders": {
+      "email": {
+        "type": "String"
+      }
+    }
+  },
+  "didNotReceiveCode": "Didn't receive the code?",
+  "resendWithCountdown": "Resend ({seconds})",
+  "@resendWithCountdown": {
+    "placeholders": {
+      "seconds": {
+        "type": "int"
+      }
+    }
+  },
+  "resend": "Resend",
+  "openFileAsText": "Open file as text: {fileName}",
+  "@openFileAsText": {
+    "placeholders": {
+      "fileName": {
+        "type": "String"
+      }
+    }
+  },
+  "fileLinkNotAvailable": "File link not available",
+  "failedToCreateTempFile": "Failed to create temporary file",
+  "failedToLoadFileStatus": "Failed to load file status: {error}",
+  "@failedToLoadFileStatus": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "errorOpeningFile": "Error opening file: {error}",
+  "@errorOpeningFile": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "fileNotAvailableError": "File not available: {error}",
+  "@fileNotAvailableError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "errorLoadingFile": "Error loading file: {error}",
+  "@errorLoadingFile": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "fileNotValidPdf": "File is not a valid PDF",
+  "createNewShareRoom": "Create New Share Room",
+  "pleaseEnterRoomName": "Please enter room name",
+  "searchError": "Search error: {error}",
+  "@searchError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "folderInfo": "Folder Info",
+  "loadMore": "Load More",
+  "filesCount": "Files Count",
+  "subfoldersCount": "Subfolders Count",
+  "creationDate": "Creation Date",
+  "featureUnderDevelopment": "This feature is under development",
+  "folderWithoutName": "Folder without name",
+  "movingFolder": "Moving folder...",
+  "errorFetchingSubfolders": "Error fetching subfolders: {error}",
+  "@errorFetchingSubfolders": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "moveFolderToRoot": "Move Folder to Root",
+  "rejectInvitation": "Reject Invitation",
+  "confirmRejectInvitation": "Are you sure you want to reject this invitation?",
+  "reject": "Reject",
+  "pendingInvitations": "Pending Invitations",
+  "accept": "Accept",
+  "pleaseSelectFileOrFolder": "Please select a file or folder",
+  "deleteComment": "Delete Comment",
+  "confirmDeleteComment": "Are you sure you want to delete this comment?",
+  "room": "Room",
+  "errorLoadingRoomDetails": "Error loading room details",
+  "failedToLoadRoomDetails": "Failed to load room details",
+  "pleaseLoginAgain": "Please login again",
+  "deleteRoomConfirm": "Are you sure you want to delete \"{roomName}\"? All shared files and folders will also be deleted.",
+  "@deleteRoomConfirm": {
+    "placeholders": {
+      "roomName": {
+        "type": "String"
+      }
+    }
+  },
+  "confirmRemoveFileFromRoom": "Are you sure you want to remove this file from the room?",
+  "removeFolderFromRoom": "Remove Folder from Room",
+  "confirmRemoveFolderFromRoom": "Are you sure you want to remove this folder from the room?",
+  "confirmRemoveFolderFromRoomWithName": "Are you sure you want to remove the folder '{folderName}' from the room?",
+  "@confirmRemoveFolderFromRoomWithName": {
+    "placeholders": {
+      "folderName": {
+        "type": "String"
+      }
+    }
+  },
+  "savingFolder": "Saving folder...",
+  "saveToRoot": "Save to Root",
+  "failedToLoadRoomData": "Failed to load room data",
+  "noSharedFiles": "No shared files",
+  "shareFilesWithRoom": "Share Files with Room",
+  "createNewFolder": "Create New Folder",
+  "pleaseEnterFolderName": "Please enter folder name",
+  "folderCreatedSuccessfully": "Folder created successfully: {folderName}",
+  "@folderCreatedSuccessfully": {
+    "placeholders": {
+      "folderName": {
+        "type": "String"
+      }
+    }
+  },
+  "failedToCreateFolder": "Failed to create folder",
+  "removeMember": "Remove Member",
+  "confirmRemoveMember": "Are you sure you want to remove {memberName} from the room?",
+  "@confirmRemoveMember": {
+    "placeholders": {
+      "memberName": {
+        "type": "String"
+      }
+    }
+  },
+  "roomMembers": "Room Members",
+  "viewOnly": "View Only",
+  "viewOnlyDescription": "User can only view files",
+  "editor": "Editor",
+  "editorDescription": "User can edit files",
+  "commenter": "Commenter",
+  "commenterDescription": "User can comment on files",
+  "shareFolderWithRoom": "Share Folder with Room",
+  "shareWithThisRoom": "Share with this room",
+  "mustAllowPhotosAccess": "Must allow photos access",
+  "profileImageUploadedSuccessfully": "✅ Profile image uploaded successfully",
+  "failedToUploadProfileImage": "❌ Failed to upload profile image",
+  "errorUploadingProfileImage": "❌ Error uploading profile image: {error}",
+  "@errorUploadingProfileImage": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "mustAllowCameraAccess": "Must allow camera access",
+  "unknownError": "Unknown error",
+  "chooseFromGallery": "Choose from Gallery",
+  "takePhotoFromCamera": "Take Photo from Camera",
+  "used": "Used",
+  "microphonePermissionRequired": "Microphone permission required",
+  "openSettings": "Open Settings",
+  "permissionDenied": "Permission denied",
+  "mustAllowMicrophoneAccess": "Must allow microphone access",
+  "speechRecognitionNotAvailable": "Speech recognition not available",
+  "enterSearchText": "Enter search text",
+  "smartSearch": "Smart Search",
+  "fileLinkNotAvailableNoPath": "File link not available (no path)",
+  "errorLoadingTextFile": "Error loading text file: {error}",
+  "@errorLoadingTextFile": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "activityLog": "Activity Log",
+  "previous": "Previous",
+  "next": "Next",
+  "filterActivity": "Filter Activity",
+  "allActivities": "All Activities",
+  "uploadFile": "Upload File",
+  "downloadFile": "Download File",
+  "shareFile": "Share File",
+  "login": "Login",
+  "userLabel": "User",
+  "system": "System",
+  "roomLabel": "Room",
+  "reset": "Reset",
+  "logoutSuccess": "✅ Logged out successfully",
+  "tokenNotFound": "❌ Error: Token not found",
+  "trash": "Trash",
+  "deletedFiles": "Deleted Files",
+  "deletedFolders": "Deleted Folders",
+  "profile": "Profile",
+  "editUsername": "Edit Username",
+  "editEmail": "Edit Email",
+  "fieldRequired": "This field is required",
+  "validEmailRequired": "Invalid email address",
+  "updatedSuccessfully": "✅ Updated successfully",
+  "changePassword": "Change Password",
+  "currentPassword": "Current Password",
+  "currentPasswordRequired": "Current password is required",
+  "newPassword": "New Password",
+  "newPasswordRequired": "New password is required",
+  "passwordMinLength": "Password must be at least 8 characters",
+  "confirmNewPassword": "Confirm New Password",
+  "passwordConfirmationRequired": "Password confirmation is required",
+  "passwordUpdatedSuccessfully": "✅ Password updated successfully",
+  "favoriteFiles": "Favorite Files",
+  "noFavoriteFiles": "No favorite files",
+  "addFilesToFavorites": "Add files to favorites",
+  "folderIdNotFound": "Error: Folder ID not found",
+  "@folderIdNotFound": {
+    "description": "Message shown when the folder ID is missing"
+  }
 }

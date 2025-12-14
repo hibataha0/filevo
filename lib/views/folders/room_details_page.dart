@@ -98,7 +98,7 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Color(0xFFF8FAFD),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: Text(
           S.of(context).roomDetails,
@@ -587,7 +587,7 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
               child: _buildActionButton(
                 icon: Icons.people,
                 label: S.of(context).members,
-                color: Color(0xFF4F6BED),
+                color: Theme.of(context).colorScheme.primary,
                 onTap: () async {
                   final result = await Navigator.push(
                     context,
@@ -613,7 +613,7 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
               child: _buildActionButton(
                 icon: Icons.comment,
                 label: S.of(context).comments,
-                color: Color(0xFFF59E0B),
+                color: AppColors.warning,
                 onTap: () {
                   Navigator.push(
                     context,
@@ -643,7 +643,7 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
                   child: _buildActionButton(
                     icon: Icons.people,
                     label: S.of(context).members,
-                    color: Color(0xFF4F6BED),
+                    color: Theme.of(context).colorScheme.primary,
                     onTap: () async {
                       final result = await Navigator.push(
                         context,
@@ -668,7 +668,7 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
                   child: _buildActionButton(
                     icon: Icons.comment,
                     label: S.of(context).comments,
-                    color: Color(0xFFF59E0B),
+                    color: AppColors.warning,
                     onTap: () {
                       Navigator.push(
                         context,
@@ -697,7 +697,7 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
                   child: _buildActionButton(
                     icon: Icons.person_add,
                     label: S.of(context).sendInvitation,
-                    color: Color(0xFF10B981),
+                    color: AppColors.success,
                     onTap: () async {
                       final result = await Navigator.push(
                         context,
@@ -723,7 +723,7 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
                 child: _buildActionButton(
                   icon: Icons.people,
                   label: S.of(context).members,
-                  color: Color(0xFF4F6BED),
+                  color: Theme.of(context).colorScheme.primary,
                   onTap: () async {
                     final result = await Navigator.push(
                       context,
@@ -749,7 +749,7 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
                 child: _buildActionButton(
                   icon: Icons.comment,
                   label: S.of(context).comments,
-                  color: Color(0xFFF59E0B),
+                  color: AppColors.warning,
                   onTap: () {
                     Navigator.push(
                       context,
@@ -923,7 +923,7 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
                 style: TextStyle(
                   fontSize: titleFontSize,
                   fontWeight: FontWeight.w700,
-                  color: Color(0xFF1F2937),
+                  color: Theme.of(context).colorScheme.surface,
                 ),
               ),
             ],
@@ -1004,7 +1004,7 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
                   style: TextStyle(
                     fontSize: valueFontSize,
                     fontWeight: FontWeight.w600,
-                    color: Color(0xFF1F2937),
+                    color: Theme.of(context).colorScheme.surface,
                   ),
                 ),
               ],
@@ -1112,7 +1112,7 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
                     height: iconSize,
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
-                        colors: [Color(0xFF10B981), Color(0xFF34D399)],
+                        colors: [AppColors.success, AppColors.success],
                       ),
                       shape: BoxShape.circle,
                     ),
@@ -1128,7 +1128,7 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
                     style: TextStyle(
                       fontSize: titleFontSize,
                       fontWeight: FontWeight.w700,
-                      color: Color(0xFF1F2937),
+                      color: Theme.of(context).colorScheme.surface,
                     ),
                   ),
                 ],
@@ -1194,9 +1194,9 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
     } else {
       user = {};
     }
-    
+
     final role = member['role'] ?? 'viewer';
-    
+
     // ✅ Debug: طباعة بيانات المستخدم
     print('👤 [RoomDetailsPage] Member user keys: ${user.keys.toList()}');
     print('👤 [RoomDetailsPage] Member user profileImg: ${user['profileImg']}');
@@ -1338,7 +1338,7 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
                       height: iconSize,
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
-                          colors: [Color(0xFFF59E0B), Color(0xFFFBBF24)],
+                          colors: [AppColors.warning, AppColors.warning],
                         ),
                         shape: BoxShape.circle,
                       ),
@@ -1363,7 +1363,7 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
                         style: TextStyle(
                           fontSize: titleFontSize,
                           fontWeight: FontWeight.w700,
-                          color: Color(0xFF1F2937),
+                          color: Theme.of(context).colorScheme.surface,
                         ),
                         overflow: TextOverflow.ellipsis,
                         maxLines: 1,
@@ -1451,7 +1451,7 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
                       return IconButton(
                         icon: Icon(
                           Icons.add_circle_outline,
-                          color: Color(0xFFF59E0B),
+                          color: AppColors.warning,
                           size: ResponsiveUtils.getResponsiveValue(
                             context,
                             mobile: 24.0,
@@ -1799,7 +1799,11 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(S.of(context).failedToLoadFileStatus(response.statusCode)),
+              content: Text(
+                S
+                    .of(context)
+                    .failedToLoadFileStatus(response.statusCode.toString()),
+              ),
               backgroundColor: Colors.red,
             ),
           );
@@ -1855,7 +1859,10 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
 
     if (url.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(S.of(context).invalidUrl), backgroundColor: Colors.red),
+        SnackBar(
+          content: Text(S.of(context).invalidUrl),
+          backgroundColor: Colors.red,
+        ),
       );
       return;
     }
@@ -1998,7 +2005,11 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(S.of(context).fileNotAvailableError(response.statusCode)),
+              content: Text(
+                S
+                    .of(context)
+                    .fileNotAvailableError(response.statusCode.toString()),
+              ),
               backgroundColor: Colors.red,
             ),
           );
@@ -2154,7 +2165,7 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
                         style: TextStyle(
                           fontSize: titleFontSize,
                           fontWeight: FontWeight.w700,
-                          color: Color(0xFF1F2937),
+                          color: Theme.of(context).colorScheme.surface,
                         ),
                         overflow: TextOverflow.ellipsis,
                         maxLines: 1,
@@ -2464,7 +2475,7 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
       case 'editor':
         return Color(0xFFF59E0B);
       case 'viewer':
-        return Color(0xFF10B981);
+        return AppColors.success;
       case 'commenter':
         return Color(0xFF3B82F6);
       default:
@@ -2489,26 +2500,33 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
 
   // ✅ بناء URL كامل للصورة من اسم الملف (للـ backward compatibility)
   String? _buildProfileImageUrl(String? profileImg) {
-    if (profileImg == null || profileImg.toString().isEmpty || profileImg.toString() == 'null') {
+    if (profileImg == null ||
+        profileImg.toString().isEmpty ||
+        profileImg.toString() == 'null') {
       return null;
     }
 
     final profileImgStr = profileImg.toString();
 
     // ✅ إذا كان URL كامل، استخدمه مباشرة
-    if (profileImgStr.startsWith('http://') || profileImgStr.startsWith('https://')) {
+    if (profileImgStr.startsWith('http://') ||
+        profileImgStr.startsWith('https://')) {
       return profileImgStr;
     }
 
     // ✅ بناء URL من base URL + path
-    String cleanPath = profileImgStr.replaceAll(r'\', '/').replaceAll('//', '/');
+    String cleanPath = profileImgStr
+        .replaceAll(r'\', '/')
+        .replaceAll('//', '/');
     while (cleanPath.startsWith('/')) {
       cleanPath = cleanPath.substring(1);
     }
 
     // ✅ إزالة /api/v1 من base URL للحصول على base فقط
     final base = ApiConfig.baseUrl.replaceAll('/api/v1', '');
-    final baseClean = base.endsWith('/') ? base.substring(0, base.length - 1) : base;
+    final baseClean = base.endsWith('/')
+        ? base.substring(0, base.length - 1)
+        : base;
 
     // ✅ بناء URL كامل (الـ backend يخدم الملفات من uploads/)
     final imageUrl = '$baseClean/uploads/$cleanPath';
@@ -2521,13 +2539,20 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
   }
 
   // ✅ بناء widget صورة البروفايل للعضو
-  Widget _buildMemberAvatar(Map<String, dynamic> user, String role, double avatarSize, double iconSize) {
+  Widget _buildMemberAvatar(
+    Map<String, dynamic> user,
+    String role,
+    double avatarSize,
+    double iconSize,
+  ) {
     // ✅ قراءة profileImgUrl أولاً (من الباك إند الجديد)
     // ✅ إذا لم يكن موجوداً، استخدم profileImg وابني URL (للـ backward compatibility)
     final profileImgUrl = user['profileImgUrl'];
     final profileImg = user['profileImg'];
     final name = user['name'] ?? user['email'] ?? 'م';
-    final firstLetter = name.isNotEmpty ? name.substring(0, 1).toUpperCase() : 'م';
+    final firstLetter = name.isNotEmpty
+        ? name.substring(0, 1).toUpperCase()
+        : 'م';
 
     // ✅ Debug: طباعة البيانات للتحقق
     print('🖼️ [RoomDetailsPage] User data: ${user.keys.toList()}');
@@ -2536,11 +2561,13 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
     print('🖼️ [RoomDetailsPage] name: $name');
 
     // ✅ استخدام profileImgUrl إذا كان موجوداً، وإلا بناء URL من profileImg
-    final imageUrl = profileImgUrl?.toString() ?? _buildProfileImageUrl(profileImg?.toString());
+    final imageUrl =
+        profileImgUrl?.toString() ??
+        _buildProfileImageUrl(profileImg?.toString());
 
     if (imageUrl != null && imageUrl.isNotEmpty) {
       print('🖼️ [RoomDetailsPage] Loading profile image from: $imageUrl');
-      
+
       return CircleAvatar(
         radius: avatarSize / 2,
         child: ClipOval(
@@ -2658,7 +2685,10 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
   }
 
   /// ✅ إضافة/إزالة الملف من المفضلة
-  Future<void> _toggleFileStar(Map<String, dynamic> fileData, String? fileId) async {
+  Future<void> _toggleFileStar(
+    Map<String, dynamic> fileData,
+    String? fileId,
+  ) async {
     if (fileId == null || fileId.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -2681,16 +2711,22 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
         return;
       }
 
-      final fileController = Provider.of<FileController>(context, listen: false);
-      final result = await fileController.toggleStar(fileId: fileId, token: token);
+      final fileController = Provider.of<FileController>(
+        context,
+        listen: false,
+      );
+      final result = await fileController.toggleStar(
+        fileId: fileId,
+        token: token,
+      );
 
       if (mounted) {
         if (result['success'] == true) {
           final isStarred = result['isStarred'] as bool? ?? false;
-          
+
           // ✅ تحديث البيانات المحلية
           fileData['isStarred'] = isStarred;
-          
+
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
@@ -2701,7 +2737,7 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
               backgroundColor: Colors.green,
             ),
           );
-          
+
           // ✅ إعادة تحميل بيانات الغرفة لتحديث حالة النجمة
           _refreshRoom();
         } else {
@@ -2726,7 +2762,10 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
   }
 
   /// ✅ إزالة الملف من الروم
-  Future<void> _removeFileFromRoom(Map<String, dynamic> fileData, String? fileId) async {
+  Future<void> _removeFileFromRoom(
+    Map<String, dynamic> fileData,
+    String? fileId,
+  ) async {
     if (fileId == null || fileId.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -2750,10 +2789,7 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
           ),
           TextButton(
             onPressed: () => Navigator.pop(dialogContext, true),
-            child: Text(
-              'إزالة',
-              style: TextStyle(color: Colors.red),
-            ),
+            child: Text('إزالة', style: TextStyle(color: Colors.red)),
           ),
         ],
       ),
@@ -2762,7 +2798,10 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
     if (confirmed != true) return;
 
     try {
-      final roomController = Provider.of<RoomController>(context, listen: false);
+      final roomController = Provider.of<RoomController>(
+        context,
+        listen: false,
+      );
       final success = await roomController.unshareFileFromRoom(
         roomId: widget.roomId,
         fileId: fileId,
@@ -2776,7 +2815,7 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
               backgroundColor: Colors.green,
             ),
           );
-          
+
           // ✅ إعادة تحميل بيانات الغرفة
           _refreshRoom();
         } else {
@@ -2803,7 +2842,10 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
   }
 
   /// ✅ إزالة المجلد من الروم
-  Future<void> _removeFolderFromRoom(Map<String, dynamic> folderData, String? folderId) async {
+  Future<void> _removeFolderFromRoom(
+    Map<String, dynamic> folderData,
+    String? folderId,
+  ) async {
     if (folderId == null || folderId.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -2827,10 +2869,7 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
           ),
           TextButton(
             onPressed: () => Navigator.pop(dialogContext, true),
-            child: Text(
-              'إزالة',
-              style: TextStyle(color: Colors.red),
-            ),
+            child: Text('إزالة', style: TextStyle(color: Colors.red)),
           ),
         ],
       ),
@@ -2839,7 +2878,10 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
     if (confirmed != true) return;
 
     try {
-      final roomController = Provider.of<RoomController>(context, listen: false);
+      final roomController = Provider.of<RoomController>(
+        context,
+        listen: false,
+      );
       final success = await roomController.unshareFolderFromRoom(
         roomId: widget.roomId,
         folderId: folderId,
@@ -2853,7 +2895,7 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
               backgroundColor: Colors.green,
             ),
           );
-          
+
           // ✅ إعادة تحميل بيانات الغرفة
           _refreshRoom();
         } else {
@@ -2880,7 +2922,10 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
   }
 
   /// ✅ إضافة/إزالة المجلد من المفضلة
-  Future<void> _toggleFolderStar(Map<String, dynamic> folderData, String? folderId) async {
+  Future<void> _toggleFolderStar(
+    Map<String, dynamic> folderData,
+    String? folderId,
+  ) async {
     if (folderId == null || folderId.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -2892,16 +2937,21 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
     }
 
     try {
-      final folderController = Provider.of<FolderController>(context, listen: false);
-      final result = await folderController.toggleStarFolder(folderId: folderId);
+      final folderController = Provider.of<FolderController>(
+        context,
+        listen: false,
+      );
+      final result = await folderController.toggleStarFolder(
+        folderId: folderId,
+      );
 
       if (mounted) {
         if (result['success'] == true) {
           final isStarred = result['isStarred'] as bool? ?? false;
-          
+
           // ✅ تحديث البيانات المحلية
           folderData['isStarred'] = isStarred;
-          
+
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
@@ -2912,7 +2962,7 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
               backgroundColor: Colors.green,
             ),
           );
-          
+
           // ✅ إعادة تحميل بيانات الغرفة لتحديث حالة النجمة
           _refreshRoom();
         } else {

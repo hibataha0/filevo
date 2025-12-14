@@ -604,7 +604,9 @@ class _RoomFilesPageState extends State<RoomFilesPage> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
-                S.of(context).fileNotAvailableError(response.statusCode),
+                S
+                    .of(context)
+                    .fileNotAvailableError(response.statusCode.toString()),
               ),
               backgroundColor: Colors.red,
             ),

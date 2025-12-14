@@ -1,7 +1,6 @@
 // views/favorites_page.dart
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:filevo/generated/l10n.dart';
 import 'package:provider/provider.dart';
 import 'package:filevo/controllers/folders/files_controller.dart';
 import 'package:filevo/services/storage_service.dart';
@@ -77,18 +76,25 @@ class _FavoritesPageState extends State<FavoritesPage> {
 
   String _getFileType(String fileName) {
     final name = fileName.toLowerCase();
-    if (name.endsWith('.jpg') || name.endsWith('.jpeg') ||
-        name.endsWith('.png') || name.endsWith('.gif') ||
-        name.endsWith('.bmp') || name.endsWith('.webp')) {
+    if (name.endsWith('.jpg') ||
+        name.endsWith('.jpeg') ||
+        name.endsWith('.png') ||
+        name.endsWith('.gif') ||
+        name.endsWith('.bmp') ||
+        name.endsWith('.webp')) {
       return 'image';
-    } else if (name.endsWith('.mp4') || name.endsWith('.mov') ||
-               name.endsWith('.avi') || name.endsWith('.mkv') ||
-               name.endsWith('.wmv')) {
+    } else if (name.endsWith('.mp4') ||
+        name.endsWith('.mov') ||
+        name.endsWith('.avi') ||
+        name.endsWith('.mkv') ||
+        name.endsWith('.wmv')) {
       return 'video';
     } else if (name.endsWith('.pdf')) {
       return 'pdf';
-    } else if (name.endsWith('.mp3') || name.endsWith('.wav') ||
-               name.endsWith('.aac') || name.endsWith('.ogg')) {
+    } else if (name.endsWith('.mp3') ||
+        name.endsWith('.wav') ||
+        name.endsWith('.aac') ||
+        name.endsWith('.ogg')) {
       return 'audio';
     } else {
       return 'file';
@@ -111,7 +117,9 @@ class _FavoritesPageState extends State<FavoritesPage> {
       while (cleanPath.startsWith('/')) cleanPath = cleanPath.substring(1);
 
       final base = ApiConfig.baseUrl.replaceAll('/api/v1', '');
-      final baseClean = base.endsWith('/') ? base.substring(0, base.length - 1) : base;
+      final baseClean = base.endsWith('/')
+          ? base.substring(0, base.length - 1)
+          : base;
 
       if (cleanPath.startsWith('/')) cleanPath = cleanPath.substring(1);
 
@@ -140,11 +148,17 @@ class _FavoritesPageState extends State<FavoritesPage> {
     }
   }
 
-  Future<void> _handleFileTap(Map<String, dynamic> file, BuildContext context) async {
+  Future<void> _handleFileTap(
+    Map<String, dynamic> file,
+    BuildContext context,
+  ) async {
     final filePath = file['path'] as String?;
     if (filePath == null || filePath.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(S.of(context).fileLinkNotAvailable), backgroundColor: Colors.orange),
+        SnackBar(
+          content: const Text('رابط الملف غير متوفر'),
+          backgroundColor: Colors.orange,
+        ),
       );
       return;
     }
@@ -154,7 +168,10 @@ class _FavoritesPageState extends State<FavoritesPage> {
 
     if (!_isValidUrl(url)) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(S.of(context).invalidUrl), backgroundColor: Colors.red),
+        SnackBar(
+          content: const Text('رابط غير صالح'),
+          backgroundColor: Colors.red,
+        ),
       );
       return;
     }
@@ -167,7 +184,10 @@ class _FavoritesPageState extends State<FavoritesPage> {
 
     try {
       final client = http.Client();
-      final response = await client.get(Uri.parse(url), headers: {'Range': 'bytes=0-511'});
+      final response = await client.get(
+        Uri.parse(url),
+        headers: {'Range': 'bytes=0-511'},
+      );
       if (mounted) Navigator.pop(context);
 
       if (response.statusCode == 200 || response.statusCode == 206) {
@@ -180,37 +200,80 @@ class _FavoritesPageState extends State<FavoritesPage> {
         }
 
         if (originalName.endsWith('.pdf') && isPdf) {
-          Navigator.push(context, MaterialPageRoute(builder: (_) => PdfViewerPage(pdfUrl: url, fileName: originalName)));
-        } else if (originalName.endsWith('.mp4') || originalName.endsWith('.mov') ||
-                   originalName.endsWith('.mkv') || originalName.endsWith('.avi') ||
-                   originalName.endsWith('.wmv')) {
-          Navigator.push(context, MaterialPageRoute(builder: (_) => VideoViewer(url: url)));
-        } else if (originalName.endsWith('.jpg') || originalName.endsWith('.jpeg') ||
-                   originalName.endsWith('.png') || originalName.endsWith('.gif') ||
-                   originalName.endsWith('.bmp') || originalName.endsWith('.webp')) {
-          Navigator.push(context, MaterialPageRoute(builder: (_) => ImageViewer(imageUrl: url)));
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) =>
+                  PdfViewerPage(pdfUrl: url, fileName: originalName),
+            ),
+          );
+        } else if (originalName.endsWith('.mp4') ||
+            originalName.endsWith('.mov') ||
+            originalName.endsWith('.mkv') ||
+            originalName.endsWith('.avi') ||
+            originalName.endsWith('.wmv')) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => VideoViewer(url: url)),
+          );
+        } else if (originalName.endsWith('.jpg') ||
+            originalName.endsWith('.jpeg') ||
+            originalName.endsWith('.png') ||
+            originalName.endsWith('.gif') ||
+            originalName.endsWith('.bmp') ||
+            originalName.endsWith('.webp')) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => ImageViewer(imageUrl: url)),
+          );
         } else if (TextViewerPage.isTextFile(originalName)) {
           final fullResponse = await http.get(Uri.parse(url));
           if (!mounted) return;
           final tempDir = await getTemporaryDirectory();
           final tempFile = File('${tempDir.path}/$originalName');
           await tempFile.writeAsBytes(fullResponse.bodyBytes);
-          Navigator.push(context, MaterialPageRoute(builder: (_) => TextViewerPage(filePath: tempFile.path, fileName: originalName)));
-        } else if (originalName.endsWith('.mp3') || originalName.endsWith('.wav') ||
-                   originalName.endsWith('.aac') || originalName.endsWith('.ogg')) {
-          Navigator.push(context, MaterialPageRoute(builder: (_) => AudioPlayerPage(audioUrl: url, fileName: originalName)));
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => TextViewerPage(
+                filePath: tempFile.path,
+                fileName: originalName,
+              ),
+            ),
+          );
+        } else if (originalName.endsWith('.mp3') ||
+            originalName.endsWith('.wav') ||
+            originalName.endsWith('.aac') ||
+            originalName.endsWith('.ogg')) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) =>
+                  AudioPlayerPage(audioUrl: url, fileName: originalName),
+            ),
+          );
         } else {
-          await OfficeFileOpener.openAnyFile(url: url, context: context, token: _token);
+          await OfficeFileOpener.openAnyFile(
+            url: url,
+            context: context,
+            token: _token,
+          );
         }
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(S.of(context).fileNotAvailableError(response.statusCode)), backgroundColor: Colors.red),
+          SnackBar(
+            content: Text('الملف غير متاح (خطأ ${response.statusCode})'),
+            backgroundColor: Colors.red,
+          ),
         );
       }
     } catch (e) {
       if (mounted) Navigator.pop(context);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(S.of(context).errorLoadingFile(e.toString())), backgroundColor: Colors.red),
+        SnackBar(
+          content: Text('خطأ في تحميل الملف: ${e.toString()}'),
+          backgroundColor: Colors.red,
+        ),
       );
     }
   }
@@ -219,18 +282,21 @@ class _FavoritesPageState extends State<FavoritesPage> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(S.of(context).unsupportedFile),
-        content: Text(S.of(context).fileNotValidPdf),
+        title: const Text('ملف غير مدعوم'),
+        content: const Text('هذا الملف ليس PDF صالح أو قد يكون تالفاً.'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: Text(S.of(context).cancel)),
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('إلغاء'),
+          ),
           TextButton(
             onPressed: () {
               Navigator.pop(context);
               ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text(S.of(context).openFileAsText(fileName))),
+                SnackBar(content: Text('فتح الملف كنص: $fileName')),
               );
             },
-            child: Text(S.of(context).openAsText),
+            child: const Text('فتح كنص'),
           ),
         ],
       ),
@@ -259,50 +325,77 @@ class _FavoritesPageState extends State<FavoritesPage> {
         return Scaffold(
           backgroundColor: Colors.white,
           appBar: AppBar(
-            title: Text(S.of(context).favoriteFiles, style: TextStyle(fontWeight: FontWeight.bold)),
+            title: const Text(
+              'الملفات المفضلة',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
             backgroundColor: const Color(0xff28336f),
-            leading: IconButton(icon: const Icon(Icons.arrow_back), onPressed: () => Navigator.pop(context)),
+            leading: IconButton(
+              icon: const Icon(Icons.arrow_back),
+              onPressed: () => Navigator.pop(context),
+            ),
             actions: [
               IconButton(
-                icon: Icon(_isGridView ? Icons.list_rounded : Icons.grid_view_rounded),
+                icon: Icon(
+                  _isGridView ? Icons.list_rounded : Icons.grid_view_rounded,
+                ),
                 onPressed: () => setState(() => _isGridView = !_isGridView),
               ),
-              IconButton(icon: const Icon(Icons.refresh_rounded), onPressed: _refreshFiles),
+              IconButton(
+                icon: const Icon(Icons.refresh_rounded),
+                onPressed: _refreshFiles,
+              ),
             ],
           ),
           body: RefreshIndicator(
             onRefresh: _refreshFiles,
             child: fileController.isLoading && starredFiles.isEmpty
-                ? const Center(child: CircularProgressIndicator(color: Color(0xff28336f)))
+                ? const Center(
+                    child: CircularProgressIndicator(color: Color(0xff28336f)),
+                  )
                 : starredFiles.isEmpty
-                    ? Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(Icons.star_border_rounded, size: 80, color: Colors.grey[400]),
-                            const SizedBox(height: 16),
-                            Text(S.of(context).noFavoriteFiles, style: TextStyle(fontSize: 18, color: Colors.grey[600])),
-                            const SizedBox(height: 8),
-                            Text(S.of(context).addFilesToFavorites,
-                                textAlign: TextAlign.center, style: TextStyle(color: Colors.grey[500])),
-                          ],
+                ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.star_border_rounded,
+                          size: 80,
+                          color: Colors.grey[400],
                         ),
-                      )
-                    : FilesGrid(
-                        // ✅ القائمة تيجي من الـ controller مباشرة
-                        files: starredFiles.map((f) {
-                          final fileName = f['name'] ?? 'ملف بدون اسم';
-                          final filePath = f['path'] ?? '';
-                          return {
-                            'name': _formatFileName(fileName),
-                            'url': getFileUrl(filePath),
-                            'type': _getFileType(fileName),
-                            'size': f['size']?.toString() ?? '0',
-                            'originalData': f,
-                          };
-                        }).toList(),
-                        onFileTap: (file) => _handleFileTap(file['originalData'], context),
-                      ),
+                        const SizedBox(height: 16),
+                        Text(
+                          'لا توجد ملفات مفضلة',
+                          style: TextStyle(
+                            fontSize: 18,
+                            color: Colors.grey[600],
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'يمكنك إضافة الملفات إلى المفضلة من خلال القائمة',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(color: Colors.grey[500]),
+                        ),
+                      ],
+                    ),
+                  )
+                : FilesGrid(
+                    // ✅ القائمة تيجي من الـ controller مباشرة
+                    files: starredFiles.map((f) {
+                      final fileName = f['name'] ?? 'ملف بدون اسم';
+                      final filePath = f['path'] ?? '';
+                      return {
+                        'name': _formatFileName(fileName),
+                        'url': getFileUrl(filePath),
+                        'type': _getFileType(fileName),
+                        'size': f['size']?.toString() ?? '0',
+                        'originalData': f,
+                      };
+                    }).toList(),
+                    onFileTap: (file) =>
+                        _handleFileTap(file['originalData'], context),
+                  ),
           ),
         );
       },

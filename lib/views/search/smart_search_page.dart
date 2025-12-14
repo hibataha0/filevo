@@ -80,7 +80,7 @@ class _SmartSearchPageState extends State<SmartSearchPage>
   Future<void> _startListening() async {
     // ✅ التحقق من حالة الإذن أولاً
     PermissionStatus status = await Permission.microphone.status;
-    
+
     // ✅ إذا كان الإذن مرفوض بشكل دائم، نفتح الإعدادات
     if (status.isPermanentlyDenied) {
       if (mounted) {
@@ -110,17 +110,17 @@ class _SmartSearchPageState extends State<SmartSearchPage>
       }
       return;
     }
-    
+
     // ✅ إذا لم يكن الإذن ممنوحاً، نطلب الإذن مباشرة
     if (!status.isGranted) {
       // ✅ طلب إذن الميكروفون - سيظهر نافذة النظام تلقائياً
       status = await Permission.microphone.request();
-      
+
       // ✅ إعادة التحقق من حالة الإذن بعد الطلب
       // ✅ ننتظر قليلاً للتأكد من تحديث الحالة
       await Future.delayed(const Duration(milliseconds: 100));
       status = await Permission.microphone.status;
-      
+
       // ✅ إذا رفض المستخدم الإذن
       if (!status.isGranted) {
         if (mounted) {
@@ -135,7 +135,7 @@ class _SmartSearchPageState extends State<SmartSearchPage>
         return;
       }
     }
-    
+
     // ✅ التأكد مرة أخرى من أن الإذن ممنوح قبل المتابعة
     final finalStatus = await Permission.microphone.status;
     if (!finalStatus.isGranted) {
@@ -446,7 +446,7 @@ class _SmartSearchPageState extends State<SmartSearchPage>
   /// بناء أيقونات suffix (الميكروفون ومسح النص)
   Widget? _buildSuffixIcons() {
     final hasText = _searchController.text.isNotEmpty;
-    
+
     // ✅ إذا كان هناك نص وليس في حالة استماع، نعرض كلا الأيقونتين
     if (hasText && !_isListening) {
       return Row(
@@ -477,7 +477,7 @@ class _SmartSearchPageState extends State<SmartSearchPage>
         ],
       );
     }
-    
+
     // ✅ إذا كان في حالة استماع، نعرض فقط أيقونة الميكروفون الحمراء
     if (_isListening) {
       return IconButton(
@@ -488,7 +488,7 @@ class _SmartSearchPageState extends State<SmartSearchPage>
         constraints: BoxConstraints(),
       );
     }
-    
+
     // ✅ إذا لم يكن هناك نص، نعرض فقط أيقونة الميكروفون
     return IconButton(
       icon: Icon(Icons.mic_none),
@@ -806,7 +806,9 @@ class _SmartSearchPageState extends State<SmartSearchPage>
               Navigator.pop(context);
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: Text(S.of(context).errorLoadingTextFile(e.toString())),
+                  content: Text(
+                    S.of(context).errorLoadingTextFile(e.toString()),
+                  ),
                   backgroundColor: Colors.red,
                 ),
               );
@@ -842,7 +844,11 @@ class _SmartSearchPageState extends State<SmartSearchPage>
         print('═══════════════════════════════════════════════════════');
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(S.of(context).fileNotAvailableError(response.statusCode)),
+            content: Text(
+              S
+                  .of(context)
+                  .fileNotAvailableError(response.statusCode.toString()),
+            ),
             backgroundColor: Colors.red,
           ),
         );

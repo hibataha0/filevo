@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:filevo/controllers/folders/folders_controller.dart';
 import 'package:filevo/controllers/folders/room_controller.dart';
-import 'package:filevo/services/storage_service.dart';
 import 'package:filevo/services/folders_service.dart';
+import 'package:filevo/generated/l10n.dart';
 
 /// خدمة لإدارة إجراءات المجلدات (حذف، استعادة، إلخ)
 class FolderActionsService {
@@ -18,19 +17,19 @@ class FolderActionsService {
       context: context,
       builder: (ctx) {
         return AlertDialog(
-          title: const Text("حذف المجلد"),
+          title: Text(S.of(context).deleteFolder),
           content: Text(
-            "هل أنت متأكد من حذف المجلد '${folder['name']}'؟ سيتم حذف جميع الملفات والمجلدات الفرعية أيضاً.",
+            S.of(context).confirmDeleteFolder(folder['name'] ?? ''),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(ctx).pop(false),
-              child: const Text("إلغاء"),
+              child: Text(S.of(context).cancel),
             ),
             ElevatedButton(
               style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
               onPressed: () => Navigator.of(ctx).pop(true),
-              child: const Text("حذف"),
+              child: Text(S.of(context).delete),
             ),
           ],
         );
@@ -51,8 +50,8 @@ class FolderActionsService {
       if (folderId == null) {
         if (!context.mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text("❌ خطأ: معرف المجلد غير متوفر."),
+          SnackBar(
+            content: Text(S.of(context).folderIdNotAvailable),
             backgroundColor: Colors.red,
           ),
         );
@@ -70,13 +69,15 @@ class FolderActionsService {
 
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text("✅ تم حذف المجلد '${folder['name']}' بنجاح"),
+            content: Text(
+              S.of(context).folderDeletedSuccessfully(folder['name'] ?? ''),
+            ),
             backgroundColor: Colors.green,
           ),
         );
       } else {
         final errorMsg =
-            folderController.errorMessage ?? "❌ حدث خطأ أثناء حذف المجلد";
+            folderController.errorMessage ?? S.of(context).errorDeletingFolder;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(errorMsg), backgroundColor: Colors.red),
         );
@@ -85,7 +86,9 @@ class FolderActionsService {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text("❌ حدث خطأ أثناء حذف المجلد: $e"),
+          content: Text(
+            S.of(context).errorDeletingFolderWithError(e.toString()),
+          ),
           backgroundColor: Colors.red,
         ),
       );
@@ -113,8 +116,8 @@ class FolderActionsService {
       if (folderId == null) {
         if (!context.mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text("❌ خطأ: معرف المجلد غير متوفر."),
+          SnackBar(
+            content: Text(S.of(context).folderIdNotAvailable),
             backgroundColor: Colors.red,
           ),
         );
@@ -132,13 +135,15 @@ class FolderActionsService {
 
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text("✅ تم استعادة المجلد '${folder['name']}' بنجاح"),
+            content: Text(
+              S.of(context).folderRestoredSuccessfully(folder['name'] ?? ''),
+            ),
             backgroundColor: Colors.green,
           ),
         );
       } else {
         final errorMsg =
-            folderController.errorMessage ?? "❌ حدث خطأ أثناء استعادة المجلد";
+            folderController.errorMessage ?? S.of(context).errorRestoringFolder;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(errorMsg), backgroundColor: Colors.red),
         );
@@ -147,7 +152,9 @@ class FolderActionsService {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text("❌ حدث خطأ أثناء استعادة المجلد: $e"),
+          content: Text(
+            S.of(context).errorRestoringFolderWithError(e.toString()),
+          ),
           backgroundColor: Colors.red,
         ),
       );
@@ -167,19 +174,19 @@ class FolderActionsService {
       context: context,
       builder: (ctx) {
         return AlertDialog(
-          title: const Text("تأكيد الحذف النهائي"),
+          title: Text(S.of(context).confirmPermanentDelete),
           content: Text(
-            "هل أنت متأكد من الحذف النهائي للمجلد '${folder['name']}'؟ لا يمكن التراجع عن هذا الإجراء. سيتم حذف جميع الملفات والمجلدات الفرعية نهائياً.",
+            S.of(context).confirmPermanentDeleteFolder(folder['name'] ?? ''),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(ctx).pop(false),
-              child: const Text("إلغاء"),
+              child: Text(S.of(context).cancel),
             ),
             ElevatedButton(
               style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
               onPressed: () => Navigator.of(ctx).pop(true),
-              child: const Text("حذف نهائي"),
+              child: Text(S.of(context).permanentDelete),
             ),
           ],
         );
@@ -200,8 +207,8 @@ class FolderActionsService {
       if (folderId == null) {
         if (!context.mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text("❌ خطأ: معرف المجلد غير متوفر."),
+          SnackBar(
+            content: Text(S.of(context).folderIdNotAvailable),
             backgroundColor: Colors.red,
           ),
         );
@@ -220,7 +227,9 @@ class FolderActionsService {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              "✅ تم الحذف النهائي للمجلد '${folder['name']}' بنجاح",
+              S
+                  .of(context)
+                  .folderPermanentlyDeletedSuccessfully(folder['name'] ?? ''),
             ),
             backgroundColor: Colors.green,
           ),
@@ -228,7 +237,7 @@ class FolderActionsService {
       } else {
         final errorMsg =
             folderController.errorMessage ??
-            "❌ حدث خطأ أثناء الحذف النهائي للمجلد";
+            S.of(context).errorPermanentlyDeletingFolder;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(errorMsg), backgroundColor: Colors.red),
         );
@@ -237,7 +246,9 @@ class FolderActionsService {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text("❌ حدث خطأ أثناء الحذف النهائي للمجلد: $e"),
+          content: Text(
+            S.of(context).errorPermanentlyDeletingFolderWithError(e.toString()),
+          ),
           backgroundColor: Colors.red,
         ),
       );
@@ -258,8 +269,8 @@ class FolderActionsService {
     if (folderId == null) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('❌ خطأ: لا يمكن تحديد المجلد'),
+        SnackBar(
+          content: Text(S.of(context).cannotIdentifyFolder),
           backgroundColor: Colors.red,
         ),
       );
@@ -281,7 +292,7 @@ class FolderActionsService {
               ),
             ),
             const SizedBox(width: 16),
-            const Text('جاري تحميل المجلد...'),
+            Text(S.of(context).downloadingFolder),
           ],
         ),
         duration: const Duration(seconds: 60),
@@ -301,14 +312,20 @@ class FolderActionsService {
       if (result['success'] == true) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('✅ تم تحميل المجلد بنجاح: ${result['fileName']}'),
+            content: Text(
+              S
+                  .of(context)
+                  .folderDownloadedSuccessfully(result['fileName'] ?? ''),
+            ),
             backgroundColor: Colors.green,
           ),
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(result['error'] ?? 'فشل تحميل المجلد'),
+            content: Text(
+              result['error'] ?? S.of(context).failedToDownloadFolder,
+            ),
             backgroundColor: Colors.red,
           ),
         );
@@ -318,7 +335,7 @@ class FolderActionsService {
       ScaffoldMessenger.of(context).hideCurrentSnackBar();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('❌ خطأ في تحميل المجلد: ${e.toString()}'),
+          content: Text(S.of(context).errorDownloadingFolder(e.toString())),
           backgroundColor: Colors.red,
         ),
       );
@@ -348,7 +365,7 @@ class FolderActionsService {
               ),
             ),
             const SizedBox(width: 16),
-            const Text('جاري تحميل المجلد...'),
+            Text(S.of(context).downloadingFolder),
           ],
         ),
         duration: const Duration(seconds: 60),
@@ -368,14 +385,20 @@ class FolderActionsService {
       if (result['success'] == true) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('✅ تم تحميل المجلد بنجاح: ${result['fileName']}'),
+            content: Text(
+              S
+                  .of(context)
+                  .folderDownloadedSuccessfully(result['fileName'] ?? ''),
+            ),
             backgroundColor: Colors.green,
           ),
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(result['error'] ?? 'فشل تحميل المجلد'),
+            content: Text(
+              result['error'] ?? S.of(context).failedToDownloadFolder,
+            ),
             backgroundColor: Colors.red,
           ),
         );
@@ -385,7 +408,7 @@ class FolderActionsService {
       ScaffoldMessenger.of(context).hideCurrentSnackBar();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('❌ خطأ في تحميل المجلد: ${e.toString()}'),
+          content: Text(S.of(context).errorDownloadingFolder(e.toString())),
           backgroundColor: Colors.red,
         ),
       );

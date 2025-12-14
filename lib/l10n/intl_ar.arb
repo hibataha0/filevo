@@ -185,7 +185,7 @@
   "@sharedFilesCount": {
     "placeholders": {
       "count": {
-        "type": "String"
+        "type": "Object"
       }
     }
   },
@@ -267,7 +267,6 @@
   "fileIsEmpty": "الملف فارغ",
   "loadingFileData": "جاري تحميل بيانات الملف...",
   "failedToLoadFileData": "فشل في تحميل بيانات الملف",
-  "errorLoadingFileData": "حدث خطأ في تحميل بيانات الملف",
   "fileInfo": "معلومات الملف",
   "category": "التصنيف",
   "extension": "الامتداد",
@@ -291,19 +290,10 @@
   "unshareFileConfirm": "هل أنت متأكد من إلغاء مشاركة هذا الملف مع جميع المستخدمين؟",
   "unshare": "إلغاء المشاركة",
   "mustLoginFirst": "يجب تسجيل الدخول أولاً",
-  "failedToFetchFolderInfo": "فشل جلب معلومات المجلد",
   "folderInfo": "معلومات المجلد",
   "subfoldersCount": "عدد المجلدات الفرعية",
   "creationDate": "تاريخ الإنشاء",
   "folderWithoutName": "مجلد بدون اسم",
-  "selectFolder": "اختيار \"{folderName}\"",
-  "@selectFolder": {
-    "placeholders": {
-      "folderName": {
-        "type": "String"
-      }
-    }
-  },
   "pleaseEnter6DigitCode": "يرجى إدخال كود التحقق المكون من 6 أرقام",
   "accountActivatedSuccessfully": "تم تفعيل الحساب بنجاح. يمكنك الآن تسجيل الدخول",
   "invalidVerificationCode": "كود التحقق غير صحيح",
@@ -345,11 +335,11 @@
     }
   },
   "loadMore": "تحميل المزيد",
-  "fileNotAvailableError": "الملف غير متاح (خطأ {statusCode})",
+  "fileNotAvailableError": "الملف غير متاح (خطأ {error})",
   "@fileNotAvailableError": {
     "placeholders": {
-      "statusCode": {
-        "type": "int"
+      "error": {
+        "type": "String"
       }
     }
   },
@@ -485,11 +475,11 @@
       }
     }
   },
-  "failedToLoadFileStatus": "فشل تحميل الملف: {statusCode}",
+  "failedToLoadFileStatus": "فشل تحميل الملف: {error}",
   "@failedToLoadFileStatus": {
     "placeholders": {
-      "statusCode": {
-        "type": "int"
+      "error": {
+        "type": "String"
       }
     }
   },
@@ -581,7 +571,6 @@
   "login": "تسجيل الدخول",
   "system": "نظام",
   "reset": "إعادة تعيين",
-  "apply": "تطبيق",
   "microphonePermissionRequired": "إذن الميكروفون مطلوب",
   "openSettings": "فتح الإعدادات",
   "permissionDenied": "تم رفض الإذن. يجب السماح بالوصول إلى الميكروفون للبحث بالصوت.",
@@ -617,7 +606,6 @@
   "startAddingFiles": "ابدأ بإضافة ملفات جديدة",
   "fileRemovedFromRoom": "تم إزالة الملف من الغرفة بنجاح",
   "failedToRemoveFile": "فشل إزالة الملف من الغرفة",
-  "fileIdNotFound": "خطأ: معرف الملف غير موجود",
   "fileMovedSuccessfully": "تم نقل الملف بنجاح",
   "failedToMoveFile": "فشل نقل الملف",
   "moveFile": "نقل الملف",
@@ -636,5 +624,593 @@
   "viewInfo": "عرض المعلومات",
   "move": "نقل",
   "failedToExtractTextFromPdf": "فشل استخراج النص من PDF",
-  "canViewPdfAndSearch": "يمكنك عرض PDF والبحث فيه"
+  "canViewPdfAndSearch": "يمكنك عرض PDF والبحث فيه",
+  "imageEditedSuccessfully": "✅ تم تعديل الصورة بنجاح",
+  "editedImageIsEmpty": "⚠️ الصورة المعدلة فارغة",
+  "failedToSaveEditedImage": "⚠️ فشل حفظ الصورة المعدلة",
+  "textEditedSuccessfully": "✅ تم تعديل النص بنجاح. اضغط على \"حفظ التغييرات\" لرفعه على السيرفر",
+  "saveOptions": "خيارات الحفظ",
+  "saveOptionsDescription": "كيف تريد حفظ الصورة المعدلة؟\n\n• حفظ نسخة جديدة: سيتم حفظ الصورة المعدلة كملف جديد\n• استبدال النسخة القديمة: سيتم حذف الملف القديم واستبداله بالصورة المعدلة",
+  "saveNewCopy": "حفظ نسخة جديدة",
+  "replaceOldVersion": "استبدال النسخة القديمة",
+  "extract": "استخراج",
+  "trimAudio": "قص الصوت",
+  "totalDuration": "المدة الكلية: {duration}",
+  "@totalDuration": {
+    "placeholders": {
+      "duration": {
+        "type": "String"
+      }
+    }
+  },
+  "trim": "قص",
+  "adjustVolume": "تعديل مستوى الصوت",
+  "apply": "تطبيق",
+  "convertFormat": "تحويل الصيغة",
+  "chooseOutputFormat": "اختر صيغة الإخراج:",
+  "wavFormat": "WAV",
+  "wavDescription": "جودة عالية، حجم كبير",
+  "mp3Format": "MP3",
+  "mp3Description": "جودة جيدة، حجم صغير",
+  "aacFormat": "AAC",
+  "aacDescription": "جودة جيدة جداً",
+  "addTextAnnotation": "إضافة نص (Annotation)",
+  "positionX": "الموضع X: {x}",
+  "@positionX": {
+    "placeholders": {
+      "x": {
+        "type": "String"
+      }
+    }
+  },
+  "positionY": "الموضع Y: {y}",
+  "@positionY": {
+    "placeholders": {
+      "y": {
+        "type": "String"
+      }
+    }
+  },
+  "fontSize": "حجم الخط: {size}",
+  "@fontSize": {
+    "placeholders": {
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "page": "الصفحة: {pageNumber}",
+  "@page": {
+    "placeholders": {
+      "pageNumber": {
+        "type": "String"
+      }
+    }
+  },
+  "add": "إضافة",
+  "selectImagePosition": "تحديد موضع الصورة",
+  "width": "العرض: {width}",
+  "@width": {
+    "placeholders": {
+      "width": {
+        "type": "String"
+      }
+    }
+  },
+  "height": "الارتفاع: {height}",
+  "@height": {
+    "placeholders": {
+      "height": {
+        "type": "String"
+      }
+    }
+  },
+  "highlightText": "تظليل النص (Highlight)",
+  "color": "اللون:",
+  "highlight": "تظليل",
+  "fileNotFound": "الملف غير موجود: {fileName}",
+  "@fileNotFound": {
+    "placeholders": {
+      "fileName": {
+        "type": "String"
+      }
+    }
+  },
+  "errorReadingFile": "حدث خطأ أثناء قراءة الملف: {error}",
+  "@errorReadingFile": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "fileSavedLocallyBut": "تم حفظ الملف محلياً، لكن {errorMessage}",
+  "@fileSavedLocallyBut": {
+    "placeholders": {
+      "errorMessage": {
+        "type": "String"
+      }
+    }
+  },
+  "roomCreatedSuccessfully": "✅ تم إنشاء الغرفة بنجاح",
+  "invitationAcceptedSuccessfully": "✅ تم قبول الدعوة بنجاح",
+  "invitationRejectedSuccessfully": "✅ تم رفض الدعوة",
+  "commentAddedSuccessfully": "✅ تم إضافة التعليق بنجاح",
+  "commentDeletedSuccessfully": "✅ تم حذف التعليق بنجاح",
+  "folderSharedSuccessfully": "✅ تم مشاركة المجلد مع الغرفة بنجاح",
+  "invitationSentSuccessfully": "✅ تم إرسال الدعوة بنجاح",
+  "fileRemovedFromRoomSuccessfully": "✅ تم إزالة الملف من الروم",
+  "folderRemovedFromRoomSuccessfully": "✅ تم إزالة المجلد من الروم",
+  "roomDeletedSuccessfully": "✅ تم حذف الغرفة بنجاح",
+  "roomLeftSuccessfully": "✅ تم مغادرة الغرفة بنجاح",
+  "roleUpdatedSuccessfully": "✅ تم تحديث الدور بنجاح",
+  "memberRemovedSuccessfully": "✅ تم إزالة العضو بنجاح",
+  "folderSavedSuccessfully": "✅ تم حفظ المجلد \"{folderName}\" في حسابك بنجاح",
+  "@folderSavedSuccessfully": {
+    "placeholders": {
+      "folderName": {
+        "type": "String"
+      }
+    }
+  },
+  "fileExpired": "❌ انتهت صلاحية الملف",
+  "savingFile": "جاري حفظ الملف...",
+  "fileSavedToAccount": "✅ تم حفظ الملف في حسابك بنجاح",
+  "errorOccurred": "❌ خطأ: {error}",
+  "@errorOccurred": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "errorLoadingFileData": "حدث خطأ في تحميل بيانات الملف: {error}",
+  "@errorLoadingFileData": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "imageExtractedSuccessfully": "✅ تم استخراج الصورة بنجاح",
+  "videoEditedSuccessfully": "✅ تم تعديل الفيديو بنجاح",
+  "editedVideoIsEmpty": "⚠️ الفيديو المعدل فارغ",
+  "failedToSaveEditedVideo": "⚠️ فشل حفظ الفيديو المعدل",
+  "videoMergedSuccessfully": "✅ تم دمج المقاطع بنجاح",
+  "pdfLoadFailed": "فشل تحميل ملف PDF ({statusCode})",
+  "@pdfLoadFailed": {
+    "placeholders": {
+      "statusCode": {
+        "type": "int"
+      }
+    }
+  },
+  "textAddedSuccessfully": "✅ تم إضافة النص بنجاح",
+  "imageAddedSuccessfully": "✅ تم إضافة الصورة بنجاح",
+  "textHighlightedSuccessfully": "✅ تم تظليل النص بنجاح",
+  "fileUpdatedSuccessfully": "✅ تم تحديث الملف بنجاح",
+  "fileReplacedSuccessfully": "✅ تم استبدال الملف بنجاح",
+  "newCopySavedSuccessfully": "✅ تم حفظ النسخة الجديدة بنجاح",
+  "changesSavedSuccessfully": "✅ تم حفظ التغييرات بنجاح",
+  "saveChanges": "حفظ التعديلات",
+  "viewImage": "عرض الصورة",
+  "chooseFromGallery": "اختيار من المعرض",
+  "takePhotoFromCamera": "التقاط صورة من الكاميرا",
+  "close": "إغلاق",
+  "viewVideo": "عرض الفيديو",
+  "loadingImage": "تحميل الصورة",
+  "chooseAction": "اختر إجراء",
+  "noAppInstalled": "لا يوجد تطبيق مثبت لفتح هذا الملف. اختر إجراء:",
+  "deleteFolder": "حذف المجلد",
+  "confirmPermanentDelete": "تأكيد الحذف النهائي",
+  "permanentDelete": "حذف نهائي",
+  "loadingFolder": "جاري تحميل المجلد...",
+  "restoreFolder": "استعادة المجلد",
+  "restoreFile": "استعادة الملف",
+  "emptyTrash": "إفراغ سلة المحذوفات",
+  "emptyTrashConfirm": "هل أنت متأكد من إفراغ سلة المحذوفات؟ سيتم حذف جميع الملفات نهائياً ولا يمكن استعادتها.",
+  "openFile": "فتح الملف",
+  "openFolder": "فتح المجلد",
+  "syncfusionPdfViewer": "• Syncfusion Flutter PDF Viewer",
+  "pdfJsWithWebView": "• PDF.js مع WebView",
+  "advancedPdfPackages": "• حزم PDF متقدمة أخرى",
+  "browsePages": "✓ تصفح الصفحات",
+  "fullScreenMode": "✓ وضعية ملء الشاشة",
+  "navigationBar": "✓ شريط التنقل",
+  "showFileName": "✓ عرض اسم الملف",
+  "editedFileNotFound": "الملف المعدل غير موجود. يرجى إعادة التعديل",
+  "errorAccessingEditedFile": "خطأ في الوصول للملف المعدل: {error}",
+  "@errorAccessingEditedFile": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "selectFolder": "اختيار \"{folderName}\"",
+  "@selectFolder": {
+    "placeholders": {
+      "folderName": {
+        "type": "String"
+      }
+    }
+  },
+  "folderMovedSuccessfully": "✅ تم نقل المجلد بنجاح",
+  "fileCount": "{count} ملف",
+  "@fileCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "folderIdNotFound": "خطأ: معرف المجلد غير موجود",
+  "failedToFetchFolderInfo": "فشل جلب معلومات المجلد",
+  "mustLoginFirstError": "خطأ: يجب تسجيل الدخول أولاً",
+  "mustAllowPhotosAccess": "يجب السماح بالوصول إلى الصور",
+  "fileNotFoundSimple": "الملف غير موجود",
+  "profileImageUploadedSuccessfully": "✅ تم رفع الصورة بنجاح",
+  "failedToUploadProfileImage": "فشل رفع الصورة",
+  "errorUploadingProfileImage": "خطأ في رفع الصورة: {error}",
+  "@errorUploadingProfileImage": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "mustAllowCameraAccess": "يجب السماح بالوصول إلى الكاميرا",
+  "unknownError": "خطأ غير معروف",
+  "editFileMetadata": "تعديل الملف",
+  "fileName": "اسم الملف",
+  "fileDescription": "الوصف",
+  "tagsSeparatedByComma": "الوسوم (افصل بينها بفاصلة)",
+  "changesSaveFailed": "❌ فشل حفظ التعديلات",
+  "confirmDeleteFile": "هل أنت متأكد من حذف الملف '{fileName}'؟",
+  "@confirmDeleteFile": {
+    "placeholders": {
+      "fileName": {
+        "type": "String"
+      }
+    }
+  },
+  "noTokenError": "❌ خطأ: لا يوجد توكن.",
+  "fileDeletedSuccessfully": "✅ تم حذف الملف '{fileName}' بنجاح",
+  "@fileDeletedSuccessfully": {
+    "placeholders": {
+      "fileName": {
+        "type": "String"
+      }
+    }
+  },
+  "errorDeletingFile": "❌ حدث خطأ أثناء حذف الملف: {error}",
+  "@errorDeletingFile": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "noUsersSharedWith": "لا يوجد مستخدمون مشارك معهم الملف",
+  "cannotIdentifyUsers": "لا يمكن تحديد المستخدمين لإلغاء المشاركة",
+  "unshareFileSuccess": "✅ تم إلغاء مشاركة الملف",
+  "unshareFailed": "فشل إلغاء المشاركة",
+  "fileAddedToFavorites": "✅ تم إضافة الملف إلى المفضلة",
+  "fileRemovedFromFavorites": "✅ تم إزالة الملف من المفضلة",
+  "errorUpdating": "❌ حدث خطأ أثناء التحديث",
+  "downloadingFile": "جاري تحميل الملف...",
+  "fileDownloadedSuccessfully": "✅ تم تحميل الملف بنجاح: {fileName}",
+  "@fileDownloadedSuccessfully": {
+    "placeholders": {
+      "fileName": {
+        "type": "String"
+      }
+    }
+  },
+  "failedToDownloadFile": "فشل تحميل الملف",
+  "errorDownloadingFile": "❌ خطأ في تحميل الملف: {error}",
+  "@errorDownloadingFile": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "cannotIdentifyFile": "لا يمكن تحديد الملف",
+  "shareRequestSent": "✅ تم إرسال طلب المشاركة للغرفة",
+  "confirmDeleteFolder": "هل أنت متأكد من حذف المجلد '{folderName}'؟ سيتم حذف جميع الملفات والمجلدات الفرعية أيضاً.",
+  "@confirmDeleteFolder": {
+    "placeholders": {
+      "folderName": {
+        "type": "String"
+      }
+    }
+  },
+  "folderIdNotAvailable": "❌ خطأ: معرف المجلد غير متوفر.",
+  "folderDeletedSuccessfully": "✅ تم حذف المجلد '{folderName}' بنجاح",
+  "@folderDeletedSuccessfully": {
+    "placeholders": {
+      "folderName": {
+        "type": "String"
+      }
+    }
+  },
+  "errorDeletingFolder": "❌ حدث خطأ أثناء حذف المجلد",
+  "errorDeletingFolderWithError": "❌ حدث خطأ أثناء حذف المجلد: {error}",
+  "@errorDeletingFolderWithError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "folderRestoredSuccessfully": "✅ تم استعادة المجلد '{folderName}' بنجاح",
+  "@folderRestoredSuccessfully": {
+    "placeholders": {
+      "folderName": {
+        "type": "String"
+      }
+    }
+  },
+  "errorRestoringFolder": "❌ حدث خطأ أثناء استعادة المجلد",
+  "errorRestoringFolderWithError": "❌ حدث خطأ أثناء استعادة المجلد: {error}",
+  "@errorRestoringFolderWithError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "confirmPermanentDeleteFolder": "هل أنت متأكد من الحذف النهائي للمجلد '{folderName}'؟ لا يمكن التراجع عن هذا الإجراء. سيتم حذف جميع الملفات والمجلدات الفرعية نهائياً.",
+  "@confirmPermanentDeleteFolder": {
+    "placeholders": {
+      "folderName": {
+        "type": "String"
+      }
+    }
+  },
+  "folderPermanentlyDeletedSuccessfully": "✅ تم الحذف النهائي للمجلد '{folderName}' بنجاح",
+  "@folderPermanentlyDeletedSuccessfully": {
+    "placeholders": {
+      "folderName": {
+        "type": "String"
+      }
+    }
+  },
+  "errorPermanentlyDeletingFolder": "❌ حدث خطأ أثناء الحذف النهائي للمجلد",
+  "errorPermanentlyDeletingFolderWithError": "❌ حدث خطأ أثناء الحذف النهائي للمجلد: {error}",
+  "@errorPermanentlyDeletingFolderWithError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "cannotIdentifyFolder": "❌ خطأ: لا يمكن تحديد المجلد",
+  "downloadingFolder": "جاري تحميل المجلد...",
+  "folderDownloadedSuccessfully": "✅ تم تحميل المجلد بنجاح: {fileName}",
+  "@folderDownloadedSuccessfully": {
+    "placeholders": {
+      "fileName": {
+        "type": "String"
+      }
+    }
+  },
+  "failedToDownloadFolder": "فشل تحميل المجلد",
+  "errorDownloadingFolder": "❌ خطأ في تحميل المجلد: {error}",
+  "@errorDownloadingFolder": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "pleaseEnter6DigitCode": "الرجاء إدخال رمز التحقق المكون من 6 أرقام",
+  "accountActivatedSuccessfully": "✅ تم تفعيل الحساب بنجاح",
+  "invalidVerificationCode": "رمز التحقق غير صحيح",
+  "pleaseWaitBeforeResend": "الرجاء الانتظار {seconds} ثانية قبل إعادة الإرسال",
+  "@pleaseWaitBeforeResend": {
+    "placeholders": {
+      "seconds": {
+        "type": "int"
+      }
+    }
+  },
+  "verificationCodeSent": "✅ تم إرسال رمز التحقق بنجاح",
+  "failedToResendCode": "❌ فشل إعادة إرسال رمز التحقق",
+  "emailVerification": "التحقق من البريد الإلكتروني",
+  "verificationCodeSentTo": "تم إرسال رمز التحقق إلى {email}",
+  "@verificationCodeSentTo": {
+    "placeholders": {
+      "email": {
+        "type": "String"
+      }
+    }
+  },
+  "didNotReceiveCode": "لم تستلم الرمز؟",
+  "resendWithCountdown": "إعادة الإرسال ({seconds})",
+  "@resendWithCountdown": {
+    "placeholders": {
+      "seconds": {
+        "type": "int"
+      }
+    }
+  },
+  "resend": "إعادة الإرسال",
+  "fileLinkNotAvailable": "رابط الملف غير متوفر",
+  "failedToCreateTempFile": "فشل إنشاء ملف مؤقت",
+  "@failedToLoadFileStatus": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "errorOpeningFile": "خطأ في فتح الملف: {error}",
+  "@errorOpeningFile": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "@fileNotAvailableError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "errorLoadingFile": "خطأ في تحميل الملف: {error}",
+  "@errorLoadingFile": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "fileNotValidPdf": "الملف ليس ملف PDF صالح",
+  "createNewShareRoom": "إنشاء غرفة مشاركة جديدة",
+  "pleaseEnterRoomName": "الرجاء إدخال اسم الغرفة",
+  "searchError": "خطأ في البحث: {error}",
+  "@searchError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "loadMore": "تحميل المزيد",
+  "filesCount": "عدد الملفات",
+  "featureUnderDevelopment": "هذه الميزة قيد التطوير",
+  "movingFolder": "جاري نقل المجلد...",
+  "errorFetchingSubfolders": "خطأ في جلب المجلدات الفرعية: {error}",
+  "@errorFetchingSubfolders": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "moveFolderToRoot": "نقل المجلد إلى الجذر",
+  "rejectInvitation": "رفض الدعوة",
+  "confirmRejectInvitation": "هل أنت متأكد من رفض هذه الدعوة؟",
+  "reject": "رفض",
+  "pendingInvitations": "الدعوات المعلقة",
+  "accept": "قبول",
+  "pleaseSelectFileOrFolder": "الرجاء اختيار ملف أو مجلد",
+  "deleteComment": "حذف التعليق",
+  "confirmDeleteComment": "هل أنت متأكد من حذف هذا التعليق؟",
+  "room": "الغرفة",
+  "errorLoadingRoomDetails": "خطأ في تحميل تفاصيل الغرفة",
+  "failedToLoadRoomDetails": "فشل تحميل تفاصيل الغرفة",
+  "pleaseLoginAgain": "يرجى إعادة تسجيل الدخول",
+  "confirmRemoveFileFromRoom": "هل أنت متأكد من إزالة هذا الملف من الغرفة؟",
+  "removeFolderFromRoom": "إزالة المجلد من الغرفة",
+  "confirmRemoveFolderFromRoom": "هل أنت متأكد من إزالة هذا المجلد من الغرفة؟",
+  "confirmRemoveFolderFromRoomWithName": "هل أنت متأكد من إزالة المجلد '{folderName}' من الغرفة؟",
+  "@confirmRemoveFolderFromRoomWithName": {
+    "placeholders": {
+      "folderName": {
+        "type": "String"
+      }
+    }
+  },
+  "savingFolder": "جاري حفظ المجلد...",
+  "saveToRoot": "حفظ في الجذر",
+  "failedToLoadRoomData": "فشل تحميل بيانات الغرفة",
+  "noSharedFiles": "لا توجد ملفات مشتركة",
+  "shareFilesWithRoom": "مشاركة الملفات مع الغرفة",
+  "pleaseEnterFolderName": "الرجاء إدخال اسم المجلد",
+  "folderCreatedSuccessfully": "تم إنشاء المجلد بنجاح: {folderName}",
+  "@folderCreatedSuccessfully": {
+    "placeholders": {
+      "folderName": {
+        "type": "String"
+      }
+    }
+  },
+  "failedToCreateFolder": "فشل إنشاء المجلد",
+  "removeMember": "إزالة العضو",
+  "roomMembers": "أعضاء الغرفة",
+  "viewOnly": "عرض فقط",
+  "viewOnlyDescription": "يمكن للمستخدم عرض الملفات فقط",
+  "editor": "محرر",
+  "editorDescription": "يمكن للمستخدم تحرير الملفات",
+  "commenter": "معلق",
+  "commenterDescription": "يمكن للمستخدم التعليق على الملفات",
+  "shareFolderWithRoom": "مشاركة المجلد مع الغرفة",
+  "shareWithThisRoom": "مشاركة مع هذه الغرفة",
+  "mustAllowPhotosAccess": "يجب السماح بالوصول إلى الصور",
+  "profileImageUploadedSuccessfully": "✅ تم رفع صورة الملف الشخصي بنجاح",
+  "failedToUploadProfileImage": "❌ فشل رفع صورة الملف الشخصي",
+  "errorUploadingProfileImage": "❌ خطأ في رفع صورة الملف الشخصي: {error}",
+  "@errorUploadingProfileImage": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "mustAllowCameraAccess": "يجب السماح بالوصول إلى الكاميرا",
+  "unknownError": "خطأ غير معروف",
+  "chooseFromGallery": "اختر من المعرض",
+  "takePhotoFromCamera": "التقط صورة من الكاميرا",
+  "used": "مستخدم",
+  "microphonePermissionRequired": "إذن الميكروفون مطلوب",
+  "openSettings": "فتح الإعدادات",
+  "permissionDenied": "تم رفض الإذن",
+  "mustAllowMicrophoneAccess": "يجب السماح بالوصول إلى الميكروفون",
+  "speechRecognitionNotAvailable": "التعرف على الصوت غير متاح",
+  "enterSearchText": "أدخل نص البحث",
+  "smartSearch": "البحث الذكي",
+  "fileLinkNotAvailableNoPath": "رابط الملف غير متوفر (لا يوجد مسار)",
+  "errorLoadingTextFile": "خطأ في تحميل ملف النص: {error}",
+  "@errorLoadingTextFile": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "activityLog": "سجل النشاط",
+  "previous": "السابق",
+  "next": "التالي",
+  "filterActivity": "تصفية النشاط",
+  "allActivities": "جميع الأنشطة",
+  "uploadFile": "رفع ملف",
+  "downloadFile": "تحميل ملف",
+  "shareFile": "مشاركة ملف",
+  "login": "تسجيل الدخول",
+  "userLabel": "المستخدم",
+  "system": "النظام",
+  "roomLabel": "الغرفة",
+  "reset": "إعادة تعيين",
+  "logoutSuccess": "✅ تم تسجيل الخروج بنجاح",
+  "tokenNotFound": "❌ خطأ: لم يتم العثور على الرمز المميز",
+  "trash": "المهملات",
+  "deletedFiles": "الملفات المحذوفة",
+  "deletedFolders": "المجلدات المحذوفة",
+  "profile": "الملف الشخصي",
+  "editUsername": "تعديل اسم المستخدم",
+  "editEmail": "تعديل البريد الإلكتروني",
+  "fieldRequired": "هذا الحقل مطلوب",
+  "validEmailRequired": "البريد الإلكتروني غير صحيح",
+  "updatedSuccessfully": "✅ تم التحديث بنجاح",
+  "changePassword": "تغيير كلمة المرور",
+  "currentPassword": "كلمة المرور الحالية",
+  "currentPasswordRequired": "كلمة المرور الحالية مطلوبة",
+  "newPassword": "كلمة المرور الجديدة",
+  "newPasswordRequired": "كلمة المرور الجديدة مطلوبة",
+  "passwordMinLength": "كلمة المرور يجب أن تكون 8 أحرف على الأقل",
+  "confirmNewPassword": "تأكيد كلمة المرور الجديدة",
+  "passwordConfirmationRequired": "تأكيد كلمة المرور مطلوب",
+  "passwordUpdatedSuccessfully": "✅ تم تحديث كلمة المرور بنجاح",
+  "favoriteFiles": "الملفات المفضلة",
+  "noFavoriteFiles": "لا توجد ملفات مفضلة",
+  "addFilesToFavorites": "أضف الملفات إلى المفضلة",
+  "folderIdNotFound": "خطأ: معرف المجلد غير موجود",
+  "@folderIdNotFound": {
+    "description": "رسالة تظهر عندما لا يكون معرف المجلد موجودًا"
+  }
 }
