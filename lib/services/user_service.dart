@@ -224,30 +224,81 @@ class UserService {
         try {
           final data = jsonDecode(responseBody);
           print('✅ Upload successful');
+          print('📦 Response data keys: ${data.keys.toList()}');
+          
+          // ✅ التحقق من وجود user في الـ response
+          Map<String, dynamic>? userData;
+          if (data['user'] != null) {
+            print('✅ User data found in response');
+            userData = data['user'] as Map<String, dynamic>;
+            print('📝 User keys: ${userData.keys.toList()}');
+          } else if (data['data'] != null) {
+            print('✅ Data found in response');
+            userData = data['data'] as Map<String, dynamic>;
+            print('📝 Data keys: ${userData.keys.toList()}');
+          } else {
+            print('⚠️ No user or data field found, using entire response');
+            userData = data as Map<String, dynamic>;
+          }
+          
+          // ✅ التحقق من وجود profileImg في الـ response
+          if (!userData.containsKey('profileImg')) {
+            print('⚠️ WARNING: profileImg not found in response!');
+            print('⚠️ This means the backend did not save/return the profile image.');
+            print('⚠️ Please check the backend code to ensure profileImg is saved and returned.');
+            print('⚠️ Full response data: $userData');
+          } else if (userData['profileImg'] != null) {
+            print('✅ profileImg found in response: ${userData['profileImg']}');
+          } else {
+            print('⚠️ WARNING: profileImg exists in response but is null!');
+            print('⚠️ This means the backend did not save the profile image to the database.');
+            print('⚠️ Please check:');
+            print('  1. Is resizeProfileImage middleware saving the file?');
+            print('  2. Is req.body.profileImg being set correctly?');
+            print('  3. Is updateLoggedUserData saving req.body.profileImg to the database?');
+            print('⚠️ Full response data: $userData');
+          }
+          
+          // ✅ التحقق من profileImgUrl أيضاً
+          if (userData.containsKey('profileImgUrl')) {
+            if (userData['profileImgUrl'] != null) {
+              print('✅ profileImgUrl found in response: ${userData['profileImgUrl']}');
+            } else {
+              print('⚠️ WARNING: profileImgUrl exists but is null!');
+              print('⚠️ This usually means profileImg is null, so profileImgUrl cannot be built.');
+            }
+          }
+          
           return {
             'success': true,
             'data': data,
           };
         } catch (e) {
           print('❌ Error parsing response: $e');
+          print('❌ Response body (raw): $responseBody');
           return {
             'success': false,
-            'error': 'خطأ في قراءة الاستجابة',
+            'error': 'خطأ في قراءة الاستجابة: ${e.toString()}',
           };
         }
       } else {
         try {
           final errorData = jsonDecode(responseBody);
-          print('❌ Upload failed: ${errorData['message'] ?? 'Unknown error'}');
+          print('❌ Upload failed: ${errorData['message'] ?? errorData['error'] ?? 'Unknown error'}');
+          print('❌ Error data: $errorData');
           return {
             'success': false,
             'error': errorData['message'] ?? errorData['error'] ?? 'فشل رفع الصورة',
+            'statusCode': response.statusCode,
           };
         } catch (e) {
           print('❌ Error parsing error response: $e');
+          print('❌ Response body (raw): $responseBody');
           return {
             'success': false,
             'error': 'فشل رفع الصورة: ${response.statusCode}',
+            'statusCode': response.statusCode,
+            'rawResponse': responseBody,
           };
         }
       }

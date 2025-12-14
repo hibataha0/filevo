@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:filevo/controllers/folders/room_controller.dart';
+import 'package:filevo/generated/l10n.dart';
 
 class SendInvitationPage extends StatefulWidget {
   final String roomId;
@@ -87,7 +88,7 @@ class _SendInvitationPageState extends State<SendInvitationPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('إرسال دعوة'),
+        title: Text(S.of(context).sendInvitation),
         backgroundColor: Color(0xff28336f),
       ),
       body: SingleChildScrollView(
@@ -182,8 +183,8 @@ class _SendInvitationPageState extends State<SendInvitationPage> {
                 child: Column(
                   children: [
                     RadioListTile<String>(
-                      title: Text('عرض فقط'),
-                      subtitle: Text('يمكنه عرض الملفات فقط'),
+                      title: Text(S.of(context).viewOnly),
+                      subtitle: Text(S.of(context).viewOnlyDescription),
                       value: 'viewer',
                       groupValue: _selectedRole,
                       onChanged: (value) =>
@@ -191,8 +192,8 @@ class _SendInvitationPageState extends State<SendInvitationPage> {
                     ),
                     Divider(height: 1),
                     RadioListTile<String>(
-                      title: Text('محرر'),
-                      subtitle: Text('يمكنه تعديل الملفات'),
+                      title: Text(S.of(context).editor),
+                      subtitle: Text(S.of(context).editorDescription),
                       value: 'editor',
                       groupValue: _selectedRole,
                       onChanged: (value) =>
@@ -200,8 +201,8 @@ class _SendInvitationPageState extends State<SendInvitationPage> {
                     ),
                     Divider(height: 1),
                     RadioListTile<String>(
-                      title: Text('معلق'),
-                      subtitle: Text('يمكنه التعليق على الملفات'),
+                      title: Text(S.of(context).commenter),
+                      subtitle: Text(S.of(context).commenterDescription),
                       value: 'commenter',
                       groupValue: _selectedRole,
                       onChanged: (value) =>

@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:filevo/config/api_config.dart';
 import 'package:filevo/controllers/folders/room_controller.dart';
 import 'package:filevo/utils/room_permissions.dart';
+import 'package:filevo/generated/l10n.dart';
 
 class RoomMembersPage extends StatefulWidget {
   final String roomId;
@@ -33,6 +36,15 @@ class _RoomMembersPageState extends State<RoomMembersPage> {
     final response = await roomController.getRoomById(widget.roomId);
 
     if (mounted) {
+      // ✅ Debug: طباعة بيانات الأعضاء للتحقق من وجود profileImg
+      if (response?['room'] != null) {
+        final members = response!['room']['members'] as List? ?? [];
+        if (members.isNotEmpty) {
+          print('👥 [RoomMembersPage] Members loaded: ${members.length}');
+          print('👥 [RoomMembersPage] First member user keys: ${members[0]['user']?.keys.toList()}');
+          print('👥 [RoomMembersPage] First member user profileImg: ${members[0]['user']?['profileImg']}');
+        }
+      }
       setState(() {
         roomData = response?['room'];
         isLoading = false;
@@ -79,16 +91,16 @@ class _RoomMembersPageState extends State<RoomMembersPage> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('إزالة عضو'),
-        content: Text('هل أنت متأكد من إزالة $memberName من الغرفة؟'),
+        title: Text(S.of(context).removeMember),
+        content: Text(S.of(context).confirmRemoveMember(memberName)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: Text('إلغاء'),
+            child: Text(S.of(context).cancel),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: Text('إزالة', style: TextStyle(color: Colors.red)),
+            child: Text(S.of(context).remove, style: TextStyle(color: Colors.red)),
           ),
         ],
       ),
@@ -130,11 +142,22 @@ class _RoomMembersPageState extends State<RoomMembersPage> {
   void _showMemberOptions(Map<String, dynamic> member) async {
     if (roomData == null) return;
 
-    final user = member['user'] ?? {};
+    // ✅ التأكد من أن user هو Map
+    Map<String, dynamic> user;
+    if (member['user'] is Map<String, dynamic>) {
+      user = member['user'] as Map<String, dynamic>;
+    } else {
+      user = {};
+    }
+    
     final memberId = member['_id']?.toString() ?? '';
     final currentRole = member['role'] ?? 'viewer';
     final currentCanShare = member['canShare'] ?? false;
     final isOwner = currentRole == 'owner';
+    
+    // ✅ Debug: طباعة بيانات المستخدم
+    print('👤 [RoomMembersPage] Member options user keys: ${user.keys.toList()}');
+    print('👤 [RoomMembersPage] Member options user profileImg: ${user['profileImg']}');
 
     // ✅ التحقق من الصلاحيات
     final canUpdateRoles = await RoomPermissions.canUpdateMemberRoles(
@@ -157,13 +180,7 @@ class _RoomMembersPageState extends State<RoomMembersPage> {
           children: [
             Row(
               children: [
-                CircleAvatar(
-                  backgroundColor: _getRoleColor(currentRole).withOpacity(0.2),
-                  child: Icon(
-                    _getRoleIcon(currentRole),
-                    color: _getRoleColor(currentRole),
-                  ),
-                ),
+                _buildMemberAvatar(user, currentRole),
                 SizedBox(width: 12),
                 Expanded(
                   child: Column(
@@ -330,7 +347,7 @@ class _RoomMembersPageState extends State<RoomMembersPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('أعضاء الغرفة'),
+        title: Text(S.of(context).roomMembers),
         backgroundColor: Color(0xff28336f),
         leading: IconButton(
           icon: Icon(Icons.arrow_back),
@@ -352,7 +369,7 @@ class _RoomMembersPageState extends State<RoomMembersPage> {
       body: isLoading
           ? Center(child: CircularProgressIndicator())
           : roomData == null
-          ? Center(child: Text('فشل تحميل بيانات الغرفة'))
+          ? Center(child: Text(S.of(context).failedToLoadRoomData))
           : RefreshIndicator(
               onRefresh: _loadRoomData,
               child: ListView.builder(
@@ -368,19 +385,27 @@ class _RoomMembersPageState extends State<RoomMembersPage> {
   }
 
   Widget _buildMemberCard(Map<String, dynamic> member) {
-    final user = member['user'] ?? {};
+    // ✅ التأكد من أن user هو Map
+    Map<String, dynamic> user;
+    if (member['user'] is Map<String, dynamic>) {
+      user = member['user'] as Map<String, dynamic>;
+    } else {
+      user = {};
+    }
+    
     final role = member['role'] ?? 'viewer';
     final isOwner = role == 'owner';
+    
+    // ✅ Debug: طباعة بيانات المستخدم
+    print('👤 [RoomMembersPage] Member user keys: ${user.keys.toList()}');
+    print('👤 [RoomMembersPage] Member user profileImg: ${user['profileImg']}');
 
     return Card(
       margin: EdgeInsets.only(bottom: 12),
       elevation: 2,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: ListTile(
-        leading: CircleAvatar(
-          backgroundColor: _getRoleColor(role).withOpacity(0.2),
-          child: Icon(_getRoleIcon(role), color: _getRoleColor(role)),
-        ),
+        leading: _buildMemberAvatar(user, role),
         title: Text(
           user['name'] ?? user['email'] ?? '—',
           style: TextStyle(fontWeight: FontWeight.bold),
@@ -444,6 +469,108 @@ class _RoomMembersPageState extends State<RoomMembersPage> {
         return Icons.comment;
       default:
         return Icons.person;
+    }
+  }
+
+  // ✅ بناء URL كامل للصورة من اسم الملف (للـ backward compatibility)
+  String? _buildProfileImageUrl(String? profileImg) {
+    if (profileImg == null || profileImg.toString().isEmpty || profileImg.toString() == 'null') {
+      return null;
+    }
+
+    final profileImgStr = profileImg.toString();
+
+    // ✅ إذا كان URL كامل، استخدمه مباشرة
+    if (profileImgStr.startsWith('http://') || profileImgStr.startsWith('https://')) {
+      return profileImgStr;
+    }
+
+    // ✅ بناء URL من base URL + path
+    String cleanPath = profileImgStr.replaceAll(r'\', '/').replaceAll('//', '/');
+    while (cleanPath.startsWith('/')) {
+      cleanPath = cleanPath.substring(1);
+    }
+
+    // ✅ إزالة /api/v1 من base URL للحصول على base فقط
+    final base = ApiConfig.baseUrl.replaceAll('/api/v1', '');
+    final baseClean = base.endsWith('/') ? base.substring(0, base.length - 1) : base;
+
+    // ✅ بناء URL كامل (الـ backend يخدم الملفات من uploads/)
+    final imageUrl = '$baseClean/uploads/$cleanPath';
+    print('🖼️ [RoomMembersPage] Building profile image URL:');
+    print('  - Original: $profileImgStr');
+    print('  - Clean path: $cleanPath');
+    print('  - Final URL: $imageUrl');
+
+    return imageUrl;
+  }
+
+  // ✅ بناء widget صورة البروفايل للعضو
+  Widget _buildMemberAvatar(Map<String, dynamic> user, String role) {
+    // ✅ قراءة profileImgUrl أولاً (من الباك إند الجديد)
+    // ✅ إذا لم يكن موجوداً، استخدم profileImg وابني URL (للـ backward compatibility)
+    final profileImgUrl = user['profileImgUrl'];
+    final profileImg = user['profileImg'];
+    final name = user['name'] ?? user['email'] ?? 'م';
+    final firstLetter = name.isNotEmpty ? name.substring(0, 1).toUpperCase() : 'م';
+
+    // ✅ Debug: طباعة البيانات للتحقق
+    print('🖼️ [RoomMembersPage] User data: ${user.keys.toList()}');
+    print('🖼️ [RoomMembersPage] profileImgUrl: $profileImgUrl');
+    print('🖼️ [RoomMembersPage] profileImg: $profileImg');
+    print('🖼️ [RoomMembersPage] name: $name');
+
+    // ✅ استخدام profileImgUrl إذا كان موجوداً، وإلا بناء URL من profileImg
+    final imageUrl = profileImgUrl?.toString() ?? _buildProfileImageUrl(profileImg?.toString());
+
+    if (imageUrl != null && imageUrl.isNotEmpty) {
+      print('🖼️ [RoomMembersPage] Loading profile image from: $imageUrl');
+      
+      return CircleAvatar(
+        radius: 24,
+        child: ClipOval(
+          child: CachedNetworkImage(
+            imageUrl: imageUrl,
+            fit: BoxFit.cover,
+            width: 48,
+            height: 48,
+            placeholder: (context, url) => CircleAvatar(
+              radius: 24,
+              backgroundColor: _getRoleColor(role).withOpacity(0.2),
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
+            errorWidget: (context, url, error) {
+              print('❌ [RoomMembersPage] Failed to load profile image: $error');
+              return CircleAvatar(
+                radius: 24,
+                backgroundColor: _getRoleColor(role).withOpacity(0.2),
+                child: Text(
+                  firstLetter,
+                  style: TextStyle(
+                    color: _getRoleColor(role),
+                    fontWeight: FontWeight.bold,
+                    fontSize: 18,
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      );
+    } else {
+      print('🖼️ [RoomMembersPage] No profile image, using default avatar');
+      return CircleAvatar(
+        radius: 24,
+        backgroundColor: _getRoleColor(role).withOpacity(0.2),
+        child: Text(
+          firstLetter,
+          style: TextStyle(
+            color: _getRoleColor(role),
+            fontWeight: FontWeight.bold,
+            fontSize: 18,
+          ),
+        ),
+      );
     }
   }
 }

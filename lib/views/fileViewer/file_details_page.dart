@@ -7,6 +7,7 @@ import 'package:filevo/services/storage_service.dart';
 import 'package:video_thumbnail/video_thumbnail.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:filevo/views/folders/share_file_with_room_page.dart';
+import 'package:filevo/generated/l10n.dart';
 
 class FileDetailsPage extends StatefulWidget {
   final String fileId;
@@ -63,7 +64,7 @@ class _FileDetailsPageState extends State<FileDetailsPage> {
           });
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(data['error'] ?? 'حدث خطأ في تحميل بيانات الملف'),
+              content: Text(data['error'] ?? S.of(context).errorLoadingFileData),
               backgroundColor: Colors.red,
               duration: Duration(seconds: 3),
             ),
@@ -215,7 +216,7 @@ class _FileDetailsPageState extends State<FileDetailsPage> {
                   children: [
                     Icon(Icons.meeting_room, color: Color(0xff28336f)),
                     SizedBox(width: 12),
-                    Text('مشاركة مع غرفة'),
+                    Text(S.of(context).shareWithRoom),
                   ],
                 ),
               ),
@@ -225,7 +226,7 @@ class _FileDetailsPageState extends State<FileDetailsPage> {
                   children: [
                     Icon(Icons.share, color: Colors.green),
                     SizedBox(width: 12),
-                    Text('مشاركة'),
+                    Text(S.of(context).share),
                   ],
                 ),
               ),
@@ -237,7 +238,7 @@ class _FileDetailsPageState extends State<FileDetailsPage> {
                   MaterialPageRoute(
                     builder: (context) => ShareFileWithRoomPage(
                       fileId: widget.fileId,
-                      fileName: fileData!['name'] ?? 'ملف',
+                      fileName: fileData!['name'] ?? S.of(context).file,
                     ),
                   ),
                 );
@@ -247,7 +248,7 @@ class _FileDetailsPageState extends State<FileDetailsPage> {
               } else if (value == 'share') {
                 // TODO: Add share functionality
                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('ميزة المشاركة قريباً')),
+                  SnackBar(content: Text(S.of(context).shareFeatureComingSoon)),
                 );
               }
             },
@@ -278,7 +279,7 @@ class _FileDetailsPageState extends State<FileDetailsPage> {
             ),
             SizedBox(height: 20),
             Text(
-              'جاري تحميل بيانات الملف...',
+              S.of(context).loadingFileData,
               style: TextStyle(
                 fontSize: 16,
                 color: Color(0xFF6B7280),
@@ -310,7 +311,7 @@ class _FileDetailsPageState extends State<FileDetailsPage> {
             ),
             SizedBox(height: 20),
             Text(
-              'فشل في تحميل بيانات الملف',
+              S.of(context).failedToLoadFileData,
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
@@ -329,7 +330,7 @@ class _FileDetailsPageState extends State<FileDetailsPage> {
             ElevatedButton.icon(
               onPressed: _loadFileDetails,
               icon: Icon(Icons.refresh_rounded, size: 20),
-              label: Text('إعادة المحاولة'),
+              label: Text(S.of(context).retry),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Color(0xFF4F6BED),
                 foregroundColor: Colors.white,
@@ -345,8 +346,8 @@ class _FileDetailsPageState extends State<FileDetailsPage> {
       );
     }
 
-    final fileName = fileData!['name'] ?? 'بدون اسم';
-    final fileType = fileData!['category'] ?? 'غير مصنف';
+    final fileName = fileData!['name'] ?? S.of(context).noName;
+    final fileType = fileData!['category'] ?? S.of(context).unclassified;
     // ✅ الحصول على path من البيانات - قد يكون في path مباشرة أو في originalData
     final filePath = fileData!['path']?.toString() ?? '';
     // ✅ بناء URL بشكل صحيح
@@ -560,7 +561,7 @@ class _FileDetailsPageState extends State<FileDetailsPage> {
                 Icon(Icons.videocam_rounded, color: Colors.white, size: 14),
                 SizedBox(width: 4),
                 Text(
-                  'فيديو',
+                  S.of(context).video,
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: 12,
@@ -627,28 +628,28 @@ class _FileDetailsPageState extends State<FileDetailsPage> {
         "color": Color(0xFF10B981),
         "gradient": [Color(0xFF10B981), Color(0xFF34D399)],
         "iconBg": Color(0xFF10B981).withOpacity(0.2),
-        "label": "مستند",
+        "label": S.of(context).document,
       },
       "images": {
         "icon": Icons.photo_library_rounded,
         "color": Color(0xFFF59E0B),
         "gradient": [Color(0xFFF59E0B), Color(0xFFFBBF24)],
         "iconBg": Color(0xFFF59E0B).withOpacity(0.2),
-        "label": "صورة",
+        "label": S.of(context).image,
       },
       "videos": {
         "icon": Icons.videocam_rounded,
         "color": Color(0xFFEF4444),
         "gradient": [Color(0xFFEF4444), Color(0xFFF87171)],
         "iconBg": Color(0xFFEF4444).withOpacity(0.2),
-        "label": "فيديو",
+        "label": S.of(context).video,
       },
       "audio": {
         "icon": Icons.music_note_rounded,
         "color": Color(0xFF8B5CF6),
         "gradient": [Color(0xFF8B5CF6), Color(0xFFA78BFA)],
         "iconBg": Color(0xFF8B5CF6).withOpacity(0.2),
-        "label": "صوت",
+        "label": S.of(context).audio,
       },
     };
 
@@ -657,7 +658,7 @@ class _FileDetailsPageState extends State<FileDetailsPage> {
       "color": Color(0xFF6B7280),
       "gradient": [Color(0xFF6B7280), Color(0xFF9CA3AF)],
       "iconBg": Color(0xFF6B7280).withOpacity(0.2),
-      "label": "ملف",
+      "label": S.of(context).file,
     };
 
     return Container(
@@ -721,7 +722,7 @@ class _FileDetailsPageState extends State<FileDetailsPage> {
           ),
           SizedBox(height: 12),
           Text(
-            'تعذر تحميل المعاينة',
+            S.of(context).failedToLoadPreview,
             style: TextStyle(
               color: Colors.white,
               fontSize: 14,
@@ -796,24 +797,24 @@ class _FileDetailsPageState extends State<FileDetailsPage> {
           
           // ✅ عرض الامتداد إذا كان متاحاً
           if (fileData!['extension'] != null)
-            _buildDetailItem('extension', '📄', 'الامتداد', fileData!['extension'] ?? '—'),
+            _buildDetailItem('extension', '📄', S.of(context).extension, fileData!['extension'] ?? '—'),
           
-          _buildDetailItem('size', '📊', 'الحجم', fileData!['sizeFormatted'] ?? _formatSize(fileData!['size']) ?? '—'),
-          _buildDetailItem('time', '🕒', 'أنشئ في', _formatDate(fileData!['createdAt'])),
-          _buildDetailItem('edit', '✏️', 'آخر تعديل', _formatDate(fileData!['updatedAt'] ?? fileData!['lastModified'])),
+          _buildDetailItem('size', '📊', S.of(context).size, fileData!['sizeFormatted'] ?? _formatSize(fileData!['size']) ?? '—'),
+          _buildDetailItem('time', '🕒', S.of(context).createdAt, _formatDate(fileData!['createdAt'])),
+          _buildDetailItem('edit', '✏️', S.of(context).modified, _formatDate(fileData!['updatedAt'] ?? fileData!['lastModified'])),
           
           // ✅ عرض معلومات المالك (owner)
           if (fileData!['owner'] != null)
             _buildDetailItem(
               'owner',
               '👤',
-              'المالك',
+              S.of(context).owner,
               fileData!['owner']['name'] ?? fileData!['owner']['email'] ?? '—',
             ),
           
-          _buildDetailItem('description', '📝', 'الوصف', 
+          _buildDetailItem('description', '📝', S.of(context).description, 
               fileData!['description']?.isNotEmpty == true ? fileData!['description'] : "—"),
-          _buildDetailItem('tags', '🏷️', 'الوسوم', 
+          _buildDetailItem('tags', '🏷️', S.of(context).tags, 
               (fileData!['tags'] as List?)?.join(', ') ?? "—"),
 
           // Shared With Section
@@ -845,8 +846,8 @@ class _FileDetailsPageState extends State<FileDetailsPage> {
             _buildDetailItem(
               'status',
               fileData!['isOwner'] == true ? '⭐' : '🔗',
-              'الحالة',
-              fileData!['isOwner'] == true ? 'أنت المالك' : 'ملف مشترك',
+              S.of(context).status,
+              fileData!['isOwner'] == true ? S.of(context).youAreOwner : S.of(context).sharedFile,
             ),
         ],
       ),
@@ -910,25 +911,25 @@ class _FileDetailsPageState extends State<FileDetailsPage> {
           
           // ✅ الامتداد
           if (fileData!['extension'] != null)
-            _buildDetailItem('extension', '📄', 'الامتداد', fileData!['extension'] ?? '—'),
+            _buildDetailItem('extension', '📄', S.of(context).extension, fileData!['extension'] ?? '—'),
           
           // ✅ الحجم
-          _buildDetailItem('size', '📊', 'الحجم', fileData!['sizeFormatted'] ?? _formatSize(fileData!['size']) ?? '—'),
+          _buildDetailItem('size', '📊', S.of(context).size, fileData!['sizeFormatted'] ?? _formatSize(fileData!['size']) ?? '—'),
           
           // ✅ تاريخ الإنشاء (إذا كان متاحاً)
           if (fileData!['createdAt'] != null || fileData!['uploadedAt'] != null)
-            _buildDetailItem('time', '🕒', 'أنشئ في', _formatDate(fileData!['createdAt'] ?? fileData!['uploadedAt'])),
+            _buildDetailItem('time', '🕒', S.of(context).createdAt, _formatDate(fileData!['createdAt'] ?? fileData!['uploadedAt'])),
           
           // ✅ تاريخ آخر تعديل
           if (fileData!['lastModified'] != null || fileData!['updatedAt'] != null)
-            _buildDetailItem('edit', '✏️', 'آخر تعديل', _formatDate(fileData!['lastModified'] ?? fileData!['updatedAt'])),
+            _buildDetailItem('edit', '✏️', S.of(context).modified, _formatDate(fileData!['lastModified'] ?? fileData!['updatedAt'])),
           
           // ✅ المالك (owner)
           if (fileData!['owner'] != null)
             _buildDetailItem(
               'owner',
               '👤',
-              'المالك',
+              S.of(context).owner,
               fileData!['owner']['name'] ?? fileData!['owner']['email'] ?? '—',
             ),
           
@@ -942,13 +943,13 @@ class _FileDetailsPageState extends State<FileDetailsPage> {
             ),
           
           // ✅ الوصف (إذا كان متاحاً)
-          _buildDetailItem('description', '📝', 'الوصف', 
+          _buildDetailItem('description', '📝', S.of(context).description, 
               (fileData!['description'] != null && fileData!['description'].toString().isNotEmpty) 
                   ? fileData!['description'].toString() 
                   : "—"),
           
           // ✅ التاغات (إذا كانت متاحة)
-          _buildDetailItem('tags', '🏷️', 'الوسوم', 
+          _buildDetailItem('tags', '🏷️', S.of(context).tags, 
               (fileData!['tags'] != null && (fileData!['tags'] as List?)?.isNotEmpty == true)
                   ? (fileData!['tags'] as List).join(', ')
                   : "—"),

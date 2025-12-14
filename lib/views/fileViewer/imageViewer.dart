@@ -42,6 +42,7 @@ class _ImageViewerState extends State<ImageViewer> {
     // ✅ إذا كان URL يحتاج token، حمله محلياً
     if (widget.imageUrl.startsWith('http') &&
         widget.imageUrl.contains('/api/v1/')) {
+      if (!mounted) return;
       setState(() {
         _isLoadingLocal = true;
       });
@@ -49,6 +50,7 @@ class _ImageViewerState extends State<ImageViewer> {
       try {
         final token = await StorageService.getToken();
         if (token == null) {
+          if (!mounted) return;
           setState(() {
             _hasError = true;
             _errorMessage = 'يجب تسجيل الدخول أولاً';
@@ -57,22 +59,61 @@ class _ImageViewerState extends State<ImageViewer> {
           return;
         }
 
+        // ✅ إضافة cache-busting للصور دائماً (ليس فقط للغرف)
+        // ✅ استخدام timestamp حالي لضمان تحميل الصورة المحدثة
+        String imageUrl = widget.imageUrl;
+        // ✅ إزالة أي timestamp موجود مسبقاً
+        final urlWithoutParams = imageUrl.split('?').first;
+        // ✅ إضافة timestamp جديد دائماً لضمان cache busting
+        imageUrl = '$urlWithoutParams?v=${DateTime.now().millisecondsSinceEpoch}';
+        
+        print('🖼️ [ImageViewer] Loading image with cache busting: $imageUrl');
+        
         final response = await http.get(
-          Uri.parse(widget.imageUrl),
-          headers: {'Authorization': 'Bearer $token'},
+          Uri.parse(imageUrl),
+          headers: {
+            'Authorization': 'Bearer $token',
+            // ✅ إضافة headers لمنع الـ cache دائماً
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache',
+            'Expires': '0',
+          },
         );
+
+        if (!mounted) return;
 
         if (response.statusCode == 200) {
           final tempDir = await getTemporaryDirectory();
+          // ✅ استخدام fileId أو timestamp في اسم الملف المؤقت لضمان عدم استخدام cache قديم
+          final fileId = widget.fileId ?? 'image';
+          final timestamp = DateTime.now().millisecondsSinceEpoch;
           final fileName = widget.imageUrl.split('/').last.split('?').first;
-          final tempFile = File('${tempDir.path}/$fileName');
+          final tempFile = File('${tempDir.path}/${fileId}_${timestamp}_$fileName');
+          
+          // ✅ حذف الملف القديم إذا كان موجوداً
+          try {
+            final oldFiles = tempDir.listSync()
+                .where((f) => f.path.contains('${fileId}_') && f.path.endsWith('_$fileName'))
+                .toList();
+            for (var oldFile in oldFiles) {
+              if (oldFile is File) {
+                await oldFile.delete();
+              }
+            }
+          } catch (e) {
+            print('⚠️ [ImageViewer] Could not delete old temp files: $e');
+          }
+          
           await tempFile.writeAsBytes(response.bodyBytes);
 
+          if (!mounted) return;
           setState(() {
             _localImagePath = tempFile.path;
             _isLoadingLocal = false;
           });
+          print('✅ [ImageViewer] Image loaded and saved to: ${tempFile.path}');
         } else {
+          if (!mounted) return;
           setState(() {
             _hasError = true;
             _errorMessage = 'فشل تحميل الصورة (${response.statusCode})';
@@ -80,6 +121,7 @@ class _ImageViewerState extends State<ImageViewer> {
           });
         }
       } catch (e) {
+        if (!mounted) return;
         setState(() {
           _hasError = true;
           _errorMessage = 'خطأ في تحميل الصورة: ${e.toString()}';
@@ -99,6 +141,7 @@ class _ImageViewerState extends State<ImageViewer> {
     final isUrl = widget.imageUrl.startsWith('http');
 
     if (!isUrl && !isLocalFile) {
+      if (!mounted) return;
       setState(() {
         _hasError = true;
         _errorMessage = 'رابط الصورة غير صالح';
@@ -121,11 +164,15 @@ class _ImageViewerState extends State<ImageViewer> {
   }
 
   void _retryLoading() {
+    if (!mounted) return;
     setState(() {
       _hasError = false;
       _errorMessage = '';
-      _localImagePath = null;
+      _localImagePath = null; // ✅ مسح الملف المحلي القديم
     });
+    // ✅ مسح cache الصور قبل إعادة التحميل
+    PaintingBinding.instance.imageCache.clear();
+    PaintingBinding.instance.imageCache.clearLiveImages();
     _loadImageWithToken();
   }
 
@@ -206,17 +253,27 @@ class _ImageViewerState extends State<ImageViewer> {
         imageProvider = const AssetImage('assets/placeholder.png');
       } else {
         // ✅ استخدام CachedNetworkImage للـ URLs العامة
+        // ✅ إضافة cache busting للـ URL
+        String imageUrl = widget.imageUrl;
+        if (!imageUrl.contains('?')) {
+          // ✅ إضافة timestamp للـ cache busting إذا لم يكن موجوداً
+          imageUrl = '$imageUrl?v=${DateTime.now().millisecondsSinceEpoch}';
+        }
         imageProvider = CachedNetworkImageProvider(
-          widget.imageUrl,
+          imageUrl,
           maxWidth: null,
           maxHeight: null,
-          cacheKey: widget.imageUrl,
+          cacheKey: imageUrl, // ✅ استخدام URL الكامل مع timestamp كـ cacheKey
         );
       }
     }
 
+    // ✅ استخدام ValueKey مع URL لضمان إعادة بناء الـ widget عند تغيير الصورة
+    final imageKey = ValueKey(widget.imageUrl);
+    
     return Center(
       child: PhotoView(
+        key: imageKey, // ✅ إضافة key لضمان إعادة بناء الـ widget عند تغيير URL
         imageProvider: imageProvider,
         controller: _photoViewController,
         loadingBuilder: (context, progress) {

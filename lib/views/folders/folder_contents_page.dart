@@ -170,7 +170,7 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
 
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('خطأ في البحث: ${e.toString()}'),
+            content: Text(S.of(context).searchError(e.toString())),
             backgroundColor: Colors.red,
           ),
         );
@@ -514,7 +514,7 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
     if (finalPath.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Text('رابط الملف غير متوفر'),
+          content: Text(S.of(context).fileUrlNotAvailable),
           behavior: SnackBarBehavior.floating,
           backgroundColor: Colors.orange,
         ),
@@ -562,7 +562,7 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
     if (!_isValidUrl(url)) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Text('رابط غير صالح'),
+          content: Text(S.of(context).invalidUrl),
           behavior: SnackBarBehavior.floating,
           backgroundColor: Colors.red,
         ),
@@ -621,7 +621,7 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
         if (name.endsWith('.pdf') && !isPdf) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('الملف PDF غير صالح'),
+              content: Text(S.of(context).invalidPdfFile),
               backgroundColor: Colors.red,
             ),
           );
@@ -708,7 +708,10 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
         else if (name.endsWith('.mp3') ||
             name.endsWith('.wav') ||
             name.endsWith('.aac') ||
-            name.endsWith('.ogg')) {
+            name.endsWith('.ogg') ||
+            name.endsWith('.m4a') ||
+            name.endsWith('.wma') ||
+            name.endsWith('.flac')) {
           Navigator.push(
             context,
             MaterialPageRoute(
@@ -717,20 +720,36 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
             ),
           );
         }
-        // ✅ باقي الملفات (Office، مضغوطة، تطبيقات، وغيرها) → تفتح خارج التطبيق
+        // ✅ باقي الملفات (Office, ZIP, إلخ) - تفتح خارج التطبيق
         else {
-          // ✅ جميع الملفات الأخرى تفتح خارج التطبيق مع واجهة اختيار التطبيق
-          final token = await StorageService.getToken();
+          // ✅ إظهار Loading Dialog للملفات الخارجية
+          showDialog(
+            context: context,
+            barrierDismissible: false,
+            builder: (context) => Center(child: CircularProgressIndicator()),
+          );
+          
           await OfficeFileOpener.openAnyFile(
             url: url,
             context: context,
             token: token,
+            fileName: fileName, // ✅ تمرير اسم الملف الأصلي
+            closeLoadingDialog: true, // ✅ إغلاق Loading Dialog تلقائياً
+            onProgress: (received, total) {
+              // ✅ يمكن إضافة Progress indicator هنا لاحقاً
+              if (total > 0) {
+                final percent = (received / total * 100).toStringAsFixed(0);
+                print("📥 Downloading: $percent% ($received / $total bytes)");
+              }
+            },
           );
+          
+          // ✅ لا حاجة لإغلاق Loading Dialog يدوياً - يتم إغلاقه تلقائياً في OfficeFileOpener
         }
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('الملف غير متاح (خطأ ${response.statusCode})'),
+            content: Text(S.of(context).fileNotAvailableError(response.statusCode)),
             behavior: SnackBarBehavior.floating,
             backgroundColor: Colors.red,
           ),
@@ -741,7 +760,7 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
         Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('خطأ في تحميل الملف: ${e.toString()}'),
+            content: Text(S.of(context).errorLoadingFile(e.toString())),
             behavior: SnackBarBehavior.floating,
             backgroundColor: Colors.red,
           ),
@@ -803,7 +822,7 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
           IconButton(
             icon: Icon(Icons.info_outline),
             onPressed: () => _showFolderInfo(context),
-            tooltip: 'معلومات المجلد',
+            tooltip: S.of(context).folderInfo,
           ),
           // ✅ زر مشاركة
           IconButton(
@@ -968,7 +987,7 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
                   padding: const EdgeInsets.all(16.0),
                   child: ElevatedButton(
                     onPressed: () => _loadFolderContents(loadMore: true),
-                    child: Text('تحميل المزيد'),
+                    child: Text(S.of(context).loadMore),
                   ),
                 ),
 
@@ -1224,7 +1243,7 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
     if (token == null) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text('يجب تسجيل الدخول أولاً')));
+      ).showSnackBar(SnackBar(content: Text(S.of(context).mustLoginFirst)));
       return;
     }
 
@@ -1291,41 +1310,41 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _buildDetailItem('folder', '📁', 'النوع', 'مجلد'),
+                    _buildDetailItem('folder', '📁', S.of(context).type, S.of(context).folder),
                     _buildDetailItem(
                       'size',
                       '💾',
-                      'الحجم',
+                      S.of(context).size,
                       _formatBytes(folder['size'] ?? 0),
                     ),
                     _buildDetailItem(
                       'files',
                       '📄',
-                      'عدد الملفات',
+                      S.of(context).filesCount,
                       '${folder['filesCount'] ?? 0}',
                     ),
                     _buildDetailItem(
                       'subfolders',
                       '📂',
-                      'عدد المجلدات الفرعية',
+                      S.of(context).subfoldersCount,
                       '${folder['subfoldersCount'] ?? 0}',
                     ),
                     _buildDetailItem(
                       'time',
                       '🕐',
-                      'تاريخ الإنشاء',
+                      S.of(context).creationDate,
                       _formatDate(folder['createdAt']),
                     ),
                     _buildDetailItem(
                       'edit',
                       '✏️',
-                      'آخر تعديل',
+                      S.of(context).lastModified,
                       _formatDate(folder['updatedAt']),
                     ),
                     _buildDetailItem(
                       'description',
                       '📝',
-                      'الوصف',
+                      S.of(context).description,
                       folder['description']?.isNotEmpty == true
                           ? folder['description']
                           : "—",
@@ -1333,7 +1352,7 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
                     _buildDetailItem(
                       'tags',
                       '🏷️',
-                      'الوسوم',
+                      S.of(context).tags,
                       (folder['tags'] as List?)?.join(', ') ?? "—",
                     ),
 
@@ -1882,7 +1901,7 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
                       _buildMenuItem(
                         modalContext,
                         icon: Icons.open_in_new_rounded,
-                        title: 'فتح',
+                        title: S.of(context).open,
                         iconColor: Colors.blue,
                         onTap: () {
                           Navigator.pop(modalContext);
@@ -1895,7 +1914,7 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
                       _buildMenuItem(
                         modalContext,
                         icon: Icons.info_outline_rounded,
-                        title: 'عرض المعلومات',
+                        title: S.of(context).viewInfo,
                         iconColor: Colors.teal,
                         onTap: () {
                           Navigator.pop(modalContext);
@@ -1908,7 +1927,7 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
                       _buildMenuItem(
                         modalContext,
                         icon: Icons.edit_rounded,
-                        title: 'تعديل',
+                        title: S.of(context).edit,
                         iconColor: Colors.orange,
                         onTap: () {
                           Navigator.pop(modalContext);
@@ -1921,7 +1940,7 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
                       _buildMenuItem(
                         modalContext,
                         icon: Icons.share_rounded,
-                        title: 'مشاركة',
+                        title: S.of(context).share,
                         iconColor: Colors.green,
                         onTap: () {
                           Navigator.pop(modalContext);
@@ -1934,7 +1953,7 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
                       _buildMenuItem(
                         modalContext,
                         icon: Icons.drive_file_move_rounded,
-                        title: 'نقل',
+                        title: S.of(context).move,
                         iconColor: Colors.purple,
                         onTap: () {
                           Navigator.pop(modalContext);
@@ -1965,7 +1984,7 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
                       _buildMenuItem(
                         modalContext,
                         icon: Icons.delete_outline_rounded,
-                        title: 'حذف',
+                        title: S.of(context).delete,
                         iconColor: Colors.red,
                         textColor: Colors.red,
                         onTap: () {
@@ -2000,7 +2019,7 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
           children: [
             Icon(Icons.open_in_new_rounded, color: Colors.blue, size: 20),
             SizedBox(width: 8),
-            Text('فتح'),
+            Text(S.of(context).open),
           ],
         ),
       ),
@@ -2010,7 +2029,7 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
           children: [
             Icon(Icons.info_outline_rounded, color: Colors.teal, size: 20),
             SizedBox(width: 8),
-            Text('عرض المعلومات'),
+            Text(S.of(context).viewInfo),
           ],
         ),
       ),
@@ -2020,7 +2039,7 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
           children: [
             Icon(Icons.edit_rounded, color: Colors.orange, size: 20),
             SizedBox(width: 8),
-            Text('تعديل'),
+            Text(S.of(context).edit),
           ],
         ),
       ),
@@ -2030,7 +2049,7 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
           children: [
             Icon(Icons.share_rounded, color: Colors.green, size: 20),
             SizedBox(width: 8),
-            Text('مشاركة'),
+            Text(S.of(context).share),
           ],
         ),
       ),
@@ -2040,7 +2059,7 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
           children: [
             Icon(Icons.drive_file_move_rounded, color: Colors.purple, size: 20),
             SizedBox(width: 8),
-            Text('نقل'),
+            Text(S.of(context).move),
           ],
         ),
       ),
@@ -2054,7 +2073,7 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
               size: 20,
             ),
             SizedBox(width: 8),
-            Text(isStarred ? 'إزالة من المفضلة' : 'إضافة إلى المفضلة'),
+            Text(isStarred ? S.of(context).removeFromFavorites : S.of(context).addToFavorites),
           ],
         ),
       ),
@@ -2065,7 +2084,7 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
           children: [
             Icon(Icons.delete_outline_rounded, color: Colors.red, size: 20),
             SizedBox(width: 8),
-            Text('حذف', style: TextStyle(color: Colors.red)),
+            Text(S.of(context).delete, style: TextStyle(color: Colors.red)),
           ],
         ),
       ),
@@ -2091,7 +2110,7 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
           final itemForTap = {
             'type': 'folder',
             '_id': folderId,
-            'name': folderName ?? 'مجلد',
+            'name': folderName ?? S.of(context).folder,
           };
           _handleItemTap(itemForTap);
         }
@@ -2165,7 +2184,7 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
                       _buildMenuItem(
                         modalContext,
                         icon: Icons.open_in_new_rounded,
-                        title: 'فتح',
+                        title: S.of(context).open,
                         iconColor: Colors.blue,
                         onTap: () {
                           Navigator.pop(modalContext);
@@ -2179,7 +2198,7 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
                       _buildMenuItem(
                         modalContext,
                         icon: Icons.info_outline_rounded,
-                        title: 'عرض المعلومات',
+                        title: S.of(context).viewInfo,
                         iconColor: Colors.teal,
                         onTap: () {
                           Navigator.pop(modalContext);
@@ -2199,7 +2218,7 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
                       _buildMenuItem(
                         modalContext,
                         icon: Icons.edit_rounded,
-                        title: 'تعديل',
+                        title: S.of(context).edit,
                         iconColor: Colors.orange,
                         onTap: () {
                           Navigator.pop(modalContext);
@@ -2213,7 +2232,7 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
                       _buildMenuItem(
                         modalContext,
                         icon: Icons.share_rounded,
-                        title: 'مشاركة',
+                        title: S.of(context).share,
                         iconColor: Colors.green,
                         onTap: () {
                           Navigator.pop(modalContext);
@@ -2226,7 +2245,7 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
                       _buildMenuItem(
                         modalContext,
                         icon: Icons.drive_file_move_rounded,
-                        title: 'نقل',
+                        title: S.of(context).move,
                         iconColor: Colors.purple,
                         onTap: () {
                           Navigator.pop(modalContext);
@@ -2269,7 +2288,7 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
                       _buildMenuItem(
                         modalContext,
                         icon: Icons.delete_outline_rounded,
-                        title: 'حذف',
+                        title: S.of(context).delete,
                         iconColor: Colors.red,
                         textColor: Colors.red,
                         onTap: () {
@@ -2351,62 +2370,79 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
     );
   }
 
-  // ✅ بناء قائمة الملفات للـ PopupMenuButton - نفس FilesGridView1
+  // ✅ بناء قائمة الملفات للـ PopupMenuButton - مطابقة للصورة
   List<PopupMenuEntry<String>> _buildNormalFileMenuItemsForPopup(
     Map<String, dynamic> file,
     bool isStarred,
   ) {
     return [
+      // ✅ 1. Open
       PopupMenuItem<String>(
         value: 'open',
         child: Row(
           children: [
             Icon(Icons.open_in_new_rounded, color: Colors.blue, size: 20),
-            SizedBox(width: 8),
-            Text('فتح'),
+            SizedBox(width: 12),
+            Text('Open', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
           ],
         ),
       ),
+      // ✅ 2. View Info
       PopupMenuItem<String>(
         value: 'info',
         child: Row(
           children: [
             Icon(Icons.info_outline_rounded, color: Colors.teal, size: 20),
-            SizedBox(width: 8),
-            Text('عرض المعلومات'),
+            SizedBox(width: 12),
+            Text('View Info', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
           ],
         ),
       ),
+      // ✅ 3. Download (تحميل)
+      PopupMenuItem<String>(
+        value: 'download',
+        child: Row(
+          children: [
+            Icon(Icons.download_rounded, color: Colors.blue, size: 20),
+            SizedBox(width: 12),
+            Text(S.of(context).download, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
+          ],
+        ),
+      ),
+      // ✅ 4. Edit
       PopupMenuItem<String>(
         value: 'edit',
         child: Row(
           children: [
             Icon(Icons.edit_rounded, color: Colors.orange, size: 20),
-            SizedBox(width: 8),
-            Text('تعديل'),
+            SizedBox(width: 12),
+            Text(S.of(context).edit, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
           ],
         ),
       ),
+      // ✅ 5. Share
       PopupMenuItem<String>(
         value: 'share',
         child: Row(
           children: [
             Icon(Icons.share_rounded, color: Colors.green, size: 20),
-            SizedBox(width: 8),
-            Text('مشاركة'),
+            SizedBox(width: 12),
+            Text(S.of(context).share, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
           ],
         ),
       ),
+      // ✅ 6. Move
       PopupMenuItem<String>(
         value: 'move',
         child: Row(
           children: [
             Icon(Icons.drive_file_move_rounded, color: Colors.purple, size: 20),
-            SizedBox(width: 8),
-            Text('نقل'),
+            SizedBox(width: 12),
+            Text(S.of(context).move, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
           ],
         ),
       ),
+      // ✅ 7. Remove from Favorites / Add to Favorites
       PopupMenuItem<String>(
         value: 'favorite',
         child: Row(
@@ -2416,19 +2452,22 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
               color: Colors.amber[700],
               size: 20,
             ),
-            SizedBox(width: 8),
-            Text(isStarred ? 'إزالة من المفضلة' : 'إضافة إلى المفضلة'),
+            SizedBox(width: 12),
+            Text(
+              isStarred ? 'Remove from Favorites' : 'Add to Favorites',
+              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+            ),
           ],
         ),
       ),
-      const PopupMenuDivider(),
+      // ✅ 8. Delete
       PopupMenuItem<String>(
         value: 'delete',
         child: Row(
           children: [
             Icon(Icons.delete_outline_rounded, color: Colors.red, size: 20),
-            SizedBox(width: 8),
-            Text('حذف', style: TextStyle(color: Colors.red)),
+            SizedBox(width: 12),
+            Text('Delete', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: Colors.red)),
           ],
         ),
       ),
@@ -2457,6 +2496,10 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
             ),
           ),
         );
+        break;
+      case 'download':
+        // ✅ تحميل الملف
+        FileActionsService.downloadFile(context, file);
         break;
       case 'edit':
         FileActionsService.editFile(context, file);
@@ -2574,41 +2617,41 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _buildDetailItem('folder', '📁', 'النوع', 'مجلد'),
+                    _buildDetailItem('folder', '📁', S.of(context).type, S.of(context).folder),
                     _buildDetailItem(
                       'size',
                       '💾',
-                      'الحجم',
+                      S.of(context).size,
                       _formatBytes(folderData['size'] ?? 0),
                     ),
                     _buildDetailItem(
                       'files',
                       '📄',
-                      'عدد الملفات',
+                      S.of(context).filesCount,
                       '${folderData['filesCount'] ?? 0}',
                     ),
                     _buildDetailItem(
                       'subfolders',
                       '📂',
-                      'عدد المجلدات الفرعية',
+                      S.of(context).subfoldersCount,
                       '${folderData['subfoldersCount'] ?? 0}',
                     ),
                     _buildDetailItem(
                       'time',
                       '🕐',
-                      'تاريخ الإنشاء',
+                      S.of(context).creationDate,
                       _formatDate(folderData['createdAt']),
                     ),
                     _buildDetailItem(
                       'edit',
                       '✏️',
-                      'آخر تعديل',
+                      S.of(context).lastModified,
                       _formatDate(folderData['updatedAt']),
                     ),
                     _buildDetailItem(
                       'description',
                       '📝',
-                      'الوصف',
+                      S.of(context).description,
                       folderData['description']?.isNotEmpty == true
                           ? folderData['description']
                           : "—",
@@ -2616,7 +2659,7 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
                     _buildDetailItem(
                       'tags',
                       '🏷️',
-                      'الوسوم',
+                      S.of(context).tags,
                       (folderData['tags'] as List?)?.join(', ') ?? "—",
                     ),
                   ],
@@ -2672,7 +2715,7 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
     final folderId =
         folder['folderId'] as String? ?? folderData['_id'] as String?;
     final folderName =
-        folder['name'] as String? ?? folderData['name'] as String? ?? 'مجلد';
+        folder['name'] as String? ?? folderData['name'] as String? ?? S.of(context).folder;
     final currentParentId = folderData['parentId']?.toString();
 
     if (folderId == null) {
@@ -2735,7 +2778,7 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
     if (context.mounted) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text('ميزة المعلومات قيد التطوير')));
+      ).showSnackBar(SnackBar(content: Text(S.of(context).featureUnderDevelopment)));
     }
   }
 
@@ -2749,7 +2792,7 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
     final originalData = file['originalData'] ?? file;
     final fileId = originalData['_id']?.toString();
     final fileName =
-        file['name'] as String? ?? originalData['name'] as String? ?? 'ملف';
+        file['name'] as String? ?? originalData['name'] as String? ?? S.of(context).file;
     final currentParentId = originalData['parentFolderId']?.toString();
 
     if (fileId == null) {
@@ -2806,7 +2849,7 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
           children: [
             CircularProgressIndicator(color: Colors.white),
             SizedBox(width: 16),
-            Text('جاري نقل الملف...'),
+            Text(S.of(context).movingFile),
           ],
         ),
         duration: Duration(seconds: 30),
@@ -2900,7 +2943,7 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
                 ),
               ),
               SizedBox(width: 12),
-              Text('جاري التحديث...'),
+              Text(S.of(context).updating),
             ],
           ),
           duration: Duration(seconds: 2),
@@ -3122,7 +3165,7 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
     Function(String?) onSelect,
   ) {
     final folderId = folder['_id']?.toString();
-    final folderName = folder['name'] ?? 'مجلد بدون اسم';
+    final folderName = folder['name'] ?? S.of(context).folderWithoutName;
     final children = folder['children'] as List<Map<String, dynamic>>? ?? [];
     final hasChildren = children.isNotEmpty;
 
@@ -3189,7 +3232,7 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
           children: [
             CircularProgressIndicator(color: Colors.white),
             SizedBox(width: 16),
-            Text('جاري نقل المجلد...'),
+            Text(S.of(context).movingFolder),
           ],
         ),
         duration: Duration(seconds: 30),
@@ -3415,7 +3458,7 @@ class _FolderNavigationDialogState extends State<_FolderNavigationDialog> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('خطأ في جلب المجلدات الفرعية: ${e.toString()}'),
+            content: Text(S.of(context).errorFetchingSubfolders(e.toString())),
             backgroundColor: Colors.red,
           ),
         );
@@ -3447,7 +3490,7 @@ class _FolderNavigationDialogState extends State<_FolderNavigationDialog> {
           });
         }
 
-        final folderName = _breadcrumb.last['name'] ?? 'مجلد';
+        final folderName = _breadcrumb.last['name'] ?? S.of(context).folder;
         _loadSubfolders(folderId, folderName);
       }
     }
@@ -3557,8 +3600,8 @@ class _FolderNavigationDialogState extends State<_FolderNavigationDialog> {
                 if (_currentFolderId == null)
                   ListTile(
                     leading: Icon(Icons.home_rounded, color: Colors.blue),
-                    title: Text('نقل إلى الجذر'),
-                    subtitle: Text('نقل المجلد إلى المجلد الرئيسي'),
+                    title: Text(S.of(context).moveToRoot),
+                    subtitle: Text(S.of(context).moveFolderToRoot),
                     onTap: () => widget.onSelect(null),
                   ),
                 // ✅ خيار "اختيار المجلد الحالي" (إذا كنا داخل مجلد)
@@ -3566,9 +3609,9 @@ class _FolderNavigationDialogState extends State<_FolderNavigationDialog> {
                   ListTile(
                     leading: Icon(Icons.check_circle, color: Colors.green),
                     title: Text(
-                      'اختيار "${_breadcrumb.last['name'] ?? 'مجلد'}"',
+                      S.of(context).selectFolder(_breadcrumb.last['name'] ?? S.of(context).folder),
                     ),
-                    subtitle: Text('نقل إلى هذا المجلد'),
+                    subtitle: Text(S.of(context).moveToThisFolder),
                     onTap: () => widget.onSelect(_currentFolderId),
                   ),
                 // ✅ Divider بين الخيارات وقائمة المجلدات
@@ -3593,7 +3636,7 @@ class _FolderNavigationDialogState extends State<_FolderNavigationDialog> {
                             final folder = _currentFolders[index];
                             final folderId = folder['_id']?.toString();
                             final folderName =
-                                folder['name'] ?? 'مجلد بدون اسم';
+                                folder['name'] ?? S.of(context).folderWithoutName;
 
                             return InkWell(
                               onTap: () {

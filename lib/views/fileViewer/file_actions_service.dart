@@ -3,8 +3,10 @@ import 'package:filevo/controllers/folders/room_controller.dart';
 import 'package:filevo/services/storage_service.dart';
 import 'package:filevo/services/file_service.dart';
 import 'package:filevo/views/folders/share_file_with_room_page.dart';
+import 'package:filevo/views/fileViewer/edit_file_page.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:filevo/generated/l10n.dart';
 
 class FileActionsService {
   static bool _isLoading = false;
@@ -32,8 +34,39 @@ class FileActionsService {
     if (onFileTap != null) onFileTap(file);
   }
 
-  /// تعديل الملف
-  static void editFile(BuildContext context, Map<String, dynamic> file) {
+  /// تعديل الملف (يفتح صفحة التعديل الشاملة)
+  /// ✅ ترجع Future<bool> للإشارة إلى ما إذا تم تحديث الملف
+  static Future<bool> editFile(BuildContext context, Map<String, dynamic> file, {String? roomId}) async {
+    // ✅ إضافة roomId إلى بيانات الملف إذا كان موجوداً
+    final fileWithRoomId = Map<String, dynamic>.from(file);
+    if (roomId != null) {
+      fileWithRoomId['roomId'] = roomId;
+      // ✅ أيضاً إضافة roomId إلى originalData إذا كان موجوداً
+      if (fileWithRoomId['originalData'] != null) {
+        final originalData = Map<String, dynamic>.from(fileWithRoomId['originalData']);
+        originalData['roomId'] = roomId;
+        fileWithRoomId['originalData'] = originalData;
+      }
+      // ✅ Logging للتحقق من إضافة roomId
+      print('🔍 [FileActionsService] Added roomId to file: $roomId');
+      print('   - roomId in fileWithRoomId: ${fileWithRoomId['roomId']}');
+      print('   - roomId in originalData: ${fileWithRoomId['originalData']?['roomId']}');
+    } else {
+      print('⚠️ [FileActionsService] No roomId provided');
+    }
+    
+    final result = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(
+        builder: (context) => EditFilePage(file: fileWithRoomId),
+      ),
+    );
+    // ✅ إرجاع true إذا تم تحديث الملف، false إذا لم يتم تحديثه
+    return result ?? false;
+  }
+
+  /// تعديل metadata فقط (Dialog قديم - محفوظ للتوافق)
+  static void editFileMetadata(BuildContext context, Map<String, dynamic> file) {
     final fileController = Provider.of<FileController>(context, listen: false);
     final originalName = file['originalData']['name'] ?? '';
     final originalExtension = originalName.contains('.')
@@ -101,7 +134,7 @@ class FileActionsService {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text("إلغاء"),
+              child: Text(S.of(context).cancel),
             ),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
@@ -193,12 +226,12 @@ class FileActionsService {
           actions: [
             TextButton(
               onPressed: () => Navigator.of(ctx).pop(false),
-              child: const Text("إلغاء"),
+              child: Text(S.of(context).cancel),
             ),
             ElevatedButton(
               style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
               onPressed: () => Navigator.of(ctx).pop(true),
-              child: const Text("حذف"),
+              child: Text(S.of(context).delete),
             ),
           ],
         );
@@ -297,19 +330,17 @@ class FileActionsService {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text("إلغاء مشاركة الملف"),
-        content: const Text(
-          "هل أنت متأكد من إلغاء مشاركة هذا الملف مع جميع المستخدمين؟",
-        ),
+        title: Text(S.of(context).unshareFile),
+        content: Text(S.of(context).unshareFileConfirm),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(false),
-            child: const Text("إلغاء"),
+            child: Text(S.of(context).cancel),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
             onPressed: () => Navigator.of(ctx).pop(true),
-            child: const Text("إلغاء المشاركة"),
+            child: Text(S.of(context).unshare),
           ),
         ],
       ),

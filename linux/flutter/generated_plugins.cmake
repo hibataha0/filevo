@@ -5,7 +5,7 @@
 list(APPEND FLUTTER_PLUGIN_LIST
   audioplayers_linux
   file_selector_linux
-  open_file_linux
+  pro_video_editor
   url_launcher_linux
 )
 

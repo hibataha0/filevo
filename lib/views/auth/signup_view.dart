@@ -11,6 +11,7 @@ import 'package:flutter/material.dart';
 import 'package:filevo/generated/l10n.dart'; // ✅ استدعاء intl
 import 'package:provider/provider.dart';
 import 'package:filevo/controllers/auth/auth_controller.dart';
+import 'package:filevo/views/auth/email_verification_page.dart';
 
 class SignUpPage extends StatefulWidget {
   const SignUpPage({super.key});
@@ -24,7 +25,7 @@ class _SignUpPageState extends State<SignUpPage> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
-  
+
   bool _isLoading = false;
   String? _usernameError;
   String? _emailError;
@@ -32,15 +33,22 @@ class _SignUpPageState extends State<SignUpPage> {
   String? _confirmPasswordError;
 
   Future<void> _validateAndSubmit() async {
-    final usernameError = Validators.validateUsername(context, _usernameController.text);
-final emailError = Validators.validateEmail(context, _emailController.text);
-final passwordError = Validators.validatePassword(context, _passwordController.text);
-final confirmPasswordError = (_confirmPasswordController.text.trim().isEmpty)
-    ? S.of(context).enterConfirmPassword
-    : (_confirmPasswordController.text.trim() != _passwordController.text.trim())
+    final usernameError = Validators.validateUsername(
+      context,
+      _usernameController.text,
+    );
+    final emailError = Validators.validateEmail(context, _emailController.text);
+    final passwordError = Validators.validatePassword(
+      context,
+      _passwordController.text,
+    );
+    final confirmPasswordError =
+        (_confirmPasswordController.text.trim().isEmpty)
+        ? S.of(context).enterConfirmPassword
+        : (_confirmPasswordController.text.trim() !=
+              _passwordController.text.trim())
         ? S.of(context).passwordsDoNotMatch
         : null;
-
 
     setState(() {
       _usernameError = usernameError;
@@ -49,13 +57,15 @@ final confirmPasswordError = (_confirmPasswordController.text.trim().isEmpty)
       _confirmPasswordError = confirmPasswordError;
     });
 
-    if (usernameError == null && emailError == null && 
-        passwordError == null && confirmPasswordError == null) {
+    if (usernameError == null &&
+        emailError == null &&
+        passwordError == null &&
+        confirmPasswordError == null) {
       setState(() {
         _isLoading = true;
       });
       final auth = context.read<AuthController>();
-      final ok = await auth.register(
+      final result = await auth.register(
         username: _usernameController.text.trim(),
         email: _emailController.text.trim(),
         password: _passwordController.text.trim(),
@@ -64,16 +74,26 @@ final confirmPasswordError = (_confirmPasswordController.text.trim().isEmpty)
       setState(() {
         _isLoading = false;
       });
-      if (ok) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(S.of(context).accountCreatedSuccessfully),
-            backgroundColor: Colors.green,
-          ),
-        );
-        Navigator.pop(context);
+
+      if (result['success'] == true) {
+        // ✅ بعد التسجيل الناجح، فتح صفحة إدخال كود التحقق
+        final userId = result['userId']?.toString();
+        final email =
+            result['email']?.toString() ?? _emailController.text.trim();
+
+        if (mounted) {
+          // ✅ فتح صفحة إدخال كود التحقق
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (context) =>
+                  EmailVerificationPage(email: email, userId: userId),
+            ),
+          );
+        }
       } else {
-        final errorMsg = auth.errorMessage ?? 'Registration failed';
+        final errorMsg =
+            result['error'] as String? ?? auth.errorMessage ?? 'فشل في التسجيل';
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(errorMsg),
@@ -108,10 +128,7 @@ final confirmPasswordError = (_confirmPasswordController.text.trim().isEmpty)
             padding: const EdgeInsets.only(left: 50),
             child: Text(
               errorText,
-              style: const TextStyle(
-                color: Colors.red,
-                fontSize: 12,
-              ),
+              style: const TextStyle(color: Colors.red, fontSize: 12),
             ),
           ),
         ],
@@ -125,10 +142,7 @@ final confirmPasswordError = (_confirmPasswordController.text.trim().isEmpty)
       children: [
         Text(
           S.of(context).alreadyHaveAccount,
-          style: TextStyle(
-            color: Colors.grey[600],
-            fontSize: 16,
-          ),
+          style: TextStyle(color: Colors.grey[600], fontSize: 16),
         ),
         InkWell(
           onTap: () {
@@ -165,7 +179,7 @@ final confirmPasswordError = (_confirmPasswordController.text.trim().isEmpty)
         child: Column(
           children: [
             const HeaderBackground(),
-      
+
             // العنوان الرئيسي
             Text(
               S.of(context).appTitle,
@@ -183,7 +197,7 @@ final confirmPasswordError = (_confirmPasswordController.text.trim().isEmpty)
                 ],
               ),
             ),
-      
+
             SizedBox(
               height: ResponsiveUtils.getResponsiveValue(
                 context,
@@ -192,9 +206,9 @@ final confirmPasswordError = (_confirmPasswordController.text.trim().isEmpty)
                 desktop: 40.0,
               ),
             ),
-      
+
             // عنوان إنشاء الحساب
-            Text( 
+            Text(
               S.of(context).createAccount,
               style: TextStyle(
                 fontSize: ResponsiveHelpers.getBigFontSize(context),
@@ -202,7 +216,7 @@ final confirmPasswordError = (_confirmPasswordController.text.trim().isEmpty)
                 fontWeight: FontWeight.bold,
               ),
             ),
-      
+
             SizedBox(
               height: ResponsiveUtils.getResponsiveValue(
                 context,
@@ -211,7 +225,7 @@ final confirmPasswordError = (_confirmPasswordController.text.trim().isEmpty)
                 desktop: 30.0,
               ),
             ),
-         
+
             // حقل اسم المستخدم
             Padding(
               padding: ResponsiveHelpers.getHorizontalPadding(context),
@@ -231,7 +245,7 @@ final confirmPasswordError = (_confirmPasswordController.text.trim().isEmpty)
                 desktop: 30.0,
               ),
             ),
-      
+
             // حقل البريد الإلكتروني
             Padding(
               padding: ResponsiveHelpers.getHorizontalPadding(context),
@@ -242,7 +256,7 @@ final confirmPasswordError = (_confirmPasswordController.text.trim().isEmpty)
                 errorText: _emailError,
               ),
             ),
-      
+
             SizedBox(
               height: ResponsiveUtils.getResponsiveValue(
                 context,
@@ -251,7 +265,7 @@ final confirmPasswordError = (_confirmPasswordController.text.trim().isEmpty)
                 desktop: 30.0,
               ),
             ),
-      
+
             // حقل كلمة المرور
             Padding(
               padding: ResponsiveHelpers.getHorizontalPadding(context),
@@ -263,7 +277,7 @@ final confirmPasswordError = (_confirmPasswordController.text.trim().isEmpty)
                 errorText: _passwordError,
               ),
             ),
-      
+
             SizedBox(
               height: ResponsiveUtils.getResponsiveValue(
                 context,
@@ -272,7 +286,7 @@ final confirmPasswordError = (_confirmPasswordController.text.trim().isEmpty)
                 desktop: 40.0,
               ),
             ),
-      
+
             // حقل تأكيد كلمة المرور
             Padding(
               padding: ResponsiveHelpers.getHorizontalPadding(context),
@@ -284,7 +298,7 @@ final confirmPasswordError = (_confirmPasswordController.text.trim().isEmpty)
                 errorText: _confirmPasswordError,
               ),
             ),
-      
+
             SizedBox(
               height: ResponsiveUtils.getResponsiveValue(
                 context,
@@ -293,7 +307,7 @@ final confirmPasswordError = (_confirmPasswordController.text.trim().isEmpty)
                 desktop: 60.0,
               ),
             ),
-      
+
             // زر إنشاء الحساب
             Padding(
               padding: ResponsiveHelpers.getResponsivePadding(context),
@@ -310,13 +324,11 @@ final confirmPasswordError = (_confirmPasswordController.text.trim().isEmpty)
                   const SizedBox(width: 12),
                   _isLoading
                       ? const CircularProgressIndicator()
-                      : IconButtonGradient(
-                          onPressed: _validateAndSubmit,
-                        ),
+                      : IconButtonGradient(onPressed: _validateAndSubmit),
                 ],
               ),
             ),
-      
+
             SizedBox(
               height: ResponsiveUtils.getResponsiveValue(
                 context,
@@ -325,17 +337,15 @@ final confirmPasswordError = (_confirmPasswordController.text.trim().isEmpty)
                 desktop: 50.0,
               ),
             ),
-      
+
             // قسم Sign up with
-            DividerWithText(
-              text: S.of(context).signUpWith,
-            ),
-      
+            DividerWithText(text: S.of(context).signUpWith),
+
             const SizedBox(height: 25.0),
-      
+
             // أيقونات التواصل الاجتماعي
             const SocialLoginButtons(),
-      
+
             SizedBox(
               height: ResponsiveUtils.getResponsiveValue(
                 context,
@@ -344,10 +354,10 @@ final confirmPasswordError = (_confirmPasswordController.text.trim().isEmpty)
                 desktop: 50.0,
               ),
             ),
-      
+
             // رابط تسجيل الدخول
             _buildLoginSection(context),
-      
+
             SizedBox(
               height: ResponsiveUtils.getResponsiveValue(
                 context,

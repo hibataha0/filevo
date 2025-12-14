@@ -9,6 +9,10 @@ class ApiEndpoints {
   static const String forgotPassword = '/auth/forgotPassword';
   static const String verifyResetCode = '/auth/verifyResetCode';
   static const String resetPassword = '/auth/resetPassword';
+  static const String verifyEmail =
+      '/auth/verifyEmail'; // ✅ التحقق من كود البريد الإلكتروني
+  static const String resendVerificationCode =
+      '/auth/resendVerificationCode'; // ✅ إعادة إرسال كود التحقق
 
   // Folders endpoints
   static const String folders = '/folders/create';
@@ -60,10 +64,14 @@ class ApiEndpoints {
       '/files/categories/stats/root'; // ✅ إحصائيات التصنيفات في الجذر فقط
   static String getFileDetails(String fileId) => "/files/$fileId";
   static String updateFile(String fileId) => "/files/$fileId";
+  static String updateFileContent(String fileId) =>
+      "/files/$fileId/content"; // ✅ تحديث محتوى الملف
   static String moveFile(String fileId) =>
       "/files/$fileId/move"; // ✅ نقل ملف من مجلد إلى آخر
   static String deleteFile(String fileId) => "/files/$fileId";
   static String downloadFile(String fileId) => "/files/$fileId/download";
+  static String viewFile(String fileId) =>
+      "/files/$fileId/view"; // ✅ للفتح المباشر (inline)
   static const String starredFiles = '/files/starred';
   static String toggleStarFile(String fileId) => "/files/$fileId/star";
   static const String trashFiles = '/files/trash';

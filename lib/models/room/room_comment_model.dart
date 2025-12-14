@@ -1,5 +1,3 @@
-import 'dart:convert';
-
 class RoomCommentModel {
   final String id;
   final String roomId;
@@ -65,11 +63,13 @@ class RoomCommentUser {
   final String id;
   final String? name;
   final String? email;
+  final String? profileImg; // ✅ إضافة صورة البروفايل
 
   RoomCommentUser({
     required this.id,
     this.name,
     this.email,
+    this.profileImg, // ✅ إضافة profileImg
   });
 
   factory RoomCommentUser.fromJson(Map<String, dynamic> json) {
@@ -77,6 +77,7 @@ class RoomCommentUser {
       id: json["_id"] ?? json["id"] ?? '',
       name: json["name"],
       email: json["email"],
+      profileImg: json["profileImg"], // ✅ إضافة profileImg
     );
   }
 
@@ -85,6 +86,7 @@ class RoomCommentUser {
       "_id": id,
       "name": name,
       "email": email,
+      "profileImg": profileImg, // ✅ إضافة profileImg
     };
   }
 }

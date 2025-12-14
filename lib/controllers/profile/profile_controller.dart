@@ -1,7 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:filevo/services/user_service.dart';
-import 'package:filevo/services/storage_service.dart';
 
 class ProfileController with ChangeNotifier {
   final UserService _userService = UserService();
@@ -170,11 +169,41 @@ class ProfileController with ChangeNotifier {
 
       if (result['success'] == true) {
         // ✅ تحديث بيانات المستخدم بعد رفع الصورة
+        // ✅ التحقق من وجود بيانات المستخدم في الـ response
+        if (result['data'] != null) {
+          final userData = _extractUserData(result['data']);
+          if (userData != null) {
+            print('✅ ProfileController: User data from upload response:');
+            print('  - profileImg: ${userData['profileImg']}');
+            print('  - profileImgUrl: ${userData['profileImgUrl']}');
+            print('  - All keys: ${userData.keys.toList()}');
+            
+            _userData = userData;
+            print('✅ ProfileController: Updated user data after image upload');
+          }
+        }
+        // ✅ إعادة جلب البيانات من السيرفر للتأكد من التحديث
+        print('🔄 ProfileController: Refetching user data from server...');
         await getLoggedUserData();
+        
+        // ✅ التحقق من أن profileImg تم حفظه
+        if (_userData != null) {
+          print('✅ ProfileController: User data after refetch:');
+          print('  - profileImg: ${_userData!['profileImg']}');
+          print('  - profileImgUrl: ${_userData!['profileImgUrl']}');
+          if (_userData!['profileImg'] == null && _userData!['profileImgUrl'] == null) {
+            print('⚠️ WARNING: profileImg is still null after refetch!');
+            print('⚠️ This means the backend did not save the profile image.');
+            print('⚠️ Please check the backend code.');
+          }
+        }
+        
         _errorMessage = null;
         return true;
       } else {
-        _errorMessage = result['error'] ?? 'فشل في رفع الصورة';
+        final errorMsg = result['error'] ?? result['message'] ?? 'فشل في رفع الصورة';
+        _errorMessage = errorMsg;
+        print('❌ ProfileController: Upload failed: $errorMsg');
         return false;
       }
     } catch (e) {

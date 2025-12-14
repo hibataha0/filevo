@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:filevo/generated/l10n.dart';
 import 'package:provider/provider.dart';
 import 'package:filevo/controllers/folders/room_controller.dart';
 import 'package:filevo/views/folders/folder_contents_page.dart';
@@ -153,7 +154,7 @@ class _RoomFoldersPageState extends State<RoomFoldersPage> {
       body: isLoading
           ? Center(child: CircularProgressIndicator())
           : roomData == null
-          ? Center(child: Text('فشل تحميل بيانات الغرفة'))
+          ? Center(child: Text(S.of(context).failedToLoadRoomData))
           : RefreshIndicator(
               onRefresh: _loadRoomData,
               child: _buildFoldersList(),
@@ -314,7 +315,7 @@ class _RoomFoldersPageState extends State<RoomFoldersPage> {
               );
             } else {
               ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('خطأ: معرف المجلد غير موجود')),
+                SnackBar(content: Text(S.of(context).folderIdNotAvailable)),
               );
             }
           }
@@ -341,7 +342,7 @@ class _RoomFoldersPageState extends State<RoomFoldersPage> {
               );
             } else {
               ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('خطأ: معرف المجلد غير موجود')),
+                SnackBar(content: Text(S.of(context).folderIdNotAvailable)),
               );
             }
           }
@@ -394,7 +395,7 @@ class _RoomFoldersPageState extends State<RoomFoldersPage> {
               }
             } else {
               ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('خطأ: معرف المجلد غير موجود')),
+                SnackBar(content: Text(S.of(context).folderIdNotAvailable)),
               );
             }
           }
@@ -479,19 +480,19 @@ class _RoomFoldersPageState extends State<RoomFoldersPage> {
     showDialog(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: Text('إزالة المجلد من الغرفة'),
-        content: Text('هل أنت متأكد من إزالة "$folderName" من هذه الغرفة؟'),
+        title: Text(S.of(context).removeFolderFromRoom),
+        content: Text(S.of(context).confirmRemoveFolderFromRoomWithName(folderName)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
-            child: Text('إلغاء'),
+            child: Text(S.of(context).cancel),
           ),
           TextButton(
             onPressed: () {
               Navigator.pop(dialogContext);
               _removeFolderFromRoom(folderId);
             },
-            child: Text('إزالة', style: TextStyle(color: Colors.red)),
+            child: Text(S.of(context).remove, style: TextStyle(color: Colors.red)),
           ),
         ],
       ),
@@ -511,7 +512,7 @@ class _RoomFoldersPageState extends State<RoomFoldersPage> {
               children: [
                 CircularProgressIndicator(color: Colors.white),
                 SizedBox(width: 16),
-                Text('جاري حفظ المجلد...'),
+                Text(S.of(context).savingFolder),
               ],
             ),
             duration: Duration(seconds: 60),
@@ -616,7 +617,7 @@ class _RoomFoldersPageState extends State<RoomFoldersPage> {
                 onPressed: () {
                   Navigator.pop(modalContext, null);
                 },
-                child: Text('حفظ في الجذر'),
+                child: Text(S.of(context).saveToRoot),
               ),
             ),
           ],

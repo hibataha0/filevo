@@ -881,18 +881,17 @@ class FolderFileCard extends StatelessWidget {
                           },
                         ),
 
-                      if (onDownloadTap != null && roomId == null)
-                        _buildMenuItem(
-                          context,
-                          icon: Icons.download,
-                          title: 'تحميل',
-                          iconColor: Colors.blue,
-                          onTap: () {
-                            Navigator.pop(context);
-                            onDownloadTap?.call();
-                          },
-                        ),
-
+                      // if (onDownloadTap != null && roomId == null)
+                      //   _buildMenuItem(
+                      //     context,
+                      //     icon: Icons.download,
+                      //     title: 'تحميل',
+                      //     iconColor: Colors.blue,
+                      //     onTap: () {
+                      //       Navigator.pop(context);
+                      //       onDownloadTap?.call();
+                      //     },
+                      //   ),
                       if (onMoveTap != null)
                         _buildMenuItem(
                           context,

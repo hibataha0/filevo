@@ -47,6 +47,14 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> {
   Locale? _locale;
+  Future<bool>? _loginCheckFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    // ✅ تحميل حالة تسجيل الدخول مرة واحدة فقط
+    _loginCheckFuture = StorageService.isLoggedIn();
+  }
 
   void setLocale(Locale locale) {
     setState(() {
@@ -194,7 +202,7 @@ class _MyAppState extends State<MyApp> {
             },
             // ✅ استخدام FutureBuilder للتحقق من التوكن بشكل ديناميكي
             home: FutureBuilder<bool>(
-              future: StorageService.isLoggedIn(),
+              future: _loginCheckFuture,
               builder: (context, snapshot) {
                 // أثناء التحميل، عرض شاشة تحميل
                 if (snapshot.connectionState == ConnectionState.waiting) {

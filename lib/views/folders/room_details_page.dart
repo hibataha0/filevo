@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:filevo/generated/l10n.dart';
 import 'package:flutter/material.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:provider/provider.dart';
 import 'package:filevo/controllers/folders/room_controller.dart';
 import 'package:filevo/constants/app_colors.dart';
@@ -11,13 +12,14 @@ import 'package:filevo/views/folders/room_files_page.dart';
 import 'package:filevo/views/folders/room_folders_page.dart';
 import 'package:filevo/views/folders/folder_contents_page.dart';
 import 'package:filevo/controllers/folders/folders_controller.dart';
+import 'package:filevo/controllers/folders/files_controller.dart';
 import 'package:filevo/views/fileViewer/pdfViewer.dart';
 import 'package:filevo/views/fileViewer/VideoViewer.dart';
 import 'package:filevo/views/fileViewer/audioPlayer.dart';
 import 'package:filevo/views/fileViewer/imageViewer.dart';
 import 'package:filevo/views/fileViewer/office_file_opener.dart';
 import 'package:filevo/views/fileViewer/textViewer.dart';
-import 'package:open_file/open_file.dart' as open_file;
+import 'package:open_filex/open_filex.dart';
 import 'package:filevo/config/api_config.dart';
 import 'package:filevo/services/api_endpoints.dart';
 import 'package:path_provider/path_provider.dart';
@@ -1185,8 +1187,19 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
   }
 
   Widget _buildMemberItem(Map<String, dynamic> member) {
-    final user = member['user'] ?? {};
+    // ✅ التأكد من أن user هو Map
+    Map<String, dynamic> user;
+    if (member['user'] is Map<String, dynamic>) {
+      user = member['user'] as Map<String, dynamic>;
+    } else {
+      user = {};
+    }
+    
     final role = member['role'] ?? 'viewer';
+    
+    // ✅ Debug: طباعة بيانات المستخدم
+    print('👤 [RoomDetailsPage] Member user keys: ${user.keys.toList()}');
+    print('👤 [RoomDetailsPage] Member user profileImg: ${user['profileImg']}');
 
     final bottomPadding = ResponsiveUtils.getResponsiveValue(
       context,
@@ -1229,15 +1242,7 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
       padding: EdgeInsets.only(bottom: bottomPadding),
       child: Row(
         children: [
-          CircleAvatar(
-            radius: avatarSize / 2,
-            backgroundColor: _getRoleColor(role).withOpacity(0.2),
-            child: Icon(
-              _getRoleIcon(role),
-              color: _getRoleColor(role),
-              size: iconSize,
-            ),
-          ),
+          _buildMemberAvatar(user, role, avatarSize, iconSize),
           SizedBox(width: spacing),
           Expanded(
             child: Column(
@@ -1576,15 +1581,63 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
             Expanded(
               child: Text(fileName, style: TextStyle(fontSize: fontSize)),
             ),
-            Icon(
-              Icons.arrow_forward_ios,
-              size: ResponsiveUtils.getResponsiveValue(
-                context,
-                mobile: 16.0,
-                tablet: 18.0,
-                desktop: 20.0,
+            PopupMenuButton<String>(
+              icon: Icon(
+                Icons.more_vert,
+                size: ResponsiveUtils.getResponsiveValue(
+                  context,
+                  mobile: 18.0,
+                  tablet: 20.0,
+                  desktop: 22.0,
+                ),
+                color: Colors.grey,
               ),
-              color: Colors.grey,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              onSelected: (value) async {
+                if (value == 'star') {
+                  await _toggleFileStar(fileData, fileId);
+                } else if (value == 'remove') {
+                  await _removeFileFromRoom(fileData, fileId);
+                }
+              },
+              itemBuilder: (context) => [
+                PopupMenuItem(
+                  value: 'star',
+                  child: Row(
+                    children: [
+                      Icon(
+                        fileData['isStarred'] == true
+                            ? Icons.star
+                            : Icons.star_border,
+                        color: fileData['isStarred'] == true
+                            ? Colors.amber
+                            : Colors.grey,
+                      ),
+                      SizedBox(width: 12),
+                      Text(
+                        fileData['isStarred'] == true
+                            ? 'إزالة من المفضلة'
+                            : 'إضافة للمفضلة',
+                      ),
+                    ],
+                  ),
+                ),
+                PopupMenuItem(
+                  value: 'remove',
+                  child: Row(
+                    children: [
+                      Icon(Icons.remove_circle_outline, color: Colors.red),
+                      SizedBox(width: 12),
+                      Text(
+                        'إزالة من الروم',
+                        style: TextStyle(color: Colors.red),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
           ],
         ),
@@ -1635,7 +1688,7 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
           Navigator.pop(context);
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('يرجى إعادة تسجيل الدخول'),
+              content: Text(S.of(context).pleaseLoginAgain),
               backgroundColor: Colors.red,
             ),
           );
@@ -1723,14 +1776,17 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
             ),
           );
         } else {
-          // ✅ محاولة فتح الملف باستخدام OpenFile مباشرة
+          // ✅ محاولة فتح الملف باستخدام OpenFilex مباشرة
           try {
-            await open_file.OpenFile.open(tempFile.path);
+            final result = await OpenFilex.open(tempFile.path);
+            if (result.type != ResultType.done && mounted) {
+              throw Exception(result.message);
+            }
           } catch (e) {
             if (mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: Text('فشل فتح الملف: $e'),
+                  content: Text(S.of(context).failedToOpenFile(e.toString())),
                   backgroundColor: Colors.red,
                 ),
               );
@@ -1743,7 +1799,7 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('فشل تحميل الملف: ${response.statusCode}'),
+              content: Text(S.of(context).failedToLoadFileStatus(response.statusCode)),
               backgroundColor: Colors.red,
             ),
           );
@@ -1755,7 +1811,7 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
         Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('خطأ في فتح الملف: ${e.toString()}'),
+            content: Text(S.of(context).errorOpeningFile(e.toString())),
             backgroundColor: Colors.red,
           ),
         );
@@ -1767,7 +1823,7 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
     if (fileId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('معرف الملف غير متوفر'),
+          content: Text(S.of(context).fileIdNotAvailable),
           backgroundColor: Colors.red,
         ),
       );
@@ -1799,7 +1855,7 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
 
     if (url.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('رابط غير صالح'), backgroundColor: Colors.red),
+        SnackBar(content: Text(S.of(context).invalidUrl), backgroundColor: Colors.red),
       );
       return;
     }
@@ -1829,8 +1885,8 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
               showDialog(
                 context: context,
                 builder: (context) => AlertDialog(
-                  title: Text('ملف غير مدعوم'),
-                  content: Text('هذا الملف ليس PDF صالح أو قد يكون تالفاً.'),
+                  title: Text(S.of(context).unsupportedFile),
+                  content: Text(S.of(context).fileNotValidPdf),
                   actions: [
                     TextButton(
                       onPressed: () => Navigator.pop(context),
@@ -1841,7 +1897,7 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
                         Navigator.pop(context);
                         _openAsTextFile(url, fileName);
                       },
-                      child: Text('فتح كنص'),
+                      child: Text(S.of(context).openAsText),
                     ),
                   ],
                 ),
@@ -1942,7 +1998,7 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('الملف غير متاح (خطأ ${response.statusCode})'),
+              content: Text(S.of(context).fileNotAvailableError(response.statusCode)),
               backgroundColor: Colors.red,
             ),
           );
@@ -1953,7 +2009,7 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
         Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('خطأ في تحميل الملف: ${e.toString()}'),
+            content: Text(S.of(context).errorLoadingFile(e.toString())),
             backgroundColor: Colors.red,
           ),
         );
@@ -1998,7 +2054,7 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
         Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('خطأ في فتح الملف: ${e.toString()}'),
+            content: Text(S.of(context).errorOpeningFile(e.toString())),
             backgroundColor: Colors.red,
           ),
         );
@@ -2337,15 +2393,63 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
             Expanded(
               child: Text(folderName, style: TextStyle(fontSize: fontSize)),
             ),
-            Icon(
-              Icons.arrow_forward_ios,
-              size: ResponsiveUtils.getResponsiveValue(
-                context,
-                mobile: 16.0,
-                tablet: 18.0,
-                desktop: 20.0,
+            PopupMenuButton<String>(
+              icon: Icon(
+                Icons.more_vert,
+                size: ResponsiveUtils.getResponsiveValue(
+                  context,
+                  mobile: 18.0,
+                  tablet: 20.0,
+                  desktop: 22.0,
+                ),
+                color: Colors.grey,
               ),
-              color: Colors.grey,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              onSelected: (value) async {
+                if (value == 'star') {
+                  await _toggleFolderStar(folderData, folderId);
+                } else if (value == 'remove') {
+                  await _removeFolderFromRoom(folderData, folderId);
+                }
+              },
+              itemBuilder: (context) => [
+                PopupMenuItem(
+                  value: 'star',
+                  child: Row(
+                    children: [
+                      Icon(
+                        folderData['isStarred'] == true
+                            ? Icons.star
+                            : Icons.star_border,
+                        color: folderData['isStarred'] == true
+                            ? Colors.amber
+                            : Colors.grey,
+                      ),
+                      SizedBox(width: 12),
+                      Text(
+                        folderData['isStarred'] == true
+                            ? 'إزالة من المفضلة'
+                            : 'إضافة للمفضلة',
+                      ),
+                    ],
+                  ),
+                ),
+                PopupMenuItem(
+                  value: 'remove',
+                  child: Row(
+                    children: [
+                      Icon(Icons.remove_circle_outline, color: Colors.red),
+                      SizedBox(width: 12),
+                      Text(
+                        'إزالة من الروم',
+                        style: TextStyle(color: Colors.red),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
           ],
         ),
@@ -2380,6 +2484,108 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
         return Icons.comment;
       default:
         return Icons.person;
+    }
+  }
+
+  // ✅ بناء URL كامل للصورة من اسم الملف (للـ backward compatibility)
+  String? _buildProfileImageUrl(String? profileImg) {
+    if (profileImg == null || profileImg.toString().isEmpty || profileImg.toString() == 'null') {
+      return null;
+    }
+
+    final profileImgStr = profileImg.toString();
+
+    // ✅ إذا كان URL كامل، استخدمه مباشرة
+    if (profileImgStr.startsWith('http://') || profileImgStr.startsWith('https://')) {
+      return profileImgStr;
+    }
+
+    // ✅ بناء URL من base URL + path
+    String cleanPath = profileImgStr.replaceAll(r'\', '/').replaceAll('//', '/');
+    while (cleanPath.startsWith('/')) {
+      cleanPath = cleanPath.substring(1);
+    }
+
+    // ✅ إزالة /api/v1 من base URL للحصول على base فقط
+    final base = ApiConfig.baseUrl.replaceAll('/api/v1', '');
+    final baseClean = base.endsWith('/') ? base.substring(0, base.length - 1) : base;
+
+    // ✅ بناء URL كامل (الـ backend يخدم الملفات من uploads/)
+    final imageUrl = '$baseClean/uploads/$cleanPath';
+    print('🖼️ [RoomDetailsPage] Building profile image URL:');
+    print('  - Original: $profileImgStr');
+    print('  - Clean path: $cleanPath');
+    print('  - Final URL: $imageUrl');
+
+    return imageUrl;
+  }
+
+  // ✅ بناء widget صورة البروفايل للعضو
+  Widget _buildMemberAvatar(Map<String, dynamic> user, String role, double avatarSize, double iconSize) {
+    // ✅ قراءة profileImgUrl أولاً (من الباك إند الجديد)
+    // ✅ إذا لم يكن موجوداً، استخدم profileImg وابني URL (للـ backward compatibility)
+    final profileImgUrl = user['profileImgUrl'];
+    final profileImg = user['profileImg'];
+    final name = user['name'] ?? user['email'] ?? 'م';
+    final firstLetter = name.isNotEmpty ? name.substring(0, 1).toUpperCase() : 'م';
+
+    // ✅ Debug: طباعة البيانات للتحقق
+    print('🖼️ [RoomDetailsPage] User data: ${user.keys.toList()}');
+    print('🖼️ [RoomDetailsPage] profileImgUrl: $profileImgUrl');
+    print('🖼️ [RoomDetailsPage] profileImg: $profileImg');
+    print('🖼️ [RoomDetailsPage] name: $name');
+
+    // ✅ استخدام profileImgUrl إذا كان موجوداً، وإلا بناء URL من profileImg
+    final imageUrl = profileImgUrl?.toString() ?? _buildProfileImageUrl(profileImg?.toString());
+
+    if (imageUrl != null && imageUrl.isNotEmpty) {
+      print('🖼️ [RoomDetailsPage] Loading profile image from: $imageUrl');
+      
+      return CircleAvatar(
+        radius: avatarSize / 2,
+        child: ClipOval(
+          child: CachedNetworkImage(
+            imageUrl: imageUrl,
+            fit: BoxFit.cover,
+            width: avatarSize,
+            height: avatarSize,
+            placeholder: (context, url) => CircleAvatar(
+              radius: avatarSize / 2,
+              backgroundColor: _getRoleColor(role).withOpacity(0.2),
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
+            errorWidget: (context, url, error) {
+              print('❌ [RoomDetailsPage] Failed to load profile image: $error');
+              return CircleAvatar(
+                radius: avatarSize / 2,
+                backgroundColor: _getRoleColor(role).withOpacity(0.2),
+                child: Text(
+                  firstLetter,
+                  style: TextStyle(
+                    color: _getRoleColor(role),
+                    fontWeight: FontWeight.bold,
+                    fontSize: iconSize * 0.7,
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      );
+    } else {
+      print('🖼️ [RoomDetailsPage] No profile image, using default avatar');
+      return CircleAvatar(
+        radius: avatarSize / 2,
+        backgroundColor: _getRoleColor(role).withOpacity(0.2),
+        child: Text(
+          firstLetter,
+          style: TextStyle(
+            color: _getRoleColor(role),
+            fontWeight: FontWeight.bold,
+            fontSize: iconSize * 0.7,
+          ),
+        ),
+      );
     }
   }
 
@@ -2449,6 +2655,285 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
         ],
       ),
     );
+  }
+
+  /// ✅ إضافة/إزالة الملف من المفضلة
+  Future<void> _toggleFileStar(Map<String, dynamic> fileData, String? fileId) async {
+    if (fileId == null || fileId.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(S.of(context).fileIdNotAvailable),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    try {
+      final token = await StorageService.getToken();
+      if (token == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(S.of(context).mustLoginFirst),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
+
+      final fileController = Provider.of<FileController>(context, listen: false);
+      final result = await fileController.toggleStar(fileId: fileId, token: token);
+
+      if (mounted) {
+        if (result['success'] == true) {
+          final isStarred = result['isStarred'] as bool? ?? false;
+          
+          // ✅ تحديث البيانات المحلية
+          fileData['isStarred'] = isStarred;
+          
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                isStarred
+                    ? '✅ تم إضافة الملف إلى المفضلة'
+                    : '✅ تم إزالة الملف من المفضلة',
+              ),
+              backgroundColor: Colors.green,
+            ),
+          );
+          
+          // ✅ إعادة تحميل بيانات الغرفة لتحديث حالة النجمة
+          _refreshRoom();
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(result['message'] ?? 'فشل في تحديث حالة المفضلة'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(S.of(context).error(e.toString())),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  /// ✅ إزالة الملف من الروم
+  Future<void> _removeFileFromRoom(Map<String, dynamic> fileData, String? fileId) async {
+    if (fileId == null || fileId.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(S.of(context).fileIdNotAvailable),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    // ✅ عرض تأكيد قبل الإزالة
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(S.of(context).removeFileFromRoom),
+        content: Text(S.of(context).confirmRemoveFileFromRoom),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: Text(S.of(context).cancel),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: Text(
+              'إزالة',
+              style: TextStyle(color: Colors.red),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    try {
+      final roomController = Provider.of<RoomController>(context, listen: false);
+      final success = await roomController.unshareFileFromRoom(
+        roomId: widget.roomId,
+        fileId: fileId,
+      );
+
+      if (mounted) {
+        if (success) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('✅ تم إزالة الملف من الروم'),
+              backgroundColor: Colors.green,
+            ),
+          );
+          
+          // ✅ إعادة تحميل بيانات الغرفة
+          _refreshRoom();
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                roomController.errorMessage ?? 'فشل إزالة الملف من الروم',
+              ),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(S.of(context).error(e.toString())),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  /// ✅ إزالة المجلد من الروم
+  Future<void> _removeFolderFromRoom(Map<String, dynamic> folderData, String? folderId) async {
+    if (folderId == null || folderId.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(S.of(context).folderIdNotAvailable),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    // ✅ عرض تأكيد قبل الإزالة
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(S.of(context).removeFolderFromRoom),
+        content: Text(S.of(context).confirmRemoveFolderFromRoom),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: Text(S.of(context).cancel),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: Text(
+              'إزالة',
+              style: TextStyle(color: Colors.red),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    try {
+      final roomController = Provider.of<RoomController>(context, listen: false);
+      final success = await roomController.unshareFolderFromRoom(
+        roomId: widget.roomId,
+        folderId: folderId,
+      );
+
+      if (mounted) {
+        if (success) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('✅ تم إزالة المجلد من الروم'),
+              backgroundColor: Colors.green,
+            ),
+          );
+          
+          // ✅ إعادة تحميل بيانات الغرفة
+          _refreshRoom();
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                roomController.errorMessage ?? 'فشل إزالة المجلد من الروم',
+              ),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(S.of(context).error(e.toString())),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  /// ✅ إضافة/إزالة المجلد من المفضلة
+  Future<void> _toggleFolderStar(Map<String, dynamic> folderData, String? folderId) async {
+    if (folderId == null || folderId.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(S.of(context).folderIdNotAvailable),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    try {
+      final folderController = Provider.of<FolderController>(context, listen: false);
+      final result = await folderController.toggleStarFolder(folderId: folderId);
+
+      if (mounted) {
+        if (result['success'] == true) {
+          final isStarred = result['isStarred'] as bool? ?? false;
+          
+          // ✅ تحديث البيانات المحلية
+          folderData['isStarred'] = isStarred;
+          
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                isStarred
+                    ? '✅ تم إضافة المجلد إلى المفضلة'
+                    : '✅ تم إزالة المجلد من المفضلة',
+              ),
+              backgroundColor: Colors.green,
+            ),
+          );
+          
+          // ✅ إعادة تحميل بيانات الغرفة لتحديث حالة النجمة
+          _refreshRoom();
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(result['message'] ?? 'فشل في تحديث حالة المفضلة'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(S.of(context).error(e.toString())),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   /// ✅ عرض dialog لمغادرة الغرفة

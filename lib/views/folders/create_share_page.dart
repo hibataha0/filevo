@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:filevo/controllers/folders/room_controller.dart';
+import 'package:filevo/generated/l10n.dart';
 
 class CreateSharePage extends StatefulWidget {
   @override
@@ -24,7 +25,7 @@ class _CreateSharePageState extends State<CreateSharePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('إنشاء غرفة مشاركة جديدة'),
+        title: Text(S.of(context).createNewShareRoom),
         backgroundColor: Color(0xff28336f),
         actions: [
           Consumer<RoomController>(
@@ -117,7 +118,7 @@ class _CreateSharePageState extends State<CreateSharePage> {
       if (_nameController.text.trim().isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('يرجى إدخال اسم للغرفة'),
+            content: Text(S.of(context).pleaseEnterRoomName),
             backgroundColor: Colors.red,
           ),
         );

@@ -52,5 +52,11 @@
     <string>ar</string>
     
     </array>
+	
+	<!-- ✅ صلاحيات الميكروفون والتعرف على الصوت -->
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Need microphone access for voice search</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>Need speech recognition for voice search</string>
 </dict>
 </plist>

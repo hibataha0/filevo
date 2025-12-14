@@ -32,12 +32,12 @@ class _SettingsPageState extends State<SettingsPage> {
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(false),
-              child: Text('إلغاء', style: TextStyle(color: Colors.grey[600])),
+              child: Text(S.of(context).cancel, style: TextStyle(color: Colors.grey[600])),
             ),
             TextButton(
               onPressed: () => Navigator.of(context).pop(true),
-              child: const Text(
-                'تسجيل الخروج',
+              child: Text(
+                S.of(context).logout,
                 style: TextStyle(color: Colors.red),
               ),
             ),

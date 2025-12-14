@@ -6,6 +6,7 @@ import 'package:filevo/components/FilesListView.dart';
 import 'package:filevo/components/ViewToggleButtons.dart';
 import 'package:filevo/responsive.dart';
 import 'package:filevo/views/folders/components/filter_section.dart';
+import 'package:filevo/views/folders/components/search_results_widget.dart';
 import 'package:filevo/generated/l10n.dart';
 import 'package:provider/provider.dart';
 import 'package:filevo/controllers/folders/room_controller.dart';
@@ -18,18 +19,19 @@ import 'package:filevo/views/folders/pending_invitations_page.dart';
 import 'package:filevo/services/storage_service.dart';
 import 'package:filevo/services/file_search_service.dart';
 import 'package:filevo/services/api_endpoints.dart';
+import 'package:filevo/config/api_config.dart';
 import 'package:filevo/views/fileViewer/VideoViewer.dart';
 import 'package:filevo/views/fileViewer/audioPlayer.dart';
 import 'package:filevo/views/fileViewer/imageViewer.dart';
 import 'package:filevo/views/fileViewer/office_file_opener.dart';
 import 'package:filevo/views/fileViewer/pdfViewer.dart';
 import 'package:filevo/views/fileViewer/textViewer.dart';
-import 'package:filevo/config/api_config.dart';
-import 'package:filevo/constants/app_colors.dart';
 import 'package:http/http.dart' as http;
 import 'dart:io';
+import 'dart:async';
 import 'package:path_provider/path_provider.dart';
-import 'package:cached_network_image/cached_network_image.dart';
+import 'package:speech_to_text/speech_to_text.dart' as stt;
+import 'package:permission_handler/permission_handler.dart';
 
 class FoldersPage extends StatefulWidget {
   @override
@@ -37,9 +39,31 @@ class FoldersPage extends StatefulWidget {
 }
 
 class _FoldersPageState extends State<FoldersPage> {
+  // ✅ قائمة امتدادات الملفات الخارجية التي تحتاج download endpoint
+  static const List<String> _externalFileExtensions = [
+    'doc',
+    'docx',
+    'xls',
+    'xlsx',
+    'ppt',
+    'pptx',
+    'zip',
+    'rar',
+    '7z',
+    'apk',
+    'exe',
+    'psd',
+    'ai',
+    'sketch',
+  ];
+
   final TextEditingController _searchController = TextEditingController();
   bool _showFilterOptions = false;
   String _selectedTimeFilter = 'All';
+  String? _selectedCategory; // ✅ التصنيف المحدد للبحث (Images, Videos, إلخ)
+  String? _selectedDateRange; // ✅ نطاق التاريخ (yesterday, last7days, إلخ)
+  DateTime? _customStartDate; // ✅ تاريخ البداية للفلترة المخصصة
+  DateTime? _customEndDate; // ✅ تاريخ النهاية للفلترة المخصصة
   bool isFilesGridView = true;
   List<String> _selectedTypes = [];
   bool isFoldersGridView = true;
@@ -54,18 +78,21 @@ class _FoldersPageState extends State<FoldersPage> {
   Map<String, Map<String, dynamic>> _previousCategoriesStats =
       {}; // ✅ لتتبع تغييرات إحصائيات التصنيفات
 
-  // ✅ البحث المحلي
+  // ✅ البحث المحلي (للمجلدات والتصنيفات)
   List<Map<String, dynamic>> _filteredFolders = [];
   List<Map<String, dynamic>> _filteredSharedFolders = [];
 
   // ✅ البحث الذكي للملفات
-  final FileSearchService _searchService = FileSearchService();
-  bool _isSearching = false;
-  bool _isSearchLoading = false;
-  List<Map<String, dynamic>> _searchResults = [];
-  String? _searchQuery;
-  bool _isSearchGridView =
-      true; // ✅ toggle للتبديل بين Grid و List في نتائج البحث
+  final FileSearchService _fileSearchService = FileSearchService();
+  bool _isSearchLoadingFiles = false;
+  List<Map<String, dynamic>> _searchFilesResults = [];
+  Timer? _searchDebounceTimer; // ✅ Timer للـ debounce
+  http.Client? _searchHttpClient; // ✅ HTTP client لإلغاء الطلبات السابقة
+
+  // ✅ ميزة البحث بالصوت (Speech to Text)
+  final stt.SpeechToText _speech = stt.SpeechToText();
+  bool _isListening = false;
+  String _searchText = ''; // النص المعرّف من الصوت
 
   @override
   void initState() {
@@ -90,52 +117,146 @@ class _FoldersPageState extends State<FoldersPage> {
       _loadSharedFolders();
     });
 
-    // ✅ إضافة listener للبحث الذكي
+    // ✅ إضافة listener للبحث المحلي فقط
     _searchController.addListener(_onSearchChanged);
+
+    // ✅ تهيئة خدمة تحويل الصوت إلى نص
+    _initializeSpeech();
   }
 
-  // ✅ معالجة تغيير نص البحث (ذكي للملفات)
+  /// معالجة تغيير نص البحث
+  ///
+  /// تقوم هذه الدالة بـ:
+  /// 1. البحث المحلي الفوري في المجلدات والتصنيفات المشتركة
+  /// 2. البحث الذكي في الملفات مع debounce (500ms) لتقليل الطلبات للخادم
+  /// 3. إلغاء الطلبات السابقة عند تغيير نص البحث
+  ///
+  /// [Performance]: تستخدم computed values لتجنب إعادة الحساب غير الضرورية
   void _onSearchChanged() {
     final query = _searchController.text.trim();
-    if (query.isEmpty) {
-      setState(() {
-        _isSearching = false;
-        _searchResults = [];
-        _searchQuery = null;
-        _filteredFolders = folders;
-        _filteredSharedFolders = sharedFolders;
-      });
-    } else {
-      // ✅ البحث الذكي بعد تأخير قصير (debounce)
-      Future.delayed(Duration(milliseconds: 500), () {
-        if (_searchController.text.trim() == query && query.isNotEmpty) {
-          _performSmartSearch(query);
-        }
-      });
-    }
-  }
 
-  // ✅ تنفيذ البحث الذكي للملفات
-  Future<void> _performSmartSearch(String query) async {
-    if (query.trim().isEmpty) {
+    if (query.isEmpty) {
+      // ✅ إلغاء البحث السابق
+      _searchDebounceTimer?.cancel();
+      _searchHttpClient?.close();
+      _searchHttpClient = null;
+
       setState(() {
-        _isSearching = false;
-        _searchResults = [];
-        _searchQuery = null;
         _filteredFolders = folders;
         _filteredSharedFolders = sharedFolders;
+        _searchFilesResults = [];
+        _isSearchLoadingFiles = false;
       });
       return;
     }
 
+    final queryLower = query.toLowerCase();
+
+    // ✅ البحث المحلي في المجلدات والتصنيفات (محسّن)
+    // ✅ استخدام computed values لتجنب إعادة الحساب غير الضرورية
+    final filteredFoldersList = folders.where((folder) {
+      final name = (folder['title'] ?? folder['name'] ?? '')
+          .toString()
+          .toLowerCase();
+      return name.contains(queryLower);
+    }).toList();
+
+    final filteredSharedFoldersList = sharedFolders.where((folder) {
+      final name = (folder['name'] ?? '').toString().toLowerCase();
+      return name.contains(queryLower);
+    }).toList();
+
+    // ✅ تحديث الـ state مرة واحدة فقط
+    if (mounted) {
+      setState(() {
+        _filteredFolders = filteredFoldersList;
+        _filteredSharedFolders = filteredSharedFoldersList;
+      });
+    }
+
+    // ✅ البحث الذكي في الملفات (مع debounce محسّن)
+    _searchDebounceTimer?.cancel();
+    _searchDebounceTimer = Timer(Duration(milliseconds: 500), () {
+      if (_searchController.text.trim() == query && query.isNotEmpty) {
+        _performFileSearch(query);
+      }
+    });
+  }
+
+  /// تنفيذ البحث الذكي في الملفات
+  ///
+  /// تقوم هذه الدالة بـ:
+  /// 1. إلغاء أي طلب بحث سابق لتجنب تضارب النتائج
+  /// 2. تحويل الفلاتر (التصنيف، نطاق التاريخ) من العربية إلى الإنجليزية للباك إند
+  /// 3. استدعاء FileSearchService.smartSearch مع الفلاتر المحددة
+  /// 4. معالجة النتائج وإضافة metadata (type, searchType, relevanceScore)
+  ///
+  /// [Parameters]:
+  /// - [query]: نص البحث
+  ///
+  /// [Returns]: Future<void>
+  ///
+  /// [Throws]: يلتقط الأخطاء ويعرض رسالة للمستخدم
+  Future<void> _performFileSearch(String query) async {
+    if (query.trim().isEmpty) {
+      setState(() {
+        _searchFilesResults = [];
+        _isSearchLoadingFiles = false;
+      });
+      return;
+    }
+
+    // ✅ إلغاء الطلب السابق إن وجد
+    _searchHttpClient?.close();
+    _searchHttpClient = http.Client();
+
     setState(() {
-      _isSearching = true;
-      _isSearchLoading = true;
-      _searchQuery = query;
+      _isSearchLoadingFiles = true;
     });
 
     try {
-      final result = await _searchService.smartSearch(query: query, limit: 50);
+      // ✅ تحويل التصنيف من العربية إلى الإنجليزية للباك إند
+      String? categoryForBackend;
+      if (_selectedCategory != null && _selectedCategory!.isNotEmpty) {
+        // ✅ تحويل من العربية إلى الإنجليزية
+        final categoryMap = {
+          'صور': 'Images',
+          'فيديوهات': 'Videos',
+          'صوتيات': 'Audio',
+          'مستندات': 'Documents',
+          'مضغوط': 'Compressed',
+          'تطبيقات': 'Applications',
+          'رمز/كود': 'Code',
+          'أخرى': 'Others',
+        };
+        categoryForBackend =
+            categoryMap[_selectedCategory] ?? _selectedCategory;
+      }
+
+      // ✅ تحويل نطاق التاريخ من العربية إلى الإنجليزية
+      String? dateRangeForBackend;
+      if (_selectedDateRange != null &&
+          _selectedDateRange != 'All' &&
+          _selectedDateRange!.isNotEmpty) {
+        final dateRangeMap = {
+          'أمس': 'yesterday',
+          'آخر 7 أيام': 'last7days',
+          'آخر 30 يوم': 'last30days',
+          'آخر سنة': 'lastyear',
+          'مخصص': 'custom',
+        };
+        dateRangeForBackend =
+            dateRangeMap[_selectedDateRange] ?? _selectedDateRange;
+      }
+
+      final result = await _fileSearchService.smartSearch(
+        query: query,
+        limit: 50,
+        category: categoryForBackend,
+        dateRange: dateRangeForBackend,
+        startDate: _customStartDate,
+        endDate: _customEndDate,
+      );
 
       if (!mounted) return;
 
@@ -144,48 +265,49 @@ class _FoldersPageState extends State<FoldersPage> {
           result['results'] ?? [],
         );
 
+        // ✅ معالجة النتائج خارج setState لتحسين الأداء
+        final processedResults = results.map<Map<String, dynamic>>((r) {
+          // ✅ نسخ جميع البيانات من الباك إند (بما فيها بيانات الصور والصوت والفيديو)
+          final file = Map<String, dynamic>.from(r['item'] ?? r);
+
+          // ✅ إضافة type للتمييز بين الملفات والمجلدات
+          file['type'] = 'file';
+          file['searchType'] = r['searchType'] ?? 'text';
+          file['relevanceScore'] = r['relevanceScore'] ?? 0.0;
+
+          // ✅ التأكد من وجود _id
+          if (file['_id'] == null && file['id'] != null) {
+            file['_id'] = file['id'];
+          }
+
+          // ✅ حفظ جميع الحقول الجديدة من الباك إند:
+          // - imageDescription, imageObjects, imageScene, imageColors, imageMood, imageText
+          // - audioTranscript
+          // - videoTranscript, videoScenes, videoDescription
+          // - extractedText, summary, embedding
+          // هذه الحقول موجودة بالفعل في file لأننا نسخناها من r['item']
+
+          return file;
+        }).toList();
+
+        if (!mounted) return;
+
         setState(() {
-          _searchResults = results.map<Map<String, dynamic>>((r) {
-            // ✅ البيانات تأتي مباشرة بدون wrapper 'item'
-            final file = Map<String, dynamic>.from(r);
-
-            // ✅ التأكد من وجود _id و name
-            if (file['_id'] == null && file['id'] != null) {
-              file['_id'] = file['id'];
-            }
-
-            return file;
-          }).toList();
-          _isSearchLoading = false;
+          _searchFilesResults = processedResults;
+          _isSearchLoadingFiles = false;
         });
       } else {
         setState(() {
-          _searchResults = [];
-          _isSearchLoading = false;
+          _searchFilesResults = [];
+          _isSearchLoadingFiles = false;
         });
-
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(result['error'] ?? 'فشل البحث'),
-              backgroundColor: Colors.orange,
-            ),
-          );
-        }
       }
     } catch (e) {
       if (mounted) {
         setState(() {
-          _searchResults = [];
-          _isSearchLoading = false;
+          _searchFilesResults = [];
+          _isSearchLoadingFiles = false;
         });
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('خطأ في البحث: ${e.toString()}'),
-            backgroundColor: Colors.red,
-          ),
-        );
       }
     }
   }
@@ -380,7 +502,8 @@ class _FoldersPageState extends State<FoldersPage> {
 
       // ✅ تحديث التصنيفات بالقيم من Controller
       final updatedCategories = categoriesBase.map((category) {
-        final categoryName = (category['category'] as String).toLowerCase();
+        final categoryName = (category['category']?.toString() ?? '')
+            .toLowerCase();
         final stats = categoriesStats[categoryName];
 
         if (stats != null) {
@@ -414,7 +537,8 @@ class _FoldersPageState extends State<FoldersPage> {
       final categoriesStats = fileController.categoriesStats;
 
       final updatedCategories = categoriesBase.map((category) {
-        final categoryName = (category['category'] as String).toLowerCase();
+        final categoryName = (category['category']?.toString() ?? '')
+            .toLowerCase();
         final stats = categoriesStats[categoryName];
 
         if (stats != null) {
@@ -507,738 +631,6 @@ class _FoldersPageState extends State<FoldersPage> {
     }
   }
 
-  // ✅ بناء عرض نتائج البحث الذكي (باستخدام نفس الكاردات من smart_search_page.dart)
-  Widget _buildSmartSearchResults() {
-    return Column(
-      children: [
-        // ✅ معلومات البحث
-        Container(
-          padding: EdgeInsets.all(16),
-          color: AppColors.accent.withOpacity(0.1),
-          child: Row(
-            children: [
-              Icon(Icons.search, color: AppColors.accent, size: 20),
-              SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  'تم العثور على ${_searchResults.length} نتيجة للبحث الذكي: "$_searchQuery"',
-                  style: TextStyle(color: AppColors.accent, fontSize: 14),
-                ),
-              ),
-              IconButton(
-                icon: Icon(_isSearchGridView ? Icons.list : Icons.grid_view),
-                onPressed: () {
-                  setState(() {
-                    _isSearchGridView = !_isSearchGridView;
-                  });
-                },
-                tooltip: _isSearchGridView ? 'عرض كقائمة' : 'عرض كشبكة',
-              ),
-            ],
-          ),
-        ),
-        // ✅ عرض النتائج بكارد مخصص للبحث
-        Expanded(
-          child: _isSearchGridView
-              ? _buildSearchResultsGrid()
-              : _buildSearchResultsList(),
-        ),
-      ],
-    );
-  }
-
-  // ✅ بناء Grid مخصص لنتائج البحث
-  Widget _buildSearchResultsGrid() {
-    return GridView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: _searchResults.length,
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        mainAxisSpacing: 16,
-        crossAxisSpacing: 16,
-        childAspectRatio: 0.75,
-      ),
-      itemBuilder: (context, index) {
-        final file = _searchResults[index];
-        return _buildSearchResultCard(file);
-      },
-    );
-  }
-
-  // ✅ بناء List مخصص لنتائج البحث
-  Widget _buildSearchResultsList() {
-    return ListView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: _searchResults.length,
-      itemBuilder: (context, index) {
-        final file = _searchResults[index];
-        return Padding(
-          padding: const EdgeInsets.only(bottom: 12),
-          child: _buildSearchResultCard(file, isList: true),
-        );
-      },
-    );
-  }
-
-  // ✅ بناء كارد مخصص لنتيجة البحث
-  Widget _buildSearchResultCard(
-    Map<String, dynamic> file, {
-    bool isList = false,
-  }) {
-    final fileName = file['name']?.toString() ?? 'ملف بدون اسم';
-    final filePath = file['path']?.toString() ?? '';
-    final fileId = file['_id']?.toString() ?? file['id']?.toString();
-    final fileType = _getFileTypeForSearch(fileName);
-    final fileSize = _formatSizeForSearch(file['size']);
-    final createdAt = file['createdAt'];
-    final isStarred = file['isStarred'] ?? false;
-
-    // ✅ بناء URL
-    String fileUrl;
-    if (filePath.isNotEmpty) {
-      fileUrl = _getFileUrlForSearch(filePath);
-    } else if (fileId != null && fileId.isNotEmpty) {
-      final baseUrl = ApiConfig.baseUrl.replaceAll('/api/v1', '');
-      final downloadPath = ApiEndpoints.downloadFile(fileId);
-      fileUrl = "$baseUrl$downloadPath";
-    } else {
-      fileUrl = '';
-    }
-
-    return GestureDetector(
-      onTap: () {
-        _handleSearchFileTap(file);
-      },
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.08),
-              blurRadius: 12,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: isList
-            ? _buildListCardForSearch(
-                fileName,
-                fileType,
-                fileUrl,
-                fileSize,
-                createdAt,
-                isStarred,
-                file,
-              )
-            : _buildGridCardForSearch(
-                fileName,
-                fileType,
-                fileUrl,
-                fileSize,
-                createdAt,
-                isStarred,
-                file,
-              ),
-      ),
-    );
-  }
-
-  // ✅ بناء كارد Grid
-  Widget _buildGridCardForSearch(
-    String fileName,
-    String fileType,
-    String fileUrl,
-    String fileSize,
-    dynamic createdAt,
-    bool isStarred,
-    Map<String, dynamic> file,
-  ) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // ✅ منطقة المعاينة
-        Expanded(
-          child: Stack(
-            children: [
-              Container(
-                decoration: BoxDecoration(
-                  color: Colors.grey[50],
-                  borderRadius: const BorderRadius.only(
-                    topLeft: Radius.circular(16),
-                    topRight: Radius.circular(16),
-                  ),
-                ),
-                child: _buildFilePreviewForSearch(fileType, fileUrl, fileName),
-              ),
-              // ✅ زر المفضلة
-              if (isStarred)
-                Positioned(
-                  top: 8,
-                  left: 8,
-                  child: Container(
-                    padding: const EdgeInsets.all(6),
-                    decoration: BoxDecoration(
-                      color: Colors.amber,
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.2),
-                          blurRadius: 4,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: const Icon(
-                      Icons.star,
-                      color: Colors.white,
-                      size: 16,
-                    ),
-                  ),
-                ),
-            ],
-          ),
-        ),
-        // ✅ معلومات الملف
-        Padding(
-          padding: const EdgeInsets.all(12),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                fileName,
-                overflow: TextOverflow.ellipsis,
-                maxLines: 2,
-                style: const TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: Color(0xFF1A1A1A),
-                  height: 1.3,
-                ),
-              ),
-              const SizedBox(height: 6),
-              Row(
-                children: [
-                  Icon(
-                    Icons.calendar_today_outlined,
-                    size: 11,
-                    color: Colors.grey[600],
-                  ),
-                  const SizedBox(width: 4),
-                  Expanded(
-                    child: Text(
-                      _formatDateForSearch(createdAt),
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(fontSize: 10, color: Colors.grey[600]),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  // ✅ بناء كارد List
-  Widget _buildListCardForSearch(
-    String fileName,
-    String fileType,
-    String fileUrl,
-    String fileSize,
-    dynamic createdAt,
-    bool isStarred,
-    Map<String, dynamic> file,
-  ) {
-    return Row(
-      children: [
-        // ✅ المعاينة
-        Container(
-          width: 80,
-          height: 80,
-          decoration: BoxDecoration(
-            color: Colors.grey[50],
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(12),
-            child: _buildFilePreviewForSearch(fileType, fileUrl, fileName),
-          ),
-        ),
-        const SizedBox(width: 12),
-        // ✅ المعلومات
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      fileName,
-                      overflow: TextOverflow.ellipsis,
-                      maxLines: 1,
-                      style: const TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                        color: Color(0xFF1A1A1A),
-                      ),
-                    ),
-                  ),
-                  if (isStarred)
-                    const Icon(Icons.star, color: Colors.amber, size: 18),
-                ],
-              ),
-              const SizedBox(height: 6),
-              Row(
-                children: [
-                  Icon(
-                    Icons.calendar_today_outlined,
-                    size: 12,
-                    color: Colors.grey[600],
-                  ),
-                  const SizedBox(width: 4),
-                  Text(
-                    _formatDateForSearch(createdAt),
-                    style: TextStyle(fontSize: 11, color: Colors.grey[600]),
-                  ),
-                  const SizedBox(width: 12),
-                  Icon(
-                    Icons.insert_drive_file,
-                    size: 12,
-                    color: Colors.grey[600],
-                  ),
-                  const SizedBox(width: 4),
-                  Text(
-                    fileSize,
-                    style: TextStyle(fontSize: 11, color: Colors.grey[600]),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  // ✅ بناء معاينة الملف
-  Widget _buildFilePreviewForSearch(
-    String fileType,
-    String fileUrl,
-    String fileName,
-  ) {
-    switch (fileType.toLowerCase()) {
-      case 'image':
-        if (fileUrl.isNotEmpty) {
-          // ✅ إضافة token للصور إذا كانت من API
-          final needsToken = fileUrl.contains('/api/');
-          return FutureBuilder<Map<String, String>?>(
-            future: needsToken
-                ? _getImageHeadersForSearch()
-                : Future.value(null),
-            builder: (context, snapshot) {
-              return CachedNetworkImage(
-                imageUrl: fileUrl,
-                fit: BoxFit.cover,
-                httpHeaders: snapshot.data,
-                placeholder: (context, url) => Container(
-                  color: Colors.grey[200],
-                  child: const Center(
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  ),
-                ),
-                errorWidget: (context, url, error) => Container(
-                  color: Colors.grey[200],
-                  child: Icon(
-                    Icons.image_not_supported,
-                    color: Colors.grey[400],
-                    size: 32,
-                  ),
-                ),
-              );
-            },
-          );
-        }
-        return _buildFileIconForSearch(Icons.image, Colors.blue);
-      case 'pdf':
-        return _buildFileIconForSearch(Icons.picture_as_pdf, Colors.red);
-      case 'video':
-        return _buildFileIconForSearch(Icons.video_library, Colors.purple);
-      case 'audio':
-        return _buildFileIconForSearch(Icons.audiotrack, Colors.orange);
-      default:
-        return _buildFileIconForSearch(Icons.insert_drive_file, Colors.grey);
-    }
-  }
-
-  // ✅ بناء أيقونة الملف
-  Widget _buildFileIconForSearch(IconData icon, Color color) {
-    return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [color.withOpacity(0.1), color.withOpacity(0.05)],
-        ),
-      ),
-      child: Center(
-        child: Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: color.withOpacity(0.15),
-            shape: BoxShape.circle,
-          ),
-          child: Icon(icon, size: 32, color: color),
-        ),
-      ),
-    );
-  }
-
-  // ✅ الحصول على نوع الملف
-  String _getFileTypeForSearch(String fileName) {
-    final name = fileName.toLowerCase();
-    if (name.endsWith('.pdf')) return 'pdf';
-    if (name.endsWith('.jpg') ||
-        name.endsWith('.jpeg') ||
-        name.endsWith('.png') ||
-        name.endsWith('.gif'))
-      return 'image';
-    if (name.endsWith('.mp4') || name.endsWith('.mov') || name.endsWith('.mkv'))
-      return 'video';
-    if (name.endsWith('.mp3') || name.endsWith('.wav') || name.endsWith('.m4a'))
-      return 'audio';
-    return 'file';
-  }
-
-  String _formatSizeForSearch(dynamic size) {
-    if (size == null) return '—';
-    try {
-      final bytes = size is int ? size : int.tryParse(size.toString()) ?? 0;
-      if (bytes < 1024) return '$bytes B';
-      if (bytes < 1048576) return '${(bytes / 1024).toStringAsFixed(1)} KB';
-      if (bytes < 1073741824)
-        return '${(bytes / 1048576).toStringAsFixed(1)} MB';
-      return '${(bytes / 1073741824).toStringAsFixed(1)} GB';
-    } catch (e) {
-      return '—';
-    }
-  }
-
-  // ✅ جلب headers للصور (مع token)
-  Future<Map<String, String>?> _getImageHeadersForSearch() async {
-    final token = await StorageService.getToken();
-    if (token != null && token.isNotEmpty) {
-      return {'Authorization': 'Bearer $token'};
-    }
-    return null;
-  }
-
-  // ✅ تنسيق التاريخ
-  String _formatDateForSearch(dynamic date) {
-    if (date == null) return '—';
-    try {
-      final dateTime = date is String ? DateTime.parse(date) : date as DateTime;
-      return '${dateTime.day}/${dateTime.month}/${dateTime.year}';
-    } catch (e) {
-      return '—';
-    }
-  }
-
-  // ✅ بناء URL الملف
-  String _getFileUrlForSearch(String path) {
-    if (path.startsWith('http')) {
-      return path;
-    }
-
-    String cleanPath = path.replaceAll(r'\', '/').replaceAll('//', '/');
-    while (cleanPath.startsWith('/')) {
-      cleanPath = cleanPath.substring(1);
-    }
-
-    final base = ApiConfig.baseUrl.replaceAll('/api/v1', '');
-    String baseClean = base.endsWith('/')
-        ? base.substring(0, base.length - 1)
-        : base;
-    String finalUrl = '$baseClean/$cleanPath';
-
-    return finalUrl;
-  }
-
-  // ✅ فتح الملف من نتائج البحث الذكي (نفس الكود من smart_search_page.dart)
-  Future<void> _handleSearchFileTap(Map<String, dynamic> file) async {
-    print('═══════════════════════════════════════════════════════');
-    print('🔍 [FoldersSearch] ===== START OPENING FILE =====');
-    print('🔍 [FoldersSearch] File name: ${file['name']}');
-    print('🔍 [FoldersSearch] File data keys: ${file.keys.toList()}');
-    print('🔍 [FoldersSearch] Full file data: $file');
-    print('───────────────────────────────────────────────────────');
-
-    // ✅ استخراج path و _id مباشرة من البيانات
-    String? filePath = file['path'] as String?;
-    String? fileId = file['_id']?.toString() ?? file['id']?.toString();
-
-    print('🔍 [FoldersSearch] Step 1: Extract path and _id');
-    print('🔍 [FoldersSearch]   - filePath (raw): ${file['path']}');
-    print('🔍 [FoldersSearch]   - filePath (after cast): $filePath');
-    print(
-      '🔍 [FoldersSearch]   - filePath isEmpty: ${filePath?.isEmpty ?? true}',
-    );
-    print('🔍 [FoldersSearch]   - file _id (raw): ${file['_id']}');
-    print('🔍 [FoldersSearch]   - file id (raw): ${file['id']}');
-    print('🔍 [FoldersSearch]   - fileId (final): $fileId');
-    print('🔍 [FoldersSearch]   - fileId isEmpty: ${fileId?.isEmpty ?? true}');
-    print('───────────────────────────────────────────────────────');
-
-    // ✅ إذا لم يكن path موجوداً، استخدم endpoint download
-    String url;
-    String urlSource = '';
-
-    if ((filePath == null || filePath.isEmpty) &&
-        (fileId != null && fileId.isNotEmpty)) {
-      // ✅ استخدام endpoint download
-      urlSource = 'download_endpoint';
-      final baseUrl = ApiConfig.baseUrl.replaceAll('/api/v1', '');
-      final downloadPath = ApiEndpoints.downloadFile(fileId);
-      url = "$baseUrl$downloadPath";
-
-      print('🔍 [FoldersSearch] Step 2: Build URL');
-      print('🔍 [FoldersSearch]   - Source: $urlSource');
-      print('🔍 [FoldersSearch]   - Base URL: $baseUrl');
-      print('🔍 [FoldersSearch]   - Download path: $downloadPath');
-      print('🔍 [FoldersSearch]   - Final URL: $url');
-    } else if (filePath != null && filePath.isNotEmpty) {
-      urlSource = 'file_path';
-      url = _getFileUrlForSearch(filePath);
-
-      print('🔍 [FoldersSearch] Step 2: Build URL');
-      print('🔍 [FoldersSearch]   - Source: $urlSource');
-      print('🔍 [FoldersSearch]   - File path: $filePath');
-      print('🔍 [FoldersSearch]   - Final URL: $url');
-    } else {
-      print('🔍 [FoldersSearch] Step 2: ERROR - No path or _id');
-      print(
-        '🔍 [FoldersSearch]   - filePath is null/empty: ${filePath == null || filePath.isEmpty}',
-      );
-      print(
-        '🔍 [FoldersSearch]   - fileId is null/empty: ${fileId == null || fileId.isEmpty}',
-      );
-      print('═══════════════════════════════════════════════════════');
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('رابط الملف غير متوفر - لا يوجد path أو _id'),
-          backgroundColor: Colors.orange,
-        ),
-      );
-      return;
-    }
-
-    print('───────────────────────────────────────────────────────');
-    print('🔍 [FoldersSearch] Step 3: Validate URL');
-
-    // ✅ التحقق من صحة URL
-    bool isValidUrlForSearch(String url) {
-      try {
-        final uri = Uri.parse(url);
-        return uri.isAbsolute &&
-            (uri.scheme == 'http' || uri.scheme == 'https') &&
-            uri.host.isNotEmpty;
-      } catch (e) {
-        return false;
-      }
-    }
-
-    final isValidUrl = isValidUrlForSearch(url);
-    print('🔍 [FoldersSearch]   - URL is valid: $isValidUrl');
-    print('🔍 [FoldersSearch]   - URL: $url');
-    print('───────────────────────────────────────────────────────');
-
-    if (!isValidUrl) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('رابط غير صالح'),
-          backgroundColor: Colors.red,
-        ),
-      );
-      return;
-    }
-
-    final fileName = file['name']?.toString() ?? 'ملف بدون اسم';
-    final name = fileName.toLowerCase();
-
-    // ✅ عرض loading
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => Center(child: CircularProgressIndicator()),
-    );
-
-    try {
-      final token = await StorageService.getToken();
-      if (token == null) {
-        if (mounted) {
-          Navigator.pop(context);
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: const Text('يجب تسجيل الدخول أولاً'),
-              backgroundColor: Colors.red,
-            ),
-          );
-        }
-        return;
-      }
-
-      final client = http.Client();
-      final response = await client.get(
-        Uri.parse(url),
-        headers: {'Authorization': 'Bearer $token', 'Range': 'bytes=0-511'},
-      );
-
-      if (!mounted) return;
-      Navigator.pop(context);
-
-      if (response.statusCode == 200 || response.statusCode == 206) {
-        final bytes = response.bodyBytes;
-        final isPdf = _isValidPdfForSearch(bytes);
-        final contentType =
-            response.headers['content-type']?.toLowerCase() ?? '';
-
-        // ✅ التحقق من نوع الملف
-        bool isImageFile() {
-          return name.endsWith('.jpg') ||
-              name.endsWith('.jpeg') ||
-              name.endsWith('.png') ||
-              name.endsWith('.gif') ||
-              name.endsWith('.bmp') ||
-              name.endsWith('.webp') ||
-              contentType.startsWith('image/');
-        }
-
-        bool isVideoFile() {
-          return name.endsWith('.mp4') ||
-              name.endsWith('.mov') ||
-              name.endsWith('.mkv') ||
-              name.endsWith('.avi') ||
-              name.endsWith('.wmv') ||
-              contentType.startsWith('video/');
-        }
-
-        bool isAudioFile() {
-          return name.endsWith('.mp3') ||
-              name.endsWith('.wav') ||
-              name.endsWith('.m4a') ||
-              name.endsWith('.aac') ||
-              contentType.startsWith('audio/');
-        }
-
-        // ✅ فتح الملف حسب نوعه
-        if (name.endsWith('.pdf') && isPdf) {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) => PdfViewerPage(pdfUrl: url, fileName: fileName),
-            ),
-          );
-        } else if (isVideoFile()) {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => VideoViewer(url: url)),
-          );
-        } else if (isImageFile()) {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) => ImageViewer(imageUrl: url, fileId: fileId ?? ''),
-            ),
-          );
-        } else if (TextViewerPage.isTextFile(fileName) ||
-            contentType.startsWith('text/')) {
-          showDialog(
-            context: context,
-            barrierDismissible: false,
-            builder: (context) => Center(child: CircularProgressIndicator()),
-          );
-          try {
-            final fullResponse = await http.get(
-              Uri.parse(url),
-              headers: {'Authorization': 'Bearer $token'},
-            );
-            if (!mounted) return;
-            Navigator.pop(context);
-            if (fullResponse.statusCode == 200) {
-              final tempDir = await getTemporaryDirectory();
-              final tempFile = File('${tempDir.path}/$fileName');
-              await tempFile.writeAsBytes(fullResponse.bodyBytes);
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => TextViewerPage(
-                    filePath: tempFile.path,
-                    fileName: fileName,
-                  ),
-                ),
-              );
-            }
-          } catch (e) {
-            if (mounted) {
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('خطأ في تحميل الملف النصي: ${e.toString()}'),
-                  backgroundColor: Colors.red,
-                ),
-              );
-            }
-          }
-        } else if (isAudioFile()) {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) =>
-                  AudioPlayerPage(audioUrl: url, fileName: fileName),
-            ),
-          );
-        } else {
-          await OfficeFileOpener.openAnyFile(
-            url: url,
-            context: context,
-            token: token,
-          );
-        }
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('الملف غير متاح (خطأ ${response.statusCode})'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        Navigator.pop(context);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('خطأ في تحميل الملف: ${e.toString()}'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    }
-  }
-
-  // ✅ التحقق من صحة PDF
-  bool _isValidPdfForSearch(List<int> bytes) {
-    try {
-      if (bytes.length < 4) return false;
-      final signature = String.fromCharCodes(bytes.sublist(0, 4));
-      return signature == '%PDF';
-    } catch (e) {
-      return false;
-    }
-  }
-
   String _formatBytes(int bytes) {
     if (bytes == 0) return '0 B';
     const k = 1024;
@@ -1263,8 +655,243 @@ class _FoldersPageState extends State<FoldersPage> {
 
   @override
   void dispose() {
+    _searchDebounceTimer?.cancel();
+    _searchHttpClient?.close();
     _searchController.dispose();
+    _speech.stop(); // ✅ إيقاف الاستماع عند إغلاق الصفحة
     super.dispose();
+  }
+
+  /// تهيئة خدمة تحويل الصوت إلى نص
+  Future<void> _initializeSpeech() async {
+    try {
+      await _speech.initialize(
+        onStatus: (status) {
+          if (mounted) {
+            setState(() {
+              _isListening = status == 'listening';
+            });
+          }
+        },
+        onError: (error) {
+          if (mounted) {
+            print('❌ خطأ في التعرف على الصوت: ${error.errorMsg}');
+            setState(() {
+              _isListening = false;
+            });
+          }
+        },
+      );
+    } catch (e) {
+      print('❌ خطأ في تهيئة خدمة الصوت: $e');
+    }
+  }
+
+  /// بدء الاستماع للصوت وتحويله لنص
+  Future<void> _startListening() async {
+    // ✅ التحقق من حالة الإذن أولاً
+    PermissionStatus status = await Permission.microphone.status;
+    
+    // ✅ إذا كان الإذن مرفوض بشكل دائم، نفتح الإعدادات
+    if (status.isPermanentlyDenied) {
+      if (mounted) {
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('إذن الميكروفون مطلوب'),
+            content: const Text(
+              'يجب السماح بالوصول إلى الميكروفون للبحث بالصوت.\n\n'
+              'افتح إعدادات التطبيق وسمح بالوصول إلى الميكروفون.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('إلغاء'),
+              ),
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  openAppSettings(); // ✅ فتح إعدادات التطبيق
+                },
+                child: const Text('فتح الإعدادات'),
+              ),
+            ],
+          ),
+        );
+      }
+      return;
+    }
+    
+    // ✅ إذا لم يكن الإذن ممنوحاً، نطلب الإذن مباشرة
+    if (!status.isGranted) {
+      // ✅ طلب إذن الميكروفون - سيظهر نافذة النظام تلقائياً
+      status = await Permission.microphone.request();
+      
+      // ✅ إعادة التحقق من حالة الإذن بعد الطلب
+      // ✅ ننتظر قليلاً للتأكد من تحديث الحالة
+      await Future.delayed(const Duration(milliseconds: 100));
+      status = await Permission.microphone.status;
+      
+      // ✅ إذا رفض المستخدم الإذن
+      if (!status.isGranted) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('تم رفض الإذن. يجب السماح بالوصول إلى الميكروفون للبحث بالصوت.'),
+              backgroundColor: Colors.orange,
+              duration: Duration(seconds: 3),
+            ),
+          );
+        }
+        return;
+      }
+    }
+    
+    // ✅ التأكد مرة أخرى من أن الإذن ممنوح قبل المتابعة
+    final finalStatus = await Permission.microphone.status;
+    if (!finalStatus.isGranted) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('يجب السماح بالوصول إلى الميكروفون للبحث بالصوت.'),
+            backgroundColor: Colors.orange,
+            duration: Duration(seconds: 3),
+          ),
+        );
+      }
+      return;
+    }
+
+    // ✅ التحقق من توفر الخدمة
+    bool available = await _speech.initialize();
+    if (!available) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('خدمة التعرف على الصوت غير متاحة'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+      }
+      return;
+    }
+
+    // ✅ بدء الاستماع
+    _speech.listen(
+      localeId: "ar", // ✅ اللغة العربية
+      onResult: (result) {
+        if (mounted) {
+          setState(() {
+            _searchText = result.recognizedWords;
+            // ✅ تحديث حقل البحث مباشرة
+            if (_searchText.isNotEmpty) {
+              _searchController.text = _searchText;
+            }
+          });
+
+          // ✅ إذا انتهى التعرف (final result)، نبحث تلقائياً
+          if (result.finalResult && _searchText.isNotEmpty) {
+            print('✅ النص المعرّف: $_searchText');
+            // ✅ البحث سيتم تلقائياً عبر listener
+            _stopListening();
+          }
+        }
+      },
+    );
+
+    setState(() {
+      _isListening = true;
+      _searchText = '';
+    });
+  }
+
+  /// إيقاف الاستماع للصوت
+  void _stopListening() {
+    _speech.stop();
+    setState(() {
+      _isListening = false;
+    });
+  }
+
+  /// بناء أيقونات suffix (الميكروفون ومسح النص)
+  Widget? _buildSuffixIcons() {
+    final hasText = _searchController.text.isNotEmpty;
+    
+    // ✅ إذا كان هناك نص وليس في حالة استماع، نعرض كلا الأيقونتين
+    if (hasText && !_isListening) {
+      return Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // ✅ زر الميكروفون
+          IconButton(
+            icon: Icon(
+              Icons.mic_none,
+              color: Colors.grey[500],
+              size: 20,
+            ),
+            onPressed: _startListening, // ✅ السماح بالضغط دائماً
+            tooltip: 'البحث بالصوت',
+            padding: EdgeInsets.all(8),
+            constraints: BoxConstraints(
+              minWidth: 40,
+              minHeight: 40,
+            ),
+          ),
+          // ✅ زر مسح النص
+          IconButton(
+            icon: Icon(
+              Icons.clear,
+              color: Colors.grey[500],
+              size: 20,
+            ),
+            onPressed: () {
+              setState(() {
+                _searchController.clear();
+              });
+            },
+            padding: EdgeInsets.all(8),
+            constraints: BoxConstraints(
+              minWidth: 40,
+              minHeight: 40,
+            ),
+          ),
+        ],
+      );
+    }
+    
+    // ✅ إذا كان في حالة استماع، نعرض فقط أيقونة الميكروفون الحمراء
+    if (_isListening) {
+      return IconButton(
+        icon: Icon(
+          Icons.mic,
+          color: Colors.red,
+          size: 20,
+        ),
+        onPressed: _stopListening,
+        tooltip: 'إيقاف التسجيل',
+        padding: EdgeInsets.all(8),
+        constraints: BoxConstraints(
+          minWidth: 40,
+          minHeight: 40,
+        ),
+      );
+    }
+    
+    // ✅ إذا لم يكن هناك نص، نعرض فقط أيقونة الميكروفون
+    return IconButton(
+      icon: Icon(
+        Icons.mic_none,
+        color: Colors.grey[500],
+        size: 20,
+      ),
+      onPressed: _startListening, // ✅ السماح بالضغط دائماً
+      tooltip: 'البحث بالصوت',
+      padding: EdgeInsets.all(8),
+      constraints: BoxConstraints(
+        minWidth: 40,
+        minHeight: 40,
+      ),
+    );
   }
 
   @override
@@ -1320,20 +947,7 @@ class _FoldersPageState extends State<FoldersPage> {
                             color: Colors.grey[500],
                             size: 22,
                           ),
-                          suffixIcon: _searchController.text.isNotEmpty
-                              ? IconButton(
-                                  icon: Icon(
-                                    Icons.clear,
-                                    color: Colors.grey[500],
-                                    size: 20,
-                                  ),
-                                  onPressed: () {
-                                    setState(() {
-                                      _searchController.clear();
-                                    });
-                                  },
-                                )
-                              : null,
+                          suffixIcon: _buildSuffixIcons(),
                           border: InputBorder.none,
                           contentPadding: EdgeInsets.symmetric(
                             horizontal: 20,
@@ -1352,6 +966,32 @@ class _FoldersPageState extends State<FoldersPage> {
                           // ✅ البحث يتم تلقائياً عبر listener
                         },
                       ),
+                    ),
+                  ),
+                  SizedBox(width: 12),
+                  // زر الفلتر
+                  Container(
+                    height: 50,
+                    width: 50,
+                    decoration: BoxDecoration(
+                      color: Color(0xFF00BFA5),
+                      borderRadius: BorderRadius.circular(10),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.1),
+                          blurRadius: 8,
+                          offset: Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: IconButton(
+                      icon: Icon(Icons.filter_list, color: Colors.white),
+                      tooltip: 'الفلتر',
+                      onPressed: () {
+                        setState(() {
+                          _showFilterOptions = !_showFilterOptions;
+                        });
+                      },
                     ),
                   ),
                   SizedBox(width: 12),
@@ -1390,31 +1030,8 @@ class _FoldersPageState extends State<FoldersPage> {
                     ),
                   ),
                   SizedBox(width: 12),
+
                   // زر الفلتر
-                  Container(
-                    height: 50,
-                    width: 50,
-                    decoration: BoxDecoration(
-                      color: Color(0xFF00BFA5),
-                      borderRadius: BorderRadius.circular(10),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.1),
-                          blurRadius: 8,
-                          offset: Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: IconButton(
-                      icon: Icon(Icons.filter_list, color: Colors.white),
-                      tooltip: 'الفلتر',
-                      onPressed: () {
-                        setState(() {
-                          _showFilterOptions = !_showFilterOptions;
-                        });
-                      },
-                    ),
-                  ),
                 ],
               ),
             ),
@@ -1424,6 +1041,8 @@ class _FoldersPageState extends State<FoldersPage> {
               FilterSection(
                 selectedTypes: _selectedTypes,
                 selectedTimeFilter: _selectedTimeFilter,
+                selectedCategory: _selectedCategory,
+                selectedDateRange: _selectedDateRange,
                 onTypesChanged: (newTypes) {
                   setState(() {
                     _selectedTypes = newTypes;
@@ -1433,6 +1052,47 @@ class _FoldersPageState extends State<FoldersPage> {
                   setState(() {
                     _selectedTimeFilter = newTimeFilter;
                   });
+                },
+                onCategoryChanged: (newCategory) {
+                  setState(() {
+                    _selectedCategory = newCategory;
+                  });
+                  // ✅ إعادة البحث عند تغيير التصنيف
+                  if (_searchController.text.trim().isNotEmpty) {
+                    _performFileSearch(_searchController.text.trim());
+                  }
+                },
+                onDateRangeChanged: (newDateRange) {
+                  setState(() {
+                    _selectedDateRange = newDateRange;
+                    // ✅ إذا تم إلغاء التاريخ، أزل التواريخ المخصصة
+                    if (newDateRange == null) {
+                      _customStartDate = null;
+                      _customEndDate = null;
+                    }
+                  });
+                  // ✅ إعادة البحث عند تغيير التاريخ
+                  if (_searchController.text.trim().isNotEmpty) {
+                    _performFileSearch(_searchController.text.trim());
+                  }
+                },
+                onStartDateChanged: (newStartDate) {
+                  setState(() {
+                    _customStartDate = newStartDate;
+                  });
+                  // ✅ إعادة البحث عند تغيير تاريخ البداية
+                  if (_searchController.text.trim().isNotEmpty) {
+                    _performFileSearch(_searchController.text.trim());
+                  }
+                },
+                onEndDateChanged: (newEndDate) {
+                  setState(() {
+                    _customEndDate = newEndDate;
+                  });
+                  // ✅ إعادة البحث عند تغيير تاريخ النهاية
+                  if (_searchController.text.trim().isNotEmpty) {
+                    _performFileSearch(_searchController.text.trim());
+                  }
                 },
               ),
             SizedBox(height: 10),
@@ -1489,64 +1149,630 @@ class _FoldersPageState extends State<FoldersPage> {
     );
   }
 
+  // ✅ بناء عرض نتائج البحث (مجلدات + ملفات)
+  Widget _buildSearchResults() {
+    return SearchResultsWidget(
+      filteredFolders: _filteredFolders,
+      searchFilesResults: _searchFilesResults,
+      isSearchLoadingFiles: _isSearchLoadingFiles,
+      isFilesGridView: isFilesGridView,
+      onViewChanged: (isGrid) {
+        setState(() {
+          isFilesGridView = isGrid;
+        });
+      },
+      onFolderTap: _handleFolderTap,
+      onFileTap: _handleFileTap,
+      onFileRemoved: () {
+        final query = _searchController.text.trim();
+        if (query.isNotEmpty) {
+          _performFileSearch(query);
+        }
+      },
+      getFileUrlForSearch: _getFileUrlForSearch,
+      getFileTypeForSearch: _getFileTypeForSearch,
+      formatBytesForSearch: _formatBytesForSearch,
+    );
+  }
+
+  // ✅ دوال مساعدة لتحويل البيانات
+  String _getFileTypeForSearch(String fileName) {
+    final name = fileName.toLowerCase();
+    if (name.endsWith('.jpg') ||
+        name.endsWith('.jpeg') ||
+        name.endsWith('.png') ||
+        name.endsWith('.gif') ||
+        name.endsWith('.bmp') ||
+        name.endsWith('.webp')) {
+      return 'image';
+    } else if (name.endsWith('.mp4') ||
+        name.endsWith('.mov') ||
+        name.endsWith('.avi') ||
+        name.endsWith('.mkv') ||
+        name.endsWith('.wmv')) {
+      return 'video';
+    } else if (name.endsWith('.pdf')) {
+      return 'pdf';
+    } else if (name.endsWith('.mp3') ||
+        name.endsWith('.wav') ||
+        name.endsWith('.aac') ||
+        name.endsWith('.ogg')) {
+      return 'audio';
+    } else {
+      return 'file';
+    }
+  }
+
+  String _formatBytesForSearch(int bytes) {
+    if (bytes == 0) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+
+    int i = 0;
+    double size = bytes.toDouble();
+
+    while (size >= k && i < sizes.length - 1) {
+      size /= k;
+      i++;
+    }
+
+    if (i >= sizes.length) {
+      i = sizes.length - 1;
+    }
+
+    return '${size.toStringAsFixed(1)} ${sizes[i]}';
+  }
+
+  // ✅ استخراج بيانات الملف من Map
+  Map<String, dynamic> _extractFileData(Map<String, dynamic> file) {
+    final originalData = file['originalData'] ?? file;
+    final filePath = file['path'] as String?;
+    final fileId =
+        file['_id']?.toString() ??
+        file['id']?.toString() ??
+        originalData['_id']?.toString() ??
+        originalData['id']?.toString();
+    final originalName = file['originalName'] ?? file['name'] ?? 'ملف بدون اسم';
+
+    return {
+      'originalData': originalData,
+      'filePath': filePath,
+      'fileId': fileId,
+      'originalName': originalName,
+    };
+  }
+
+  /// بناء URL مناسب للملف
+  ///
+  /// تقوم هذه الدالة بـ:
+  /// 1. تحديد ما إذا كان يجب استخدام fileId أو filePath
+  /// 2. تحويل view endpoints إلى download endpoints للملفات الخارجية
+  /// 3. إرجاع URL و useDownloadEndpoint flag
+  ///
+  /// [Parameters]:
+  /// - [filePath]: مسار الملف (إن وجد)
+  /// - [fileId]: معرف الملف (إن لم يكن هناك filePath)
+  /// - [originalName]: الاسم الأصلي للملف (لتحديد الامتداد)
+  ///
+  /// [Returns]: Map يحتوي على 'url' و 'useDownloadEndpoint' أو null
+  Map<String, dynamic>? _buildFileUrl({
+    required String? filePath,
+    required String? fileId,
+    required String originalName,
+  }) {
+    if ((filePath == null || filePath.isEmpty) &&
+        (fileId != null && fileId.isNotEmpty)) {
+      final extension = originalName.toLowerCase().contains('.')
+          ? originalName.toLowerCase().substring(
+              originalName.toLowerCase().lastIndexOf('.') + 1,
+            )
+          : '';
+
+      final isExternalFile = _externalFileExtensions.contains(
+        extension.toLowerCase(),
+      );
+
+      if (isExternalFile) {
+        final baseUrl = ApiConfig.baseUrl.replaceAll('/api/v1', '');
+        final downloadPath = ApiEndpoints.downloadFile(fileId);
+        return {'url': "$baseUrl$downloadPath", 'useDownloadEndpoint': true};
+      } else {
+        final baseUrl = ApiConfig.baseUrl;
+        final viewPath = ApiEndpoints.viewFile(fileId);
+        return {'url': "$baseUrl$viewPath", 'useDownloadEndpoint': false};
+      }
+    } else if (filePath != null && filePath.isNotEmpty) {
+      return {
+        'url': _getFileUrlForSearch(filePath),
+        'useDownloadEndpoint': false,
+      };
+    }
+    return null;
+  }
+
+  // ✅ معالجة الضغط على ملف من نتائج البحث (مثل smart_search_page.dart)
+  Future<void> _handleFileTap(Map<String, dynamic> file) async {
+    // ✅ استخراج بيانات الملف
+    final fileData = _extractFileData(file);
+    final originalData = fileData['originalData'] as Map<String, dynamic>;
+    final filePath = fileData['filePath'] as String?;
+    final fileId = fileData['fileId'] as String?;
+    final originalName = fileData['originalName'] as String;
+    final fileNameLower = originalName.toLowerCase();
+
+    // ✅ بناء URL
+    final urlData = _buildFileUrl(
+      filePath: filePath,
+      fileId: fileId,
+      originalName: originalName,
+    );
+
+    if (urlData == null) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('رابط الملف غير متوفر - لا يوجد path أو _id'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+      }
+      return;
+    }
+
+    final url = urlData['url'] as String;
+    final useDownloadEndpoint = urlData['useDownloadEndpoint'] as bool;
+
+    if (!_isValidUrlForSearch(url)) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('رابط غير صالح'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+      return;
+    }
+
+    // ✅ التحقق من نوع الملف وتحديد ما إذا كان يحتاج Loading Dialog
+    final extension = fileNameLower.contains('.')
+        ? fileNameLower.substring(fileNameLower.lastIndexOf('.') + 1)
+        : '';
+    final shouldShowLoading = !_externalFileExtensions.contains(
+      extension.toLowerCase(),
+    );
+
+    if (shouldShowLoading) {
+      _showLoadingDialog(context);
+    }
+
+    try {
+      final token = await StorageService.getToken();
+      if (token == null) {
+        if (mounted && shouldShowLoading) {
+          Navigator.pop(context);
+        }
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text('يجب تسجيل الدخول أولاً'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+        return;
+      }
+
+      final client = http.Client();
+      final response = await client.get(
+        Uri.parse(url),
+        headers: {'Authorization': 'Bearer $token', 'Range': 'bytes=0-511'},
+      );
+      if (mounted && shouldShowLoading) {
+        Navigator.pop(context);
+      }
+
+      if (response.statusCode == 200 || response.statusCode == 206) {
+        await _openFileByType(
+          url: url,
+          fileId: fileId,
+          originalName: originalName,
+          originalData: originalData,
+          filePath: filePath,
+          fileNameLower: fileNameLower,
+          response: response,
+          useDownloadEndpoint: useDownloadEndpoint,
+          token: token,
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('الملف غير متاح (خطأ ${response.statusCode})'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('خطأ في تحميل الملف: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  // ✅ دوال مساعدة
+  void _showLoadingDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => Center(child: CircularProgressIndicator()),
+    );
+  }
+
+  bool _isValidUrlForSearch(String url) {
+    try {
+      final uri = Uri.parse(url);
+      return uri.isAbsolute &&
+          (uri.scheme == 'http' || uri.scheme == 'https') &&
+          uri.host.isNotEmpty;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  /// تحديد امتداد الملف
+  ///
+  /// تحاول هذه الدالة تحديد امتداد الملف من مصادر متعددة بالترتيب:
+  /// 1. originalData['name'] (من lastIndexOf('.'))
+  /// 2. originalData['contentType'] أو ['mimeType']
+  /// 3. fileNameLower (من lastIndexOf('.'))
+  /// 4. filePath (من lastIndexOf('.'))
+  ///
+  /// [Parameters]:
+  /// - [originalData]: البيانات الأصلية للملف
+  /// - [fileNameLower]: اسم الملف بحروف صغيرة
+  /// - [filePath]: مسار الملف
+  /// - [contentType]: Content-Type من HTTP response
+  ///
+  /// [Returns]: String? امتداد الملف أو null إن لم يتم العثور عليه
+  String? _getFileExtension({
+    required Map<String, dynamic> originalData,
+    required String fileNameLower,
+    required String? filePath,
+    required String contentType,
+  }) {
+    final origName = originalData['name']?.toString();
+    if (origName != null && origName.contains('.')) {
+      return origName.substring(origName.lastIndexOf('.') + 1).toLowerCase();
+    }
+    final contentTypeFromData =
+        originalData['contentType']?.toString() ??
+        originalData['mimeType']?.toString();
+    if (contentTypeFromData != null) {
+      if (contentTypeFromData.contains('image')) {
+        if (contentTypeFromData.contains('jpeg')) return 'jpg';
+        if (contentTypeFromData.contains('png')) return 'png';
+        if (contentTypeFromData.contains('gif')) return 'gif';
+        if (contentTypeFromData.contains('webp')) return 'webp';
+      }
+      if (contentTypeFromData.contains('video')) {
+        if (contentTypeFromData.contains('mp4')) return 'mp4';
+        if (contentTypeFromData.contains('quicktime')) return 'mov';
+      }
+      if (contentTypeFromData.contains('audio')) {
+        if (contentTypeFromData.contains('mpeg')) return 'mp3';
+        if (contentTypeFromData.contains('wav')) return 'wav';
+      }
+      if (contentTypeFromData.contains('pdf')) return 'pdf';
+    }
+    if (fileNameLower.contains('.')) {
+      return fileNameLower.substring(fileNameLower.lastIndexOf('.') + 1);
+    }
+    if (filePath != null && filePath.contains('.')) {
+      return filePath.substring(filePath.lastIndexOf('.') + 1).toLowerCase();
+    }
+    return null;
+  }
+
+  // ✅ التحقق من نوع الملف
+  bool _isImageFile(String? extension, String contentType) {
+    if (extension != null) {
+      return ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp'].contains(extension);
+    }
+    return contentType.startsWith('image/');
+  }
+
+  /// التحقق من أن الملف فيديو
+  ///
+  /// [Parameters]:
+  /// - [extension]: امتداد الملف (mp4, mov, إلخ)
+  /// - [contentType]: Content-Type من HTTP response
+  ///
+  /// [Returns]: true إذا كان الملف فيديو
+  bool _isVideoFile(String? extension, String contentType) {
+    if (extension != null) {
+      return [
+        'mp4',
+        'mov',
+        'mkv',
+        'avi',
+        'wmv',
+        'webm',
+        'm4v',
+        '3gp',
+        'flv',
+      ].contains(extension);
+    }
+    return contentType.startsWith('video/');
+  }
+
+  /// التحقق من أن الملف صوتي
+  ///
+  /// [Parameters]:
+  /// - [extension]: امتداد الملف (mp3, wav, إلخ)
+  /// - [contentType]: Content-Type من HTTP response
+  ///
+  /// [Returns]: true إذا كان الملف صوتي
+  bool _isAudioFile(String? extension, String contentType) {
+    if (extension != null) {
+      return [
+        'mp3',
+        'wav',
+        'aac',
+        'ogg',
+        'm4a',
+        'wma',
+        'flac',
+      ].contains(extension);
+    }
+    return contentType.startsWith('audio/');
+  }
+
+  /// فتح الملف حسب نوعه
+  ///
+  /// تقوم هذه الدالة بتحليل نوع الملف وفتحه باستخدام الـ viewer المناسب:
+  /// - PDF: PdfViewerPage
+  /// - Video: VideoViewer
+  /// - Image: ImageViewer
+  /// - Text: TextViewerPage
+  /// - Audio: AudioPlayerPage
+  /// - External files (Office, compressed, etc.): OfficeFileOpener
+  ///
+  /// [Parameters]:
+  /// - [url]: رابط الملف
+  /// - [fileId]: معرف الملف
+  /// - [originalName]: الاسم الأصلي للملف
+  /// - [originalData]: البيانات الأصلية للملف
+  /// - [filePath]: مسار الملف (إن وجد)
+  /// - [fileNameLower]: اسم الملف بحروف صغيرة
+  /// - [response]: استجابة HTTP الأولية (للتحقق من نوع الملف)
+  /// - [useDownloadEndpoint]: هل يجب استخدام download endpoint
+  /// - [token]: token المصادقة
+  ///
+  /// [Returns]: Future<void>
+  Future<void> _openFileByType({
+    required String url,
+    required String? fileId,
+    required String originalName,
+    required Map<String, dynamic> originalData,
+    required String? filePath,
+    required String fileNameLower,
+    required http.Response response,
+    required bool useDownloadEndpoint,
+    required String? token,
+  }) async {
+    final bytes = response.bodyBytes;
+    final isPdf = _isValidPdfForSearch(bytes);
+    final contentType = response.headers['content-type']?.toLowerCase() ?? '';
+    final extension = _getFileExtension(
+      originalData: originalData,
+      fileNameLower: fileNameLower,
+      filePath: filePath,
+      contentType: contentType,
+    );
+
+    // PDF
+    if ((extension == 'pdf' || fileNameLower.endsWith('.pdf')) && isPdf) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => PdfViewerPage(pdfUrl: url, fileName: originalName),
+        ),
+      );
+      return;
+    }
+
+    // فيديو
+    if (_isVideoFile(extension, contentType)) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => VideoViewer(url: url)),
+      );
+      return;
+    }
+
+    // صورة
+    if (_isImageFile(extension, contentType)) {
+      final fileIdForImage = originalData['_id']?.toString();
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) =>
+              ImageViewer(imageUrl: url, fileId: fileIdForImage ?? ''),
+        ),
+      );
+      return;
+    }
+
+    // نص
+    if (TextViewerPage.isTextFile(originalName) ||
+        contentType.startsWith('text/')) {
+      _showLoadingDialog(context);
+      try {
+        final fullResponse = await http.get(
+          Uri.parse(url),
+          headers: {'Authorization': 'Bearer $token'},
+        );
+        if (mounted) Navigator.pop(context);
+        if (fullResponse.statusCode == 200) {
+          final tempDir = await getTemporaryDirectory();
+          final tempFile = File('${tempDir.path}/$originalName');
+          await tempFile.writeAsBytes(fullResponse.bodyBytes);
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => TextViewerPage(
+                filePath: tempFile.path,
+                fileName: originalName,
+              ),
+            ),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          Navigator.pop(context);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('خطأ في تحميل الملف النصي: ${e.toString()}'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+      return;
+    }
+
+    // صوت
+    if (_isAudioFile(extension, contentType)) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) =>
+              AudioPlayerPage(audioUrl: url, fileName: originalName),
+        ),
+      );
+      return;
+    }
+
+    // ✅ باقي الملفات (Office, ZIP, إلخ) - تفتح خارج التطبيق
+    String finalUrl = url;
+    if (!useDownloadEndpoint && fileId != null && fileId.isNotEmpty) {
+      final baseUrl = ApiConfig.baseUrl.replaceAll('/api/v1', '');
+      final downloadPath = ApiEndpoints.downloadFile(fileId);
+      finalUrl = "$baseUrl$downloadPath";
+      print(
+        '✅ Converted view URL to download URL for external file: $finalUrl',
+      );
+    }
+
+    _showLoadingDialog(context);
+
+    await OfficeFileOpener.openAnyFile(
+      url: finalUrl,
+      context: context,
+      token: token,
+      fileName: originalName,
+      closeLoadingDialog: true,
+      onProgress: (received, total) {
+        if (total > 0) {
+          final percent = (received / total * 100).toStringAsFixed(0);
+          print("📥 Downloading: $percent% ($received / $total bytes)");
+        }
+      },
+    );
+  }
+
+  // ✅ دوال مساعدة لفتح الملفات من نتائج البحث
+  bool _isValidPdfForSearch(List<int> bytes) {
+    try {
+      if (bytes.length < 4) return false;
+      final signature = String.fromCharCodes(bytes.sublist(0, 4));
+      return signature == '%PDF';
+    } catch (e) {
+      return false;
+    }
+  }
+
+  String _getFileUrlForSearch(String path) {
+    if (path.startsWith('http')) {
+      return path;
+    }
+    String cleanPath = path.replaceAll(r'\', '/').replaceAll('//', '/');
+    while (cleanPath.startsWith('/')) {
+      cleanPath = cleanPath.substring(1);
+    }
+    final base = ApiConfig.baseUrl.replaceAll('/api/v1', '');
+    String baseClean = base.endsWith('/')
+        ? base.substring(0, base.length - 1)
+        : base;
+    return '$baseClean/$cleanPath';
+  }
+
+  // ✅ معالجة الضغط على مجلد من نتائج البحث
+  void _handleFolderTap(Map<String, dynamic> folder) {
+    final type = folder['type'] as String?;
+    if (type == 'category') {
+      final categoryTitle = folder['title']?.toString() ?? '';
+      final categoryColor = folder['color'] is Color
+          ? folder['color'] as Color
+          : Colors.blue;
+      final categoryIcon = folder['icon'] is IconData
+          ? folder['icon'] as IconData
+          : Icons.folder;
+
+      if (categoryTitle.isNotEmpty) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => CategoryPage(
+              category: categoryTitle,
+              color: categoryColor,
+              icon: categoryIcon,
+            ),
+          ),
+        );
+      }
+    } else if (type == 'folder') {
+      final folderId =
+          folder['folderId']?.toString() ?? folder['_id']?.toString();
+      if (folderId != null && folderId.isNotEmpty) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => ChangeNotifierProvider.value(
+              value: Provider.of<FolderController>(context, listen: false),
+              child: FolderContentsPage(
+                folderId: folderId,
+                folderName:
+                    folder['title']?.toString() ??
+                    folder['name']?.toString() ??
+                    'مجلد',
+                folderColor: folder['color'] is Color
+                    ? folder['color'] as Color?
+                    : null,
+              ),
+            ),
+          ),
+        );
+      }
+    }
+  }
+
   // دالة لبناء المحتوى
   Widget _buildContent(
     List<Map<String, dynamic>> folders,
     bool showFolders,
     bool showFiles,
   ) {
-    // ✅ إذا كان البحث الذكي نشطاً، عرض نتائج البحث
-    if (_isSearching && showFiles) {
-      if (_isSearchLoading) {
-        return Card(
-          elevation: 4,
-          margin: EdgeInsets.zero,
-          color: const Color(0xFFE9E9E9),
-          child: Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                CircularProgressIndicator(),
-                SizedBox(height: 16),
-                Text(
-                  'جاري البحث الذكي...',
-                  style: TextStyle(color: Colors.grey[600]),
-                ),
-              ],
-            ),
-          ),
-        );
-      }
-
-      if (_searchResults.isEmpty && _searchQuery != null) {
-        return Card(
-          elevation: 4,
-          margin: EdgeInsets.zero,
-          color: const Color(0xFFE9E9E9),
-          child: Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.search_off, size: 64, color: Colors.grey[400]),
-                SizedBox(height: 16),
-                Text(
-                  'لا توجد نتائج للبحث: "$_searchQuery"',
-                  style: TextStyle(fontSize: 18, color: Colors.grey[600]),
-                ),
-                SizedBox(height: 8),
-                Text(
-                  'جرب البحث بكلمات مختلفة',
-                  style: TextStyle(fontSize: 14, color: Colors.grey[500]),
-                ),
-              ],
-            ),
-          ),
-        );
-      }
-
-      if (_searchResults.isNotEmpty) {
-        return _buildSmartSearchResults();
-      }
+    // ✅ إذا كان هناك بحث نشط، عرض نتائج البحث (مجلدات + ملفات)
+    final hasSearchQuery = _searchController.text.trim().isNotEmpty;
+    if (hasSearchQuery) {
+      return _buildSearchResults();
     }
 
     return Card(
@@ -1651,7 +1877,8 @@ class _FoldersPageState extends State<FoldersPage> {
                           .where((item) => item['type'] == 'category')
                           .map((category) {
                             final categoryName =
-                                (category['category'] as String).toLowerCase();
+                                (category['category']?.toString() ?? '')
+                                    .toLowerCase();
                             final stats = categoriesStats[categoryName];
 
                             if (stats != null) {
@@ -1714,16 +1941,27 @@ class _FoldersPageState extends State<FoldersPage> {
 
                           // ✅ إذا كان category، افتح صفحة التصنيف
                           if (type == 'category') {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => CategoryPage(
-                                  category: item['title'] as String,
-                                  color: item['color'] as Color,
-                                  icon: item['icon'] as IconData,
+                            final categoryTitle =
+                                item['title']?.toString() ?? '';
+                            final categoryColor = item['color'] is Color
+                                ? item['color'] as Color
+                                : Colors.blue;
+                            final categoryIcon = item['icon'] is IconData
+                                ? item['icon'] as IconData
+                                : Icons.folder;
+
+                            if (categoryTitle.isNotEmpty) {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => CategoryPage(
+                                    category: categoryTitle,
+                                    color: categoryColor,
+                                    icon: categoryIcon,
+                                  ),
                                 ),
-                              ),
-                            );
+                              );
+                            }
                           }
                           // ✅ إذا كان folder، افتح محتويات المجلد
                           else if (type == 'folder') {
@@ -1771,7 +2009,8 @@ class _FoldersPageState extends State<FoldersPage> {
                           .where((item) => item['type'] == 'category')
                           .map((category) {
                             final categoryName =
-                                (category['category'] as String).toLowerCase();
+                                (category['category']?.toString() ?? '')
+                                    .toLowerCase();
                             final stats = categoriesStats[categoryName];
 
                             if (stats != null) {
@@ -1836,22 +2075,26 @@ class _FoldersPageState extends State<FoldersPage> {
                           // ✅ إذا كان category، افتح صفحة التصنيف
                           if (type == 'category') {
                             final categoryTitle =
-                                item['title'] as String? ?? '';
-                            final categoryColor =
-                                item['color'] as Color? ?? Colors.blue;
-                            final categoryIcon =
-                                item['icon'] as IconData? ?? Icons.folder;
+                                item['title']?.toString() ?? '';
+                            final categoryColor = item['color'] is Color
+                                ? item['color'] as Color
+                                : Colors.blue;
+                            final categoryIcon = item['icon'] is IconData
+                                ? item['icon'] as IconData
+                                : Icons.folder;
 
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => CategoryPage(
-                                  category: categoryTitle,
-                                  color: categoryColor,
-                                  icon: categoryIcon,
+                            if (categoryTitle.isNotEmpty) {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => CategoryPage(
+                                    category: categoryTitle,
+                                    color: categoryColor,
+                                    icon: categoryIcon,
+                                  ),
                                 ),
-                              ),
-                            );
+                              );
+                            }
                           }
                           // ✅ إذا كان folder، افتح محتويات المجلد
                           else if (type == 'folder') {

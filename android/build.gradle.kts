@@ -2,6 +2,18 @@ allprojects {
     repositories {
         google()
         mavenCentral()
+        // ✅ إضافة repository لـ ffmpeg-kit
+        maven {
+            url = uri("https://www.jitpack.io")
+        }
+        // ✅ إضافة repository إضافي لـ ffmpeg-kit
+        maven {
+            url = uri("https://repo1.maven.org/maven2")
+        }
+        // ✅ إضافة Maven repository لـ FFmpeg Kit
+        maven {
+            url = uri("https://oss.sonatype.org/content/repositories/snapshots/")
+        }
     }
 }
 

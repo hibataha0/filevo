@@ -46,6 +46,9 @@ class FileSearchService {
     int limit = 20,
     double minScore = 0.2,
     String? category,
+    String? dateRange, // ✅ 'yesterday', 'last7days', 'last30days', 'lastyear', 'custom'
+    DateTime? startDate, // ✅ للـ custom date range
+    DateTime? endDate, // ✅ للـ custom date range
   }) async {
     try {
       final token = await StorageService.getToken();
@@ -60,6 +63,8 @@ class FileSearchService {
       print('🔍 [FileSearchService] Smart search using Hugging Face API (FREE)...');
       print('   Query: $query');
       print('   Limit: $limit, MinScore: $minScore');
+      print('   Category: ${category ?? "all"}');
+      print('   DateRange: ${dateRange ?? "all"}');
 
       final body = {
         'query': query.trim(),
@@ -69,6 +74,20 @@ class FileSearchService {
 
       if (category != null && category.isNotEmpty && category != 'all') {
         body['category'] = category;
+      }
+
+      if (dateRange != null && dateRange.isNotEmpty && dateRange != 'all') {
+        body['dateRange'] = dateRange;
+        
+        // ✅ إضافة التواريخ المخصصة إذا كانت موجودة
+        if (dateRange == 'custom') {
+          if (startDate != null) {
+            body['startDate'] = startDate.toIso8601String();
+          }
+          if (endDate != null) {
+            body['endDate'] = endDate.toIso8601String();
+          }
+        }
       }
 
       final response = await http

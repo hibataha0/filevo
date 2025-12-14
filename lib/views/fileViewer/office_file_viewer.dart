@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart';
+import 'package:filevo/generated/l10n.dart';
 
 class OfficeFileViewer extends StatefulWidget {
   final String fileUrl;
@@ -109,7 +110,7 @@ class _OfficeFileViewerState extends State<OfficeFileViewer> {
                         });
                         _initializeWebView();
                       },
-                      child: Text('إعادة المحاولة'),
+                      child: Text(S.of(context).retry),
                     ),
                   ],
                 ),

@@ -1,19 +1,22 @@
 import 'package:flutter/material.dart';
+import 'package:filevo/generated/l10n.dart';
 import 'package:filevo/constants/app_colors.dart';
+import 'package:filevo/components/search_results_widget.dart';
+import 'package:filevo/services/file_search_service.dart';
+import 'package:filevo/config/api_config.dart';
+import 'package:filevo/services/api_endpoints.dart';
 import 'package:filevo/views/fileViewer/VideoViewer.dart';
 import 'package:filevo/views/fileViewer/audioPlayer.dart';
 import 'package:filevo/views/fileViewer/imageViewer.dart';
 import 'package:filevo/views/fileViewer/office_file_opener.dart';
 import 'package:filevo/views/fileViewer/pdfViewer.dart';
 import 'package:filevo/views/fileViewer/textViewer.dart';
-import 'package:filevo/config/api_config.dart';
-import 'package:filevo/services/api_endpoints.dart';
 import 'package:filevo/services/storage_service.dart';
-import 'package:filevo/services/file_search_service.dart';
 import 'package:http/http.dart' as http;
 import 'dart:io';
 import 'package:path_provider/path_provider.dart';
-import 'package:cached_network_image/cached_network_image.dart';
+import 'package:speech_to_text/speech_to_text.dart' as stt;
+import 'package:permission_handler/permission_handler.dart';
 
 class SmartSearchPage extends StatefulWidget {
   const SmartSearchPage({super.key});
@@ -36,16 +39,179 @@ class _SmartSearchPageState extends State<SmartSearchPage>
   String? _searchQuery;
   bool _isGridView = true; // ✅ toggle للتبديل بين Grid و List
 
+  // ✅ ميزة البحث بالصوت (Speech to Text)
+  final stt.SpeechToText _speech = stt.SpeechToText();
+  bool _isListening = false;
+  String _searchText = ''; // النص المعرّف من الصوت
+
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 4, vsync: this);
+    _initializeSpeech();
+  }
+
+  /// تهيئة خدمة تحويل الصوت إلى نص
+  Future<void> _initializeSpeech() async {
+    try {
+      await _speech.initialize(
+        onStatus: (status) {
+          if (mounted) {
+            setState(() {
+              _isListening = status == 'listening';
+            });
+          }
+        },
+        onError: (error) {
+          if (mounted) {
+            print('❌ خطأ في التعرف على الصوت: ${error.errorMsg}');
+            setState(() {
+              _isListening = false;
+            });
+          }
+        },
+      );
+    } catch (e) {
+      print('❌ خطأ في تهيئة خدمة الصوت: $e');
+    }
+  }
+
+  /// بدء الاستماع للصوت
+  Future<void> _startListening() async {
+    // ✅ التحقق من حالة الإذن أولاً
+    PermissionStatus status = await Permission.microphone.status;
+    
+    // ✅ إذا كان الإذن مرفوض بشكل دائم، نفتح الإعدادات
+    if (status.isPermanentlyDenied) {
+      if (mounted) {
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: Text(S.of(context).microphonePermissionRequired),
+            content: const Text(
+              'يجب السماح بالوصول إلى الميكروفون للبحث بالصوت.\n\n'
+              'افتح إعدادات التطبيق وسمح بالوصول إلى الميكروفون.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text(S.of(context).cancel),
+              ),
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  openAppSettings(); // ✅ فتح إعدادات التطبيق
+                },
+                child: Text(S.of(context).openSettings),
+              ),
+            ],
+          ),
+        );
+      }
+      return;
+    }
+    
+    // ✅ إذا لم يكن الإذن ممنوحاً، نطلب الإذن مباشرة
+    if (!status.isGranted) {
+      // ✅ طلب إذن الميكروفون - سيظهر نافذة النظام تلقائياً
+      status = await Permission.microphone.request();
+      
+      // ✅ إعادة التحقق من حالة الإذن بعد الطلب
+      // ✅ ننتظر قليلاً للتأكد من تحديث الحالة
+      await Future.delayed(const Duration(milliseconds: 100));
+      status = await Permission.microphone.status;
+      
+      // ✅ إذا رفض المستخدم الإذن
+      if (!status.isGranted) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(S.of(context).permissionDenied),
+              backgroundColor: Colors.orange,
+              duration: Duration(seconds: 3),
+            ),
+          );
+        }
+        return;
+      }
+    }
+    
+    // ✅ التأكد مرة أخرى من أن الإذن ممنوح قبل المتابعة
+    final finalStatus = await Permission.microphone.status;
+    if (!finalStatus.isGranted) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(S.of(context).mustAllowMicrophoneAccess),
+            backgroundColor: Colors.orange,
+            duration: Duration(seconds: 3),
+          ),
+        );
+      }
+      return;
+    }
+
+    // ✅ التحقق من توفر الخدمة
+    bool available = await _speech.initialize();
+    if (!available) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(S.of(context).speechRecognitionNotAvailable),
+            backgroundColor: Colors.orange,
+          ),
+        );
+      }
+      return;
+    }
+
+    // ✅ بدء الاستماع
+    _speech.listen(
+      localeId: "ar", // ✅ اللغة العربية
+      onResult: (result) {
+        if (mounted) {
+          setState(() {
+            _searchText = result.recognizedWords;
+            // ✅ تحديث حقل البحث مباشرة
+            if (_searchText.isNotEmpty) {
+              _searchController.text = _searchText;
+            }
+          });
+
+          // ✅ إذا انتهى التعرف (final result)، نبحث تلقائياً
+          if (result.finalResult && _searchText.isNotEmpty) {
+            print('✅ النص المعرّف: $_searchText');
+            _stopListening();
+            // ✅ البحث تلقائياً بعد التعرف على الصوت
+            _performSearch();
+          }
+        }
+      },
+    );
+
+    setState(() {
+      _isListening = true;
+      _searchText = '';
+    });
+  }
+
+  /// إيقاف الاستماع للصوت
+  Future<void> _stopListening() async {
+    if (_isListening) {
+      await _speech.stop();
+      if (mounted) {
+        setState(() {
+          _isListening = false;
+        });
+      }
+    }
   }
 
   @override
   void dispose() {
     _searchController.dispose();
     _tabController.dispose();
+    _speech.stop();
     super.dispose();
   }
 
@@ -58,7 +224,7 @@ class _SmartSearchPageState extends State<SmartSearchPage>
       print('🔍 [SmartSearch] ERROR: Empty query');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('أدخل نص البحث'),
+          content: Text(S.of(context).enterSearchText),
           backgroundColor: Colors.orange,
         ),
       );
@@ -159,7 +325,7 @@ class _SmartSearchPageState extends State<SmartSearchPage>
 
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('خطأ في البحث: ${e.toString()}'),
+            content: Text(S.of(context).searchError(e.toString())),
             backgroundColor: Colors.red,
           ),
         );
@@ -173,24 +339,30 @@ class _SmartSearchPageState extends State<SmartSearchPage>
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('البحث الذكي'),
+        title: Text(S.of(context).smartSearch),
         backgroundColor: isDarkMode
             ? AppColors.darkAppBar
             : AppColors.lightAppBar,
         actions: [],
         bottom: PreferredSize(
-          preferredSize: Size.fromHeight(100),
+          preferredSize: Size.fromHeight(160),
           child: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
               Padding(
-                padding: const EdgeInsets.all(16.0),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16.0,
+                  vertical: 8.0,
+                ),
                 child: Row(
                   children: [
                     Expanded(
                       child: TextField(
                         controller: _searchController,
                         decoration: InputDecoration(
-                          hintText: 'ابحث... (مثال: صور من الأسبوع الماضي)',
+                          hintText: _isListening
+                              ? 'جاري الاستماع...'
+                              : 'ابحث... (مثال: صور من الأسبوع الماضي)',
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
@@ -199,19 +371,11 @@ class _SmartSearchPageState extends State<SmartSearchPage>
                               ? AppColors.darkCardBackground
                               : Colors.white,
                           prefixIcon: Icon(Icons.search),
-                          suffixIcon: _searchController.text.isNotEmpty
-                              ? IconButton(
-                                  icon: Icon(Icons.clear),
-                                  onPressed: () {
-                                    _searchController.clear();
-                                    setState(() {
-                                      _isSearching = false;
-                                      _searchResults = [];
-                                      _searchQuery = null;
-                                    });
-                                  },
-                                )
-                              : null,
+                          suffixIcon: _buildSuffixIcons(),
+                          contentPadding: EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 12,
+                          ),
                         ),
                         onChanged: (value) => setState(() {}),
                         onSubmitted: (_) => _performSearch(),
@@ -232,9 +396,10 @@ class _SmartSearchPageState extends State<SmartSearchPage>
               ),
               // Scope selector
               Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16.0,
-                  vertical: 8.0,
+                padding: const EdgeInsets.only(
+                  left: 16.0,
+                  right: 16.0,
+                  bottom: 8.0,
                 ),
                 child: SingleChildScrollView(
                   scrollDirection: Axis.horizontal,
@@ -251,8 +416,6 @@ class _SmartSearchPageState extends State<SmartSearchPage>
                   ),
                 ),
               ),
-              // ✅ إخفاء TabBar لأننا نستخدم البحث الجديد الذي يعيد ملفات فقط
-              SizedBox.shrink(),
             ],
           ),
         ),
@@ -280,6 +443,62 @@ class _SmartSearchPageState extends State<SmartSearchPage>
     );
   }
 
+  /// بناء أيقونات suffix (الميكروفون ومسح النص)
+  Widget? _buildSuffixIcons() {
+    final hasText = _searchController.text.isNotEmpty;
+    
+    // ✅ إذا كان هناك نص وليس في حالة استماع، نعرض كلا الأيقونتين
+    if (hasText && !_isListening) {
+      return Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // ✅ زر الميكروفون
+          IconButton(
+            icon: Icon(Icons.mic_none),
+            onPressed: _startListening,
+            tooltip: 'البحث بالصوت',
+            padding: EdgeInsets.zero,
+            constraints: BoxConstraints(),
+          ),
+          // ✅ زر مسح النص
+          IconButton(
+            icon: Icon(Icons.clear),
+            onPressed: () {
+              _searchController.clear();
+              setState(() {
+                _isSearching = false;
+                _searchResults = [];
+                _searchQuery = null;
+              });
+            },
+            padding: EdgeInsets.zero,
+            constraints: BoxConstraints(),
+          ),
+        ],
+      );
+    }
+    
+    // ✅ إذا كان في حالة استماع، نعرض فقط أيقونة الميكروفون الحمراء
+    if (_isListening) {
+      return IconButton(
+        icon: Icon(Icons.mic, color: Colors.red),
+        onPressed: _stopListening,
+        tooltip: 'إيقاف التسجيل',
+        padding: EdgeInsets.zero,
+        constraints: BoxConstraints(),
+      );
+    }
+    
+    // ✅ إذا لم يكن هناك نص، نعرض فقط أيقونة الميكروفون
+    return IconButton(
+      icon: Icon(Icons.mic_none),
+      onPressed: _startListening,
+      tooltip: 'البحث بالصوت',
+      padding: EdgeInsets.zero,
+      constraints: BoxConstraints(),
+    );
+  }
+
   Widget _buildScopeChip(String value, String label, IconData icon) {
     final isSelected = _selectedScope == value;
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
@@ -303,552 +522,21 @@ class _SmartSearchPageState extends State<SmartSearchPage>
     );
   }
 
-  // ✅ بناء عرض نتائج البحث (بنفس طريقة عرض الملفات في التطبيق)
+  // ✅ بناء عرض نتائج البحث باستخدام SearchResultsWidget المشترك
   Widget _buildSearchResults() {
-    // ✅ إذا كان البحث قيد التحميل
-    if (_isSearchLoading) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            CircularProgressIndicator(),
-            SizedBox(height: 16),
-            Text('جاري البحث...'),
-          ],
-        ),
-      );
-    }
-
-    // ✅ إذا لم تكن هناك نتائج بعد البحث
-    if (_searchResults.isEmpty && _searchQuery != null && !_isSearchLoading) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.search_off, size: 64, color: Colors.grey[400]),
-            SizedBox(height: 16),
-            Text(
-              'لا توجد نتائج للبحث: "$_searchQuery"',
-              style: TextStyle(fontSize: 18, color: Colors.grey[600]),
-            ),
-            SizedBox(height: 8),
-            Text(
-              'جرب البحث بكلمات مختلفة',
-              style: TextStyle(fontSize: 14, color: Colors.grey[500]),
-            ),
-          ],
-        ),
-      );
-    }
-
-    // ✅ إذا كانت هناك نتائج، اعرضها
-    if (_searchResults.isNotEmpty && _searchQuery != null) {
-      return Column(
-        children: [
-          // ✅ معلومات البحث
-          Container(
-            padding: EdgeInsets.all(16),
-            color: AppColors.accent.withOpacity(0.1),
-            child: Row(
-              children: [
-                Icon(Icons.search, color: AppColors.accent, size: 20),
-                SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    'تم العثور على ${_searchResults.length} نتيجة للبحث: "$_searchQuery"',
-                    style: TextStyle(color: AppColors.accent, fontSize: 14),
-                  ),
-                ),
-                IconButton(
-                  icon: Icon(_isGridView ? Icons.list : Icons.grid_view),
-                  onPressed: () {
-                    setState(() {
-                      _isGridView = !_isGridView;
-                    });
-                  },
-                  tooltip: _isGridView ? 'عرض كقائمة' : 'عرض كشبكة',
-                ),
-              ],
-            ),
-          ),
-          // ✅ عرض النتائج بكارد مخصص للبحث
-          Expanded(
-            child: _isGridView
-                ? _buildSearchResultsGrid()
-                : _buildSearchResultsList(),
-          ),
-        ],
-      );
-    }
-
-    // ✅ الحالة الافتراضية (لا يوجد بحث)
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.search, size: 64, color: Colors.grey),
-          SizedBox(height: 16),
-          Text(
-            'ابحث في ملفاتك',
-            style: TextStyle(fontSize: 16, color: Colors.grey),
-          ),
-          SizedBox(height: 8),
-          Text(
-            'مثال: "ملفات المشروع"',
-            style: TextStyle(fontSize: 14, color: Colors.grey[600]),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // ✅ بناء Grid مخصص لنتائج البحث
-  Widget _buildSearchResultsGrid() {
-    return GridView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: _searchResults.length,
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        mainAxisSpacing: 16,
-        crossAxisSpacing: 16,
-        childAspectRatio: 0.75,
-      ),
-      itemBuilder: (context, index) {
-        final file = _searchResults[index];
-        return _buildSearchResultCard(file);
+    return SearchResultsWidget(
+      results: _searchResults,
+      searchQuery: _searchQuery,
+      isLoading: _isSearchLoading,
+      isGridView: _isGridView,
+      onViewToggle: (isGrid) {
+        setState(() {
+          _isGridView = isGrid;
+        });
       },
-    );
-  }
-
-  // ✅ بناء List مخصص لنتائج البحث
-  Widget _buildSearchResultsList() {
-    return ListView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: _searchResults.length,
-      itemBuilder: (context, index) {
-        final file = _searchResults[index];
-        return Padding(
-          padding: const EdgeInsets.only(bottom: 12),
-          child: _buildSearchResultCard(file, isList: true),
-        );
-      },
-    );
-  }
-
-  // ✅ بناء كارد مخصص لنتيجة البحث
-  Widget _buildSearchResultCard(
-    Map<String, dynamic> file, {
-    bool isList = false,
-  }) {
-    final fileName = file['name']?.toString() ?? 'ملف بدون اسم';
-    final filePath = file['path']?.toString() ?? '';
-    final fileId = file['_id']?.toString() ?? file['id']?.toString();
-    final fileType = _getFileType(fileName);
-    final fileSize = _formatSize(file['size']);
-    final createdAt = file['createdAt'];
-    final category = file['category']?.toString();
-    final isStarred = file['isStarred'] ?? false;
-
-    // ✅ بناء URL
-    String fileUrl;
-    if (filePath.isNotEmpty) {
-      fileUrl = _getFileUrl(filePath);
-    } else if (fileId != null && fileId.isNotEmpty) {
-      final baseUrl = ApiConfig.baseUrl.replaceAll('/api/v1', '');
-      final downloadPath = ApiEndpoints.downloadFile(fileId);
-      fileUrl = "$baseUrl$downloadPath";
-    } else {
-      fileUrl = '';
-    }
-
-    return GestureDetector(
-      onTap: () {
+      onFileTap: (file) {
         _handleFileTap(file, context);
       },
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.08),
-              blurRadius: 12,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: isList
-            ? _buildListCard(
-                fileName,
-                fileType,
-                fileUrl,
-                fileSize,
-                createdAt,
-                category,
-                isStarred,
-                file,
-              )
-            : _buildGridCard(
-                fileName,
-                fileType,
-                fileUrl,
-                fileSize,
-                createdAt,
-                category,
-                isStarred,
-                file,
-              ),
-      ),
-    );
-  }
-
-  // ✅ بناء كارد Grid
-  Widget _buildGridCard(
-    String fileName,
-    String fileType,
-    String fileUrl,
-    String fileSize,
-    dynamic createdAt,
-    String? category,
-    bool isStarred,
-    Map<String, dynamic> file,
-  ) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // ✅ منطقة المعاينة
-        Expanded(
-          child: Stack(
-            children: [
-              Container(
-                decoration: BoxDecoration(
-                  color: Colors.grey[50],
-                  borderRadius: const BorderRadius.only(
-                    topLeft: Radius.circular(16),
-                    topRight: Radius.circular(16),
-                  ),
-                ),
-                child: _buildFilePreview(fileType, fileUrl, fileName),
-              ),
-              // ✅ زر المفضلة
-              if (isStarred)
-                Positioned(
-                  top: 8,
-                  left: 8,
-                  child: Container(
-                    padding: const EdgeInsets.all(6),
-                    decoration: BoxDecoration(
-                      color: Colors.amber,
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.2),
-                          blurRadius: 4,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: const Icon(
-                      Icons.star,
-                      color: Colors.white,
-                      size: 16,
-                    ),
-                  ),
-                ),
-            ],
-          ),
-        ),
-        // ✅ معلومات الملف
-        Padding(
-          padding: const EdgeInsets.all(12),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                fileName,
-                overflow: TextOverflow.ellipsis,
-                maxLines: 2,
-                style: const TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: Color(0xFF1A1A1A),
-                  height: 1.3,
-                ),
-              ),
-              const SizedBox(height: 6),
-              Row(
-                children: [
-                  Icon(
-                    Icons.calendar_today_outlined,
-                    size: 11,
-                    color: Colors.grey[600],
-                  ),
-                  const SizedBox(width: 4),
-                  Expanded(
-                    child: Text(
-                      _formatDate(createdAt),
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(fontSize: 10, color: Colors.grey[600]),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  // ✅ بناء كارد List
-  Widget _buildListCard(
-    String fileName,
-    String fileType,
-    String fileUrl,
-    String fileSize,
-    dynamic createdAt,
-    String? category,
-    bool isStarred,
-    Map<String, dynamic> file,
-  ) {
-    return Row(
-      children: [
-        // ✅ المعاينة
-        Container(
-          width: 80,
-          height: 80,
-          decoration: BoxDecoration(
-            color: Colors.grey[50],
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(12),
-            child: _buildFilePreview(fileType, fileUrl, fileName),
-          ),
-        ),
-        const SizedBox(width: 12),
-        // ✅ المعلومات
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      fileName,
-                      overflow: TextOverflow.ellipsis,
-                      maxLines: 1,
-                      style: const TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                        color: Color(0xFF1A1A1A),
-                      ),
-                    ),
-                  ),
-                  if (isStarred)
-                    const Icon(Icons.star, color: Colors.amber, size: 18),
-                ],
-              ),
-              const SizedBox(height: 6),
-              Row(
-                children: [
-                  Icon(
-                    Icons.calendar_today_outlined,
-                    size: 12,
-                    color: Colors.grey[600],
-                  ),
-                  const SizedBox(width: 4),
-                  Text(
-                    _formatDate(createdAt),
-                    style: TextStyle(fontSize: 11, color: Colors.grey[600]),
-                  ),
-                  const SizedBox(width: 12),
-                  Icon(
-                    Icons.insert_drive_file,
-                    size: 12,
-                    color: Colors.grey[600],
-                  ),
-                  const SizedBox(width: 4),
-                  Text(
-                    fileSize,
-                    style: TextStyle(fontSize: 11, color: Colors.grey[600]),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  // ✅ بناء معاينة الملف
-  Widget _buildFilePreview(String fileType, String fileUrl, String fileName) {
-    switch (fileType.toLowerCase()) {
-      case 'image':
-        if (fileUrl.isNotEmpty) {
-          // ✅ إضافة token للصور إذا كانت من API
-          final needsToken = fileUrl.contains('/api/');
-          return FutureBuilder<Map<String, String>?>(
-            future: needsToken ? _getImageHeaders() : Future.value(null),
-            builder: (context, snapshot) {
-              return CachedNetworkImage(
-                imageUrl: fileUrl,
-                fit: BoxFit.cover,
-                httpHeaders: snapshot.data,
-                placeholder: (context, url) => Container(
-                  color: Colors.grey[200],
-                  child: const Center(
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  ),
-                ),
-                errorWidget: (context, url, error) => Container(
-                  color: Colors.grey[200],
-                  child: Icon(
-                    Icons.image_not_supported,
-                    color: Colors.grey[400],
-                    size: 32,
-                  ),
-                ),
-              );
-            },
-          );
-        }
-        return _buildFileIcon(Icons.image, Colors.blue);
-      case 'pdf':
-        return _buildFileIcon(Icons.picture_as_pdf, Colors.red);
-      case 'video':
-        return _buildFileIcon(Icons.video_library, Colors.purple);
-      case 'audio':
-        return _buildFileIcon(Icons.audiotrack, Colors.orange);
-      default:
-        return _buildFileIcon(Icons.insert_drive_file, Colors.grey);
-    }
-  }
-
-  // ✅ بناء أيقونة الملف
-  Widget _buildFileIcon(IconData icon, Color color) {
-    return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [color.withOpacity(0.1), color.withOpacity(0.05)],
-        ),
-      ),
-      child: Center(
-        child: Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: color.withOpacity(0.15),
-            shape: BoxShape.circle,
-          ),
-          child: Icon(icon, size: 32, color: color),
-        ),
-      ),
-    );
-  }
-
-  // ✅ الحصول على نوع الملف
-  String _getFileType(String fileName) {
-    final name = fileName.toLowerCase();
-    if (name.endsWith('.pdf')) return 'pdf';
-    if (name.endsWith('.jpg') ||
-        name.endsWith('.jpeg') ||
-        name.endsWith('.png') ||
-        name.endsWith('.gif'))
-      return 'image';
-    if (name.endsWith('.mp4') || name.endsWith('.mov') || name.endsWith('.mkv'))
-      return 'video';
-    if (name.endsWith('.mp3') || name.endsWith('.wav') || name.endsWith('.m4a'))
-      return 'audio';
-    return 'file';
-  }
-
-  String _formatSize(dynamic size) {
-    if (size == null) return '—';
-    try {
-      final bytes = size is int ? size : int.tryParse(size.toString()) ?? 0;
-      if (bytes < 1024) return '$bytes B';
-      if (bytes < 1048576) return '${(bytes / 1024).toStringAsFixed(1)} KB';
-      if (bytes < 1073741824)
-        return '${(bytes / 1048576).toStringAsFixed(1)} MB';
-      return '${(bytes / 1073741824).toStringAsFixed(1)} GB';
-    } catch (e) {
-      return '—';
-    }
-  }
-
-  // ✅ جلب headers للصور (مع token)
-  Future<Map<String, String>?> _getImageHeaders() async {
-    final token = await StorageService.getToken();
-    if (token != null && token.isNotEmpty) {
-      return {'Authorization': 'Bearer $token'};
-    }
-    return null;
-  }
-
-  // ✅ تنسيق التاريخ
-  String _formatDate(dynamic date) {
-    if (date == null) return '—';
-    try {
-      final dateTime = date is String ? DateTime.parse(date) : date as DateTime;
-      return '${dateTime.day}/${dateTime.month}/${dateTime.year}';
-    } catch (e) {
-      return '—';
-    }
-  }
-
-  // ✅ بناء URL الملف
-  String _getFileUrl(String path) {
-    if (path.startsWith('http')) {
-      return path;
-    }
-
-    String cleanPath = path.replaceAll(r'\', '/').replaceAll('//', '/');
-    while (cleanPath.startsWith('/')) {
-      cleanPath = cleanPath.substring(1);
-    }
-
-    final base = ApiConfig.baseUrl.replaceAll('/api/v1', '');
-    String baseClean = base.endsWith('/')
-        ? base.substring(0, base.length - 1)
-        : base;
-    String finalUrl = '$baseClean/$cleanPath';
-
-    return finalUrl;
-  }
-
-  // ✅ التحقق من صحة URL
-  bool _isValidUrl(String url) {
-    try {
-      final uri = Uri.parse(url);
-      return uri.isAbsolute &&
-          (uri.scheme == 'http' || uri.scheme == 'https') &&
-          uri.host.isNotEmpty;
-    } catch (e) {
-      return false;
-    }
-  }
-
-  // ✅ التحقق من صحة PDF
-  bool _isValidPdf(List<int> bytes) {
-    try {
-      if (bytes.length < 4) return false;
-      final signature = String.fromCharCodes(bytes.sublist(0, 4));
-      return signature == '%PDF';
-    } catch (e) {
-      return false;
-    }
-  }
-
-  // ✅ عرض loading dialog
-  void _showLoadingDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => Center(child: CircularProgressIndicator()),
     );
   }
 
@@ -900,7 +588,7 @@ class _SmartSearchPageState extends State<SmartSearchPage>
       print('🔍 [SmartSearch]   - Final URL: $url');
     } else if (filePath != null && filePath.isNotEmpty) {
       urlSource = 'file_path';
-      url = _getFileUrl(filePath);
+      url = _getFileUrlFromPath(filePath);
 
       print('🔍 [SmartSearch] Step 2: Build URL');
       print('🔍 [SmartSearch]   - Source: $urlSource');
@@ -918,7 +606,7 @@ class _SmartSearchPageState extends State<SmartSearchPage>
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Text('رابط الملف غير متوفر - لا يوجد path أو _id'),
+          content: Text(S.of(context).fileLinkNotAvailableNoPath),
           backgroundColor: Colors.orange,
         ),
       );
@@ -937,7 +625,7 @@ class _SmartSearchPageState extends State<SmartSearchPage>
       print('═══════════════════════════════════════════════════════');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Text('رابط غير صالح'),
+          content: Text(S.of(context).invalidUrl),
           backgroundColor: Colors.red,
         ),
       );
@@ -952,7 +640,11 @@ class _SmartSearchPageState extends State<SmartSearchPage>
     print('🔍 [SmartSearch]   - File name (lowercase): $name');
     print('───────────────────────────────────────────────────────');
 
-    _showLoadingDialog(context);
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => Center(child: CircularProgressIndicator()),
+    );
 
     try {
       // ✅ الحصول على token
@@ -965,7 +657,7 @@ class _SmartSearchPageState extends State<SmartSearchPage>
           Navigator.pop(context);
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: const Text('يجب تسجيل الدخول أولاً'),
+              content: Text(S.of(context).mustLoginFirst),
               backgroundColor: Colors.red,
             ),
           );
@@ -1075,7 +767,11 @@ class _SmartSearchPageState extends State<SmartSearchPage>
         } else if (TextViewerPage.isTextFile(fileName) ||
             contentType.startsWith('text/')) {
           print('🔍 [SmartSearch]   - Opening as Text file');
-          _showLoadingDialog(context);
+          showDialog(
+            context: context,
+            barrierDismissible: false,
+            builder: (context) => Center(child: CircularProgressIndicator()),
+          );
           try {
             print('🔍 [SmartSearch]   - Downloading full text file...');
             final fullResponse = await http.get(
@@ -1110,7 +806,7 @@ class _SmartSearchPageState extends State<SmartSearchPage>
               Navigator.pop(context);
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: Text('خطأ في تحميل الملف النصي: ${e.toString()}'),
+                  content: Text(S.of(context).errorLoadingTextFile(e.toString())),
                   backgroundColor: Colors.red,
                 ),
               );
@@ -1146,7 +842,7 @@ class _SmartSearchPageState extends State<SmartSearchPage>
         print('═══════════════════════════════════════════════════════');
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('الملف غير متاح (خطأ ${response.statusCode})'),
+            content: Text(S.of(context).fileNotAvailableError(response.statusCode)),
             backgroundColor: Colors.red,
           ),
         );
@@ -1160,11 +856,54 @@ class _SmartSearchPageState extends State<SmartSearchPage>
         Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('خطأ في تحميل الملف: ${e.toString()}'),
+            content: Text(S.of(context).errorLoadingFile(e.toString())),
             backgroundColor: Colors.red,
           ),
         );
       }
+    }
+  }
+
+  // ✅ بناء URL الملف من path
+  String _getFileUrlFromPath(String path) {
+    if (path.startsWith('http')) {
+      return path;
+    }
+
+    String cleanPath = path.replaceAll(r'\', '/').replaceAll('//', '/');
+    while (cleanPath.startsWith('/')) {
+      cleanPath = cleanPath.substring(1);
+    }
+
+    final base = ApiConfig.baseUrl.replaceAll('/api/v1', '');
+    String baseClean = base.endsWith('/')
+        ? base.substring(0, base.length - 1)
+        : base;
+    String finalUrl = '$baseClean/$cleanPath';
+
+    return finalUrl;
+  }
+
+  // ✅ التحقق من صحة URL
+  bool _isValidUrl(String url) {
+    try {
+      final uri = Uri.parse(url);
+      return uri.isAbsolute &&
+          (uri.scheme == 'http' || uri.scheme == 'https') &&
+          uri.host.isNotEmpty;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  // ✅ التحقق من صحة PDF
+  bool _isValidPdf(List<int> bytes) {
+    try {
+      if (bytes.length < 4) return false;
+      final signature = String.fromCharCodes(bytes.sublist(0, 4));
+      return signature == '%PDF';
+    } catch (e) {
+      return false;
     }
   }
 }

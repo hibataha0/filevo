@@ -11,6 +11,8 @@ import 'package:filevo/views/fileViewer/office_file_opener.dart';
 import 'package:filevo/views/fileViewer/pdfViewer.dart';
 import 'package:filevo/views/fileViewer/textViewer.dart';
 import 'package:flutter/material.dart';
+import 'package:filevo/generated/l10n.dart';
+import 'package:flutter/painting.dart'; // ✅ لـ PaintingBinding.instance.imageCache
 import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:http/http.dart' as http;
@@ -225,7 +227,7 @@ class _CategoryPageState extends State<CategoryPage> {
   void _openAsTextFile(String url, String fileName) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('فتح الملف كنص: $fileName'),
+        content: Text(S.of(context).openFileAsText(fileName)),
         behavior: SnackBarBehavior.floating,
       ),
     );
@@ -439,7 +441,7 @@ class _CategoryPageState extends State<CategoryPage> {
                 ),
                 padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 12),
               ),
-              child: const Text('إعادة المحاولة'),
+              child: Text(S.of(context).retry),
             ),
           ],
         ),
@@ -597,12 +599,30 @@ class _CategoryPageState extends State<CategoryPage> {
                                             final filePath = f['path']?.toString() ?? '';
                                             final formattedName = _formatFileName(fileName);
                                             
+                                            // ✅ حساب updatedAtTimestamp أولاً
+                                            final updatedAtTimestamp = f['updatedAtTimestamp'] ?? 
+                                                (f['updatedAt'] != null 
+                                                    ? (f['updatedAt'] is String 
+                                                        ? DateTime.parse(f['updatedAt']).millisecondsSinceEpoch 
+                                                        : (f['updatedAt'] as DateTime).millisecondsSinceEpoch)
+                                                    : DateTime.now().millisecondsSinceEpoch);
+                                            
+                                            // ✅ إضافة cache busting للصور باستخدام updatedAtTimestamp
+                                            String imageUrl = getFileUrl(filePath);
+                                            if (_getFileType(fileName) == 'image') {
+                                              // ✅ استخدام updatedAtTimestamp من البيانات لضمان cache busting صحيح
+                                              final urlWithoutParams = imageUrl.split('?').first;
+                                              imageUrl = '$urlWithoutParams?v=$updatedAtTimestamp';
+                                            }
+                                            
                                             return {
                                               'name': formattedName,
-                                              'url': getFileUrl(filePath),
+                                              'url': imageUrl, // ✅ URL مع cache busting
                                               'type': _getFileType(fileName),
                                               'size': _formatFileSize(f['size']?.toString() ?? '0'),
                                               'createdAt': f['createdAt'],
+                                              'updatedAt': f['updatedAt'],
+                                              'updatedAtTimestamp': updatedAtTimestamp, // ✅ إضافة updatedAtTimestamp للاستخدام في ValueKey
                                               'path': filePath,
                                               'originalData': f,
                                               'originalName': fileName,
@@ -629,6 +649,31 @@ class _CategoryPageState extends State<CategoryPage> {
                                             setState(() {}); // ✅ تحديث الواجهة
                                           }
                                         }
+                                      },
+                                      onFileUpdated: () {
+                                        // ✅ إعادة تحميل الملفات بعد تحديث الملف
+                                        // ✅ استخدام Future.microtask لتأجيل الاستدعاء وتجنب التعليق
+                                        Future.microtask(() async {
+                                          // ✅ مسح cache الصور قبل إعادة التحميل
+                                          PaintingBinding.instance.imageCache.clear();
+                                          PaintingBinding.instance.imageCache.clearLiveImages();
+                                          print('✅ [CategoryFiles] Image cache cleared, reloading files...');
+                                          if (mounted && _token != null && _token!.isNotEmpty) {
+                                            try {
+                                              final fileController = Provider.of<FileController>(context, listen: false);
+                                              await fileController.getFilesByCategory(
+                                                category: widget.category,
+                                                token: _token!,
+                                                parentFolderId: null,
+                                              );
+                                              if (mounted) {
+                                                setState(() {}); // ✅ تحديث الواجهة
+                                              }
+                                            } catch (e) {
+                                              print('❌ [CategoryFiles] Error reloading files: $e');
+                                            }
+                                          }
+                                        });
                                       },
                                     )
                                   : FilesListView(
@@ -682,7 +727,7 @@ class _CategoryPageState extends State<CategoryPage> {
     if (filePath == null || filePath.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Text('رابط الملف غير متوفر'),
+          content: Text(S.of(context).fileLinkNotAvailable),
           behavior: SnackBarBehavior.floating,
           backgroundColor: Colors.orange,
         ),
@@ -749,7 +794,7 @@ class _CategoryPageState extends State<CategoryPage> {
     if (!_isValidUrl(url)) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Text('رابط غير صالح'),
+          content: Text(S.of(context).invalidUrl),
           behavior: SnackBarBehavior.floating,
           backgroundColor: Colors.red,
         ),
@@ -823,20 +868,108 @@ class _CategoryPageState extends State<CategoryPage> {
         else if (TextViewerPage.isTextFile(fileName) || contentType.startsWith('text/')) {
           _showLoadingDialog(context);
           try {
-            final fullResponse = await http.get(Uri.parse(url));
+            // ✅ إضافة timestamp للـ URL لتجنب الـ cache
+            final cacheBustingUrl = url.contains('?') 
+                ? '$url&_t=${DateTime.now().millisecondsSinceEpoch}'
+                : '$url?_t=${DateTime.now().millisecondsSinceEpoch}';
+            
+            final fullResponse = await http.get(Uri.parse(cacheBustingUrl));
             if (mounted) Navigator.pop(context);
             if (fullResponse.statusCode == 200) {
               final tempDir = await getTemporaryDirectory();
-              final tempFile = File('${tempDir.path}/$fileName');
+              
+              // ✅ استخراج fileId من بيانات الملف
+              final fileId = file['_id']?.toString() ?? 
+                             (file['originalData'] is Map ? file['originalData']['_id']?.toString() : null);
+              
+              // ✅ استخدام اسم الملف الأصلي فقط (بدون timestamp) للعرض
+              // ✅ لكن نستخدم fileId في اسم الملف المؤقت لتجنب التعارض
+              final tempFileName = fileId != null 
+                  ? '${fileId}_$fileName'
+                  : fileName;
+              final tempFile = File('${tempDir.path}/$tempFileName');
+              
+              // ✅ حذف الملف المؤقت القديم إذا كان موجوداً (نفس fileId)
+              if (fileId != null) {
+                try {
+                  final oldFiles = tempDir.listSync()
+                      .where((f) => f is File && f.path.contains('${fileId}_') && f.path != tempFile.path)
+                      .cast<File>();
+                  for (final oldFile in oldFiles) {
+                    try {
+                      await oldFile.delete();
+                      print('🗑️ تم حذف الملف المؤقت القديم: ${oldFile.path}');
+                    } catch (e) {
+                      print('⚠️ خطأ في حذف ملف مؤقت: $e');
+                    }
+                  }
+                } catch (e) {
+                  print('⚠️ خطأ في حذف الملفات المؤقتة القديمة: $e');
+                }
+              }
+              
+              // ✅ كتابة الملف المؤقت
               await tempFile.writeAsBytes(fullResponse.bodyBytes);
-              Navigator.push(
+              
+              // ✅ التحقق من وجود الملف قبل فتحه
+              if (!await tempFile.exists()) {
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(S.of(context).failedToCreateTempFile),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
+                return;
+              }
+              
+              // ✅ الانتظار حتى يتم إغلاق TextViewerPage ثم إعادة تحميل الملفات
+              final result = await Navigator.push(
                 context,
                 MaterialPageRoute(
-                    builder: (_) => TextViewerPage(filePath: tempFile.path, fileName: fileName)),
+                  builder: (_) => TextViewerPage(
+                    filePath: tempFile.path,
+                    fileName: fileName, // ✅ استخدام الاسم الأصلي فقط
+                    fileId: fileId,
+                    fileUrl: url,
+                  ),
+                ),
               );
+              
+              // ✅ إذا تم حفظ الملف (result == true)، أعد تحميل قائمة الملفات
+              if (result == true && mounted && _token != null && _token!.isNotEmpty) {
+                final fileController = Provider.of<FileController>(context, listen: false);
+                await fileController.getFilesByCategory(
+                  category: widget.category,
+                  token: _token!,
+                  parentFolderId: null,
+                );
+                if (mounted) {
+                  setState(() {}); // ✅ تحديث الواجهة
+                }
+              }
+            } else {
+              // ✅ إذا فشل التحميل، عرض رسالة خطأ
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(S.of(context).failedToLoadFileStatus(fullResponse.statusCode)),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+              }
             }
           } catch (e) {
-            if (mounted) Navigator.pop(context);
+            if (mounted) {
+              Navigator.pop(context);
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(S.of(context).errorOpeningFile(e.toString())),
+                  backgroundColor: Colors.red,
+                ),
+              );
+            }
           }
         }
         // صوت
@@ -847,16 +980,32 @@ class _CategoryPageState extends State<CategoryPage> {
             MaterialPageRoute(builder: (_) => AudioPlayerPage(audioUrl: url, fileName: fileName)),
           );
         } 
-        // ✅ باقي الملفات (Office، مضغوطة، تطبيقات، وغيرها) → تفتح خارج التطبيق
+        // ✅ باقي الملفات (Office, ZIP, إلخ) - تفتح خارج التطبيق
         else {
-          // ✅ جميع الملفات الأخرى تفتح خارج التطبيق مع واجهة اختيار التطبيق
-          print('Opening file with OfficeFileOpener: $fileName from $url');
-          await OfficeFileOpener.openAnyFile(url: url, context: context, token: _token);
+          // ✅ إظهار Loading Dialog للملفات الخارجية
+          _showLoadingDialog(context);
+          
+          await OfficeFileOpener.openAnyFile(
+            url: url,
+            context: context,
+            token: _token,
+            fileName: fileName, // ✅ تمرير اسم الملف الأصلي
+            closeLoadingDialog: true, // ✅ إغلاق Loading Dialog تلقائياً
+            onProgress: (received, total) {
+              // ✅ يمكن إضافة Progress indicator هنا لاحقاً
+              if (total > 0) {
+                final percent = (received / total * 100).toStringAsFixed(0);
+                print("📥 Downloading: $percent% ($received / $total bytes)");
+              }
+            },
+          );
+          
+          // ✅ لا حاجة لإغلاق Loading Dialog يدوياً - يتم إغلاقه تلقائياً في OfficeFileOpener
         }
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('الملف غير متاح (خطأ ${response.statusCode})'),
+            content: Text(S.of(context).fileNotAvailableError(response.statusCode)),
             behavior: SnackBarBehavior.floating,
             backgroundColor: Colors.red,
           ),
@@ -867,7 +1016,7 @@ class _CategoryPageState extends State<CategoryPage> {
         Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('خطأ في تحميل الملف: ${e.toString()}'),
+            content: Text(S.of(context).errorLoadingFile(e.toString())),
             behavior: SnackBarBehavior.floating,
             backgroundColor: Colors.red,
           ),
@@ -880,19 +1029,19 @@ class _CategoryPageState extends State<CategoryPage> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('ملف غير مدعوم'),
-        content: const Text('هذا الملف ليس PDF صالح أو قد يكون تالفاً.'),
+        title: Text(S.of(context).unsupportedFile),
+        content: Text(S.of(context).fileNotValidPdf),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('إلغاء'),
+            child: Text(S.of(context).cancel),
           ),
           TextButton(
             onPressed: () {
               Navigator.pop(context);
               _openAsTextFile(url, fileName);
             },
-            child: const Text('فتح كنص'),
+            child: Text(S.of(context).openAsText),
           ),
         ],
       ),

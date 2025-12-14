@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:filevo/controllers/folders/room_controller.dart';
+import 'package:filevo/generated/l10n.dart';
 
 class ShareFolderWithRoomPage extends StatefulWidget {
   final String folderId;
@@ -74,7 +75,7 @@ class _ShareFolderWithRoomPageState extends State<ShareFolderWithRoomPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('مشاركة المجلد مع غرفة'),
+        title: Text(S.of(context).shareFolderWithRoom),
         backgroundColor: Color(0xff28336f),
         actions: [
           IconButton(
@@ -338,7 +339,7 @@ class _ShareFolderWithRoomPageState extends State<ShareFolderWithRoomPage> {
                                                         ),
                                                       )
                                                     : Icon(Icons.share),
-                                                label: Text('مشاركة مع هذه الغرفة'),
+                                                label: Text(S.of(context).shareWithThisRoom),
                                                 style: ElevatedButton.styleFrom(
                                                   backgroundColor:
                                                       Color(0xff28336f),

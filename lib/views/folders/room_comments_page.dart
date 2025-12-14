@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:filevo/generated/l10n.dart';
 import 'package:provider/provider.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:filevo/config/api_config.dart';
 import 'package:filevo/controllers/folders/room_controller.dart';
 import 'package:filevo/utils/room_permissions.dart';
 
@@ -95,6 +98,12 @@ class _RoomCommentsPageState extends State<RoomCommentsPage> {
     );
 
     if (mounted) {
+      // ✅ Debug: طباعة بيانات التعليقات للتحقق من وجود profileImg
+      if (result.isNotEmpty) {
+        print('📝 [RoomCommentsPage] Comments loaded: ${result.length}');
+        print('📝 [RoomCommentsPage] First comment user keys: ${result[0]['user']?.keys.toList()}');
+        print('📝 [RoomCommentsPage] First comment user profileImg: ${result[0]['user']?['profileImg']}');
+      }
       setState(() {
         comments = result;
         isLoading = false;
@@ -138,7 +147,7 @@ class _RoomCommentsPageState extends State<RoomCommentsPage> {
         widget.targetId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('يرجى اختيار ملف/مجلد للتعليق عليه'),
+          content: Text(S.of(context).pleaseSelectFileOrFolder),
           backgroundColor: Colors.red,
         ),
       );
@@ -182,16 +191,16 @@ class _RoomCommentsPageState extends State<RoomCommentsPage> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('حذف التعليق'),
-        content: Text('هل أنت متأكد من حذف هذا التعليق؟'),
+        title: Text(S.of(context).deleteComment),
+        content: Text(S.of(context).confirmDeleteComment),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: Text('إلغاء'),
+            child: Text(S.of(context).cancel),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: Text('حذف', style: TextStyle(color: Colors.red)),
+            child: Text(S.of(context).delete, style: TextStyle(color: Colors.red)),
           ),
         ],
       ),
@@ -232,7 +241,7 @@ class _RoomCommentsPageState extends State<RoomCommentsPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('التعليقات'),
+        title: Text(S.of(context).comments),
         backgroundColor: Color(0xff28336f),
         actions: [
           IconButton(
@@ -273,14 +282,14 @@ class _RoomCommentsPageState extends State<RoomCommentsPage> {
                             ),
                           ),
                           items: [
-                            DropdownMenuItem(value: 'file', child: Text('ملف')),
+                            DropdownMenuItem(value: 'file', child: Text(S.of(context).file)),
                             DropdownMenuItem(
                               value: 'folder',
-                              child: Text('مجلد'),
+                              child: Text(S.of(context).folder),
                             ),
                             DropdownMenuItem(
                               value: 'room',
-                              child: Text('الروم'),
+                              child: Text(S.of(context).room),
                             ),
                           ],
                           onChanged: (value) {
@@ -471,17 +480,23 @@ class _RoomCommentsPageState extends State<RoomCommentsPage> {
   }
 
   Widget _buildCommentCard(Map<String, dynamic> comment) {
-    final user = comment['user'] ?? {};
+    // ✅ التأكد من أن user هو Map
+    Map<String, dynamic> user;
+    if (comment['user'] is Map<String, dynamic>) {
+      user = comment['user'] as Map<String, dynamic>;
+    } else {
+      user = {};
+    }
+    
     final content = comment['content'] ?? '';
     final createdAt = comment['createdAt'];
 
+    // ✅ Debug: طباعة بيانات المستخدم
+    print('👤 [RoomCommentsPage] Comment user keys: ${user.keys.toList()}');
+    print('👤 [RoomCommentsPage] Comment user profileImg: ${user['profileImg']}');
+
     // ✅ استخراج commentUserId للتحقق من الصلاحيات
-    String? commentUserId;
-    if (user is Map<String, dynamic>) {
-      commentUserId = user['_id']?.toString() ?? user['id']?.toString();
-    } else {
-      commentUserId = user?.toString();
-    }
+    String? commentUserId = user['_id']?.toString() ?? user['id']?.toString();
 
     return Card(
       margin: EdgeInsets.only(bottom: 12),
@@ -494,10 +509,8 @@ class _RoomCommentsPageState extends State<RoomCommentsPage> {
           children: [
             Row(
               children: [
-                CircleAvatar(
-                  backgroundColor: Color(0xff28336f).withOpacity(0.1),
-                  child: Icon(Icons.person, color: Color(0xff28336f)),
-                ),
+                // ✅ عرض صورة البروفايل إذا كانت موجودة
+                _buildUserAvatar(user),
                 SizedBox(width: 12),
                 Expanded(
                   child: Column(
@@ -566,6 +579,106 @@ class _RoomCommentsPageState extends State<RoomCommentsPage> {
       }
     } catch (e) {
       return '—';
+    }
+  }
+
+  // ✅ بناء URL كامل للصورة من اسم الملف (للـ backward compatibility)
+  String? _buildProfileImageUrl(String? profileImg) {
+    if (profileImg == null || profileImg.toString().isEmpty || profileImg.toString() == 'null') {
+      return null;
+    }
+
+    final profileImgStr = profileImg.toString();
+
+    // ✅ إذا كان URL كامل، استخدمه مباشرة
+    if (profileImgStr.startsWith('http://') || profileImgStr.startsWith('https://')) {
+      return profileImgStr;
+    }
+
+    // ✅ بناء URL من base URL + path
+    String cleanPath = profileImgStr.replaceAll(r'\', '/').replaceAll('//', '/');
+    while (cleanPath.startsWith('/')) {
+      cleanPath = cleanPath.substring(1);
+    }
+
+    // ✅ إزالة /api/v1 من base URL للحصول على base فقط
+    final base = ApiConfig.baseUrl.replaceAll('/api/v1', '');
+    final baseClean = base.endsWith('/') ? base.substring(0, base.length - 1) : base;
+
+    // ✅ بناء URL كامل (الـ backend يخدم الملفات من uploads/)
+    final imageUrl = '$baseClean/uploads/$cleanPath';
+    print('🖼️ [RoomCommentsPage] Building profile image URL:');
+    print('  - Original: $profileImgStr');
+    print('  - Clean path: $cleanPath');
+    print('  - Final URL: $imageUrl');
+
+    return imageUrl;
+  }
+
+  // ✅ بناء widget صورة البروفايل
+  Widget _buildUserAvatar(Map<String, dynamic> user) {
+    // ✅ قراءة profileImgUrl أولاً (من الباك إند الجديد)
+    // ✅ إذا لم يكن موجوداً، استخدم profileImg وابني URL (للـ backward compatibility)
+    final profileImgUrl = user['profileImgUrl'];
+    final profileImg = user['profileImg'];
+    final name = user['name'] ?? user['email'] ?? 'م';
+    final firstLetter = name.isNotEmpty ? name.substring(0, 1).toUpperCase() : 'م';
+
+    // ✅ Debug: طباعة البيانات للتحقق
+    print('🖼️ [RoomCommentsPage] User data: ${user.keys.toList()}');
+    print('🖼️ [RoomCommentsPage] profileImgUrl: $profileImgUrl');
+    print('🖼️ [RoomCommentsPage] profileImg: $profileImg');
+    print('🖼️ [RoomCommentsPage] name: $name');
+
+    // ✅ استخدام profileImgUrl إذا كان موجوداً، وإلا بناء URL من profileImg
+    final imageUrl = profileImgUrl?.toString() ?? _buildProfileImageUrl(profileImg?.toString());
+
+    if (imageUrl != null && imageUrl.isNotEmpty) {
+      print('🖼️ [RoomCommentsPage] Loading profile image from: $imageUrl');
+      
+      return CircleAvatar(
+        radius: 20,
+        child: ClipOval(
+          child: CachedNetworkImage(
+            imageUrl: imageUrl,
+            fit: BoxFit.cover,
+            width: 40,
+            height: 40,
+            placeholder: (context, url) => CircleAvatar(
+              radius: 20,
+              backgroundColor: Color(0xff28336f).withOpacity(0.1),
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
+            errorWidget: (context, url, error) {
+              print('❌ [RoomCommentsPage] Failed to load profile image: $error');
+              return CircleAvatar(
+                radius: 20,
+                backgroundColor: Color(0xff28336f).withOpacity(0.1),
+                child: Text(
+                  firstLetter,
+                  style: TextStyle(
+                    color: Color(0xff28336f),
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      );
+    } else {
+      print('🖼️ [RoomCommentsPage] No profile image, using default avatar');
+      return CircleAvatar(
+        radius: 20,
+        backgroundColor: Color(0xff28336f).withOpacity(0.1),
+        child: Text(
+          firstLetter,
+          style: TextStyle(
+            color: Color(0xff28336f),
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      );
     }
   }
 }

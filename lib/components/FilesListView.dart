@@ -227,7 +227,7 @@ class _FilesListViewState extends State<FilesListView> {
           children: [
             Icon(Icons.download_rounded, color: Colors.blue, size: 20),
             SizedBox(width: 8),
-            Text('تحميل'),
+            Text(S.of(context).download),
           ],
         ),
       ),
@@ -266,7 +266,7 @@ class _FilesListViewState extends State<FilesListView> {
           children: [
             Icon(Icons.save_rounded, color: Colors.green, size: 20),
             SizedBox(width: 8),
-            Text('حفظ في حسابي'),
+            Text(S.of(context).saveToMyAccount),
           ],
         ),
       ),
@@ -346,11 +346,11 @@ class _FilesListViewState extends State<FilesListView> {
     if (type == 'room' || type == 'folder') {
       String countText;
       if (fileCount == 0) {
-        countText = 'لا توجد عناصر';
+        countText = S.of(context).noItems;
       } else if (fileCount == 1) {
-        countText = 'عنصر واحد';
+        countText = S.of(context).oneItem;
       } else {
-        countText = '$fileCount عنصر';
+        countText = '$fileCount ${S.of(context).item}';
       }
 
       return Column(
@@ -461,7 +461,7 @@ class _FilesListViewState extends State<FilesListView> {
               _buildMenuItem(
                 bottomSheetContext,
                 icon: Icons.open_in_new,
-                title: 'فتح',
+                title: S.of(context).open,
                 onTap: () {
                   Navigator.pop(bottomSheetContext);
                   WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -474,7 +474,7 @@ class _FilesListViewState extends State<FilesListView> {
             _buildMenuItem(
               bottomSheetContext,
               icon: Icons.info_outline,
-              title: 'عرض التفاصيل',
+              title: S.of(context).viewDetails,
               onTap: () {
                 Navigator.pop(bottomSheetContext);
                 WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -559,7 +559,7 @@ class _FilesListViewState extends State<FilesListView> {
               _buildMenuItem(
                 bottomSheetContext,
                 icon: Icons.open_in_new,
-                title: 'فتح',
+                title: S.of(context).open,
                 onTap: () {
                   Navigator.pop(bottomSheetContext);
                   WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -573,7 +573,7 @@ class _FilesListViewState extends State<FilesListView> {
               _buildMenuItem(
                 bottomSheetContext,
                 icon: Icons.info_outline,
-                title: 'عرض المعلومات',
+                title: S.of(context).viewInfo,
                 onTap: () {
                   Navigator.pop(bottomSheetContext);
                   WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -587,7 +587,7 @@ class _FilesListViewState extends State<FilesListView> {
               _buildMenuItem(
                 bottomSheetContext,
                 icon: Icons.edit,
-                title: 'تعديل',
+                title: S.of(context).edit,
                 onTap: () {
                   Navigator.pop(bottomSheetContext);
                   WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -643,7 +643,7 @@ class _FilesListViewState extends State<FilesListView> {
           children: [
             Icon(Icons.open_in_new_rounded, color: Colors.blue, size: 20),
             SizedBox(width: 8),
-            Text('فتح'),
+            Text(S.of(context).open),
           ],
         ),
       ),
@@ -653,7 +653,7 @@ class _FilesListViewState extends State<FilesListView> {
           children: [
             Icon(Icons.info_outline_rounded, color: Colors.teal, size: 20),
             SizedBox(width: 8),
-            Text('عرض المعلومات'),
+            Text(S.of(context).viewInfo),
           ],
         ),
       ),
@@ -663,7 +663,7 @@ class _FilesListViewState extends State<FilesListView> {
           children: [
             Icon(Icons.edit_rounded, color: Colors.orange, size: 20),
             SizedBox(width: 8),
-            Text('تعديل'),
+            Text(S.of(context).edit),
           ],
         ),
       ),
@@ -673,7 +673,7 @@ class _FilesListViewState extends State<FilesListView> {
           children: [
             Icon(Icons.share_rounded, color: Colors.green, size: 20),
             SizedBox(width: 8),
-            Text('مشاركة'),
+            Text(S.of(context).share),
           ],
         ),
       ),
@@ -683,7 +683,7 @@ class _FilesListViewState extends State<FilesListView> {
           children: [
             Icon(Icons.drive_file_move_rounded, color: Colors.purple, size: 20),
             SizedBox(width: 8),
-            Text('نقل'),
+            Text(S.of(context).move),
           ],
         ),
       ),
@@ -697,7 +697,7 @@ class _FilesListViewState extends State<FilesListView> {
               size: 20,
             ),
             SizedBox(width: 8),
-            Text(isStarred ? 'إزالة من المفضلة' : 'إضافة إلى المفضلة'),
+            Text(isStarred ? S.of(context).removeFromFavorites : S.of(context).addToFavorites),
           ],
         ),
       ),
@@ -708,7 +708,7 @@ class _FilesListViewState extends State<FilesListView> {
           children: [
             Icon(Icons.delete_outline_rounded, color: Colors.red, size: 20),
             SizedBox(width: 8),
-            Text('حذف', style: TextStyle(color: Colors.red)),
+            Text(S.of(context).delete, style: TextStyle(color: Colors.red)),
           ],
         ),
       ),
@@ -806,7 +806,7 @@ class _FilesListViewState extends State<FilesListView> {
                         _buildMenuItem(
                           bottomSheetContext,
                           icon: Icons.open_in_new,
-                          title: 'فتح',
+                          title: S.of(context).open,
                           onTap: () {
                             Navigator.pop(bottomSheetContext);
                             WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -819,7 +819,7 @@ class _FilesListViewState extends State<FilesListView> {
                       _buildMenuItem(
                         bottomSheetContext,
                         icon: Icons.info_outline,
-                        title: 'عرض المعلومات',
+                        title: S.of(context).viewInfo,
                         onTap: () {
                           Navigator.pop(bottomSheetContext);
                           WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -832,7 +832,7 @@ class _FilesListViewState extends State<FilesListView> {
                       _buildMenuItem(
                         bottomSheetContext,
                         icon: Icons.edit,
-                        title: 'تعديل',
+                        title: S.of(context).edit,
                         onTap: () {
                           Navigator.pop(bottomSheetContext);
                           WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -845,7 +845,7 @@ class _FilesListViewState extends State<FilesListView> {
                       _buildMenuItem(
                         bottomSheetContext,
                         icon: Icons.share,
-                        title: 'مشاركة',
+                        title: S.of(context).share,
                         onTap: () {
                           Navigator.pop(bottomSheetContext);
                           WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -858,7 +858,7 @@ class _FilesListViewState extends State<FilesListView> {
                       _buildMenuItem(
                         bottomSheetContext,
                         icon: Icons.download,
-                        title: 'تحميل',
+                        title: S.of(context).download,
                         iconColor: Colors.blue,
                         onTap: () {
                           Navigator.pop(bottomSheetContext);
@@ -876,7 +876,7 @@ class _FilesListViewState extends State<FilesListView> {
                       _buildMenuItem(
                         bottomSheetContext,
                         icon: Icons.drive_file_move_rounded,
-                        title: 'نقل',
+                        title: S.of(context).move,
                         iconColor: Colors.purple,
                         onTap: () {
                           Navigator.pop(bottomSheetContext);
@@ -891,8 +891,8 @@ class _FilesListViewState extends State<FilesListView> {
                         bottomSheetContext,
                         icon: isStarred ? Icons.star : Icons.star_border,
                         title: isStarred
-                            ? 'إزالة من المفضلة'
-                            : 'إضافة إلى المفضلة',
+                            ? S.of(context).removeFromFavorites
+                            : S.of(context).addToFavorites,
                         iconColor: Colors.amber[700],
                         onTap: () {
                           Navigator.pop(bottomSheetContext);
@@ -907,7 +907,7 @@ class _FilesListViewState extends State<FilesListView> {
                       _buildMenuItem(
                         bottomSheetContext,
                         icon: Icons.delete,
-                        title: 'حذف',
+                        title: S.of(context).delete,
                         textColor: Colors.red,
                         iconColor: Colors.red,
                         onTap: () {
@@ -1118,7 +1118,7 @@ class _FilesListViewState extends State<FilesListView> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _buildDetailItem('folder', '📁', 'النوع', 'مجلد'),
+                    _buildDetailItem('folder', '📁', S.of(context).type, S.of(context).folder),
                     _buildDetailItem(
                       'size',
                       '💾',
@@ -1693,7 +1693,7 @@ class _FilesListViewState extends State<FilesListView> {
           children: [
             Icon(Icons.download_rounded, color: Colors.blue, size: 20),
             SizedBox(width: 8),
-            Text('تحميل'),
+            Text(S.of(context).download),
           ],
         ),
       ),
@@ -2178,7 +2178,7 @@ class _FilesListViewState extends State<FilesListView> {
         file['originalData'] ?? file['itemData'] as Map<String, dynamic>? ?? {};
     final fileId = originalData['_id']?.toString();
     final fileName =
-        file['title'] ?? file['name'] ?? originalData['name'] ?? 'ملف';
+        file['title'] ?? file['name'] ?? originalData['name'] ?? S.of(context).file;
     final currentParentId = originalData['parentFolderId']?.toString();
 
     if (fileId == null) {
@@ -2407,7 +2407,7 @@ class _FilesListViewState extends State<FilesListView> {
     final folderId =
         folder['folderId'] as String? ?? folderData['_id'] as String?;
     final folderName =
-        folder['title'] as String ?? folderData['name'] ?? 'مجلد';
+        folder['title'] as String ?? folderData['name'] ?? S.of(context).folder;
     final currentParentId = folderData['parentId']?.toString();
 
     if (folderId == null) {
@@ -2624,7 +2624,7 @@ class _FilesListViewState extends State<FilesListView> {
             _buildMenuItem(
               bottomSheetContext,
               icon: Icons.open_in_new,
-              title: 'فتح',
+              title: S.of(context).open,
               onTap: () {
                 Navigator.pop(bottomSheetContext);
                 WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -2637,7 +2637,7 @@ class _FilesListViewState extends State<FilesListView> {
             _buildMenuItem(
               bottomSheetContext,
               icon: Icons.info_outline,
-              title: 'عرض التفاصيل',
+              title: S.of(context).viewDetails,
               onTap: () {
                 Navigator.pop(bottomSheetContext);
                 WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -2650,7 +2650,7 @@ class _FilesListViewState extends State<FilesListView> {
             _buildMenuItem(
               bottomSheetContext,
               icon: Icons.download,
-              title: 'تحميل',
+              title: S.of(context).download,
               iconColor: Colors.blue,
               onTap: () {
                 Navigator.pop(bottomSheetContext);
@@ -2668,7 +2668,7 @@ class _FilesListViewState extends State<FilesListView> {
             _buildMenuItem(
               bottomSheetContext,
               icon: Icons.comment,
-              title: 'تعليقات',
+              title: S.of(context).comments,
               iconColor: Color(0xFFF59E0B),
               onTap: () {
                 Navigator.pop(bottomSheetContext);
@@ -2687,7 +2687,7 @@ class _FilesListViewState extends State<FilesListView> {
             _buildMenuItem(
               bottomSheetContext,
               icon: isStarred ? Icons.star : Icons.star_border,
-              title: isStarred ? 'إزالة من المفضلة' : 'إضافة إلى المفضلة',
+              title: isStarred ? S.of(context).removeFromFavorites : S.of(context).addToFavorites,
               iconColor: Colors.amber[700],
               onTap: () {
                 Navigator.pop(bottomSheetContext);
@@ -2705,7 +2705,7 @@ class _FilesListViewState extends State<FilesListView> {
             _buildMenuItem(
               bottomSheetContext,
               icon: Icons.save,
-              title: 'حفظ في حسابي',
+              title: S.of(context).saveToMyAccount,
               iconColor: Colors.green,
               onTap: () {
                 Navigator.pop(bottomSheetContext);
@@ -2720,7 +2720,7 @@ class _FilesListViewState extends State<FilesListView> {
             _buildMenuItem(
               bottomSheetContext,
               icon: Icons.link_off,
-              title: 'إزالة من الغرفة',
+              title: S.of(context).removeFromRoom,
               textColor: Colors.red,
               iconColor: Colors.red,
               onTap: () {
@@ -2816,7 +2816,7 @@ class _FilesListViewState extends State<FilesListView> {
             _buildMenuItem(
               bottomSheetContext,
               icon: Icons.open_in_new,
-              title: 'فتح',
+              title: S.of(context).open,
               onTap: () {
                 Navigator.pop(bottomSheetContext);
                 WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -2829,7 +2829,7 @@ class _FilesListViewState extends State<FilesListView> {
             _buildMenuItem(
               bottomSheetContext,
               icon: Icons.info_outline,
-              title: 'عرض التفاصيل',
+              title: S.of(context).viewDetails,
               onTap: () {
                 Navigator.pop(bottomSheetContext);
                 WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -2842,7 +2842,7 @@ class _FilesListViewState extends State<FilesListView> {
             _buildMenuItem(
               bottomSheetContext,
               icon: Icons.download,
-              title: 'تحميل',
+              title: S.of(context).download,
               iconColor: Colors.blue,
               onTap: () {
                 Navigator.pop(bottomSheetContext);
@@ -2861,7 +2861,7 @@ class _FilesListViewState extends State<FilesListView> {
             _buildMenuItem(
               bottomSheetContext,
               icon: isStarred ? Icons.star : Icons.star_border,
-              title: isStarred ? 'إزالة من المفضلة' : 'إضافة إلى المفضلة',
+              title: isStarred ? S.of(context).removeFromFavorites : S.of(context).addToFavorites,
               iconColor: Colors.amber[700],
               onTap: () {
                 Navigator.pop(bottomSheetContext);
@@ -2879,7 +2879,7 @@ class _FilesListViewState extends State<FilesListView> {
             _buildMenuItem(
               bottomSheetContext,
               icon: Icons.drive_file_move_rounded,
-              title: 'نقل',
+              title: S.of(context).move,
               iconColor: Colors.purple,
               onTap: () {
                 Navigator.pop(bottomSheetContext);
@@ -2894,7 +2894,7 @@ class _FilesListViewState extends State<FilesListView> {
             _buildMenuItem(
               bottomSheetContext,
               icon: Icons.delete,
-              title: 'حذف',
+              title: S.of(context).delete,
               textColor: Colors.red,
               iconColor: Colors.red,
               onTap: () {

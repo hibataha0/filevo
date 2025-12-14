@@ -39,13 +39,17 @@ class AuthService {
         if (token != null && token.isNotEmpty) {
           await StorageService.saveToken(token);
           print('✅ [AuthService] Token saved successfully (Login)');
-          print('   Token preview: ${token.length > 20 ? token.substring(0, 20) + "..." : token}');
+          print(
+            '   Token preview: ${token.length > 20 ? token.substring(0, 20) + "..." : token}',
+          );
           // التحقق من أن التوكن تم حفظه فعلاً
           final savedToken = await StorageService.getToken();
           if (savedToken != null && savedToken == token) {
             print('✅ [AuthService] Token verified after saving (Login)');
           } else {
-            print('⚠️ [AuthService] Token verification failed after saving (Login)');
+            print(
+              '⚠️ [AuthService] Token verification failed after saving (Login)',
+            );
           }
         } else {
           print('⚠️ [AuthService] Token is null or empty, not saving (Login)');
@@ -90,53 +94,16 @@ class AuthService {
 
     print('AuthService: Register result: $result');
 
-    // إذا نجح التسجيل، احفظ الـ token و userId
+    // ✅ بعد التسجيل، لا يتم إرجاع token مباشرة (الحساب غير مفعّل)
+    // ✅ يتم إرجاع userId و email فقط
     if (result['success'] == true) {
-      // ✅ محاولة استخراج البيانات من أماكن مختلفة
-      final data = (result['data'] is Map<String, dynamic>)
-          ? (result['data'] as Map<String, dynamic>)
-          : result;
-
-      if (data.isNotEmpty) {
-        final token =
-            data['token']?.toString() ??
-            data['accessToken']?.toString() ??
-            data['access_token']?.toString();
-
-        // ✅ محاولة استخراج userId من أماكن مختلفة
-        String? userId =
-            data['user_id']?.toString() ??
-            data['userId']?.toString() ??
-            data['user']?['_id']?.toString() ??
-            data['user']?['id']?.toString() ??
-            data['user']?['userId']?.toString() ??
-            data['user']?['user_id']?.toString();
-
-        if (token != null && token.isNotEmpty) {
-          await StorageService.saveToken(token);
-          print('✅ [AuthService] Token saved successfully (Registration)');
-          print('   Token preview: ${token.length > 20 ? token.substring(0, 20) + "..." : token}');
-          // التحقق من أن التوكن تم حفظه فعلاً
-          final savedToken = await StorageService.getToken();
-          if (savedToken != null && savedToken == token) {
-            print('✅ [AuthService] Token verified after saving (Registration)');
-          } else {
-            print('⚠️ [AuthService] Token verification failed after saving (Registration)');
-          }
-        } else {
-          print('⚠️ [AuthService] Token is null or empty, not saving (Registration)');
-        }
-
-        if (userId != null && userId.isNotEmpty) {
-          await StorageService.saveUserId(userId);
-          final displayId = userId.length > 20
-              ? '${userId.substring(0, 20)}...'
-              : userId;
-          print('✅ [AuthService] User ID saved: $displayId');
-        } else {
-          print('⚠️ [AuthService] User ID not found in registration response');
-        }
-      }
+      print(
+        '✅ [AuthService] Registration successful - Email verification required',
+      );
+      // ✅ إرجاع userId و email في الـ result
+      result['userId'] = result['userId'] ?? result['data']?['userId'];
+      result['email'] = result['email'] ?? result['data']?['email'];
+      // ✅ لا نحفظ token هنا - سيتم حفظه بعد التحقق من البريد الإلكتروني
     } else {
       print('AuthService: Registration failed - ${result['error']}');
       print('AuthService: Full error details: ${result['data']}');
@@ -208,6 +175,65 @@ class AuthService {
     );
 
     print('🔐 Reset Password Response: $result');
+    return result;
+  }
+
+  // ✅ التحقق من كود البريد الإلكتروني
+  Future<Map<String, dynamic>> verifyEmailCode({
+    required String email,
+    required String verificationCode,
+  }) async {
+    final result = await _apiService.post(
+      ApiEndpoints.verifyEmail,
+      body: {'email': email, 'verificationCode': verificationCode},
+    );
+
+    print('📧 Verify Email Code Response: $result');
+
+    // ✅ إذا نجح التحقق، احفظ الـ token و userId
+    if (result['success'] == true) {
+      final data = (result['data'] is Map<String, dynamic>)
+          ? (result['data'] as Map<String, dynamic>)
+          : result;
+
+      if (data.isNotEmpty) {
+        final token =
+            data['token']?.toString() ??
+            result['token']?.toString() ??
+            data['accessToken']?.toString() ??
+            data['access_token']?.toString();
+
+        String? userId =
+            data['_id']?.toString() ??
+            data['id']?.toString() ??
+            data['user_id']?.toString() ??
+            data['userId']?.toString() ??
+            data['user']?['_id']?.toString() ??
+            data['user']?['id']?.toString();
+
+        if (token != null && token.isNotEmpty) {
+          await StorageService.saveToken(token);
+          print('✅ [AuthService] Token saved after email verification');
+        }
+
+        if (userId != null && userId.isNotEmpty) {
+          await StorageService.saveUserId(userId);
+          print('✅ [AuthService] User ID saved after email verification');
+        }
+      }
+    }
+
+    return result;
+  }
+
+  // ✅ إعادة إرسال كود التحقق
+  Future<Map<String, dynamic>> resendVerificationCode(String email) async {
+    final result = await _apiService.post(
+      ApiEndpoints.resendVerificationCode,
+      body: {'email': email},
+    );
+
+    print('📧 Resend Verification Code Response: $result');
     return result;
   }
 }

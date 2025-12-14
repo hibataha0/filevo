@@ -11,7 +11,7 @@ import 'package:filevo/views/fileViewer/VideoViewer.dart';
 import 'package:filevo/views/fileViewer/audioPlayer.dart';
 import 'package:filevo/views/fileViewer/imageViewer.dart';
 import 'package:filevo/views/fileViewer/office_file_opener.dart';
-import 'package:open_file/open_file.dart' as open_file;
+import 'package:open_filex/open_filex.dart';
 import 'package:filevo/views/fileViewer/textViewer.dart';
 import 'package:filevo/config/api_config.dart';
 import 'package:filevo/services/storage_service.dart';
@@ -34,6 +34,8 @@ class RoomFilesPage extends StatefulWidget {
 class _RoomFilesPageState extends State<RoomFilesPage> {
   Map<String, dynamic>? roomData;
   bool isLoading = true;
+  int _refreshTimestamp =
+      DateTime.now().millisecondsSinceEpoch; // ✅ لتحديث الصور بعد التعديل
 
   @override
   void initState() {
@@ -45,6 +47,9 @@ class _RoomFilesPageState extends State<RoomFilesPage> {
 
   Future<void> _loadRoomData() async {
     if (!mounted) return;
+
+    // ✅ تحديث timestamp عند كل تحميل للبيانات لضمان تحديث الصور
+    _refreshTimestamp = DateTime.now().millisecondsSinceEpoch;
 
     final roomController = Provider.of<RoomController>(context, listen: false);
     final response = await roomController.getRoomById(widget.roomId);
@@ -100,7 +105,7 @@ class _RoomFilesPageState extends State<RoomFilesPage> {
           Navigator.pop(context);
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('يرجى إعادة تسجيل الدخول'),
+              content: Text(S.of(context).pleaseLoginAgain),
               backgroundColor: Colors.red,
             ),
           );
@@ -167,7 +172,8 @@ class _RoomFilesPageState extends State<RoomFilesPage> {
             name.endsWith('.gif') ||
             name.endsWith('.bmp') ||
             name.endsWith('.webp')) {
-          Navigator.push(
+          // ✅ الانتظار للنتيجة وإعادة تحميل البيانات إذا تم التحديث
+          final result = await Navigator.push<bool>(
             context,
             MaterialPageRoute(
               builder: (_) => ImageViewer(
@@ -177,6 +183,10 @@ class _RoomFilesPageState extends State<RoomFilesPage> {
               ),
             ),
           );
+          // ✅ إعادة تحميل بيانات الغرفة إذا تم تحديث الملف
+          if (result == true && mounted) {
+            _loadRoomData();
+          }
         } else if (TextViewerPage.isTextFile(fileName)) {
           Navigator.push(
             context,
@@ -197,14 +207,17 @@ class _RoomFilesPageState extends State<RoomFilesPage> {
             ),
           );
         } else {
-          // ✅ محاولة فتح الملف باستخدام OpenFile مباشرة
+          // ✅ محاولة فتح الملف باستخدام OpenFilex مباشرة
           try {
-            await open_file.OpenFile.open(tempFile.path);
+            final result = await OpenFilex.open(tempFile.path);
+            if (result.type != ResultType.done && mounted) {
+              throw Exception(result.message);
+            }
           } catch (e) {
             if (mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: Text('فشل فتح الملف: $e'),
+                  content: Text(S.of(context).failedToOpenFile(e.toString())),
                   backgroundColor: Colors.red,
                 ),
               );
@@ -240,7 +253,7 @@ class _RoomFilesPageState extends State<RoomFilesPage> {
         Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('خطأ في فتح الملف: ${e.toString()}'),
+            content: Text(S.of(context).errorOpeningFile(e.toString())),
             backgroundColor: Colors.red,
           ),
         );
@@ -590,7 +603,9 @@ class _RoomFilesPageState extends State<RoomFilesPage> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('الملف غير متاح (خطأ ${response.statusCode})'),
+              content: Text(
+                S.of(context).fileNotAvailableError(response.statusCode),
+              ),
               backgroundColor: Colors.red,
             ),
           );
@@ -601,7 +616,7 @@ class _RoomFilesPageState extends State<RoomFilesPage> {
         Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('خطأ في تحميل الملف: ${e.toString()}'),
+            content: Text(S.of(context).errorLoadingFile(e.toString())),
             backgroundColor: Colors.red,
           ),
         );
@@ -646,7 +661,7 @@ class _RoomFilesPageState extends State<RoomFilesPage> {
         Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('خطأ في فتح الملف: ${e.toString()}'),
+            content: Text(S.of(context).errorOpeningFile(e.toString())),
             backgroundColor: Colors.red,
           ),
         );
@@ -752,6 +767,8 @@ class _RoomFilesPageState extends State<RoomFilesPage> {
       final category = fileData['category']?.toString() ?? '';
       final createdAt = fileData['createdAt'];
       final updatedAt = fileData['updatedAt'];
+      // ✅ استخدام updatedAtTimestamp من الباك إند إذا كان متوفراً (من updateFileContent response)
+      final updatedAtTimestamp = fileData['updatedAtTimestamp'];
       final sharedAt = file['sharedAt'];
 
       // ✅ استخراج معلومات من شارك الملف من room data
@@ -795,6 +812,19 @@ class _RoomFilesPageState extends State<RoomFilesPage> {
         }
       }
 
+      // ✅ إضافة cache-busting للصور المشتركة
+      // ✅ استخدام timestamp حالي مباشرة لضمان أن كل URL يكون فريداً
+      // ✅ هذا يضمن أن الصورة يتم إعادة تحميلها حتى لو لم يتغير updatedAt من السيرفر
+      if (imageUrl.isNotEmpty && _getFileType(fileName) == 'image') {
+        // ✅ استخدام timestamp حالي مباشرة لضمان cache busting قوي
+        final finalTimestamp = DateTime.now().millisecondsSinceEpoch;
+        // ✅ إزالة أي timestamp موجود مسبقاً من URL
+        final urlWithoutParams = imageUrl.split('?').first;
+        imageUrl =
+            '$urlWithoutParams?v=$finalTimestamp'; // ✅ استخدام timestamp حالي لضمان cache busting قوي
+        print('🖼️ [RoomFilesPage] Image URL with cache busting: $imageUrl');
+      }
+
       // ✅ التأكد من أن isStarred موجود في fileData
       final isStarred = fileData['isStarred'] ?? false;
       if (fileId != null) {
@@ -811,6 +841,14 @@ class _RoomFilesPageState extends State<RoomFilesPage> {
         'category': category,
         'createdAt': createdAt,
         'updatedAt': updatedAt,
+        'updatedAtTimestamp':
+            updatedAtTimestamp ??
+            (updatedAt != null
+                ? (updatedAt is String
+                      ? DateTime.parse(updatedAt).millisecondsSinceEpoch
+                      : (updatedAt as DateTime).millisecondsSinceEpoch)
+                : DateTime.now()
+                      .millisecondsSinceEpoch), // ✅ إضافة updatedAtTimestamp للاستخدام في cache busting
         'sharedAt': sharedAt,
         'path': filePath,
         'originalData': {
@@ -884,7 +922,7 @@ class _RoomFilesPageState extends State<RoomFilesPage> {
       body: isLoading
           ? Center(child: CircularProgressIndicator())
           : roomData == null
-          ? Center(child: Text('فشل تحميل بيانات الغرفة'))
+          ? Center(child: Text(S.of(context).failedToLoadRoomData))
           : RefreshIndicator(
               onRefresh: _loadRoomData,
               child: _buildFilesList(),
@@ -960,19 +998,38 @@ class _RoomFilesPageState extends State<RoomFilesPage> {
     // ✅ ملاحظة: الـ backend يقوم بفلترة الملفات المشتركة لمرة واحدة تلقائياً
     final displayFiles = _mapFiles(files);
 
-    return FilesGrid(
-      files: displayFiles,
-      roomId:
-          widget.roomId, // ✅ تمرير roomId لاستخدام getSharedFileDetailsInRoom
-      onFileTap: (file) {
-        final fileData = file['originalData'] as Map<String, dynamic>? ?? file;
-        final fileId = file['fileId'] as String?;
-        _openFile(fileData, fileId);
-      },
-      onFileRemoved: () {
-        // ✅ إعادة تحميل بيانات الغرفة بعد إزالة الملف
-        _loadRoomData();
-      },
+    // ✅ لف FilesGrid في SingleChildScrollView للسماح بالسكرول
+    return SingleChildScrollView(
+      child: FilesGrid(
+        files: displayFiles,
+        roomId:
+            widget.roomId, // ✅ تمرير roomId لاستخدام getSharedFileDetailsInRoom
+        onFileTap: (file) {
+          final fileData =
+              file['originalData'] as Map<String, dynamic>? ?? file;
+          final fileId = file['fileId'] as String?;
+          _openFile(fileData, fileId);
+        },
+        onFileRemoved: () {
+          // ✅ إعادة تحميل بيانات الغرفة بعد إزالة الملف
+          _loadRoomData();
+        },
+        onFileUpdated: () {
+          // ✅ إعادة تحميل بيانات الغرفة بعد تحديث الملف
+          // ✅ استخدام Future.microtask لتأجيل الاستدعاء وتجنب التعليق
+          Future.microtask(() async {
+            // ✅ مسح cache الصور قبل إعادة التحميل لضمان ظهور التعديلات
+            PaintingBinding.instance.imageCache.clear();
+            PaintingBinding.instance.imageCache.clearLiveImages();
+            print(
+              '✅ [RoomFilesPage] Image cache cleared, reloading room data...',
+            );
+            if (mounted) {
+              await _loadRoomData();
+            }
+          });
+        },
+      ),
     );
   }
 
@@ -1034,7 +1091,7 @@ class _RoomFilesPageState extends State<RoomFilesPage> {
     showDialog(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: Text("إنشاء مجلد جديد"),
+        title: Text(S.of(context).createNewFolder),
         content: TextField(
           controller: folderNameController,
           decoration: InputDecoration(
@@ -1047,7 +1104,7 @@ class _RoomFilesPageState extends State<RoomFilesPage> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
-            child: Text("إلغاء"),
+            child: Text(S.of(context).cancel),
           ),
           ElevatedButton(
             onPressed: () async {
@@ -1055,7 +1112,7 @@ class _RoomFilesPageState extends State<RoomFilesPage> {
               if (folderName.isEmpty) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: Text('⚠️ الرجاء إدخال اسم المجلد'),
+                    content: Text('⚠️ ${S.of(context).pleaseEnterFolderName}'),
                     backgroundColor: Colors.orange,
                   ),
                 );
@@ -1076,15 +1133,15 @@ class _RoomFilesPageState extends State<RoomFilesPage> {
                   SnackBar(
                     content: Text(
                       success
-                          ? '📁 تم إنشاء المجلد "$folderName" بنجاح'
-                          : '❌ ${folderController.errorMessage ?? "فشل إنشاء المجلد"}',
+                          ? '📁 ${S.of(context).folderCreatedSuccessfully(folderName)}'
+                          : '❌ ${folderController.errorMessage ?? S.of(context).failedToCreateFolder}',
                     ),
                     backgroundColor: success ? Colors.green : Colors.red,
                   ),
                 );
               }
             },
-            child: Text("إنشاء"),
+            child: Text(S.of(context).create),
           ),
         ],
       ),

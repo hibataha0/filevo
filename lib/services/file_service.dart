@@ -595,6 +595,91 @@ class FileService {
     }
   }
 
+  /// ✅ تحديث محتوى الملف (استبدال الملف القديم بملف جديد)
+  /// @param fileId: معرف الملف المراد تحديثه
+  /// @param file: الملف الجديد
+  /// @param token: رمز الوصول
+  /// @param replaceMode: true للاستبدال بنفس الاسم والمسار، false لإنشاء نسخة جديدة (اختياري، للملفات النصية يكون true تلقائياً)
+  Future<Map<String, dynamic>> updateFileContent({
+    required String fileId,
+    required File file,
+    required String token,
+    bool? replaceMode,
+  }) async {
+    try {
+      print('═══════════════════════════════════════════════════════');
+      print('📝 [FileService] Updating file content: $fileId');
+      print('📝 [FileService] File path: ${file.path}');
+      print('📝 [FileService] File size: ${await file.length()} bytes');
+      print('📝 [FileService] Replace mode: ${replaceMode ?? "auto"}');
+
+      final url = "$_apiBase${ApiEndpoints.updateFileContent(fileId)}";
+      final request = http.MultipartRequest("PUT", Uri.parse(url));
+
+      request.headers['Authorization'] = 'Bearer $token';
+      request.headers['Connection'] = 'keep-alive';
+
+      // ✅ إضافة الملف
+      request.files.add(await http.MultipartFile.fromPath('file', file.path));
+
+      // ✅ إضافة replaceMode إذا كان محدداً (للملفات غير النصية)
+      if (replaceMode != null) {
+        request.fields['replaceMode'] = replaceMode.toString();
+      }
+
+      print('📤 [FileService] Sending request to: $url');
+      final response = await request.send().timeout(
+        const Duration(minutes: 5),
+        onTimeout: () {
+          throw Exception('انتهت مهلة الاتصال. يرجى المحاولة مرة أخرى.');
+        },
+      );
+
+      final responseBody = await response.stream.bytesToString();
+
+      print('📥 [FileService] Response status: ${response.statusCode}');
+      print('📥 [FileService] Response body: $responseBody');
+
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        final data = jsonDecode(responseBody);
+        if (data['success'] == true) {
+          print('✅ [FileService] File content updated successfully');
+          print('   - File name: ${data['file']?['name'] ?? 'N/A'}');
+          print('   - Replace mode: ${data['replaceMode'] ?? 'N/A'}');
+          print('═══════════════════════════════════════════════════════');
+          return {
+            'success': true,
+            'message': data['message'] ?? 'تم تحديث محتوى الملف بنجاح',
+            'file': data['file'],
+            'replaceMode': data['replaceMode'],
+          };
+        } else {
+          print('❌ [FileService] Update failed: ${data['message']}');
+          print('═══════════════════════════════════════════════════════');
+          return {
+            'success': false,
+            'message': data['message'] ?? 'فشل في تحديث محتوى الملف',
+          };
+        }
+      } else {
+        final data = jsonDecode(responseBody);
+        print('❌ [FileService] Update failed: ${data['message'] ?? 'Unknown error'}');
+        print('═══════════════════════════════════════════════════════');
+        return {
+          'success': false,
+          'message': data['message'] ?? 'فشل في تحديث محتوى الملف',
+        };
+      }
+    } catch (e) {
+      print('❌ [FileService] Update file content error: $e');
+      print('═══════════════════════════════════════════════════════');
+      return {
+        'success': false,
+        'message': 'خطأ في تحديث محتوى الملف: ${e.toString()}',
+      };
+    }
+  }
+
   /// 🔄 نقل ملف من مجلد إلى آخر
   Future<Map<String, dynamic>> moveFile({
     required String fileId,

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:filevo/generated/l10n.dart';
 import 'package:provider/provider.dart';
 import 'package:filevo/controllers/activity_controller.dart';
 import 'package:intl/intl.dart';
@@ -138,7 +139,7 @@ class _ActivityLogPageState extends State<ActivityLogPage> {
     return Scaffold(
       backgroundColor: Colors.grey[100],
       appBar: AppBar(
-        title: const Text('سجل النشاط'),
+        title: Text(S.of(context).activityLog),
         backgroundColor: const Color(0xff28336f),
         actions: [
           IconButton(
@@ -184,7 +185,7 @@ class _ActivityLogPageState extends State<ActivityLogPage> {
                   const SizedBox(height: 16),
                   ElevatedButton(
                     onPressed: _loadActivities,
-                    child: const Text('إعادة المحاولة'),
+                    child: Text(S.of(context).retry),
                   ),
                 ],
               ),
@@ -429,7 +430,7 @@ class _ActivityLogPageState extends State<ActivityLogPage> {
                     _loadActivities();
                   }
                 : null,
-            child: const Text('السابق'),
+            child: Text(S.of(context).previous),
           ),
           Text(
             'صفحة $currentPage من $totalPages',
@@ -448,7 +449,7 @@ class _ActivityLogPageState extends State<ActivityLogPage> {
                     _loadActivities();
                   }
                 : null,
-            child: const Text('التالي'),
+            child: Text(S.of(context).next),
           ),
         ],
       ),
@@ -459,7 +460,7 @@ class _ActivityLogPageState extends State<ActivityLogPage> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('تصفية النشاط'),
+        title: Text(S.of(context).filterActivity),
         content: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -471,30 +472,30 @@ class _ActivityLogPageState extends State<ActivityLogPage> {
                   border: OutlineInputBorder(),
                 ),
                 items: [
-                  const DropdownMenuItem(value: null, child: Text('الكل')),
-                  const DropdownMenuItem(
+                  DropdownMenuItem(value: null, child: Text(S.of(context).allActivities)),
+                  DropdownMenuItem(
                     value: 'file_uploaded',
-                    child: Text('رفع ملف'),
+                    child: Text(S.of(context).uploadFile),
                   ),
-                  const DropdownMenuItem(
+                  DropdownMenuItem(
                     value: 'file_downloaded',
-                    child: Text('تحميل ملف'),
+                    child: Text(S.of(context).downloadFile),
                   ),
-                  const DropdownMenuItem(
+                  DropdownMenuItem(
                     value: 'file_deleted',
-                    child: Text('حذف ملف'),
+                    child: Text(S.of(context).deleteFile),
                   ),
-                  const DropdownMenuItem(
+                  DropdownMenuItem(
                     value: 'file_shared',
-                    child: Text('مشاركة ملف'),
+                    child: Text(S.of(context).shareFile),
                   ),
-                  const DropdownMenuItem(
+                  DropdownMenuItem(
                     value: 'folder_created',
-                    child: Text('إنشاء مجلد'),
+                    child: Text(S.of(context).createFolder),
                   ),
-                  const DropdownMenuItem(
+                  DropdownMenuItem(
                     value: 'login',
-                    child: Text('تسجيل الدخول'),
+                    child: Text(S.of(context).login),
                   ),
                 ],
                 onChanged: (value) {
@@ -511,12 +512,12 @@ class _ActivityLogPageState extends State<ActivityLogPage> {
                   border: OutlineInputBorder(),
                 ),
                 items: [
-                  const DropdownMenuItem(value: null, child: Text('الكل')),
-                  const DropdownMenuItem(value: 'file', child: Text('ملف')),
-                  const DropdownMenuItem(value: 'folder', child: Text('مجلد')),
-                  const DropdownMenuItem(value: 'user', child: Text('مستخدم')),
-                  const DropdownMenuItem(value: 'system', child: Text('نظام')),
-                  const DropdownMenuItem(value: 'room', child: Text('غرفة')),
+                  DropdownMenuItem(value: null, child: Text(S.of(context).allActivities)),
+                  DropdownMenuItem(value: 'file', child: Text(S.of(context).file)),
+                  DropdownMenuItem(value: 'folder', child: Text(S.of(context).folder)),
+                  DropdownMenuItem(value: 'user', child: Text(S.of(context).userLabel)),
+                  DropdownMenuItem(value: 'system', child: Text(S.of(context).system)),
+                  DropdownMenuItem(value: 'room', child: Text(S.of(context).roomLabel)),
                 ],
                 onChanged: (value) {
                   setState(() {
@@ -535,11 +536,11 @@ class _ActivityLogPageState extends State<ActivityLogPage> {
                 _selectedEntityType = null;
               });
             },
-            child: const Text('إعادة تعيين'),
+            child: Text(S.of(context).reset),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('إلغاء'),
+            child: Text(S.of(context).cancel),
           ),
           ElevatedButton(
             onPressed: () {
@@ -547,7 +548,7 @@ class _ActivityLogPageState extends State<ActivityLogPage> {
               _currentPage = 1;
               _loadActivities();
             },
-            child: const Text('تطبيق'),
+            child: Text(S.of(context).apply),
           ),
         ],
       ),

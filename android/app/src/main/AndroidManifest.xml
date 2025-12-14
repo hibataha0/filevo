@@ -1,8 +1,14 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.example.filevo">
 
-    <!-- صلاحيات -->
+    <!-- ✅ صلاحيات أساسية -->
     <uses-permission android:name="android.permission.INTERNET" />
+    
+    <!-- ✅ صلاحيات الميكروفون للبحث بالصوت (يجب أن يكون قبل <application>) -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <uses-feature
+        android:name="android.hardware.microphone"
+        android:required="false" />
     
     <!-- ✅ للـ Android 10 وأقل -->
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" 

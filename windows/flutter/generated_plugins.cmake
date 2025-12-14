@@ -6,6 +6,9 @@ list(APPEND FLUTTER_PLUGIN_LIST
   audioplayers_windows
   file_selector_windows
   permission_handler_windows
+  pro_video_editor
+  share_plus
+  speech_to_text_windows
   url_launcher_windows
 )
 

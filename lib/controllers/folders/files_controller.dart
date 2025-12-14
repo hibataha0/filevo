@@ -484,6 +484,46 @@ class FileController extends ChangeNotifier {
     }
   }
 
+  /// 📝 تحديث محتوى الملف (استبدال الملف القديم بملف جديد)
+  Future<bool> updateFileContent({
+    required String fileId,
+    required File file,
+    required String token,
+    bool? replaceMode,
+  }) async {
+    setLoading(true);
+    setError(null);
+    setSuccess(null);
+    try {
+      final result = await _fileService.updateFileContent(
+        fileId: fileId,
+        file: file,
+        token: token,
+        replaceMode: replaceMode,
+      );
+
+      if (result['success'] == true) {
+        if (result['file'] != null) {
+          final updatedFile = Map<String, dynamic>.from(result['file']);
+          final index = _uploadedFiles.indexWhere((f) => f['_id'] == fileId);
+          if (index != -1) _uploadedFiles[index] = updatedFile;
+          _fileDetails = updatedFile;
+        }
+        setSuccess(result['message'] ?? 'تم تحديث محتوى الملف بنجاح');
+        _safeNotifyListeners();
+        return true;
+      } else {
+        setError(result['message'] ?? 'فشل في تحديث محتوى الملف');
+        return false;
+      }
+    } catch (e) {
+      setError('خطأ في تحديث محتوى الملف: ${e.toString()}');
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  }
+
   /// 🔄 نقل ملف من مجلد إلى آخر
   Future<bool> moveFile({
     required String fileId,

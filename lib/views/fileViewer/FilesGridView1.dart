@@ -21,6 +21,7 @@ class FilesGrid extends StatefulWidget {
   final String?
   roomId; // ✅ معرف الروم (اختياري) - لاستخدام getSharedFileDetailsInRoom
   final VoidCallback? onFileRemoved; // ✅ callback عند إزالة ملف من الغرفة
+  final VoidCallback? onFileUpdated; // ✅ callback عند تحديث ملف
 
   const FilesGrid({
     super.key,
@@ -28,6 +29,7 @@ class FilesGrid extends StatefulWidget {
     this.onFileTap,
     this.roomId,
     this.onFileRemoved,
+    this.onFileUpdated,
   });
 
   @override
@@ -231,7 +233,27 @@ class _FilesGridState extends State<FilesGrid> {
         }
         break;
       case 'edit':
-        FileActionsService.editFile(context, file);
+        // ✅ فتح صفحة التحرير والانتظار للنتيجة
+        // ✅ تمرير roomId إذا كان موجوداً
+        print('🔍 [FilesGridView1] Edit file - roomId: ${widget.roomId}');
+        FileActionsService.editFile(context, file, roomId: widget.roomId)
+            .then((result) {
+              // ✅ إذا تم تحديث الملف، استدعي callback لإعادة تحميل البيانات
+              if (result == true && widget.onFileUpdated != null) {
+                print(
+                  '✅ [FilesGridView1] File updated, calling onFileUpdated callback',
+                );
+                // ✅ استخدام Future.microtask لتأجيل الاستدعاء وتجنب التعليق
+                Future.microtask(() {
+                  if (mounted && widget.onFileUpdated != null) {
+                    widget.onFileUpdated!();
+                  }
+                });
+              }
+            })
+            .catchError((error) {
+              print('❌ [FilesGridView1] Error in editFile: $error');
+            });
         break;
       case 'share':
         FileActionsService.shareFile(context, file);
@@ -302,7 +324,12 @@ class _FilesGridState extends State<FilesGrid> {
         S.of(context).viewDetails,
         Colors.teal,
       ),
-      _buildMenuItem('download', Icons.download_rounded, 'تحميل', Colors.blue),
+      _buildMenuItem(
+        'download',
+        Icons.download_rounded,
+        S.of(context).download,
+        Colors.blue,
+      ),
       _buildMenuItem(
         'comments',
         Icons.comment_rounded,
@@ -310,15 +337,13 @@ class _FilesGridState extends State<FilesGrid> {
         Color(0xFFF59E0B),
       ),
       const PopupMenuDivider(),
+      // ✅ إزالة خيار "إضافة إلى المفضلة" من الملفات المشتركة في الروم
       _buildMenuItem(
-        'favorite',
-        isStarred ? Icons.star_rounded : Icons.star_border_rounded,
-        isStarred
-            ? S.of(context).removeFromFavorites
-            : S.of(context).addToFavorites,
-        Colors.amber[700]!,
+        'save',
+        Icons.save_rounded,
+        S.of(context).saveToMyAccount,
+        Colors.green,
       ),
-      _buildMenuItem('save', Icons.save_rounded, 'حفظ في حسابي', Colors.green),
       const PopupMenuDivider(),
       // ✅ إضافة خيار "إزالة من الغرفة" دائماً
       // ✅ التحقق من الصلاحيات يتم في _handleSharedFileMenuAction
@@ -349,7 +374,12 @@ class _FilesGridState extends State<FilesGrid> {
         S.of(context).viewInfo,
         Colors.teal,
       ),
-      _buildMenuItem('download', Icons.download_rounded, 'تحميل', Colors.blue),
+      _buildMenuItem(
+        'download',
+        Icons.download_rounded,
+        S.of(context).download,
+        Colors.blue,
+      ),
       _buildMenuItem(
         'edit',
         Icons.edit_rounded,
@@ -549,7 +579,9 @@ class _FilesGridState extends State<FilesGrid> {
   /// ✅ عرض dialog لتأكيد إزالة الملف من الغرفة
   void _showRemoveFileFromRoomDialog(Map<String, dynamic> file) {
     final fileName =
-        file['name']?.toString() ?? file['originalName']?.toString() ?? 'الملف';
+        file['name']?.toString() ??
+        file['originalName']?.toString() ??
+        S.of(context).file;
 
     showDialog(
       context: context,
@@ -939,9 +971,13 @@ class _FilesGridState extends State<FilesGrid> {
                   false)
             : (file['originalData']?['isStarred'] ?? false);
 
-        // ✅ استخدام key مع fileId و isStarred لضمان إعادة بناء الـ widget عند تغيير isStarred
+        // ✅ استخدام key مع fileId و isStarred و URL لضمان إعادة بناء الـ widget عند تغيير الصورة
+        // ✅ إضافة URL إلى key لضمان إعادة بناء الـ widget عند تغيير URL (بعد التعديل)
+        final fileUrlKey = fileUrl
+            .split('?')
+            .first; // ✅ استخدام URL بدون query params كجزء من key
         return KeyedSubtree(
-          key: ValueKey('${fileId}_${isStarred}'),
+          key: ValueKey('${fileId}_${isStarred}_$fileUrlKey'),
           child: _buildFileCard(
             fileType,
             fileUrl,
@@ -1516,74 +1552,87 @@ class _FilesGridState extends State<FilesGrid> {
         builder: (context, constraints) {
           // ✅ حساب الأحجام بشكل responsive بناءً على المساحة المتاحة
           final availableHeight = constraints.maxHeight;
-          final iconSize = availableHeight > 120 ? 64.0 : (availableHeight > 80 ? 48.0 : 40.0);
-          final spacing = availableHeight > 120 ? 12.0 : (availableHeight > 80 ? 8.0 : 6.0);
+          final iconSize = availableHeight > 120
+              ? 64.0
+              : (availableHeight > 80 ? 48.0 : 40.0);
+          final spacing = availableHeight > 120
+              ? 12.0
+              : (availableHeight > 80 ? 8.0 : 6.0);
           final padding = EdgeInsets.symmetric(
             horizontal: 12,
-            vertical: availableHeight > 120 ? 6.0 : (availableHeight > 80 ? 4.0 : 3.0),
+            vertical: availableHeight > 120
+                ? 6.0
+                : (availableHeight > 80 ? 4.0 : 3.0),
           );
-          final fontSize = availableHeight > 120 ? 11.0 : (availableHeight > 80 ? 10.0 : 9.0);
-          final iconBadgeSize = availableHeight > 120 ? 16.0 : (availableHeight > 80 ? 14.0 : 12.0);
-          final verticalPadding = availableHeight > 120 ? 16.0 : (availableHeight > 80 ? 12.0 : 8.0);
+          final fontSize = availableHeight > 120
+              ? 11.0
+              : (availableHeight > 80 ? 10.0 : 9.0);
+          final iconBadgeSize = availableHeight > 120
+              ? 16.0
+              : (availableHeight > 80 ? 14.0 : 12.0);
+          final verticalPadding = availableHeight > 120
+              ? 16.0
+              : (availableHeight > 80 ? 12.0 : 8.0);
 
           return Center(
             child: Padding(
               padding: EdgeInsets.symmetric(
                 horizontal: 8,
                 vertical: verticalPadding,
-      ),
-      child: Column(
+              ),
+              child: Column(
                 mainAxisSize: MainAxisSize.min,
-        mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          // ✅ أيقونة الملف
-                  Icon(
-                    icon,
-                    size: iconSize,
-                    color: color.withOpacity(0.6),
-                  ),
+                children: [
+                  // ✅ أيقونة الملف
+                  Icon(icon, size: iconSize, color: color.withOpacity(0.6)),
                   SizedBox(height: spacing),
-          // ✅ أيقونة المشاركة لمرة واحدة
+                  // ✅ أيقونة المشاركة لمرة واحدة
                   Flexible(
                     child: Container(
                       constraints: BoxConstraints(
-                        maxWidth: constraints.maxWidth - 16, // 16 = horizontal padding * 2
+                        maxWidth:
+                            constraints.maxWidth -
+                            16, // 16 = horizontal padding * 2
                       ),
                       padding: padding,
-            decoration: BoxDecoration(
-              color: Colors.orange.shade50,
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: Colors.orange.shade300, width: 1.5),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
+                      decoration: BoxDecoration(
+                        color: Colors.orange.shade50,
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: Colors.orange.shade300,
+                          width: 1.5,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
                         mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  Icons.lock_clock_rounded,
+                        children: [
+                          Icon(
+                            Icons.lock_clock_rounded,
                             size: iconBadgeSize,
-                  color: Colors.orange.shade700,
-                ),
-                const SizedBox(width: 6),
+                            color: Colors.orange.shade700,
+                          ),
+                          const SizedBox(width: 6),
                           Flexible(
                             child: Text(
-                  'مشارك لمرة واحدة',
-                  style: TextStyle(
+                              'مشارك لمرة واحدة',
+                              style: TextStyle(
                                 fontSize: fontSize,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.orange.shade700,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.orange.shade700,
                               ),
                               textAlign: TextAlign.center,
                               overflow: TextOverflow.ellipsis,
                               maxLines: 1,
-                  ),
-                ),
-              ],
+                            ),
+                          ),
+                        ],
                       ),
-            ),
-          ),
-        ],
+                    ),
+                  ),
+                ],
               ),
             ),
           );
@@ -1715,15 +1764,28 @@ class _FilesGridState extends State<FilesGrid> {
     String url,
     Map<String, String>? httpHeaders,
   ) {
+    // ✅ استخدام ValueKey دائماً بناءً على URL الكامل لضمان إعادة بناء الـ widget عند تغيير URL
+    // ✅ هذا مهم جداً: بدون ValueKey، Flutter لا يعيد بناء الـ widget حتى لو تغير URL
+    // ✅ ValueKey مع URL الكامل (مع timestamp) يضمن أن كل تحديث يتم إعادة بناء الـ widget
+    final imageKey = ValueKey(url);
+
+    // ✅ للصور: استخدام URL كامل مع timestamp كـ cacheKey
+    // ✅ هذا يضمن أن كل تحديث يتم تحميله كصورة جديدة
+    final cacheKey = url; // ✅ استخدام URL الكامل دائماً (يحتوي على timestamp)
+
     return CachedNetworkImage(
+      key:
+          imageKey, // ✅ إضافة key دائماً لضمان إعادة بناء الـ widget عند تغيير URL
       imageUrl: url,
       fit: BoxFit.cover,
       width: double.infinity,
       height: double.infinity,
       // ✅ إضافة headers إذا كان token مطلوباً
       httpHeaders: httpHeaders,
-      // ✅ إعدادات Cache لمنع إعادة التحميل عند Scroll
-      cacheKey: url, // ✅ مفتاح cache فريد للـ URL
+      // ✅ إعدادات Cache
+      // ✅ للصور المشتركة: استخدام URL كامل مع timestamp كـ cacheKey
+      // ✅ للصور غير المشتركة: استخدام URL بدون query parameters
+      cacheKey: cacheKey,
       maxWidthDiskCache: 800, // ✅ تقليل حجم الصورة المحفوظة
       maxHeightDiskCache: 800,
       memCacheWidth: 400, // ✅ تحسين استخدام الذاكرة

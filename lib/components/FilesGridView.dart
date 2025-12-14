@@ -5,11 +5,12 @@ import 'package:filevo/views/folders/share_folder_with_room_page.dart';
 import 'package:filevo/views/fileViewer/folder_actions_service.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter/material.dart';
+import 'package:filevo/generated/l10n.dart';
 
 // ✅ Helper functions للتعامل مع إجراءات المجلد
 void _showFolderInfo(BuildContext context, Map<String, dynamic> folder) async {
   final folderId = folder['folderId'] as String?;
-  final folderName = folder['title'] as String;
+  final folderName = folder['title']?.toString() ?? folder['name']?.toString() ?? 'مجلد';
   final folderColor = folder['color'] as Color? ?? Colors.blue;
 
   if (folderId == null) {
@@ -344,7 +345,7 @@ void _showCategoryDetails(BuildContext context, Map<String, dynamic> category) {
 }
 
 void _showRenameDialog(BuildContext context, Map<String, dynamic> folder) {
-  final folderName = folder['title'] as String;
+  final folderName = folder['title']?.toString() ?? folder['name']?.toString() ?? 'مجلد';
   final folderId = folder['folderId'] as String?;
   final folderData = folder['folderData'] as Map<String, dynamic>?;
 
@@ -441,7 +442,7 @@ void _showRenameDialog(BuildContext context, Map<String, dynamic> folder) {
               tags.isEmpty ? null : tags,
             );
           },
-          child: Text('حفظ'),
+          child: Text(S.of(context).save),
         ),
       ],
     ),
@@ -491,7 +492,7 @@ void _performUpdate(
 
 void _showShareDialog(BuildContext context, Map<String, dynamic> folder) async {
   final folderId = folder['folderId'] as String?;
-  final folderName = folder['title'] as String;
+  final folderName = folder['title']?.toString() ?? folder['name']?.toString() ?? 'مجلد';
 
   if (folderId == null) {
     ScaffoldMessenger.of(
@@ -906,13 +907,13 @@ class FilesGridView extends StatelessWidget {
                   }
                 },
                 child: FolderFileCard(
-                  title: item['title'] as String,
+                  title: item['title']?.toString() ?? item['name']?.toString() ?? '',
                   fileCount: (item['fileCount'] is int)
                       ? item['fileCount'] as int
                       : (item['fileCount'] is num)
                       ? (item['fileCount'] as num).toInt()
                       : 0,
-                  size: item['size'] as String,
+                  size: item['size']?.toString() ?? '0 B',
                   showFileCount: showFileCount,
                   color: item['color'] as Color? ?? const Color(0xFF00BFA5),
                   folderData: item,
@@ -965,7 +966,8 @@ class FilesGridView extends StatelessWidget {
                           _showMoveFolderDialog(context, item, onFileRemoved);
                         }
                       : null,
-                  onFavoriteTap: type == 'folder'
+                  // ✅ إزالة خيار "إضافة إلى المفضلة" من المجلدات المشتركة في الروم
+                  onFavoriteTap: (type == 'folder' && roomId == null)
                       ? () {
                           _toggleFavorite(
                             context,
@@ -1025,13 +1027,13 @@ class FilesGridView extends StatelessWidget {
             }
           },
           child: FolderFileCard(
-            title: item['title'] as String,
+            title: item['title']?.toString() ?? item['name']?.toString() ?? '',
             fileCount: (item['fileCount'] is int)
                 ? item['fileCount'] as int
                 : (item['fileCount'] is num)
                 ? (item['fileCount'] as num).toInt()
                 : 0,
-            size: item['size'] as String,
+            size: item['size']?.toString() ?? '0 B',
             showFileCount: showFileCount,
             color: item['color'] as Color? ?? const Color(0xFF00BFA5),
             folderData:
@@ -1100,7 +1102,8 @@ class FilesGridView extends StatelessWidget {
                     _showMoveFolderDialog(context, item, onFileRemoved);
                   }
                 : null,
-            onFavoriteTap: type == 'folder'
+            // ✅ إزالة خيار "إضافة إلى المفضلة" من المجلدات المشتركة في الروم
+            onFavoriteTap: (type == 'folder' && roomId == null)
                 ? () {
                     _toggleFavorite(context, item, onUpdate: onFileRemoved);
                   }

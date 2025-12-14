@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:filevo/controllers/folders/room_controller.dart';
+import 'package:filevo/generated/l10n.dart';
 
 class PendingInvitationsPage extends StatefulWidget {
   @override
@@ -62,16 +63,16 @@ class _PendingInvitationsPageState extends State<PendingInvitationsPage> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('رفض الدعوة'),
-        content: Text('هل أنت متأكد من رفض هذه الدعوة؟'),
+        title: Text(S.of(context).rejectInvitation),
+        content: Text(S.of(context).confirmRejectInvitation),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: Text('إلغاء'),
+            child: Text(S.of(context).cancel),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: Text('رفض', style: TextStyle(color: Colors.red)),
+            child: Text(S.of(context).reject, style: TextStyle(color: Colors.red)),
           ),
         ],
       ),
@@ -106,7 +107,7 @@ class _PendingInvitationsPageState extends State<PendingInvitationsPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('الدعوات المعلقة'),
+        title: Text(S.of(context).pendingInvitations),
         backgroundColor: Color(0xff28336f),
         actions: [
           IconButton(
@@ -309,7 +310,7 @@ class _PendingInvitationsPageState extends State<PendingInvitationsPage> {
                   child: OutlinedButton.icon(
                     onPressed: () => _rejectInvitation(invitation['_id']),
                     icon: Icon(Icons.close, size: 18),
-                    label: Text('رفض'),
+                    label: Text(S.of(context).reject),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: Colors.red,
                       side: BorderSide(color: Colors.red),
@@ -321,7 +322,7 @@ class _PendingInvitationsPageState extends State<PendingInvitationsPage> {
                   child: ElevatedButton.icon(
                     onPressed: () => _acceptInvitation(invitation['_id']),
                     icon: Icon(Icons.check, size: 18),
-                    label: Text('قبول'),
+                    label: Text(S.of(context).accept),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Color(0xFF10B981),
                     ),

@@ -5,7 +5,7 @@ import 'package:filevo/responsive.dart';
 import 'package:filevo/views/home/components/StorageCard.dart';
 import 'package:flutter/material.dart';
 import 'package:filevo/constants/app_colors.dart';
-import 'package:filevo/views/search/smart_search_page.dart';
+import 'package:filevo/generated/l10n.dart';
 import 'package:filevo/services/folders_service.dart';
 import 'package:filevo/services/file_service.dart';
 import 'package:filevo/config/api_config.dart';
@@ -72,8 +72,8 @@ class _HomeViewState extends State<HomeView> {
               final size = folder['size'];
               final filesCount = folder['filesCount'];
               return {
-                'title': folder['name'] ?? 'بدون اسم',
-                'name': folder['name'] ?? 'بدون اسم',
+                'title': folder['name'] ?? S.of(context).noName,
+                'name': folder['name'] ?? S.of(context).noName,
                 'type': 'folder', // ✅ إضافة type للمجلدات
                 'fileCount': (filesCount != null && filesCount is int)
                     ? filesCount
@@ -108,7 +108,7 @@ class _HomeViewState extends State<HomeView> {
           setState(() {
             // ✅ عرض جميع الملفات
             _recentFiles = files.map((file) {
-              final fileName = file['name']?.toString() ?? 'ملف بدون اسم';
+              final fileName = file['name']?.toString() ?? S.of(context).fileWithoutName;
               final filePath = file['path']?.toString() ?? '';
               final size = file['size'];
 
@@ -135,7 +135,7 @@ class _HomeViewState extends State<HomeView> {
     } catch (e) {
       if (mounted) {
         setState(() {
-          _errorMessage = 'خطأ في جلب البيانات: ${e.toString()}';
+          _errorMessage = '${S.of(context).errorFetchingData}: ${e.toString()}';
         });
       }
     } finally {
@@ -209,7 +209,7 @@ class _HomeViewState extends State<HomeView> {
         folder['title'] ??
         folder['name'] ??
         folder['originalData']?['name'] ??
-        'مجلد';
+        S.of(context).folder;
     if (folderId != null) {
       Navigator.push(
         context,
@@ -228,7 +228,7 @@ class _HomeViewState extends State<HomeView> {
     if (filePath == null || filePath.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Text('رابط الملف غير متوفر'),
+          content: Text(S.of(context).fileUrlNotAvailable),
           behavior: SnackBarBehavior.floating,
           backgroundColor: Colors.orange,
         ),
@@ -237,14 +237,14 @@ class _HomeViewState extends State<HomeView> {
     }
 
     final originalData = file['originalData'] ?? file;
-    final originalName = file['originalName'] ?? file['name'] ?? 'ملف بدون اسم';
+    final originalName = file['originalName'] ?? file['name'] ?? S.of(context).fileWithoutName;
     final name = originalName.toLowerCase();
     final url = _getFileUrl(filePath);
 
     if (!_isValidUrl(url)) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Text('رابط غير صالح'),
+          content: Text(S.of(context).invalidUrl),
           behavior: SnackBarBehavior.floating,
           backgroundColor: Colors.red,
         ),
@@ -433,7 +433,7 @@ class _HomeViewState extends State<HomeView> {
         Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('خطأ في فتح الملف: ${e.toString()}'),
+            content: Text('${S.of(context).errorOpeningFile}: ${e.toString()}'),
             backgroundColor: Colors.red,
           ),
         );
@@ -540,7 +540,7 @@ class _HomeViewState extends State<HomeView> {
                             const SizedBox(height: 16),
                             ElevatedButton(
                               onPressed: _loadRecentData,
-                              child: const Text('إعادة المحاولة'),
+                              child: Text(S.of(context).retry),
                             ),
                           ],
                         ),
@@ -572,7 +572,7 @@ class _HomeViewState extends State<HomeView> {
                                         MainAxisAlignment.spaceBetween,
                                     children: [
                                       Text(
-                                        'المجلدات الحديثة',
+                                        S.of(context).recentFolders,
                                         style: TextStyle(
                                           fontSize:
                                               ResponsiveUtils.getResponsiveValue(
@@ -602,7 +602,7 @@ class _HomeViewState extends State<HomeView> {
                                           }
                                         },
                                         child: Text(
-                                          'عرض الكل',
+                                          S.of(context).seeAll,
                                           style: TextStyle(
                                             color: Color(0xFF00BFA5),
                                             fontSize:
@@ -632,7 +632,7 @@ class _HomeViewState extends State<HomeView> {
                                     child: Padding(
                                       padding: const EdgeInsets.all(20.0),
                                       child: Text(
-                                        'لا توجد مجلدات حديثة',
+                                        S.of(context).noRecentFolders,
                                         style: TextStyle(
                                           color: Colors.grey[600],
                                         ),
@@ -663,7 +663,7 @@ class _HomeViewState extends State<HomeView> {
                                         MainAxisAlignment.spaceBetween,
                                     children: [
                                       Text(
-                                        'الملفات الحديثة',
+                                        S.of(context).recentFiles,
                                         style: TextStyle(
                                           fontSize:
                                               ResponsiveUtils.getResponsiveValue(
@@ -700,7 +700,7 @@ class _HomeViewState extends State<HomeView> {
                                     child: Padding(
                                       padding: const EdgeInsets.all(20.0),
                                       child: Text(
-                                        'لا توجد ملفات حديثة',
+                                        S.of(context).noRecentFiles,
                                         style: TextStyle(
                                           color: Colors.grey[600],
                                         ),
@@ -718,7 +718,7 @@ class _HomeViewState extends State<HomeView> {
                                   FilesListView(
                                     items: _recentFiles.map((f) {
                                       return {
-                                        'title': f['name'] ?? 'ملف بدون اسم',
+                                        'title': f['name'] ?? S.of(context).fileWithoutName,
                                         'size': f['size'] ?? '0 B',
                                         'path': f['path'],
                                         'createdAt': f['createdAt'],

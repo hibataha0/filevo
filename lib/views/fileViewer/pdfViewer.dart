@@ -5,6 +5,7 @@ import 'package:webview_flutter/webview_flutter.dart';
 import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
 import 'package:filevo/services/storage_service.dart';
+import 'package:filevo/generated/l10n.dart';
 
 class PdfViewerPage extends StatefulWidget {
   final String pdfUrl;
@@ -36,6 +37,14 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
   List<String> _searchSuggestions = [];
   bool _isSearching = false;
 
+  // ✅ متغيرات عرض النص والتظليل
+  bool _showTextMode = false; // عرض النص بدلاً من PDF
+  String _extractedText = ''; // النص المستخرج من PDF
+  bool _isExtractingText = false;
+  List<TextRange> _highlightedRanges = []; // النطاقات المظللة
+  TextSelection? _currentSelection; // التحديد الحالي
+  final TextEditingController _textController = TextEditingController();
+
   @override
   void initState() {
     super.initState();
@@ -46,6 +55,7 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
   void dispose() {
     _searchController.dispose();
     _pageController.dispose();
+    _textController.dispose();
     super.dispose();
   }
 
@@ -172,7 +182,7 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
         });
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('فشل تحميل ملف PDF: ${e.toString()}'),
+            content: Text(S.of(context).failedToLoadPdfFile(e.toString())),
             action: SnackBarAction(
               label: 'إعادة المحاولة',
               onPressed: _retryLoading,
@@ -205,7 +215,7 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
         });
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('فشل فتح الملف. قد يكون تالفاً أو مشفراً.'),
+            content: Text(S.of(context).failedToOpenFile(e.toString())),
             duration: Duration(seconds: 5),
             action: SnackBarAction(
               label: 'إعادة المحاولة',
@@ -334,7 +344,7 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
         });
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('فشل تحميل PDF للعرض: ${e.toString()}'),
+            content: Text(S.of(context).failedToLoadPdfForDisplay(e.toString())),
             action: SnackBarAction(
               label: 'إعادة المحاولة',
               onPressed: () {
@@ -444,6 +454,71 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
     });
   }
 
+  /// ✅ تبديل بين عرض PDF وعرض النص
+  Future<void> _toggleTextMode() async {
+    if (!_showTextMode) {
+      // ✅ تحويل إلى وضع النص - استخراج النص من PDF
+      await _extractTextFromPdf();
+    }
+    setState(() {
+      _showTextMode = !_showTextMode;
+    });
+  }
+
+  /// ✅ استخراج النص من PDF
+  Future<void> _extractTextFromPdf() async {
+    if (_extractedText.isNotEmpty) {
+      return; // ✅ النص مستخرج بالفعل
+    }
+
+    if (localPath == null) return;
+
+    setState(() {
+      _isExtractingText = true;
+    });
+
+    try {
+      // ✅ ملاحظة: حزمة pdf لا تدعم استخراج النص مباشرة
+      // سنستخدم طريقة بديلة - عرض الملف كـ text selectable
+      // يمكن استخدام مكتبة أخرى مثل pdf_text أو syncfusion_pdf
+      
+      setState(() {
+        _extractedText = '${S.of(context).extractingTextFromPdf}\n\n${S.of(context).pdfTextExtractionNote}\n\n${S.of(context).pdfTextExtractionNote2}';
+        _isExtractingText = false;
+      });
+    } catch (e) {
+      print('❌ خطأ في استخراج النص: $e');
+      setState(() {
+        _extractedText = '${S.of(context).failedToExtractTextFromPdf}\n\n${S.of(context).canViewPdfAndSearch}';
+        _isExtractingText = false;
+      });
+    }
+  }
+
+  /// ✅ إضافة تظليل للنص المحدد
+  void _highlightSelectedText() {
+    if (_currentSelection == null || !_currentSelection!.isValid) {
+      return;
+    }
+
+    final range = TextRange(
+      start: _currentSelection!.start,
+      end: _currentSelection!.end,
+    );
+
+    setState(() {
+      _highlightedRanges.add(range);
+      _currentSelection = null;
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(S.of(context).textHighlighted),
+        duration: Duration(seconds: 2),
+      ),
+    );
+  }
+
   void _retryLoading() {
     setState(() {
       isLoading = true;
@@ -486,7 +561,7 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
-          'البحث في PDF غير متاح حالياً. يمكنك فتح الملف في تطبيق خارجي للبحث.',
+          S.of(context).searchInPdfNotAvailableMessage,
         ),
         duration: Duration(seconds: 4),
       ),
@@ -497,24 +572,24 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Row(
+        title: Row(
           children: [
             Icon(Icons.search, color: Colors.blue),
             SizedBox(width: 8),
-            Text('البحث في PDF'),
+            Text(S.of(context).searchInPdf),
           ],
         ),
-        content: const Column(
+        content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('للاستفادة من ميزة البحث المتقدمة، نوصي باستخدام:'),
+            Text(S.of(context).forAdvancedSearchFeature),
             SizedBox(height: 12),
             Text('• Syncfusion Flutter PDF Viewer'),
             Text('• PDF.js مع WebView'),
             Text('• حزم PDF متقدمة أخرى'),
             SizedBox(height: 12),
-            Text('الإصدار الحالي يدعم:'),
+            Text(S.of(context).currentVersionSupports),
             Text('✓ تصفح الصفحات'),
             Text('✓ وضعية ملء الشاشة'),
             Text('✓ شريط التنقل'),
@@ -524,7 +599,7 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('حسناً'),
+            child: Text(S.of(context).ok),
           ),
         ],
       ),
@@ -580,6 +655,13 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
                     onPressed: _toggleSearchBar,
                     tooltip: 'بحث في المستند',
                   ),
+                // ✅ زر عرض النص/PDF
+                if (localPath != null)
+                  IconButton(
+                    icon: Icon(_showTextMode ? Icons.picture_as_pdf : Icons.text_fields),
+                    onPressed: _toggleTextMode,
+                    tooltip: _showTextMode ? 'عرض PDF' : 'عرض النص',
+                  ),
                 // زر إظهار/إخفاء شريط التنقل (فقط للعرض المحلي)
                 if ((localPath != null || useWebView) &&
                     pages > 1 &&
@@ -609,13 +691,13 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
 
   Widget _buildBody() {
     if (isLoading) {
-      return const Center(
+      return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             CircularProgressIndicator(),
             SizedBox(height: 16),
-            Text('جاري تحميل الملف...'),
+            Text(S.of(context).loadingFile),
           ],
         ),
       );
@@ -628,14 +710,14 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
           children: [
             const Icon(Icons.error_outline, color: Colors.red, size: 64),
             const SizedBox(height: 16),
-            const Text(
-              'فشل تحميل ملف PDF',
+              Text(
+              S.of(context).failedToLoadPdf,
               style: TextStyle(fontSize: 16, color: Colors.red),
             ),
             const SizedBox(height: 20),
             ElevatedButton(
               onPressed: _retryLoading,
-              child: const Text('إعادة المحاولة'),
+              child: Text(S.of(context).retry),
             ),
           ],
         ),
@@ -649,18 +731,23 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
           children: [
             const Icon(Icons.error_outline, color: Colors.orange, size: 64),
             const SizedBox(height: 16),
-            const Text(
-              'لم يتم تحميل الملف',
+              Text(
+              S.of(context).fileNotLoaded,
               style: TextStyle(fontSize: 16, color: Colors.orange),
             ),
             const SizedBox(height: 20),
             ElevatedButton(
               onPressed: _retryLoading,
-              child: const Text('إعادة المحاولة'),
+              child: Text(S.of(context).retry),
             ),
           ],
         ),
       );
+    }
+
+    // ✅ إذا كان وضع عرض النص مفعلاً
+    if (_showTextMode) {
+      return _buildTextView();
     }
 
     return Stack(
@@ -942,6 +1029,140 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
         ],
       ),
     );
+  }
+
+  /// ✅ بناء واجهة عرض النص مع التظليل
+  Widget _buildTextView() {
+    if (_isExtractingText) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            CircularProgressIndicator(),
+            SizedBox(height: 16),
+            Text(S.of(context).extractingText),
+          ],
+        ),
+      );
+    }
+
+    return Column(
+      children: [
+        // ✅ شريط الأدوات
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          color: Theme.of(context).appBarTheme.backgroundColor,
+          child: Row(
+            children: [
+              IconButton(
+                icon: const Icon(Icons.highlight),
+                onPressed: _currentSelection != null && _currentSelection!.isValid
+                    ? _highlightSelectedText
+                    : null,
+                tooltip: S.of(context).highlightSelectedText,
+              ),
+              IconButton(
+                icon: const Icon(Icons.clear_all),
+                onPressed: () {
+                  setState(() {
+                    _highlightedRanges.clear();
+                  });
+                },
+                tooltip: S.of(context).removeAllHighlights,
+              ),
+              const Spacer(),
+              Text(
+                '${_highlightedRanges.length} ${S.of(context).highlights}',
+                style: const TextStyle(fontSize: 12),
+              ),
+            ],
+          ),
+        ),
+        // ✅ عرض النص
+        Expanded(
+          child: _extractedText.isEmpty
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.text_fields, size: 64, color: Colors.grey),
+                      const SizedBox(height: 16),
+                      Text(S.of(context).textNotExtractedYet),
+                      const SizedBox(height: 8),
+                      ElevatedButton(
+                        onPressed: _extractTextFromPdf,
+                        child: Text(S.of(context).extractText),
+                      ),
+                    ],
+                  ),
+                )
+              : _buildSelectableText(),
+        ),
+      ],
+    );
+  }
+
+  /// ✅ بناء نص قابل للتحديد مع التظليل
+  Widget _buildSelectableText() {
+    return SelectionArea(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: SelectableText.rich(
+          TextSpan(
+            children: _buildTextSpans(),
+          ),
+          style: const TextStyle(fontSize: 16, height: 1.5),
+          onSelectionChanged: (selection, cause) {
+            setState(() {
+              _currentSelection = selection;
+            });
+          },
+        ),
+      ),
+    );
+  }
+
+  /// ✅ بناء TextSpan مع التظليلات
+  List<TextSpan> _buildTextSpans() {
+    if (_extractedText.isEmpty) return [];
+
+    final spans = <TextSpan>[];
+    int currentIndex = 0;
+
+    // ✅ ترتيب التظليلات حسب الموضع
+    final sortedRanges = List<TextRange>.from(_highlightedRanges)
+      ..sort((a, b) => a.start.compareTo(b.start));
+
+    for (final range in sortedRanges) {
+      // ✅ النص قبل التظليل
+      if (range.start > currentIndex) {
+        spans.add(TextSpan(
+          text: _extractedText.substring(currentIndex, range.start),
+        ));
+      }
+
+      // ✅ النص المظلل
+      spans.add(TextSpan(
+        text: _extractedText.substring(range.start, range.end),
+        style: const TextStyle(
+          backgroundColor: Colors.yellow,
+          fontWeight: FontWeight.bold,
+        ),
+      ));
+
+      currentIndex = range.end;
+    }
+
+    // ✅ النص المتبقي
+    if (currentIndex < _extractedText.length) {
+      spans.add(TextSpan(
+        text: _extractedText.substring(currentIndex),
+      ));
+    }
+
+    return spans.isEmpty
+        ? [TextSpan(text: _extractedText)]
+        : spans;
   }
 
   Widget _buildFloatingButtons() {
