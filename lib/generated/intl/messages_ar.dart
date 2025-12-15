@@ -41,110 +41,114 @@ class MessageLookup extends MessageLookupByLibrary {
 
   static String m7(email) => "أدخل الرمز المكون من 6 أرقام المرسل إلى ${email}";
 
-  static String m8(error) => "خطأ: ${error}";
+  static String m8(email) => "أدخل كلمة المرور الجديدة لحساب ${email}";
 
-  static String m9(error) => "خطأ في الوصول للملف المعدل: ${error}";
+  static String m9(error) => "خطأ: ${error}";
 
-  static String m10(error) => "❌ حدث خطأ أثناء حذف الملف: ${error}";
+  static String m10(error) => "خطأ في الوصول للملف المعدل: ${error}";
 
-  static String m11(error) => "❌ حدث خطأ أثناء حذف المجلد: ${error}";
+  static String m11(error) => "❌ حدث خطأ أثناء حذف الملف: ${error}";
 
-  static String m12(error) => "❌ خطأ في تحميل الملف: ${error}";
+  static String m12(error) => "❌ حدث خطأ أثناء حذف المجلد: ${error}";
 
-  static String m13(error) => "❌ خطأ في تحميل المجلد: ${error}";
+  static String m13(error) => "❌ خطأ في تحميل الملف: ${error}";
 
-  static String m14(error) => "خطأ في جلب المجلدات الفرعية: ${error}";
+  static String m14(error) => "❌ خطأ في تحميل المجلد: ${error}";
 
-  static String m15(error) => "خطأ في تحميل الملف: ${error}";
+  static String m15(error) => "خطأ في جلب المجلدات الفرعية: ${error}";
 
-  static String m16(error) => "حدث خطأ في تحميل بيانات الملف: ${error}";
+  static String m16(error) => "خطأ عند تحميل الملف: ${error}";
 
-  static String m17(error) => "خطأ في تحميل ملف النص: ${error}";
+  static String m17(error) => "حدث خطأ في تحميل بيانات الملف: ${error}";
 
-  static String m18(error) => "❌ خطأ: ${error}";
+  static String m18(error) => "خطأ عند تحميل الملف النصي: ${error}";
 
-  static String m19(error) => "خطأ في فتح الملف: ${error}";
+  static String m19(error) => "❌ خطأ: ${error}";
 
-  static String m20(error) => "❌ حدث خطأ أثناء الحذف النهائي للمجلد: ${error}";
+  static String m20(error) => "خطأ في فتح الملف: ${error}";
 
-  static String m21(error) => "❌ حدث خطأ أثناء استعادة المجلد: ${error}";
+  static String m21(error) => "❌ حدث خطأ أثناء الحذف النهائي للمجلد: ${error}";
 
-  static String m22(error) => "❌ خطأ في رفع صورة الملف الشخصي: ${error}";
+  static String m22(error) => "❌ حدث خطأ أثناء استعادة المجلد: ${error}";
 
-  static String m23(error) => "خطأ في التحقق من الصورة: ${error}";
+  static String m23(error) => "❌ خطأ في رفع صورة الملف الشخصي: ${error}";
 
-  static String m24(error) => "خطأ في التحقق من الفيديو: ${error}";
+  static String m24(error) => "خطأ في التحقق من الصورة: ${error}";
 
-  static String m25(hours) => "ينتهي خلال ${hours} ساعة";
+  static String m25(error) => "خطأ في التحقق من الفيديو: ${error}";
 
-  static String m26(statusCode) => "فشل تحميل الملف الصوتي (${statusCode})";
+  static String m26(hours) => "ينتهي خلال ${hours} ساعة";
 
-  static String m27(error) => "فشل تحميل الملف: ${error}";
+  static String m27(statusCode) => "فشل تحميل الملف الصوتي (${statusCode})";
 
-  static String m28(error) => "فشل تحميل ملف PDF: ${error}";
+  static String m28(error) => "فشل تحميل الملف: ${error}";
 
-  static String m29(error) => "فشل تحميل PDF للعرض: ${error}";
+  static String m29(error) => "فشل تحميل ملف PDF: ${error}";
 
-  static String m30(statusCode) => "فشل تحميل الفيديو (${statusCode})";
+  static String m30(error) => "فشل تحميل PDF للعرض: ${error}";
 
-  static String m31(error) => "فشل فتح الملف: ${error}";
+  static String m31(statusCode) => "فشل تحميل الفيديو (${statusCode})";
 
-  static String m32(fileName) => "✅ تم حذف الملف \'${fileName}\' بنجاح";
+  static String m32(error) => "فشل فتح الملف: ${error}";
 
-  static String m33(fileName) => "✅ تم تحميل الملف بنجاح: ${fileName}";
+  static String m33(fileName) => "✅ تم حذف الملف \'${fileName}\' بنجاح";
 
-  static String m34(error) => "الملف غير متاح (خطأ ${error})";
+  static String m34(fileName) => "✅ تم تحميل الملف بنجاح: ${fileName}";
 
-  static String m35(folderName) => "تم إنشاء المجلد بنجاح: ${folderName}";
+  static String m35(error) => "الملف غير متاح (خطأ ${error})";
 
-  static String m36(folderName) => "✅ تم حذف المجلد \'${folderName}\' بنجاح";
+  static String m36(folderName) => "تم إنشاء المجلد بنجاح: ${folderName}";
 
-  static String m37(fileName) => "✅ تم تحميل المجلد بنجاح: ${fileName}";
+  static String m37(folderName) => "✅ تم حذف المجلد \'${folderName}\' بنجاح";
 
-  static String m38(folderName) =>
-      "✅ تم الحذف النهائي للمجلد \'${folderName}\' بنجاح";
+  static String m38(fileName) => "✅ تم تحميل المجلد بنجاح: ${fileName}";
 
   static String m39(folderName) =>
+      "✅ تم الحذف النهائي للمجلد \'${folderName}\' بنجاح";
+
+  static String m40(folderName) =>
       "✅ تم استعادة المجلد \'${folderName}\' بنجاح";
 
-  static String m40(size) => "حجم الخط: ${size}";
+  static String m41(size) => "حجم الخط: ${size}";
 
-  static String m41(height) => "الارتفاع: ${height}";
+  static String m42(height) => "الارتفاع: ${height}";
 
-  static String m42(roomName) =>
+  static String m43(roomName) =>
       "هل أنت متأكد من مغادرة \"${roomName}\"؟ لن تتمكن من الوصول إلى هذه الغرفة بعد المغادرة.";
 
-  static String m43(fileName) => "فتح الملف كنص: ${fileName}";
+  static String m44(fileName) => "فتح الملف كنص: ${fileName}";
 
-  static String m44(pageNumber) => "الصفحة: ${pageNumber}";
+  static String m45(pageNumber) => "الصفحة: ${pageNumber}";
 
-  static String m45(statusCode) => "فشل تحميل ملف PDF (${statusCode})";
+  static String m46(statusCode) => "فشل تحميل ملف PDF (${statusCode})";
 
-  static String m46(seconds) =>
+  static String m47(seconds) =>
       "الرجاء الانتظار ${seconds} ثانية قبل إعادة الإرسال";
 
-  static String m47(x) => "الموضع X: ${x}";
+  static String m48(x) => "الموضع X: ${x}";
 
-  static String m48(y) => "الموضع Y: ${y}";
+  static String m49(y) => "الموضع Y: ${y}";
 
-  static String m49(fileName) =>
+  static String m50(fileName) =>
       "هل أنت متأكد من إزالة \"${fileName}\" من هذه الغرفة؟";
 
-  static String m50(seconds) => "إعادة الإرسال (${seconds})";
+  static String m51(seconds) => "إعادة الإرسال (${seconds})";
 
-  static String m51(roomName) => "${roomName}";
+  static String m52(roomName) => "${roomName}";
 
-  static String m52(error) => "خطأ في البحث: ${error}";
+  static String m53(error) => "خطأ في البحث: ${error}";
 
-  static String m53(folderName) => "اختيار \"${folderName}\"";
+  static String m54(folderName) => "اختيار \"${folderName}\"";
 
-  static String m54(count) => "الملفات المشتركة (${count})";
+  static String m55(folderName) => "اختيار \"${folderName}\"";
 
-  static String m55(duration) => "المدة الكلية: ${duration}";
+  static String m56(count) => "الملفات المشتركة (${count})";
 
-  static String m56(email) => "تم إرسال رمز التحقق إلى ${email}";
+  static String m57(duration) => "المدة الكلية: ${duration}";
 
-  static String m57(width) => "العرض: ${width}";
+  static String m58(email) => "تم إرسال رمز التحقق إلى ${email}";
+
+  static String m59(width) => "العرض: ${width}";
 
   final messages = _notInlinedMessages(_notInlinedMessages);
   static Map<String, Function> _notInlinedMessages(_) => <String, Function>{
@@ -156,6 +160,9 @@ class MessageLookup extends MessageLookupByLibrary {
       "لم يتم العثور على رمز الوصول",
     ),
     "accessed": MessageLookupByLibrary.simpleMessage("تم الوصول"),
+    "accountActivated": MessageLookupByLibrary.simpleMessage(
+      "تم تفعيل الحساب بنجاح",
+    ),
     "accountActivatedSuccessfully": MessageLookupByLibrary.simpleMessage(
       "✅ تم تفعيل الحساب بنجاح",
     ),
@@ -191,7 +198,26 @@ class MessageLookup extends MessageLookupByLibrary {
     "apply": MessageLookupByLibrary.simpleMessage("تطبيق"),
     "arabic": MessageLookupByLibrary.simpleMessage("العربية"),
     "audio": MessageLookupByLibrary.simpleMessage("صوتيات"),
+    "audioDurationError": MessageLookupByLibrary.simpleMessage(
+      "تعذر الحصول على مدة الملف الصوتي",
+    ),
+    "audioLoadFailed": MessageLookupByLibrary.simpleMessage(
+      "فشل تحميل الملف الصوتي",
+    ),
+    "audioPauseError": MessageLookupByLibrary.simpleMessage(
+      "فشل إيقاف الملف الصوتي",
+    ),
+    "audioPlayError": MessageLookupByLibrary.simpleMessage(
+      "فشل تشغيل الملف الصوتي",
+    ),
+    "audioSeekError": MessageLookupByLibrary.simpleMessage(
+      "فشل التقدم في الملف",
+    ),
+    "audioSpeedChangeError": MessageLookupByLibrary.simpleMessage(
+      "فشل تغيير سرعة التشغيل",
+    ),
     "backToLogin": MessageLookupByLibrary.simpleMessage("العودة لتسجيل الدخول"),
+    "backToVerification": MessageLookupByLibrary.simpleMessage("العودة للتحقق"),
     "basicAppSettings": MessageLookupByLibrary.simpleMessage(
       "الإعدادات الأساسية للتطبيق",
     ),
@@ -214,12 +240,16 @@ class MessageLookup extends MessageLookupByLibrary {
     "cannotIdentifyUsers": MessageLookupByLibrary.simpleMessage(
       "لا يمكن تحديد المستخدمين لإلغاء المشاركة",
     ),
+    "category": MessageLookupByLibrary.simpleMessage("تصنيف"),
     "changePassword": MessageLookupByLibrary.simpleMessage("تغيير كلمة المرور"),
     "changesSaveFailed": MessageLookupByLibrary.simpleMessage(
       "❌ فشل حفظ التعديلات",
     ),
     "changesSavedSuccessfully": MessageLookupByLibrary.simpleMessage(
       "✅ تم حفظ التغييرات بنجاح",
+    ),
+    "checkInternet": MessageLookupByLibrary.simpleMessage(
+      "تأكد من اتصال الإنترنت وصحة الرابط",
     ),
     "chooseFromGallery": MessageLookupByLibrary.simpleMessage("اختر من المعرض"),
     "chooseLanguage": MessageLookupByLibrary.simpleMessage("اختر اللغة"),
@@ -284,6 +314,9 @@ class MessageLookup extends MessageLookupByLibrary {
     "createAccount": MessageLookupByLibrary.simpleMessage("إنشاء حساب"),
     "createFolder": MessageLookupByLibrary.simpleMessage("إنشاء مجلد"),
     "createNewFolder": MessageLookupByLibrary.simpleMessage("إنشاء مجلد جديد"),
+    "createNewPassword": MessageLookupByLibrary.simpleMessage(
+      "إنشاء كلمة مرور جديدة",
+    ),
     "createNewShareRoom": MessageLookupByLibrary.simpleMessage(
       "إنشاء غرفة مشاركة جديدة",
     ),
@@ -312,6 +345,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "deletedFiles": MessageLookupByLibrary.simpleMessage("الملفات المحذوفة"),
     "deletedFolders": MessageLookupByLibrary.simpleMessage("المجلدات المحذوفة"),
     "description": MessageLookupByLibrary.simpleMessage("الوصف"),
+    "descriptionLabel": MessageLookupByLibrary.simpleMessage("الوصف"),
     "didNotReceiveCode": MessageLookupByLibrary.simpleMessage(
       "لم تستلم الرمز؟",
     ),
@@ -327,11 +361,16 @@ class MessageLookup extends MessageLookupByLibrary {
       "جاري تحميل المجلد...",
     ),
     "edit": MessageLookupByLibrary.simpleMessage("تحرير"),
+    "editContentDescription": MessageLookupByLibrary.simpleMessage(
+      "تعديل محتوى هذا النوع من الملفات غير مدعوم حالياً.\nيمكنك تعديل الاسم والوصف والوسوم فقط.",
+    ),
+    "editContentTitle": MessageLookupByLibrary.simpleMessage("تعديل المحتوى"),
     "editEmail": MessageLookupByLibrary.simpleMessage(
       "تعديل البريد الإلكتروني",
     ),
     "editFile": MessageLookupByLibrary.simpleMessage("تعديل الملف"),
     "editFileMetadata": MessageLookupByLibrary.simpleMessage("تعديل الملف"),
+    "editFolder": MessageLookupByLibrary.simpleMessage("تعديل المجلد"),
     "editImage": MessageLookupByLibrary.simpleMessage("تعديل الصورة"),
     "editText": MessageLookupByLibrary.simpleMessage("تعديل النص"),
     "editUsername": MessageLookupByLibrary.simpleMessage("تعديل اسم المستخدم"),
@@ -367,6 +406,7 @@ class MessageLookup extends MessageLookupByLibrary {
       "الرجاء إدخال اسم المجلد",
     ),
     "enterHours": MessageLookupByLibrary.simpleMessage("أدخل عدد الساعات"),
+    "enterNewPasswordFor": m8,
     "enterPassword": MessageLookupByLibrary.simpleMessage(
       "الرجاء إدخال كلمة المرور",
     ),
@@ -380,49 +420,49 @@ class MessageLookup extends MessageLookupByLibrary {
     "enterUsernameOrEmail": MessageLookupByLibrary.simpleMessage(
       "الرجاء إدخال اسم المستخدم أو البريد الإلكتروني",
     ),
-    "error": m8,
-    "errorAccessingEditedFile": m9,
+    "error": m9,
+    "errorAccessingEditedFile": m10,
     "errorAccessingFile": MessageLookupByLibrary.simpleMessage(
       "خطأ في الوصول إلى الملف",
     ),
-    "errorDeletingFile": m10,
+    "errorDeletingFile": m11,
     "errorDeletingFolder": MessageLookupByLibrary.simpleMessage(
       "❌ حدث خطأ أثناء حذف المجلد",
     ),
-    "errorDeletingFolderWithError": m11,
-    "errorDownloadingFile": m12,
-    "errorDownloadingFolder": m13,
+    "errorDeletingFolderWithError": m12,
+    "errorDownloadingFile": m13,
+    "errorDownloadingFolder": m14,
     "errorFetchingData": MessageLookupByLibrary.simpleMessage(
       "خطأ في جلب البيانات",
     ),
-    "errorFetchingSubfolders": m14,
-    "errorLoadingFile": m15,
-    "errorLoadingFileData": m16,
+    "errorFetchingSubfolders": m15,
+    "errorLoadingFile": m16,
+    "errorLoadingFileData": m17,
     "errorLoadingRoomDetails": MessageLookupByLibrary.simpleMessage(
       "خطأ في تحميل تفاصيل الغرفة",
     ),
     "errorLoadingSubfolders": MessageLookupByLibrary.simpleMessage(
       "خطأ في تحميل المجلدات الفرعية",
     ),
-    "errorLoadingTextFile": m17,
-    "errorOccurred": m18,
-    "errorOpeningFile": m19,
+    "errorLoadingTextFile": m18,
+    "errorOccurred": m19,
+    "errorOpeningFile": m20,
     "errorPermanentlyDeletingFolder": MessageLookupByLibrary.simpleMessage(
       "❌ حدث خطأ أثناء الحذف النهائي للمجلد",
     ),
-    "errorPermanentlyDeletingFolderWithError": m20,
+    "errorPermanentlyDeletingFolderWithError": m21,
     "errorRestoringFolder": MessageLookupByLibrary.simpleMessage(
       "❌ حدث خطأ أثناء استعادة المجلد",
     ),
-    "errorRestoringFolderWithError": m21,
+    "errorRestoringFolderWithError": m22,
     "errorUpdating": MessageLookupByLibrary.simpleMessage(
       "❌ حدث خطأ أثناء التحديث",
     ),
-    "errorUploadingProfileImage": m22,
-    "errorVerifyingImage": m23,
-    "errorVerifyingVideo": m24,
+    "errorUploadingProfileImage": m23,
+    "errorVerifyingImage": m24,
+    "errorVerifyingVideo": m25,
     "exit": MessageLookupByLibrary.simpleMessage("خروج"),
-    "expiresInHours": m25,
+    "expiresInHours": m26,
     "extension": MessageLookupByLibrary.simpleMessage("الامتداد"),
     "extract": MessageLookupByLibrary.simpleMessage("استخراج"),
     "extractText": MessageLookupByLibrary.simpleMessage("استخراج النص"),
@@ -459,7 +499,13 @@ class MessageLookup extends MessageLookupByLibrary {
     "failedToExtractTextFromPdf": MessageLookupByLibrary.simpleMessage(
       "فشل استخراج النص من PDF",
     ),
-    "failedToLoadAudio": m26,
+    "failedToFetchFolderInfo": MessageLookupByLibrary.simpleMessage(
+      "فشل جلب معلومات المجلد",
+    ),
+    "failedToFetchFolderList": MessageLookupByLibrary.simpleMessage(
+      "فشل جلب قائمة المجلدات",
+    ),
+    "failedToLoadAudio": m27,
     "failedToLoadAudioFile": MessageLookupByLibrary.simpleMessage(
       "فشل تحميل الملف الصوتي",
     ),
@@ -470,15 +516,15 @@ class MessageLookup extends MessageLookupByLibrary {
     "failedToLoadFileData": MessageLookupByLibrary.simpleMessage(
       "فشل في تحميل بيانات الملف",
     ),
-    "failedToLoadFileStatus": m27,
+    "failedToLoadFileStatus": m28,
     "failedToLoadImage": MessageLookupByLibrary.simpleMessage(
       "فشل تحميل الصورة",
     ),
     "failedToLoadPdf": MessageLookupByLibrary.simpleMessage(
       "فشل تحميل ملف PDF",
     ),
-    "failedToLoadPdfFile": m28,
-    "failedToLoadPdfForDisplay": m29,
+    "failedToLoadPdfFile": m29,
+    "failedToLoadPdfForDisplay": m30,
     "failedToLoadPreview": MessageLookupByLibrary.simpleMessage(
       "تعذر تحميل المعاينة",
     ),
@@ -488,12 +534,15 @@ class MessageLookup extends MessageLookupByLibrary {
     "failedToLoadRoomDetails": MessageLookupByLibrary.simpleMessage(
       "فشل تحميل تفاصيل الغرفة",
     ),
-    "failedToLoadVideo": m30,
+    "failedToLoadVideo": m31,
     "failedToMergeVideos": MessageLookupByLibrary.simpleMessage(
       "فشل دمج المقاطع",
     ),
     "failedToMoveFile": MessageLookupByLibrary.simpleMessage("فشل نقل الملف"),
-    "failedToOpenFile": m31,
+    "failedToMoveFolder": MessageLookupByLibrary.simpleMessage(
+      "فشل نقل المجلد - الميزة قيد التطوير",
+    ),
+    "failedToOpenFile": m32,
     "failedToRemoveFile": MessageLookupByLibrary.simpleMessage(
       "فشل إزالة الملف من الغرفة",
     ),
@@ -520,6 +569,9 @@ class MessageLookup extends MessageLookupByLibrary {
       "❌ فشل رفع صورة الملف الشخصي",
     ),
     "favoriteFiles": MessageLookupByLibrary.simpleMessage("الملفات المفضلة"),
+    "favoriteUpdateFailed": MessageLookupByLibrary.simpleMessage(
+      "❌ فشل تحديث حالة المفضلة",
+    ),
     "featureUnderDevelopment": MessageLookupByLibrary.simpleMessage(
       "هذه الميزة قيد التطوير",
     ),
@@ -534,13 +586,14 @@ class MessageLookup extends MessageLookupByLibrary {
     "fileAlreadyShared": MessageLookupByLibrary.simpleMessage(
       "هذا الملف مشترك بالفعل مع هذه الغرفة",
     ),
-    "fileDeletedSuccessfully": m32,
+    "fileDeletedSuccessfully": m33,
     "fileDescription": MessageLookupByLibrary.simpleMessage("الوصف"),
-    "fileDownloadedSuccessfully": m33,
+    "fileDownloadedSuccessfully": m34,
     "fileIdNotAvailable": MessageLookupByLibrary.simpleMessage(
       "معرف الملف غير متوفر",
     ),
     "fileInfo": MessageLookupByLibrary.simpleMessage("معلومات الملف"),
+    "fileInfoTitle": MessageLookupByLibrary.simpleMessage("معلومات الملف"),
     "fileIsEmpty": MessageLookupByLibrary.simpleMessage("الملف فارغ"),
     "fileLinkNotAvailable": MessageLookupByLibrary.simpleMessage(
       "رابط الملف غير متوفر",
@@ -552,7 +605,9 @@ class MessageLookup extends MessageLookupByLibrary {
       "تم نقل الملف بنجاح",
     ),
     "fileName": MessageLookupByLibrary.simpleMessage("اسم الملف"),
-    "fileNotAvailableError": m34,
+    "fileNameLabel": MessageLookupByLibrary.simpleMessage("اسم الملف"),
+    "fileNotAvailableError": m35,
+    "fileNotFound": MessageLookupByLibrary.simpleMessage("الملف غير موجود"),
     "fileNotLoaded": MessageLookupByLibrary.simpleMessage("لم يتم تحميل الملف"),
     "fileNotValidPdf": MessageLookupByLibrary.simpleMessage(
       "الملف ليس ملف PDF صالح",
@@ -575,8 +630,17 @@ class MessageLookup extends MessageLookupByLibrary {
     "fileSavedSuccessfully": MessageLookupByLibrary.simpleMessage(
       "تم حفظ الملف بنجاح",
     ),
+    "fileSavedToAccount": MessageLookupByLibrary.simpleMessage(
+      "تم حفظ الملف في حسابك",
+    ),
+    "fileUpdateFailed": MessageLookupByLibrary.simpleMessage(
+      "فشل رفع الملف المعدل",
+    ),
     "fileUpdatedSuccessfully": MessageLookupByLibrary.simpleMessage(
       "✅ تم تحديث الملف بنجاح",
+    ),
+    "fileUploadedButDeleteFailed": MessageLookupByLibrary.simpleMessage(
+      "تم رفع الملف الجديد لكن فشل حذف الملف القديم:",
     ),
     "fileUrlNotAvailable": MessageLookupByLibrary.simpleMessage(
       "رابط الملف غير متوفر",
@@ -587,9 +651,16 @@ class MessageLookup extends MessageLookupByLibrary {
     "filter": MessageLookupByLibrary.simpleMessage("تصفية"),
     "filterActivity": MessageLookupByLibrary.simpleMessage("تصفية النشاط"),
     "folder": MessageLookupByLibrary.simpleMessage("مجلد"),
-    "folderCreatedSuccessfully": m35,
-    "folderDeletedSuccessfully": m36,
-    "folderDownloadedSuccessfully": m37,
+    "folderAddedToFavorites": MessageLookupByLibrary.simpleMessage(
+      "✅ تم إضافة المجلد إلى المفضلة",
+    ),
+    "folderCreatedSuccessfully": m36,
+    "folderDeletedSuccessfully": m37,
+    "folderDescription": MessageLookupByLibrary.simpleMessage("الوصف"),
+    "folderDescriptionHint": MessageLookupByLibrary.simpleMessage(
+      "وصف المجلد (اختياري)",
+    ),
+    "folderDownloadedSuccessfully": m38,
     "folderIdNotAvailable": MessageLookupByLibrary.simpleMessage(
       "❌ خطأ: معرف المجلد غير متوفر.",
     ),
@@ -597,15 +668,36 @@ class MessageLookup extends MessageLookupByLibrary {
       "خطأ: معرف المجلد غير موجود",
     ),
     "folderInfo": MessageLookupByLibrary.simpleMessage("معلومات المجلد"),
+    "folderMoveFailed": MessageLookupByLibrary.simpleMessage(
+      "❌ فشل نقل المجلد",
+    ),
+    "folderMovedSuccessfully": MessageLookupByLibrary.simpleMessage(
+      "✅ تم نقل المجلد بنجاح",
+    ),
+    "folderName": MessageLookupByLibrary.simpleMessage("اسم المجلد"),
     "folderNameHint": MessageLookupByLibrary.simpleMessage("اسم المجلد"),
-    "folderPermanentlyDeletedSuccessfully": m38,
-    "folderRestoredSuccessfully": m39,
+    "folderPermanentlyDeletedSuccessfully": m39,
+    "folderRemovedFromFavorites": MessageLookupByLibrary.simpleMessage(
+      "✅ تم إزالة المجلد من المفضلة",
+    ),
+    "folderRestoredSuccessfully": m40,
+    "folderTags": MessageLookupByLibrary.simpleMessage("الوسوم"),
+    "folderTagsHint": MessageLookupByLibrary.simpleMessage(
+      "وسوم مفصولة بفواصل (اختياري)",
+    ),
+    "folderUpdateFailed": MessageLookupByLibrary.simpleMessage(
+      "❌ فشل تحديث المجلد",
+    ),
+    "folderUpdatedSuccessfully": MessageLookupByLibrary.simpleMessage(
+      "✅ تم تحديث المجلد بنجاح",
+    ),
     "folderWithoutName": MessageLookupByLibrary.simpleMessage("مجلد بدون اسم"),
     "folders": MessageLookupByLibrary.simpleMessage("مجلدات"),
-    "fontSize": m40,
+    "fontSize": m41,
     "forAdvancedSearchFeature": MessageLookupByLibrary.simpleMessage(
       "للاستفادة من ميزة البحث المتقدمة، نوصي باستخدام:",
     ),
+    "forSearch": MessageLookupByLibrary.simpleMessage("للبحث:"),
     "forgotPassword": MessageLookupByLibrary.simpleMessage(
       "هل نسيت كلمة المرور؟",
     ),
@@ -615,6 +707,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "forgotPasswordTitle": MessageLookupByLibrary.simpleMessage(
       "هل نسيت كلمة المرور؟",
     ),
+    "foundText": MessageLookupByLibrary.simpleMessage("تم العثور على"),
     "freeInternal": MessageLookupByLibrary.simpleMessage(
       "المساحة الداخلية المتاحة",
     ),
@@ -624,7 +717,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "getHelpSupport": MessageLookupByLibrary.simpleMessage(
       "الحصول على المساعدة والدعم",
     ),
-    "height": m41,
+    "height": m42,
     "helpSupport": MessageLookupByLibrary.simpleMessage("المساعدة والدعم"),
     "highlight": MessageLookupByLibrary.simpleMessage("تظليل"),
     "highlightSelectedText": MessageLookupByLibrary.simpleMessage(
@@ -653,6 +746,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "invalidEmail": MessageLookupByLibrary.simpleMessage(
       "الرجاء إدخال بريد إلكتروني صالح",
     ),
+    "invalidLink": MessageLookupByLibrary.simpleMessage("رابط غير صالح"),
     "invalidOrExpiredCode": MessageLookupByLibrary.simpleMessage(
       "الرمز غير صالح أو منتهي الصلاحية",
     ),
@@ -664,7 +758,7 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "invalidUrl": MessageLookupByLibrary.simpleMessage("رابط غير صالح"),
     "invalidVerificationCode": MessageLookupByLibrary.simpleMessage(
-      "رمز التحقق غير صحيح",
+      "كود التحقق غير صحيح",
     ),
     "item": MessageLookupByLibrary.simpleMessage("عنصر"),
     "items": MessageLookupByLibrary.simpleMessage("عناصر"),
@@ -675,7 +769,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "lastYear": MessageLookupByLibrary.simpleMessage("العام الماضي"),
     "leave": MessageLookupByLibrary.simpleMessage("مغادرة"),
     "leaveRoom": MessageLookupByLibrary.simpleMessage("مغادرة الغرفة"),
-    "leaveRoomConfirm": m42,
+    "leaveRoomConfirm": m43,
     "legalPolicies": MessageLookupByLibrary.simpleMessage("القوانين والسياسات"),
     "loadMore": MessageLookupByLibrary.simpleMessage("تحميل المزيد"),
     "loadedAudioIsEmpty": MessageLookupByLibrary.simpleMessage(
@@ -687,9 +781,15 @@ class MessageLookup extends MessageLookupByLibrary {
     "loadedVideoIsEmpty": MessageLookupByLibrary.simpleMessage(
       "الفيديو المحمل فارغ",
     ),
+    "loadingAudio": MessageLookupByLibrary.simpleMessage(
+      "جاري تحميل الملف الصوتي...",
+    ),
     "loadingFile": MessageLookupByLibrary.simpleMessage("جاري تحميل الملف..."),
     "loadingFileData": MessageLookupByLibrary.simpleMessage(
       "جاري تحميل بيانات الملف...",
+    ),
+    "loadingFolders": MessageLookupByLibrary.simpleMessage(
+      "جاري تحميل المجلدات...",
     ),
     "loadingVideo": MessageLookupByLibrary.simpleMessage(
       "جاري تحميل الفيديو...",
@@ -728,8 +828,18 @@ class MessageLookup extends MessageLookupByLibrary {
     "mobile": MessageLookupByLibrary.simpleMessage("رقم الهاتف"),
     "modified": MessageLookupByLibrary.simpleMessage("عدل"),
     "move": MessageLookupByLibrary.simpleMessage("نقل"),
+    "moveFileToRoot": MessageLookupByLibrary.simpleMessage(
+      "نقل الملف للجذر (بدون مجلد)",
+    ),
+    "moveFolderTitle": MessageLookupByLibrary.simpleMessage("نقل المجلد"),
+    "moveFolderToMainFolder": MessageLookupByLibrary.simpleMessage(
+      "نقل المجلد إلى المجلد الرئيسي",
+    ),
     "moveFolderToRoot": MessageLookupByLibrary.simpleMessage(
       "نقل المجلد إلى الجذر",
+    ),
+    "moveFolderToRootNoParent": MessageLookupByLibrary.simpleMessage(
+      "نقل المجلد للجذر (بدون مجلد أب)",
     ),
     "moveToRoot": MessageLookupByLibrary.simpleMessage("نقل إلى الجذر"),
     "moveToRootDescription": MessageLookupByLibrary.simpleMessage(
@@ -792,8 +902,14 @@ class MessageLookup extends MessageLookupByLibrary {
     "noRecentFolders": MessageLookupByLibrary.simpleMessage(
       "لا توجد مجلدات حديثة",
     ),
+    "noResultsFor": MessageLookupByLibrary.simpleMessage(
+      "لا توجد نتائج للبحث: ",
+    ),
     "noRoomsAvailable": MessageLookupByLibrary.simpleMessage(
       "لا توجد غرف متاحة",
+    ),
+    "noRootFolders": MessageLookupByLibrary.simpleMessage(
+      "لا توجد مجلدات في الجذر",
     ),
     "noSharedFiles": MessageLookupByLibrary.simpleMessage(
       "لا توجد ملفات مشتركة",
@@ -823,7 +939,9 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "open": MessageLookupByLibrary.simpleMessage("فتح"),
     "openAsText": MessageLookupByLibrary.simpleMessage("فتح كنص"),
-    "openFileAsText": m43,
+    "openFile": MessageLookupByLibrary.simpleMessage("فتح الملف"),
+    "openFileAsText": m44,
+    "openFolder": MessageLookupByLibrary.simpleMessage("فتح المجلد"),
     "openImageEditor": MessageLookupByLibrary.simpleMessage("فتح محرر الصور"),
     "openSettings": MessageLookupByLibrary.simpleMessage("فتح الإعدادات"),
     "openTextEditor": MessageLookupByLibrary.simpleMessage("فتح محرر النص"),
@@ -832,8 +950,11 @@ class MessageLookup extends MessageLookupByLibrary {
     "ownerCannotLeave": MessageLookupByLibrary.simpleMessage(
       "مالك الغرفة لا يمكنه مغادرتها. يرجى حذف الغرفة بدلاً من ذلك",
     ),
-    "page": m44,
+    "page": m45,
     "password": MessageLookupByLibrary.simpleMessage("كلمة المرور"),
+    "passwordAtLeast6Chars": MessageLookupByLibrary.simpleMessage(
+      "تأكد أن كلمة المرور تحتوي على 6 أحرف على الأقل",
+    ),
     "passwordConfirmationRequired": MessageLookupByLibrary.simpleMessage(
       "تأكيد كلمة المرور مطلوب",
     ),
@@ -843,13 +964,24 @@ class MessageLookup extends MessageLookupByLibrary {
     "passwordMinLength": MessageLookupByLibrary.simpleMessage(
       "كلمة المرور يجب أن تكون 8 أحرف على الأقل",
     ),
+    "passwordResetFailed": MessageLookupByLibrary.simpleMessage(
+      "فشل في إعادة تعيين كلمة المرور",
+    ),
+    "passwordResetSuccess": MessageLookupByLibrary.simpleMessage(
+      "✅ تم إعادة تعيين كلمة المرور بنجاح!",
+    ),
+    "passwordTooShort": MessageLookupByLibrary.simpleMessage(
+      "يجب أن تحتوي كلمة المرور على 6 أحرف على الأقل",
+    ),
     "passwordUpdatedSuccessfully": MessageLookupByLibrary.simpleMessage(
       "✅ تم تحديث كلمة المرور بنجاح",
     ),
     "passwordsDoNotMatch": MessageLookupByLibrary.simpleMessage(
       "كلمتا المرور غير متطابقتين",
     ),
-    "pdfLoadFailed": m45,
+    "pause": MessageLookupByLibrary.simpleMessage("إيقاف"),
+    "pausedStatus": MessageLookupByLibrary.simpleMessage("⏸️ متوقف مؤقتاً"),
+    "pdfLoadFailed": m46,
     "pdfTextExtractionNote": MessageLookupByLibrary.simpleMessage(
       "ملاحظة: قد لا يكون استخراج النص متاحاً لجميع ملفات PDF.",
     ),
@@ -861,14 +993,20 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "permanentDelete": MessageLookupByLibrary.simpleMessage("حذف نهائي"),
     "permissionDenied": MessageLookupByLibrary.simpleMessage("تم رفض الإذن"),
+    "play": MessageLookupByLibrary.simpleMessage("تشغيل"),
+    "playbackSpeedLabel": MessageLookupByLibrary.simpleMessage("سرعة التشغيل:"),
+    "playingStatus": MessageLookupByLibrary.simpleMessage("🎵 جاري التشغيل..."),
     "pleaseEnter6DigitCode": MessageLookupByLibrary.simpleMessage(
       "الرجاء إدخال رمز التحقق المكون من 6 أرقام",
     ),
     "pleaseEnterFolderName": MessageLookupByLibrary.simpleMessage(
-      "الرجاء إدخال اسم المجلد",
+      "يرجى إدخال اسم المجلد",
     ),
     "pleaseEnterRoomName": MessageLookupByLibrary.simpleMessage(
       "الرجاء إدخال اسم الغرفة",
+    ),
+    "pleaseFillAllFields": MessageLookupByLibrary.simpleMessage(
+      "يرجى ملء جميع الحقول",
     ),
     "pleaseLoginAgain": MessageLookupByLibrary.simpleMessage(
       "يرجى إعادة تسجيل الدخول",
@@ -876,9 +1014,9 @@ class MessageLookup extends MessageLookupByLibrary {
     "pleaseSelectFileOrFolder": MessageLookupByLibrary.simpleMessage(
       "الرجاء اختيار ملف أو مجلد",
     ),
-    "pleaseWaitBeforeResend": m46,
-    "positionX": m47,
-    "positionY": m48,
+    "pleaseWaitBeforeResend": m47,
+    "positionX": m48,
+    "positionY": m49,
     "preferences": MessageLookupByLibrary.simpleMessage("تفضيلات"),
     "previous": MessageLookupByLibrary.simpleMessage("السابق"),
     "privacySecurity": MessageLookupByLibrary.simpleMessage("الخصوصية والأمان"),
@@ -889,6 +1027,9 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "recentFiles": MessageLookupByLibrary.simpleMessage("الملفات الحديثة"),
     "recentFolders": MessageLookupByLibrary.simpleMessage("المجلدات الحديثة"),
+    "registrationFailed": MessageLookupByLibrary.simpleMessage(
+      "فشل في التسجيل",
+    ),
     "reject": MessageLookupByLibrary.simpleMessage("رفض"),
     "rejectInvitation": MessageLookupByLibrary.simpleMessage("رفض الدعوة"),
     "reloadOriginalImage": MessageLookupByLibrary.simpleMessage(
@@ -899,9 +1040,9 @@ class MessageLookup extends MessageLookupByLibrary {
       "إزالة جميع التظليلات",
     ),
     "removeFileFromRoom": MessageLookupByLibrary.simpleMessage(
-      "إزالة الملف من الروم",
+      "إزالة الملف من الغرفة",
     ),
-    "removeFileFromRoomConfirm": m49,
+    "removeFileFromRoomConfirm": m50,
     "removeFolderFromRoom": MessageLookupByLibrary.simpleMessage(
       "إزالة المجلد من الغرفة",
     ),
@@ -910,27 +1051,42 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "removeFromRoom": MessageLookupByLibrary.simpleMessage("إزالة من الغرفة"),
     "removeMember": MessageLookupByLibrary.simpleMessage("إزالة العضو"),
+    "removingFromFavorites": MessageLookupByLibrary.simpleMessage(
+      "جاري إزالة من المفضلة...",
+    ),
     "replaceOldVersion": MessageLookupByLibrary.simpleMessage(
       "استبدال النسخة القديمة",
     ),
     "resend": MessageLookupByLibrary.simpleMessage("إعادة الإرسال"),
     "resendCode": MessageLookupByLibrary.simpleMessage("إعادة إرسال الرمز"),
-    "resendWithCountdown": m50,
+    "resendWithCountdown": m51,
     "reset": MessageLookupByLibrary.simpleMessage("إعادة تعيين"),
     "resetPassword": MessageLookupByLibrary.simpleMessage(
       "إعادة تعيين كلمة المرور",
     ),
+    "resetPasswordTitle": MessageLookupByLibrary.simpleMessage(
+      "إعادة تعيين كلمة المرور",
+    ),
+    "restart": MessageLookupByLibrary.simpleMessage("إعادة التشغيل من البداية"),
+    "resultWord": MessageLookupByLibrary.simpleMessage("نتيجة"),
     "retry": MessageLookupByLibrary.simpleMessage("إعادة المحاولة"),
     "room": MessageLookupByLibrary.simpleMessage("الغرفة"),
     "roomDetails": MessageLookupByLibrary.simpleMessage("تفاصيل الغرفة"),
     "roomInfo": MessageLookupByLibrary.simpleMessage("معلومات الغرفة"),
     "roomLabel": MessageLookupByLibrary.simpleMessage("الغرفة"),
     "roomMembers": MessageLookupByLibrary.simpleMessage("أعضاء الغرفة"),
-    "roomName": m51,
+    "roomName": m52,
     "roomNamePlaceholder": MessageLookupByLibrary.simpleMessage("بدون اسم"),
+    "root": MessageLookupByLibrary.simpleMessage("الجذر"),
     "save": MessageLookupByLibrary.simpleMessage("حفظ"),
     "saveChanges": MessageLookupByLibrary.simpleMessage("حفظ التعديلات"),
+    "saveChangesFailed": MessageLookupByLibrary.simpleMessage(
+      "فشل حفظ التغييرات",
+    ),
     "saveNewCopy": MessageLookupByLibrary.simpleMessage("حفظ نسخة جديدة"),
+    "saveNewVersionFailed": MessageLookupByLibrary.simpleMessage(
+      "فشل حفظ النسخة الجديدة",
+    ),
     "saveOptions": MessageLookupByLibrary.simpleMessage("خيارات الحفظ"),
     "saveOptionsDescription": MessageLookupByLibrary.simpleMessage(
       "كيف تريد حفظ الصورة المعدلة؟\n\n• حفظ نسخة جديدة: سيتم حفظ الصورة المعدلة كملف جديد\n• استبدال النسخة القديمة: سيتم حذف الملف القديم واستبداله بالصورة المعدلة",
@@ -940,17 +1096,24 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "saveToMyAccount": MessageLookupByLibrary.simpleMessage("حفظ في حسابي"),
     "saveToRoot": MessageLookupByLibrary.simpleMessage("حفظ في الجذر"),
+    "savingFile": MessageLookupByLibrary.simpleMessage("جاري حفظ الملف..."),
     "savingFolder": MessageLookupByLibrary.simpleMessage("جاري حفظ المجلد..."),
-    "searchError": m52,
+    "searchError": m53,
     "searchHint": MessageLookupByLibrary.simpleMessage("ابحث هنا عن أي شيء"),
     "searchInPdf": MessageLookupByLibrary.simpleMessage("البحث في PDF"),
     "searchInPdfNotAvailableMessage": MessageLookupByLibrary.simpleMessage(
       "البحث في PDF غير متاح حالياً. يمكنك فتح الملف في تطبيق خارجي للبحث.",
     ),
+    "searchYourFiles": MessageLookupByLibrary.simpleMessage("ابحث في ملفاتك"),
+    "searching": MessageLookupByLibrary.simpleMessage("جاري البحث..."),
     "seeAll": MessageLookupByLibrary.simpleMessage("عرض الكل"),
-    "selectFolder": m53,
+    "selectFolder": m54,
     "selectFolderDescription": MessageLookupByLibrary.simpleMessage(
       "نقل إلى هذا المجلد",
+    ),
+    "selectFolderName": m55,
+    "selectFolderTooltip": MessageLookupByLibrary.simpleMessage(
+      "اختيار هذا المجلد",
     ),
     "selectImagePosition": MessageLookupByLibrary.simpleMessage(
       "تحديد موضع الصورة",
@@ -986,7 +1149,8 @@ class MessageLookup extends MessageLookupByLibrary {
     "sharedFilesContent": MessageLookupByLibrary.simpleMessage(
       "سيتم عرض الملفات المشتركة هنا",
     ),
-    "sharedFilesCount": m54,
+    "sharedFilesCount": m56,
+    "sharedWith": MessageLookupByLibrary.simpleMessage("تمت المشاركة مع"),
     "signIn": MessageLookupByLibrary.simpleMessage("تسجيل الدخول"),
     "signInWith": MessageLookupByLibrary.simpleMessage("تسجيل الدخول باستخدام"),
     "signOut": MessageLookupByLibrary.simpleMessage("تسجيل الخروج من حسابك"),
@@ -1004,6 +1168,8 @@ class MessageLookup extends MessageLookupByLibrary {
       "وقت البداية يجب أن يكون قبل وقت النهاية",
     ),
     "status": MessageLookupByLibrary.simpleMessage("الحالة"),
+    "stop": MessageLookupByLibrary.simpleMessage("توقف"),
+    "stoppedStatus": MessageLookupByLibrary.simpleMessage("⏹️ متوقف"),
     "storage": MessageLookupByLibrary.simpleMessage("التخزين"),
     "storageOverview": MessageLookupByLibrary.simpleMessage(
       "نظرة عامة على التخزين",
@@ -1017,6 +1183,9 @@ class MessageLookup extends MessageLookupByLibrary {
     "switchThemes": MessageLookupByLibrary.simpleMessage("تبديل بين السمات"),
     "system": MessageLookupByLibrary.simpleMessage("النظام"),
     "tags": MessageLookupByLibrary.simpleMessage("الوسوم"),
+    "tagsLabel": MessageLookupByLibrary.simpleMessage(
+      "الوسوم (افصل بينها بفاصلة)",
+    ),
     "tagsSeparatedByComma": MessageLookupByLibrary.simpleMessage(
       "الوسوم (افصل بينها بفاصلة)",
     ),
@@ -1046,13 +1215,21 @@ class MessageLookup extends MessageLookupByLibrary {
     "tokenNotFound": MessageLookupByLibrary.simpleMessage(
       "❌ خطأ: لم يتم العثور على الرمز المميز",
     ),
-    "totalDuration": m55,
+    "tooltipGridView": MessageLookupByLibrary.simpleMessage("عرض كشبكة"),
+    "tooltipListView": MessageLookupByLibrary.simpleMessage("عرض كقائمة"),
+    "totalDuration": m57,
+    "totalSize": MessageLookupByLibrary.simpleMessage("الحجم الإجمالي"),
     "trash": MessageLookupByLibrary.simpleMessage("المهملات"),
     "trim": MessageLookupByLibrary.simpleMessage("قص"),
     "trimAudio": MessageLookupByLibrary.simpleMessage("قص الصوت"),
+    "tryDifferentKeywords": MessageLookupByLibrary.simpleMessage(
+      "جرب البحث بكلمات مختلفة",
+    ),
     "type": MessageLookupByLibrary.simpleMessage("النوع"),
     "unclassified": MessageLookupByLibrary.simpleMessage("غير مصنف"),
     "unknownError": MessageLookupByLibrary.simpleMessage("خطأ غير معروف"),
+    "unnamedFolder": MessageLookupByLibrary.simpleMessage("مجلد بدون اسم"),
+    "unnamedfile": MessageLookupByLibrary.simpleMessage("ملف بدون اسم"),
     "unsavedChanges": MessageLookupByLibrary.simpleMessage(
       "تغييرات غير محفوظة",
     ),
@@ -1069,12 +1246,23 @@ class MessageLookup extends MessageLookupByLibrary {
       "✅ تم إلغاء مشاركة الملف",
     ),
     "unsupportedFile": MessageLookupByLibrary.simpleMessage("ملف غير مدعوم"),
+    "update": MessageLookupByLibrary.simpleMessage("تعديل"),
+    "updateFileError": MessageLookupByLibrary.simpleMessage("فشل تحديث الملف"),
     "updated": MessageLookupByLibrary.simpleMessage(" تحديث"),
     "updatedSuccessfully": MessageLookupByLibrary.simpleMessage(
       "✅ تم التحديث بنجاح",
     ),
     "updating": MessageLookupByLibrary.simpleMessage("جاري التحديث..."),
+    "uploadCreateInRoot": MessageLookupByLibrary.simpleMessage(
+      "رفع/إنشاء في الجذر (بدون مجلد أب)",
+    ),
+    "uploadCreateInThisFolder": MessageLookupByLibrary.simpleMessage(
+      "رفع/إنشاء في هذا المجلد",
+    ),
     "uploadFile": MessageLookupByLibrary.simpleMessage("رفع ملف"),
+    "uploadToRootHint": MessageLookupByLibrary.simpleMessage(
+      "يمكنك رفع الملفات/المجلدات مباشرة على الجذر باستخدام الخيار أعلاه",
+    ),
     "upload_success": MessageLookupByLibrary.simpleMessage(
       "تم رفع الملف بنجاح",
     ),
@@ -1101,10 +1289,16 @@ class MessageLookup extends MessageLookupByLibrary {
     "validEmailRequired": MessageLookupByLibrary.simpleMessage(
       "البريد الإلكتروني غير صحيح",
     ),
-    "verificationCodeSent": MessageLookupByLibrary.simpleMessage(
-      "✅ تم إرسال رمز التحقق بنجاح",
+    "verificationCodeSendFailed": MessageLookupByLibrary.simpleMessage(
+      "فشل في إرسال كود التحقق",
     ),
-    "verificationCodeSentTo": m56,
+    "verificationCodeSent": MessageLookupByLibrary.simpleMessage(
+      "تم إرسال كود التحقق إلى بريدك الإلكتروني",
+    ),
+    "verificationCodeSentTo": m58,
+    "verificationSuccess": MessageLookupByLibrary.simpleMessage(
+      "تم التحقق من الرمز بنجاح",
+    ),
     "verify": MessageLookupByLibrary.simpleMessage("تحقق"),
     "verifyCodeTitle": MessageLookupByLibrary.simpleMessage("التحقق من الرمز"),
     "video": MessageLookupByLibrary.simpleMessage("فيديو"),
@@ -1116,6 +1310,12 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "videos": MessageLookupByLibrary.simpleMessage("فيديوهات"),
     "viewAll": MessageLookupByLibrary.simpleMessage("عرض الكل"),
+    "viewAllActivities": MessageLookupByLibrary.simpleMessage(
+      "عرض جميع أنشطتك في التطبيق",
+    ),
+    "viewDeletedFilesAndFolders": MessageLookupByLibrary.simpleMessage(
+      "عرض الملفات والمجلدات المحذوفة وإدارتها",
+    ),
     "viewDetails": MessageLookupByLibrary.simpleMessage("عرض التفاصيل"),
     "viewInfo": MessageLookupByLibrary.simpleMessage("عرض المعلومات"),
     "viewOnly": MessageLookupByLibrary.simpleMessage("عرض فقط"),
@@ -1127,7 +1327,7 @@ class MessageLookup extends MessageLookupByLibrary {
       "جودة عالية، حجم كبير",
     ),
     "wavFormat": MessageLookupByLibrary.simpleMessage("WAV"),
-    "width": m57,
+    "width": m59,
     "yesterday": MessageLookupByLibrary.simpleMessage("أمس"),
     "youAreOwner": MessageLookupByLibrary.simpleMessage("أنت المالك"),
   };

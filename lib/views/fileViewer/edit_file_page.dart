@@ -173,15 +173,15 @@ class _EditFilePageState extends State<EditFilePage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'معلومات الملف',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            Text(
+              S.of(context).fileInfoTitle, // "معلومات الملف"
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
             TextField(
               controller: _nameController,
               decoration: InputDecoration(
-                labelText: 'اسم الملف',
+                labelText: S.of(context).fileNameLabel, // "اسم الملف"
                 suffixText: _fileExtension != null ? '.$_fileExtension' : null,
                 border: const OutlineInputBorder(),
               ),
@@ -190,17 +190,19 @@ class _EditFilePageState extends State<EditFilePage> {
             TextField(
               controller: _descriptionController,
               maxLines: 3,
-              decoration: const InputDecoration(
-                labelText: 'الوصف',
-                border: OutlineInputBorder(),
+              decoration: InputDecoration(
+                labelText: S.of(context).descriptionLabel, // "الوصف"
+                border: const OutlineInputBorder(),
               ),
             ),
             const SizedBox(height: 12),
             TextField(
               controller: _tagsController,
-              decoration: const InputDecoration(
-                labelText: 'الوسوم (افصل بينها بفاصلة)',
-                border: OutlineInputBorder(),
+              decoration: InputDecoration(
+                labelText: S
+                    .of(context)
+                    .tagsLabel, // "الوسوم (افصل بينها بفاصلة)"
+                border: const OutlineInputBorder(),
               ),
             ),
           ],
@@ -326,14 +328,16 @@ class _EditFilePageState extends State<EditFilePage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'تعديل المحتوى',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            Text(
+              S.of(context).editContentTitle, // "تعديل المحتوى"
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
-            const Text(
-              'تعديل محتوى هذا النوع من الملفات غير مدعوم حالياً.\nيمكنك تعديل الاسم والوصف والوسوم فقط.',
-              style: TextStyle(color: Colors.grey),
+            Text(
+              S
+                  .of(context)
+                  .editContentDescription, // "تعديل محتوى هذا النوع من الملفات غير مدعوم حالياً.\nيمكنك تعديل الاسم والوصف والوسوم فقط."
+              style: const TextStyle(color: Colors.grey),
             ),
           ],
         ),
@@ -2366,7 +2370,8 @@ class _EditFilePageState extends State<EditFilePage> {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content: Text(
-                    fileController.errorMessage ?? 'فشل تحديث الملف',
+                    fileController.errorMessage ??
+                        S.of(context).updateFileError,
                   ),
                   backgroundColor: Colors.red,
                 ),
@@ -2404,7 +2409,7 @@ class _EditFilePageState extends State<EditFilePage> {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Text(
-                      'تم رفع الملف الجديد لكن فشل حذف الملف القديم: ${fileController.errorMessage ?? "خطأ غير معروف"}',
+                      ' ${S.of(context).fileUploadedButDeleteFailed} ${fileController.errorMessage ?? "خطأ غير معروف"}',
                     ),
                     backgroundColor: Colors.orange,
                   ),
@@ -2414,7 +2419,8 @@ class _EditFilePageState extends State<EditFilePage> {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content: Text(
-                    fileController.errorMessage ?? 'فشل رفع الملف المعدل',
+                    fileController.errorMessage ??
+                        S.of(context).fileUpdateFailed,
                   ),
                   backgroundColor: Colors.red,
                 ),
@@ -2442,7 +2448,8 @@ class _EditFilePageState extends State<EditFilePage> {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(
-                  fileController.errorMessage ?? 'فشل حفظ النسخة الجديدة',
+                  fileController.errorMessage ??
+                      S.of(context).saveNewVersionFailed,
                 ),
                 backgroundColor: Colors.red,
               ),
@@ -2503,7 +2510,9 @@ class _EditFilePageState extends State<EditFilePage> {
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(fileController.errorMessage ?? 'فشل حفظ التغييرات'),
+            content: Text(
+              fileController.errorMessage ?? S.of(context).saveChangesFailed,
+            ),
             backgroundColor: Colors.red,
           ),
         );

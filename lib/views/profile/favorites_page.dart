@@ -1,6 +1,7 @@
 // views/favorites_page.dart
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:filevo/generated/l10n.dart';
 import 'package:provider/provider.dart';
 import 'package:filevo/controllers/folders/files_controller.dart';
 import 'package:filevo/services/storage_service.dart';
@@ -156,7 +157,7 @@ class _FavoritesPageState extends State<FavoritesPage> {
     if (filePath == null || filePath.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Text('رابط الملف غير متوفر'),
+          content: Text(S.of(context).fileLinkNotAvailable),
           backgroundColor: Colors.orange,
         ),
       );
@@ -169,7 +170,7 @@ class _FavoritesPageState extends State<FavoritesPage> {
     if (!_isValidUrl(url)) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Text('رابط غير صالح'),
+          content: Text(S.of(context).invalidUrl),
           backgroundColor: Colors.red,
         ),
       );
@@ -262,7 +263,11 @@ class _FavoritesPageState extends State<FavoritesPage> {
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('الملف غير متاح (خطأ ${response.statusCode})'),
+            content: Text(
+              S
+                  .of(context)
+                  .fileNotAvailableError(response.statusCode.toString()),
+            ),
             backgroundColor: Colors.red,
           ),
         );
@@ -271,7 +276,7 @@ class _FavoritesPageState extends State<FavoritesPage> {
       if (mounted) Navigator.pop(context);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('خطأ في تحميل الملف: ${e.toString()}'),
+          content: Text(S.of(context).errorLoadingFile(e.toString())),
           backgroundColor: Colors.red,
         ),
       );
@@ -282,21 +287,21 @@ class _FavoritesPageState extends State<FavoritesPage> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('ملف غير مدعوم'),
-        content: const Text('هذا الملف ليس PDF صالح أو قد يكون تالفاً.'),
+        title: Text(S.of(context).unsupportedFile),
+        content: Text(S.of(context).fileNotValidPdf),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('إلغاء'),
+            child: Text(S.of(context).cancel),
           ),
           TextButton(
             onPressed: () {
               Navigator.pop(context);
               ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('فتح الملف كنص: $fileName')),
+                SnackBar(content: Text(S.of(context).openFileAsText(fileName))),
               );
             },
-            child: const Text('فتح كنص'),
+            child: Text(S.of(context).openAsText),
           ),
         ],
       ),
@@ -325,8 +330,8 @@ class _FavoritesPageState extends State<FavoritesPage> {
         return Scaffold(
           backgroundColor: Colors.white,
           appBar: AppBar(
-            title: const Text(
-              'الملفات المفضلة',
+            title: Text(
+              S.of(context).favoriteFiles,
               style: TextStyle(fontWeight: FontWeight.bold),
             ),
             backgroundColor: const Color(0xff28336f),
@@ -365,7 +370,7 @@ class _FavoritesPageState extends State<FavoritesPage> {
                         ),
                         const SizedBox(height: 16),
                         Text(
-                          'لا توجد ملفات مفضلة',
+                          S.of(context).noFavoriteFiles,
                           style: TextStyle(
                             fontSize: 18,
                             color: Colors.grey[600],
@@ -373,7 +378,7 @@ class _FavoritesPageState extends State<FavoritesPage> {
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          'يمكنك إضافة الملفات إلى المفضلة من خلال القائمة',
+                          S.of(context).addFilesToFavorites,
                           textAlign: TextAlign.center,
                           style: TextStyle(color: Colors.grey[500]),
                         ),

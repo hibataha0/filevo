@@ -3,6 +3,7 @@ import 'package:filevo/views/folders/starred_folders_page.dart';
 import 'package:filevo/views/folders/folder_contents_page.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:filevo/generated/l10n.dart';
 
 class StarredFoldersSection extends StatefulWidget {
   const StarredFoldersSection({Key? key}) : super(key: key);
@@ -139,10 +140,7 @@ class _StarredFoldersSectionState extends State<StarredFoldersSection> {
           const SizedBox(height: 8),
           Text(
             'لا توجد مجلدات مفضلة',
-            style: TextStyle(
-              color: Colors.grey[600],
-              fontSize: 14,
-            ),
+            style: TextStyle(color: Colors.grey[600], fontSize: 14),
           ),
         ],
       ),
@@ -155,7 +153,7 @@ class _StarredFoldersSectionState extends State<StarredFoldersSection> {
     final fileCount = folder['filesCount'] ?? 0;
     final size = folder['size'] as int? ?? 0;
     final folderId = folder['_id'] as String?;
-    
+
     String displayName = name;
     if (displayName.length > 15) {
       displayName = '${displayName.substring(0, 12)}...';
@@ -198,7 +196,11 @@ class _StarredFoldersSectionState extends State<StarredFoldersSection> {
                 const Positioned(
                   top: -2,
                   right: -2,
-                  child: Icon(Icons.star_rounded, size: 16, color: Colors.amber),
+                  child: Icon(
+                    Icons.star_rounded,
+                    size: 16,
+                    color: Colors.amber,
+                  ),
                 ),
               ],
             ),
@@ -217,10 +219,7 @@ class _StarredFoldersSectionState extends State<StarredFoldersSection> {
             const SizedBox(height: 4),
             Text(
               '$fileCount ملف',
-              style: TextStyle(
-                fontSize: 9,
-                color: Colors.grey[600],
-              ),
+              style: TextStyle(fontSize: 9, color: Colors.grey[600]),
             ),
           ],
         ),
@@ -233,11 +232,7 @@ class _StarredFoldersSectionState extends State<StarredFoldersSection> {
       color: Colors.white,
       borderRadius: BorderRadius.circular(12),
       boxShadow: [
-        BoxShadow(
-          color: Colors.black12,
-          blurRadius: 6,
-          offset: Offset(0, 2),
-        ),
+        BoxShadow(color: Colors.black12, blurRadius: 6, offset: Offset(0, 2)),
       ],
     );
   }
@@ -300,14 +295,20 @@ class _StarredFoldersSectionState extends State<StarredFoldersSection> {
             mainAxisSize: MainAxisSize.min,
             children: [
               ListTile(
-                leading: Icon(Icons.folder_rounded, color: const Color(0xff28336f)),
+                leading: Icon(
+                  Icons.folder_rounded,
+                  color: const Color(0xff28336f),
+                ),
                 title: Text(name),
                 subtitle: Text('$fileCount ملف • ${_formatBytes(size)}'),
               ),
               const Divider(),
               ListTile(
-                leading: const Icon(Icons.open_in_new_rounded, color: Colors.blue),
-                title: const Text('فتح المجلد'),
+                leading: const Icon(
+                  Icons.open_in_new_rounded,
+                  color: Colors.blue,
+                ),
+                title: Text(S.of(context).openFolder),
                 onTap: () {
                   Navigator.pop(context);
                   final folderId = folder['_id'] as String?;
@@ -316,7 +317,10 @@ class _StarredFoldersSectionState extends State<StarredFoldersSection> {
                       context,
                       MaterialPageRoute(
                         builder: (context) => ChangeNotifierProvider.value(
-                          value: Provider.of<FolderController>(context, listen: false),
+                          value: Provider.of<FolderController>(
+                            context,
+                            listen: false,
+                          ),
                           child: FolderContentsPage(
                             folderId: folderId,
                             folderName: name,
@@ -329,13 +333,16 @@ class _StarredFoldersSectionState extends State<StarredFoldersSection> {
                 },
               ),
               ListTile(
-                leading: const Icon(Icons.info_outline_rounded, color: Colors.teal),
-                title: const Text('عرض التفاصيل'),
+                leading: const Icon(
+                  Icons.info_outline_rounded,
+                  color: Colors.teal,
+                ),
+                title: Text(S.of(context).viewDetails),
                 onTap: () => Navigator.pop(context),
               ),
               ListTile(
                 leading: const Icon(Icons.star_rounded, color: Colors.amber),
-                title: const Text('إزالة من المفضلة'),
+                title: Text(S.of(context).removeFromFavorites),
                 onTap: () {
                   Navigator.pop(context);
                   _removeFromFavorites(folder);
@@ -357,8 +364,8 @@ class _StarredFoldersSectionState extends State<StarredFoldersSection> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Row(
-          children: const [
-            SizedBox(
+          children: [
+            const SizedBox(
               width: 20,
               height: 20,
               child: CircularProgressIndicator(
@@ -366,8 +373,8 @@ class _StarredFoldersSectionState extends State<StarredFoldersSection> {
                 valueColor: AlwaysStoppedAnimation(Colors.white),
               ),
             ),
-            SizedBox(width: 12),
-            Text('جاري إزالة من المفضلة...'),
+            const SizedBox(width: 12),
+            Text(S.of(context).removingFromFavorites),
           ],
         ),
         backgroundColor: Colors.blue,
@@ -400,4 +407,3 @@ class _StarredFoldersSectionState extends State<StarredFoldersSection> {
     );
   }
 }
-

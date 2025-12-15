@@ -3,6 +3,7 @@ import 'package:filevo/views/profile/favorites_page.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:filevo/services/storage_service.dart';
+import 'package:filevo/generated/l10n.dart';
 
 class FavoritesSection extends StatefulWidget {
   const FavoritesSection({Key? key}) : super(key: key);
@@ -78,19 +79,23 @@ class _FavoritesSectionState extends State<FavoritesSection> {
   }
 
   bool _isImage(String name) =>
-      name.endsWith('.jpg') || name.endsWith('.jpeg') || name.endsWith('.png') || name.endsWith('.gif');
+      name.endsWith('.jpg') ||
+      name.endsWith('.jpeg') ||
+      name.endsWith('.png') ||
+      name.endsWith('.gif');
 
   bool _isVideo(String name) =>
-      name.endsWith('.mp4') || name.endsWith('.mov') || name.endsWith('.avi') || name.endsWith('.mkv');
+      name.endsWith('.mp4') ||
+      name.endsWith('.mov') ||
+      name.endsWith('.avi') ||
+      name.endsWith('.mkv');
 
   bool _isAudio(String name) =>
       name.endsWith('.mp3') || name.endsWith('.wav') || name.endsWith('.aac');
 
-  bool _isWord(String name) =>
-      name.endsWith('.doc') || name.endsWith('.docx');
+  bool _isWord(String name) => name.endsWith('.doc') || name.endsWith('.docx');
 
-  bool _isExcel(String name) =>
-      name.endsWith('.xls') || name.endsWith('.xlsx');
+  bool _isExcel(String name) => name.endsWith('.xls') || name.endsWith('.xlsx');
 
   bool _isPowerPoint(String name) =>
       name.endsWith('.ppt') || name.endsWith('.pptx');
@@ -204,10 +209,7 @@ class _FavoritesSectionState extends State<FavoritesSection> {
           const SizedBox(height: 8),
           Text(
             'لا توجد ملفات مفضلة',
-            style: TextStyle(
-              color: Colors.grey[600],
-              fontSize: 14,
-            ),
+            style: TextStyle(color: Colors.grey[600], fontSize: 14),
           ),
         ],
       ),
@@ -215,7 +217,10 @@ class _FavoritesSectionState extends State<FavoritesSection> {
   }
 
   // عنصر مفضلة فردي
-  Widget _buildFavoriteItem(Map<String, dynamic> info, Map<String, dynamic> file) {
+  Widget _buildFavoriteItem(
+    Map<String, dynamic> info,
+    Map<String, dynamic> file,
+  ) {
     return GestureDetector(
       onTap: () => _showFileOptions(info, file),
       child: Container(
@@ -232,14 +237,22 @@ class _FavoritesSectionState extends State<FavoritesSection> {
                 const Positioned(
                   top: -2,
                   right: -2,
-                  child: Icon(Icons.star_rounded, size: 16, color: Colors.amber),
+                  child: Icon(
+                    Icons.star_rounded,
+                    size: 16,
+                    color: Colors.amber,
+                  ),
                 ),
               ],
             ),
             const SizedBox(height: 8),
             Text(
               info['displayName'],
-              style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w500, height: 1.2),
+              style: const TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w500,
+                height: 1.2,
+              ),
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
               textAlign: TextAlign.center,
@@ -272,7 +285,11 @@ class _FavoritesSectionState extends State<FavoritesSection> {
           color: const Color(0xff28336f),
           borderRadius: BorderRadius.circular(12),
           boxShadow: [
-            BoxShadow(color: Colors.black26, blurRadius: 6, offset: Offset(0, 2)),
+            BoxShadow(
+              color: Colors.black26,
+              blurRadius: 6,
+              offset: Offset(0, 2),
+            ),
           ],
         ),
         child: Column(
@@ -316,18 +333,24 @@ class _FavoritesSectionState extends State<FavoritesSection> {
               ),
               const Divider(),
               ListTile(
-                leading: const Icon(Icons.open_in_new_rounded, color: Colors.blue),
-                title: const Text('فتح الملف'),
+                leading: const Icon(
+                  Icons.open_in_new_rounded,
+                  color: Colors.blue,
+                ),
+                title: Text(S.of(context).openFile),
                 onTap: () => Navigator.pop(context),
               ),
               ListTile(
-                leading: const Icon(Icons.info_outline_rounded, color: Colors.teal),
-                title: const Text('عرض التفاصيل'),
+                leading: const Icon(
+                  Icons.info_outline_rounded,
+                  color: Colors.teal,
+                ),
+                title: Text(S.of(context).viewDetails),
                 onTap: () => Navigator.pop(context),
               ),
               ListTile(
                 leading: const Icon(Icons.star_rounded, color: Colors.amber),
-                title: const Text('إزالة من المفضلة'),
+                title: Text(S.of(context).removeFromFavorites),
                 onTap: () {
                   Navigator.pop(context);
                   _removeFromFavorites(file);
@@ -349,14 +372,17 @@ class _FavoritesSectionState extends State<FavoritesSection> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Row(
-          children: const [
-            SizedBox(
+          children: [
+            const SizedBox(
               width: 20,
               height: 20,
-              child: CircularProgressIndicator(strokeWidth: 2, valueColor: AlwaysStoppedAnimation(Colors.white)),
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                valueColor: AlwaysStoppedAnimation(Colors.white),
+              ),
             ),
-            SizedBox(width: 12),
-            Text('جاري إزالة من المفضلة...'),
+            const SizedBox(width: 12),
+            Text(S.of(context).removingFromFavorites),
           ],
         ),
         backgroundColor: Colors.blue,
@@ -373,15 +399,12 @@ class _FavoritesSectionState extends State<FavoritesSection> {
       // ✅ لا حاجة لإعادة تحميل القائمة - التحديث يحدث تلقائياً في toggleStar
       _showSnack(
         isStarred
-          ? '✅ تم إضافة الملف إلى المفضلة'
-          : '✅ تم إزالة الملف من المفضلة',
+            ? '✅ تم إضافة الملف إلى المفضلة'
+            : '✅ تم إزالة الملف من المفضلة',
         Colors.green,
       );
     } else {
-      _showSnack(
-        result['message'] ?? 'فشل في تحديث حالة المفضلة',
-        Colors.red,
-      );
+      _showSnack(result['message'] ?? 'فشل في تحديث حالة المفضلة', Colors.red);
     }
   }
 

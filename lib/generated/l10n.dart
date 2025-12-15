@@ -894,10 +894,10 @@ class S {
     );
   }
 
-  /// `Invalid or expired code`
+  /// `The code is invalid or has expired`
   String get invalidOrExpiredCode {
     return Intl.message(
-      'Invalid or expired code',
+      'The code is invalid or has expired',
       name: 'invalidOrExpiredCode',
       desc: '',
       args: [],
@@ -1324,10 +1324,10 @@ class S {
     return Intl.message('Created at', name: 'createdAt', desc: '', args: []);
   }
 
-  /// `Last Modified`
+  /// `Last modified`
   String get lastModified {
     return Intl.message(
-      'Last Modified',
+      'Last modified',
       name: 'lastModified',
       desc: '',
       args: [],
@@ -1819,10 +1819,10 @@ class S {
     return Intl.message('Unshare', name: 'unshare', desc: '', args: []);
   }
 
-  /// `You must log in first`
+  /// `You must login first`
   String get mustLoginFirst {
     return Intl.message(
-      'You must log in first',
+      'You must login first',
       name: 'mustLoginFirst',
       desc: '',
       args: [],
@@ -3499,10 +3499,10 @@ class S {
     );
   }
 
-  /// `Invalid verification code`
+  /// `Verification code is incorrect`
   String get invalidVerificationCode {
     return Intl.message(
-      'Invalid verification code',
+      'Verification code is incorrect',
       name: 'invalidVerificationCode',
       desc: '',
       args: [],
@@ -3519,10 +3519,10 @@ class S {
     );
   }
 
-  /// `✅ Verification code sent successfully`
+  /// `Verification code has been sent to your email`
   String get verificationCodeSent {
     return Intl.message(
-      '✅ Verification code sent successfully',
+      'Verification code has been sent to your email',
       name: 'verificationCodeSent',
       desc: '',
       args: [],
@@ -3704,25 +3704,25 @@ class S {
     return Intl.message('Load More', name: 'loadMore', desc: '', args: []);
   }
 
-  /// `Files Count`
+  /// `Files count`
   String get filesCount {
-    return Intl.message('Files Count', name: 'filesCount', desc: '', args: []);
+    return Intl.message('Files count', name: 'filesCount', desc: '', args: []);
   }
 
-  /// `Subfolders Count`
+  /// `Subfolders count`
   String get subfoldersCount {
     return Intl.message(
-      'Subfolders Count',
+      'Subfolders count',
       name: 'subfoldersCount',
       desc: '',
       args: [],
     );
   }
 
-  /// `Creation Date`
+  /// `Creation date`
   String get creationDate {
     return Intl.message(
-      'Creation Date',
+      'Creation date',
       name: 'creationDate',
       desc: '',
       args: [],
@@ -4595,6 +4595,831 @@ class S {
       'Error: Folder ID not found',
       name: 'folderIdNotFound',
       desc: 'Message shown when the folder ID is missing',
+      args: [],
+    );
+  }
+
+  /// `View and manage deleted files and folders`
+  String get viewDeletedFilesAndFolders {
+    return Intl.message(
+      'View and manage deleted files and folders',
+      name: 'viewDeletedFilesAndFolders',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `View all your activities in the app`
+  String get viewAllActivities {
+    return Intl.message(
+      'View all your activities in the app',
+      name: 'viewAllActivities',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Root`
+  String get root {
+    return Intl.message('Root', name: 'root', desc: '', args: []);
+  }
+
+  /// `Upload/create in root (no parent folder)`
+  String get uploadCreateInRoot {
+    return Intl.message(
+      'Upload/create in root (no parent folder)',
+      name: 'uploadCreateInRoot',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Upload/create in this folder`
+  String get uploadCreateInThisFolder {
+    return Intl.message(
+      'Upload/create in this folder',
+      name: 'uploadCreateInThisFolder',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Edit Folder`
+  String get editFolder {
+    return Intl.message('Edit Folder', name: 'editFolder', desc: '', args: []);
+  }
+
+  /// `Folder Name`
+  String get folderName {
+    return Intl.message('Folder Name', name: 'folderName', desc: '', args: []);
+  }
+
+  /// `Description`
+  String get folderDescription {
+    return Intl.message(
+      'Description',
+      name: 'folderDescription',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Tags`
+  String get folderTags {
+    return Intl.message('Tags', name: 'folderTags', desc: '', args: []);
+  }
+
+  /// `Tags separated by commas (optional)`
+  String get folderTagsHint {
+    return Intl.message(
+      'Tags separated by commas (optional)',
+      name: 'folderTagsHint',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Folder description (optional)`
+  String get folderDescriptionHint {
+    return Intl.message(
+      'Folder description (optional)',
+      name: 'folderDescriptionHint',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Move folder to main folder`
+  String get moveFolderToMainFolder {
+    return Intl.message(
+      'Move folder to main folder',
+      name: 'moveFolderToMainFolder',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Saving file...`
+  String get savingFile {
+    return Intl.message(
+      'Saving file...',
+      name: 'savingFile',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Move file to root (no folder)`
+  String get moveFileToRoot {
+    return Intl.message(
+      'Move file to root (no folder)',
+      name: 'moveFileToRoot',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Move folder to root (no parent folder)`
+  String get moveFolderToRootNoParent {
+    return Intl.message(
+      'Move folder to root (no parent folder)',
+      name: 'moveFolderToRootNoParent',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Failed to move folder - Feature under development`
+  String get failedToMoveFolder {
+    return Intl.message(
+      'Failed to move folder - Feature under development',
+      name: 'failedToMoveFolder',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Searching...`
+  String get searching {
+    return Intl.message('Searching...', name: 'searching', desc: '', args: []);
+  }
+
+  /// `Invalid link`
+  String get invalidLink {
+    return Intl.message(
+      'Invalid link',
+      name: 'invalidLink',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Open File`
+  String get openFile {
+    return Intl.message('Open File', name: 'openFile', desc: '', args: []);
+  }
+
+  /// `Removing from favorites...`
+  String get removingFromFavorites {
+    return Intl.message(
+      'Removing from favorites...',
+      name: 'removingFromFavorites',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Open Folder`
+  String get openFolder {
+    return Intl.message('Open Folder', name: 'openFolder', desc: '', args: []);
+  }
+
+  /// `File not found`
+  String get fileNotFound {
+    return Intl.message(
+      'File not found',
+      name: 'fileNotFound',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Select "{folderName}"`
+  String selectFolderName(String folderName) {
+    return Intl.message(
+      'Select "$folderName"',
+      name: 'selectFolderName',
+      desc: '',
+      args: [folderName],
+    );
+  }
+
+  /// `Folder moved successfully`
+  String get folderMovedSuccessfully {
+    return Intl.message(
+      'Folder moved successfully',
+      name: 'folderMovedSuccessfully',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `File saved to your account`
+  String get fileSavedToAccount {
+    return Intl.message(
+      'File saved to your account',
+      name: 'fileSavedToAccount',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Failed to fetch folder information`
+  String get failedToFetchFolderInfo {
+    return Intl.message(
+      'Failed to fetch folder information',
+      name: 'failedToFetchFolderInfo',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Shared with`
+  String get sharedWith {
+    return Intl.message('Shared with', name: 'sharedWith', desc: '', args: []);
+  }
+
+  /// `Category`
+  String get category {
+    return Intl.message('Category', name: 'category', desc: '', args: []);
+  }
+
+  /// `Total size`
+  String get totalSize {
+    return Intl.message('Total size', name: 'totalSize', desc: '', args: []);
+  }
+
+  /// `✅ Folder updated successfully`
+  String get folderUpdatedSuccessfully {
+    return Intl.message(
+      '✅ Folder updated successfully',
+      name: 'folderUpdatedSuccessfully',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Unnamed folder`
+  String get unnamedFolder {
+    return Intl.message(
+      'Unnamed folder',
+      name: 'unnamedFolder',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `❌ Failed to update folder`
+  String get folderUpdateFailed {
+    return Intl.message(
+      '❌ Failed to update folder',
+      name: 'folderUpdateFailed',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `❌ Failed to move folder`
+  String get folderMoveFailed {
+    return Intl.message(
+      '❌ Failed to move folder',
+      name: 'folderMoveFailed',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `❌ Failed to update favorite status`
+  String get favoriteUpdateFailed {
+    return Intl.message(
+      '❌ Failed to update favorite status',
+      name: 'favoriteUpdateFailed',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `✅ Folder added to favorites`
+  String get folderAddedToFavorites {
+    return Intl.message(
+      '✅ Folder added to favorites',
+      name: 'folderAddedToFavorites',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `✅ Folder removed from favorites`
+  String get folderRemovedFromFavorites {
+    return Intl.message(
+      '✅ Folder removed from favorites',
+      name: 'folderRemovedFromFavorites',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Move folder`
+  String get moveFolderTitle {
+    return Intl.message(
+      'Move folder',
+      name: 'moveFolderTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Failed to fetch folder list`
+  String get failedToFetchFolderList {
+    return Intl.message(
+      'Failed to fetch folder list',
+      name: 'failedToFetchFolderList',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Loading folders...`
+  String get loadingFolders {
+    return Intl.message(
+      'Loading folders...',
+      name: 'loadingFolders',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `No folders in root`
+  String get noRootFolders {
+    return Intl.message(
+      'No folders in root',
+      name: 'noRootFolders',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `You can upload files/folders directly to the root using the option above`
+  String get uploadToRootHint {
+    return Intl.message(
+      'You can upload files/folders directly to the root using the option above',
+      name: 'uploadToRootHint',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Select this folder`
+  String get selectFolderTooltip {
+    return Intl.message(
+      'Select this folder',
+      name: 'selectFolderTooltip',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `update`
+  String get update {
+    return Intl.message('update', name: 'update', desc: '', args: []);
+  }
+
+  /// `Search in your files`
+  String get searchYourFiles {
+    return Intl.message(
+      'Search in your files',
+      name: 'searchYourFiles',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `No results for:`
+  String get noResultsFor {
+    return Intl.message(
+      'No results for:',
+      name: 'noResultsFor',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Try searching with different keywords`
+  String get tryDifferentKeywords {
+    return Intl.message(
+      'Try searching with different keywords',
+      name: 'tryDifferentKeywords',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Found`
+  String get foundText {
+    return Intl.message('Found', name: 'foundText', desc: '', args: []);
+  }
+
+  /// `result`
+  String get resultWord {
+    return Intl.message('result', name: 'resultWord', desc: '', args: []);
+  }
+
+  /// `for search:`
+  String get forSearch {
+    return Intl.message('for search:', name: 'forSearch', desc: '', args: []);
+  }
+
+  /// `View as list`
+  String get tooltipListView {
+    return Intl.message(
+      'View as list',
+      name: 'tooltipListView',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `View as grid`
+  String get tooltipGridView {
+    return Intl.message(
+      'View as grid',
+      name: 'tooltipGridView',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Unnamed file`
+  String get unnamedfile {
+    return Intl.message(
+      'Unnamed file',
+      name: 'unnamedfile',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Account activated successfully`
+  String get accountActivated {
+    return Intl.message(
+      'Account activated successfully',
+      name: 'accountActivated',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Failed to send verification code`
+  String get verificationCodeSendFailed {
+    return Intl.message(
+      'Failed to send verification code',
+      name: 'verificationCodeSendFailed',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Code verified successfully`
+  String get verificationSuccess {
+    return Intl.message(
+      'Code verified successfully',
+      name: 'verificationSuccess',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Reset Password`
+  String get resetPasswordTitle {
+    return Intl.message(
+      'Reset Password',
+      name: 'resetPasswordTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Create new password`
+  String get createNewPassword {
+    return Intl.message(
+      'Create new password',
+      name: 'createNewPassword',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Enter your new password for {email}`
+  String enterNewPasswordFor(Object email) {
+    return Intl.message(
+      'Enter your new password for $email',
+      name: 'enterNewPasswordFor',
+      desc: '',
+      args: [email],
+    );
+  }
+
+  /// `Make sure your password is at least 6 characters long`
+  String get passwordAtLeast6Chars {
+    return Intl.message(
+      'Make sure your password is at least 6 characters long',
+      name: 'passwordAtLeast6Chars',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Please fill all fields`
+  String get pleaseFillAllFields {
+    return Intl.message(
+      'Please fill all fields',
+      name: 'pleaseFillAllFields',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Password must be at least 6 characters`
+  String get passwordTooShort {
+    return Intl.message(
+      'Password must be at least 6 characters',
+      name: 'passwordTooShort',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `✅ Password reset successfully!`
+  String get passwordResetSuccess {
+    return Intl.message(
+      '✅ Password reset successfully!',
+      name: 'passwordResetSuccess',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Failed to reset password`
+  String get passwordResetFailed {
+    return Intl.message(
+      'Failed to reset password',
+      name: 'passwordResetFailed',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Back to Verification`
+  String get backToVerification {
+    return Intl.message(
+      'Back to Verification',
+      name: 'backToVerification',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Registration failed`
+  String get registrationFailed {
+    return Intl.message(
+      'Registration failed',
+      name: 'registrationFailed',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Failed to get audio duration`
+  String get audioDurationError {
+    return Intl.message(
+      'Failed to get audio duration',
+      name: 'audioDurationError',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Failed to play audio file`
+  String get audioPlayError {
+    return Intl.message(
+      'Failed to play audio file',
+      name: 'audioPlayError',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Failed to pause audio file`
+  String get audioPauseError {
+    return Intl.message(
+      'Failed to pause audio file',
+      name: 'audioPauseError',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Failed to seek audio`
+  String get audioSeekError {
+    return Intl.message(
+      'Failed to seek audio',
+      name: 'audioSeekError',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Failed to change playback speed`
+  String get audioSpeedChangeError {
+    return Intl.message(
+      'Failed to change playback speed',
+      name: 'audioSpeedChangeError',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Loading audio file...`
+  String get loadingAudio {
+    return Intl.message(
+      'Loading audio file...',
+      name: 'loadingAudio',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Failed to load audio file`
+  String get audioLoadFailed {
+    return Intl.message(
+      'Failed to load audio file',
+      name: 'audioLoadFailed',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Check your internet connection and URL`
+  String get checkInternet {
+    return Intl.message(
+      'Check your internet connection and URL',
+      name: 'checkInternet',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Play`
+  String get play {
+    return Intl.message('Play', name: 'play', desc: '', args: []);
+  }
+
+  /// `Pause`
+  String get pause {
+    return Intl.message('Pause', name: 'pause', desc: '', args: []);
+  }
+
+  /// `Stop`
+  String get stop {
+    return Intl.message('Stop', name: 'stop', desc: '', args: []);
+  }
+
+  /// `Restart from beginning`
+  String get restart {
+    return Intl.message(
+      'Restart from beginning',
+      name: 'restart',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `🎵 Playing...`
+  String get playingStatus {
+    return Intl.message(
+      '🎵 Playing...',
+      name: 'playingStatus',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `⏸️ Paused`
+  String get pausedStatus {
+    return Intl.message('⏸️ Paused', name: 'pausedStatus', desc: '', args: []);
+  }
+
+  /// `⏹️ Stopped`
+  String get stoppedStatus {
+    return Intl.message(
+      '⏹️ Stopped',
+      name: 'stoppedStatus',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Playback speed:`
+  String get playbackSpeedLabel {
+    return Intl.message(
+      'Playback speed:',
+      name: 'playbackSpeedLabel',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `File Information`
+  String get fileInfoTitle {
+    return Intl.message(
+      'File Information',
+      name: 'fileInfoTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `File Name`
+  String get fileNameLabel {
+    return Intl.message('File Name', name: 'fileNameLabel', desc: '', args: []);
+  }
+
+  /// `Description`
+  String get descriptionLabel {
+    return Intl.message(
+      'Description',
+      name: 'descriptionLabel',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Tags (separate with commas)`
+  String get tagsLabel {
+    return Intl.message(
+      'Tags (separate with commas)',
+      name: 'tagsLabel',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Edit Content`
+  String get editContentTitle {
+    return Intl.message(
+      'Edit Content',
+      name: 'editContentTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Editing the content of this type of file is not supported currently.\nYou can only edit the name, description, and tags.`
+  String get editContentDescription {
+    return Intl.message(
+      'Editing the content of this type of file is not supported currently.\nYou can only edit the name, description, and tags.',
+      name: 'editContentDescription',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Failed to update file`
+  String get updateFileError {
+    return Intl.message(
+      'Failed to update file',
+      name: 'updateFileError',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `File uploaded but failed to delete old file:`
+  String get fileUploadedButDeleteFailed {
+    return Intl.message(
+      'File uploaded but failed to delete old file:',
+      name: 'fileUploadedButDeleteFailed',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Failed to upload updated file`
+  String get fileUpdateFailed {
+    return Intl.message(
+      'Failed to upload updated file',
+      name: 'fileUpdateFailed',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Failed to save the new version`
+  String get saveNewVersionFailed {
+    return Intl.message(
+      'Failed to save the new version',
+      name: 'saveNewVersionFailed',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Failed to save changes`
+  String get saveChangesFailed {
+    return Intl.message(
+      'Failed to save changes',
+      name: 'saveChangesFailed',
+      desc: '',
       args: [],
     );
   }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:filevo/controllers/folders/folders_controller.dart';
+import 'package:filevo/generated/l10n.dart';
 
 /// ✅ Widget لاختيار المجلد الهدف (للرفع أو الإنشاء)
 class FolderSelectionDialog extends StatefulWidget {
@@ -30,7 +31,7 @@ class _FolderSelectionDialogState extends State<FolderSelectionDialog> {
   @override
   void initState() {
     super.initState();
-    _breadcrumb.add({'id': null, 'name': 'الجذر'});
+    _breadcrumb.add({'id': null, 'name': S.of(context).root});
     // ✅ تأخير بسيط لضمان أن الـ widget تم بناؤه بالكامل
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadRootFolders();
@@ -207,7 +208,7 @@ class _FolderSelectionDialogState extends State<FolderSelectionDialog> {
         _loadRootFolders();
       } else {
         // ✅ نحتاج اسم المجلد السابق - يمكننا حفظه في breadcrumb
-        final previousName = previousBreadcrumb['name'] ?? 'مجلد';
+        final previousName = previousBreadcrumb['name'] ?? S.of(context).folder;
         _loadSubfolders(previousId, previousName);
       }
     });
@@ -301,7 +302,8 @@ class _FolderSelectionDialogState extends State<FolderSelectionDialog> {
                                           } else {
                                             _loadSubfolders(
                                               prevId,
-                                              prevItem['name'] ?? 'مجلد',
+                                              prevItem['name'] ??
+                                                  S.of(context).folder,
                                             );
                                           }
                                         }
@@ -318,7 +320,7 @@ class _FolderSelectionDialogState extends State<FolderSelectionDialog> {
                                     borderRadius: BorderRadius.circular(8),
                                   ),
                                   child: Text(
-                                    item['name'] ?? 'الجذر',
+                                    item['name'] ?? S.of(context).root,
                                     style: TextStyle(
                                       color: isLast
                                           ? Colors.blue[900]
@@ -354,7 +356,7 @@ class _FolderSelectionDialogState extends State<FolderSelectionDialog> {
                           CircularProgressIndicator(),
                           SizedBox(height: 16),
                           Text(
-                            'جاري تحميل المجلدات...',
+                            S.of(context).loadingFolders,
                             style: TextStyle(color: Colors.grey[600]),
                           ),
                         ],
@@ -370,13 +372,13 @@ class _FolderSelectionDialogState extends State<FolderSelectionDialog> {
                               Icons.home_rounded,
                               color: Colors.blue,
                             ),
-                            title: Text('الجذر'),
-                            subtitle: Text('رفع/إنشاء في الجذر (بدون مجلد أب)'),
+                            title: Text(S.of(context).root),
+                            subtitle: Text(S.of(context).uploadCreateInRoot),
                             onTap: () {
                               print(
                                 '📁 FolderSelectionDialog: Root selected (empty folders)',
                               );
-                              _selectFolder(null, 'الجذر');
+                              _selectFolder(null, S.of(context).root);
                             },
                             trailing: Icon(
                               Icons.check_circle,
@@ -394,14 +396,21 @@ class _FolderSelectionDialogState extends State<FolderSelectionDialog> {
                               color: Colors.green,
                             ),
                             title: Text(
-                              'اختيار "${_breadcrumb.last['name'] ?? 'مجلد'}"',
+                              S
+                                  .of(context)
+                                  .selectFolderName(
+                                    _breadcrumb.last['name'] ??
+                                        S.of(context).folder,
+                                  ),
                             ),
-                            subtitle: Text('رفع/إنشاء في هذا المجلد'),
+                            subtitle: Text(
+                              S.of(context).uploadCreateInThisFolder,
+                            ),
                             onTap: () {
                               final currentFolder = _breadcrumb.last;
                               final currentFolderId = currentFolder['id'];
                               final currentFolderName =
-                                  currentFolder['name'] ?? 'مجلد';
+                                  currentFolder['name'] ?? S.of(context).folder;
                               print(
                                 '📁 FolderSelectionDialog: Current folder selected (empty subfolders): $currentFolderId ($currentFolderName)',
                               );
@@ -433,8 +442,8 @@ class _FolderSelectionDialogState extends State<FolderSelectionDialog> {
                                 SizedBox(height: 16),
                                 Text(
                                   _currentFolderId == null
-                                      ? 'لا توجد مجلدات في الجذر'
-                                      : 'لا توجد مجلدات فرعية',
+                                      ? S.of(context).noRootFolders
+                                      : S.of(context).noSubfolders,
                                   style: TextStyle(color: Colors.grey[600]),
                                 ),
                                 SizedBox(height: 8),
@@ -444,7 +453,7 @@ class _FolderSelectionDialogState extends State<FolderSelectionDialog> {
                                       horizontal: 32,
                                     ),
                                     child: Text(
-                                      'يمكنك رفع الملفات/المجلدات مباشرة على الجذر باستخدام الخيار أعلاه',
+                                      S.of(context).uploadToRootHint,
                                       style: TextStyle(
                                         color: Colors.grey[500],
                                         fontSize: 12,
@@ -459,10 +468,11 @@ class _FolderSelectionDialogState extends State<FolderSelectionDialog> {
                                       final currentFolder = _breadcrumb.last;
                                       _loadSubfolders(
                                         _currentFolderId!,
-                                        currentFolder['name'] ?? 'مجلد',
+                                        currentFolder['name'] ??
+                                            S.of(context).folder,
                                       );
                                     },
-                                    child: Text('إعادة المحاولة'),
+                                    child: Text(S.of(context).retry),
                                   ),
                               ],
                             ),
@@ -482,11 +492,11 @@ class _FolderSelectionDialogState extends State<FolderSelectionDialog> {
                               Icons.home_rounded,
                               color: Colors.blue,
                             ),
-                            title: Text('الجذر'),
-                            subtitle: Text('رفع/إنشاء في الجذر (بدون مجلد أب)'),
+                            title: Text(S.of(context).root),
+                            subtitle: Text(S.of(context).uploadCreateInRoot),
                             onTap: () {
                               print('📁 FolderSelectionDialog: Root selected');
-                              _selectFolder(null, 'الجذر');
+                              _selectFolder(null, S.of(context).root);
                             },
                             trailing: Icon(
                               Icons.check_circle,
@@ -502,15 +512,19 @@ class _FolderSelectionDialogState extends State<FolderSelectionDialog> {
                           final currentFolder = _breadcrumb.last;
                           final currentFolderId = currentFolder['id'];
                           final currentFolderName =
-                              currentFolder['name'] ?? 'مجلد';
+                              currentFolder['name'] ?? S.of(context).folder;
 
                           return ListTile(
                             leading: Icon(
                               Icons.check_circle,
                               color: Colors.green,
                             ),
-                            title: Text('اختيار "$currentFolderName"'),
-                            subtitle: Text('رفع/إنشاء في هذا المجلد'),
+                            title: Text(
+                              S.of(context).selectFolderName(currentFolderName),
+                            ),
+                            subtitle: Text(
+                              S.of(context).uploadCreateInThisFolder,
+                            ),
                             onTap: () {
                               print(
                                 '📁 FolderSelectionDialog: Current folder selected: $currentFolderId ($currentFolderName)',
@@ -545,7 +559,8 @@ class _FolderSelectionDialogState extends State<FolderSelectionDialog> {
                         final folder = _currentFolders[folderIndex];
                         final folderId = folder['_id']?.toString();
                         final folderName =
-                            folder['name']?.toString() ?? 'مجلد بدون اسم';
+                            folder['name']?.toString() ??
+                            S.of(context).unnamedFolder;
 
                         print(
                           '📁 FolderSelectionDialog: Building folder item: $folderId ($folderName)',
@@ -566,7 +581,9 @@ class _FolderSelectionDialogState extends State<FolderSelectionDialog> {
                             color: Colors.orange,
                           ),
                           title: Text(folderName),
-                          subtitle: Text('${folder['filesCount'] ?? 0} ملف'),
+                          subtitle: Text(
+                            '${folder['filesCount'] ?? 0} ${S.of(context).file}',
+                          ),
                           trailing: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
@@ -588,7 +605,7 @@ class _FolderSelectionDialogState extends State<FolderSelectionDialog> {
                                     );
                                   }
                                 },
-                                tooltip: 'اختيار هذا المجلد',
+                                tooltip: S.of(context).selectFolderTooltip,
                               ),
                               Icon(Icons.chevron_right),
                             ],

@@ -7,7 +7,6 @@ import 'package:filevo/views/fileViewer/edit_file_page.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:filevo/generated/l10n.dart';
-import 'package:filevo/constants/app_colors.dart';
 
 class FileActionsService {
   static bool _isLoading = false;
@@ -294,7 +293,7 @@ class FileActionsService {
         final errorMsg =
             fileController.errorMessage ?? "❌ حدث خطأ أثناء حذف الملف";
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(errorMsg), backgroundColor: AppColors.error),
+          SnackBar(content: Text(errorMsg), backgroundColor: Colors.red),
         );
       }
     } catch (e) {

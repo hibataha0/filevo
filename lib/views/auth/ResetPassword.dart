@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:filevo/controllers/auth/auth_controller.dart';
+import 'package:filevo/generated/l10n.dart'; // ملف الترجمات
 
 class ResetPasswordPage extends StatefulWidget {
   final String email;
@@ -24,22 +25,22 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
 
     // التحقق من الحقول
     if (password.isEmpty || confirmPassword.isEmpty) {
-      _showSnackBar("Please fill all fields", Colors.orange);
+      _showSnackBar(S.of(context).pleaseFillAllFields, Colors.orange);
       return;
     }
 
     if (password.length < 6) {
-      _showSnackBar("Password must be at least 6 characters", Colors.orange);
+      _showSnackBar(S.of(context).passwordTooShort, Colors.orange);
       return;
     }
 
     if (password != confirmPassword) {
-      _showSnackBar("Passwords do not match", Colors.orange);
+      _showSnackBar(S.of(context).passwordsDoNotMatch, Colors.orange);
       return;
     }
 
     final authController = context.read<AuthController>();
-    
+
     setState(() => _isLoading = true);
     authController.clearMessages();
 
@@ -53,20 +54,20 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
 
     if (success) {
       _showSnackBar(
-        authController.successMessage ?? "✅ Password reset successfully!", 
-        Colors.green
+        authController.successMessage ?? S.of(context).passwordResetSuccess,
+        Colors.green,
       );
-      
+
       // الانتقال للشاشة الرئيسية بعد نجاح العملية
       await Future.delayed(const Duration(milliseconds: 1000));
-      
+
       if (mounted) {
         Navigator.popUntil(context, (route) => route.isFirst);
       }
     } else {
       _showSnackBar(
-        authController.errorMessage ?? "Failed to reset password", 
-        Colors.red
+        authController.errorMessage ?? S.of(context).passwordResetFailed,
+        Colors.red,
       );
     }
   }
@@ -90,9 +91,12 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
         appBar: AppBar(
           backgroundColor: Colors.transparent,
           elevation: 0,
-          title: const Text(
-            "Reset Password",
-            style: TextStyle(color: Colors.black, fontWeight: FontWeight.w600),
+          title: Text(
+            S.of(context).resetPasswordTitle,
+            style: const TextStyle(
+              color: Colors.black,
+              fontWeight: FontWeight.w600,
+            ),
           ),
           iconTheme: const IconThemeData(color: Colors.black),
           centerTitle: true,
@@ -111,9 +115,9 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
                       size: 70,
                     ),
                     const SizedBox(height: 20),
-                    const Text(
-                      "Create new password",
-                      style: TextStyle(
+                    Text(
+                      S.of(context).createNewPassword,
+                      style: const TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
                         color: Color(0xFF2D2D2D),
@@ -121,26 +125,23 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
                     ),
                     const SizedBox(height: 10),
                     Text(
-                      "Enter your new password for ${widget.email}",
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: Colors.grey[600],
-                      ),
+                      S.of(context).enterNewPasswordFor(widget.email),
+                      style: TextStyle(fontSize: 16, color: Colors.grey[600]),
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 30),
-                    
+
                     // New Password Field
                     TextField(
                       controller: _passwordController,
                       obscureText: !_isPasswordVisible,
                       decoration: InputDecoration(
-                        labelText: "New Password",
+                        labelText: S.of(context).newPassword,
                         filled: true,
                         fillColor: Colors.white,
                         prefixIcon: const Icon(
-                          Icons.lock_outline, 
-                          color: Colors.blueGrey
+                          Icons.lock_outline,
+                          color: Colors.blueGrey,
                         ),
                         suffixIcon: IconButton(
                           icon: Icon(
@@ -162,18 +163,18 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
                       ),
                     ),
                     const SizedBox(height: 20),
-                    
+
                     // Confirm Password Field
                     TextField(
                       controller: _confirmPasswordController,
                       obscureText: !_isConfirmPasswordVisible,
                       decoration: InputDecoration(
-                        labelText: "Confirm Password",
+                        labelText: S.of(context).confirmPassword,
                         filled: true,
                         fillColor: Colors.white,
                         prefixIcon: const Icon(
-                          Icons.lock, 
-                          color: Colors.blueGrey
+                          Icons.lock,
+                          color: Colors.blueGrey,
                         ),
                         suffixIcon: IconButton(
                           icon: Icon(
@@ -184,7 +185,8 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
                           ),
                           onPressed: () {
                             setState(() {
-                              _isConfirmPasswordVisible = !_isConfirmPasswordVisible;
+                              _isConfirmPasswordVisible =
+                                  !_isConfirmPasswordVisible;
                             });
                           },
                         ),
@@ -195,22 +197,19 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
                       ),
                       onSubmitted: (_) => _resetPassword(),
                     ),
-                    
+
                     const SizedBox(height: 10),
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 8.0),
                       child: Text(
-                        "Make sure your password is at least 6 characters long",
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey[500],
-                        ),
+                        S.of(context).passwordAtLeast6Chars,
+                        style: TextStyle(fontSize: 12, color: Colors.grey[500]),
                         textAlign: TextAlign.center,
                       ),
                     ),
-                    
+
                     const SizedBox(height: 30),
-                    
+
                     // Reset Button
                     GestureDetector(
                       onTap: _isLoading ? null : _resetPassword,
@@ -229,15 +228,17 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
                               color: const Color(0xFF6A5AE0).withOpacity(0.3),
                               blurRadius: 8,
                               offset: const Offset(0, 5),
-                            )
+                            ),
                           ],
                         ),
                         child: Center(
                           child: _isLoading
-                              ? const CircularProgressIndicator(color: Colors.white)
-                              : const Text(
-                                  "Reset Password",
-                                  style: TextStyle(
+                              ? const CircularProgressIndicator(
+                                  color: Colors.white,
+                                )
+                              : Text(
+                                  S.of(context).resetPasswordTitle,
+                                  style: const TextStyle(
                                     color: Colors.white,
                                     fontSize: 18,
                                     fontWeight: FontWeight.w600,
@@ -246,17 +247,17 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
                         ),
                       ),
                     ),
-                    
+
                     const SizedBox(height: 20),
-                    
+
                     // Back Button
                     TextButton(
                       onPressed: () {
                         Navigator.pop(context);
                       },
-                      child: const Text(
-                        "Back to Verification",
-                        style: TextStyle(
+                      child: Text(
+                        S.of(context).backToVerification,
+                        style: const TextStyle(
                           color: Color(0xFF6A5AE0),
                           fontSize: 16,
                           fontWeight: FontWeight.w500,

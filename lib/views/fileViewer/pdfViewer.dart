@@ -106,20 +106,18 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
 
       // ✅ تحميل PDF من URL
       print('📥 Downloading PDF from URL to local storage...');
-      
+
       // ✅ الحصول على التوكن وإضافته إلى الـ headers
       final token = await StorageService.getToken();
-      final headers = <String, String>{
-        'Content-Type': 'application/json',
-      };
-      
+      final headers = <String, String>{'Content-Type': 'application/json'};
+
       if (token != null && token.isNotEmpty) {
         headers['Authorization'] = 'Bearer $token';
         print('✅ [PdfViewer] Token added to request headers');
       } else {
         print('⚠️ [PdfViewer] No token found, request may fail');
       }
-      
+
       final response = await http
           .get(Uri.parse(widget.pdfUrl), headers: headers)
           .timeout(Duration(seconds: 60));
@@ -231,43 +229,43 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
     // ✅ تحميل PDF محلياً أولاً (مع التوكن) ثم عرضه في WebView
     // ✅ هذا ضروري لأن PDF.js لا يمكنه إرسال Authorization headers
     print('🌐 Initializing WebView - downloading PDF first...');
-    
+
     try {
       // ✅ الحصول على التوكن وإضافته إلى الـ headers
       final token = await StorageService.getToken();
-      final headers = <String, String>{
-        'Content-Type': 'application/json',
-      };
-      
+      final headers = <String, String>{'Content-Type': 'application/json'};
+
       if (token != null && token.isNotEmpty) {
         headers['Authorization'] = 'Bearer $token';
         print('✅ [PdfViewer] Token added to WebView download headers');
       } else {
         print('⚠️ [PdfViewer] No token found for WebView download');
       }
-      
+
       // ✅ تحميل PDF محلياً
       final response = await http
           .get(Uri.parse(widget.pdfUrl), headers: headers)
           .timeout(Duration(seconds: 60));
-      
+
       if (response.statusCode != 200) {
-        throw Exception('HTTP ${response.statusCode}: ${response.reasonPhrase}');
+        throw Exception(
+          'HTTP ${response.statusCode}: ${response.reasonPhrase}',
+        );
       }
-      
+
       final bytes = response.bodyBytes;
       final dir = await getTemporaryDirectory();
       final localFile = File(
         "${dir.path}/webview_${DateTime.now().millisecondsSinceEpoch}.pdf",
       );
       await localFile.writeAsBytes(bytes);
-      
+
       print('✅ PDF downloaded for WebView: ${localFile.path}');
-      
+
       // ✅ استخدام الملف المحلي في WebView
       final localFileUrl = 'file://${localFile.path}';
       final encodedUrl = Uri.encodeComponent(localFileUrl);
-      
+
       // ✅ استخدام نسخة مستقرة من PDF.js من CDN
       // ✅ إضافة #toolbar=0 لإخفاء شريط الأدوات الافتراضي
       final pdfJsUrl =
@@ -277,35 +275,35 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
       print('  - Local PDF path: ${localFile.path}');
       print('  - PDF.js URL: $pdfJsUrl');
 
-    webViewController = WebViewController()
-      ..setJavaScriptMode(JavaScriptMode.unrestricted)
-      ..setBackgroundColor(Colors.white)
-      ..setNavigationDelegate(
-        NavigationDelegate(
-          onProgress: (int progress) {
-            if (mounted) {
-              setState(() {
-                isLoading = progress < 100;
-              });
-            }
-          },
-          onPageStarted: (String url) {
-            print('📄 WebView page started: $url');
-            if (mounted) {
-              setState(() {
-                isLoading = true;
-              });
-            }
-          },
-          onPageFinished: (String url) {
-            print('✅ WebView page finished: $url');
-            if (mounted) {
-              setState(() {
-                isLoading = false;
-              });
+      webViewController = WebViewController()
+        ..setJavaScriptMode(JavaScriptMode.unrestricted)
+        ..setBackgroundColor(Colors.white)
+        ..setNavigationDelegate(
+          NavigationDelegate(
+            onProgress: (int progress) {
+              if (mounted) {
+                setState(() {
+                  isLoading = progress < 100;
+                });
+              }
+            },
+            onPageStarted: (String url) {
+              print('📄 WebView page started: $url');
+              if (mounted) {
+                setState(() {
+                  isLoading = true;
+                });
+              }
+            },
+            onPageFinished: (String url) {
+              print('✅ WebView page finished: $url');
+              if (mounted) {
+                setState(() {
+                  isLoading = false;
+                });
 
-              // ✅ التأكد من أن PDF.js جاهز
-              webViewController?.runJavaScript('''
+                // ✅ التأكد من أن PDF.js جاهز
+                webViewController?.runJavaScript('''
                 (function() {
                   if (window.PDFViewerApplication) {
                     console.log('PDF.js is ready');
@@ -319,22 +317,21 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
                   }
                 })();
               ''');
-            }
-          },
-          onWebResourceError: (WebResourceError error) {
-            print(
-              '❌ WebView Error: ${error.description} (Code: ${error.errorCode})',
-            );
-            // ✅ إذا فشل WebView، حاول التحميل المحلي
-            if (mounted && error.errorCode != -3) {
-              // -3 = navigation cancelled
-              _fallbackToLocalDownload();
-            }
-          },
-        ),
-      )
-      ..loadRequest(Uri.parse(pdfJsUrl));
-      
+              }
+            },
+            onWebResourceError: (WebResourceError error) {
+              print(
+                '❌ WebView Error: ${error.description} (Code: ${error.errorCode})',
+              );
+              // ✅ إذا فشل WebView، حاول التحميل المحلي
+              if (mounted && error.errorCode != -3) {
+                // -3 = navigation cancelled
+                _fallbackToLocalDownload();
+              }
+            },
+          ),
+        )
+        ..loadRequest(Uri.parse(pdfJsUrl));
     } catch (e) {
       print('❌ Error initializing WebView: $e');
       if (mounted) {
@@ -344,7 +341,9 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
         });
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(S.of(context).failedToLoadPdfForDisplay(e.toString())),
+            content: Text(
+              S.of(context).failedToLoadPdfForDisplay(e.toString()),
+            ),
             action: SnackBarAction(
               label: 'إعادة المحاولة',
               onPressed: () {
@@ -363,17 +362,15 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
     try {
       // ✅ الحصول على التوكن وإضافته إلى الـ headers
       final token = await StorageService.getToken();
-      final headers = <String, String>{
-        'Content-Type': 'application/json',
-      };
-      
+      final headers = <String, String>{'Content-Type': 'application/json'};
+
       if (token != null && token.isNotEmpty) {
         headers['Authorization'] = 'Bearer $token';
         print('✅ [PdfViewer] Token added to fallback request headers');
       } else {
         print('⚠️ [PdfViewer] No token found for fallback request');
       }
-      
+
       final response = await http
           .get(Uri.parse(widget.pdfUrl), headers: headers)
           .timeout(Duration(seconds: 60));
@@ -481,15 +478,17 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
       // ✅ ملاحظة: حزمة pdf لا تدعم استخراج النص مباشرة
       // سنستخدم طريقة بديلة - عرض الملف كـ text selectable
       // يمكن استخدام مكتبة أخرى مثل pdf_text أو syncfusion_pdf
-      
+
       setState(() {
-        _extractedText = '${S.of(context).extractingTextFromPdf}\n\n${S.of(context).pdfTextExtractionNote}\n\n${S.of(context).pdfTextExtractionNote2}';
+        _extractedText =
+            '${S.of(context).extractingTextFromPdf}\n\n${S.of(context).pdfTextExtractionNote}\n\n${S.of(context).pdfTextExtractionNote2}';
         _isExtractingText = false;
       });
     } catch (e) {
       print('❌ خطأ في استخراج النص: $e');
       setState(() {
-        _extractedText = '${S.of(context).failedToExtractTextFromPdf}\n\n${S.of(context).canViewPdfAndSearch}';
+        _extractedText =
+            '${S.of(context).failedToExtractTextFromPdf}\n\n${S.of(context).canViewPdfAndSearch}';
         _isExtractingText = false;
       });
     }
@@ -512,8 +511,8 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
     });
 
     ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(S.of(context).textHighlighted),
+      SnackBar(
+        content: Text(S.of(context).textHighlighted),
         duration: Duration(seconds: 2),
       ),
     );
@@ -560,9 +559,7 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
     // ✅ عرض SnackBar مع خيار فتح في تطبيق خارجي
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(
-          S.of(context).searchInPdfNotAvailableMessage,
-        ),
+        content: Text(S.of(context).searchInPdfNotAvailableMessage),
         duration: Duration(seconds: 4),
       ),
     );
@@ -656,12 +653,12 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
                     tooltip: 'بحث في المستند',
                   ),
                 // ✅ زر عرض النص/PDF
-                if (localPath != null)
-                  IconButton(
-                    icon: Icon(_showTextMode ? Icons.picture_as_pdf : Icons.text_fields),
-                    onPressed: _toggleTextMode,
-                    tooltip: _showTextMode ? 'عرض PDF' : 'عرض النص',
-                  ),
+                // if (localPath != null)
+                //   IconButton(
+                //     icon: Icon(_showTextMode ? Icons.picture_as_pdf : Icons.text_fields),
+                //     onPressed: _toggleTextMode,
+                //     tooltip: _showTextMode ? 'عرض PDF' : 'عرض النص',
+                //   ),
                 // زر إظهار/إخفاء شريط التنقل (فقط للعرض المحلي)
                 if ((localPath != null || useWebView) &&
                     pages > 1 &&
@@ -710,7 +707,7 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
           children: [
             const Icon(Icons.error_outline, color: Colors.red, size: 64),
             const SizedBox(height: 16),
-              Text(
+            Text(
               S.of(context).failedToLoadPdf,
               style: TextStyle(fontSize: 16, color: Colors.red),
             ),
@@ -731,7 +728,7 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
           children: [
             const Icon(Icons.error_outline, color: Colors.orange, size: 64),
             const SizedBox(height: 16),
-              Text(
+            Text(
               S.of(context).fileNotLoaded,
               style: TextStyle(fontSize: 16, color: Colors.orange),
             ),
@@ -1056,7 +1053,8 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
             children: [
               IconButton(
                 icon: const Icon(Icons.highlight),
-                onPressed: _currentSelection != null && _currentSelection!.isValid
+                onPressed:
+                    _currentSelection != null && _currentSelection!.isValid
                     ? _highlightSelectedText
                     : null,
                 tooltip: S.of(context).highlightSelectedText,
@@ -1085,7 +1083,11 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Icon(Icons.text_fields, size: 64, color: Colors.grey),
+                      const Icon(
+                        Icons.text_fields,
+                        size: 64,
+                        color: Colors.grey,
+                      ),
                       const SizedBox(height: 16),
                       Text(S.of(context).textNotExtractedYet),
                       const SizedBox(height: 8),
@@ -1108,9 +1110,7 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
       child: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: SelectableText.rich(
-          TextSpan(
-            children: _buildTextSpans(),
-          ),
+          TextSpan(children: _buildTextSpans()),
           style: const TextStyle(fontSize: 16, height: 1.5),
           onSelectionChanged: (selection, cause) {
             setState(() {
@@ -1136,33 +1136,31 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
     for (final range in sortedRanges) {
       // ✅ النص قبل التظليل
       if (range.start > currentIndex) {
-        spans.add(TextSpan(
-          text: _extractedText.substring(currentIndex, range.start),
-        ));
+        spans.add(
+          TextSpan(text: _extractedText.substring(currentIndex, range.start)),
+        );
       }
 
       // ✅ النص المظلل
-      spans.add(TextSpan(
-        text: _extractedText.substring(range.start, range.end),
-        style: const TextStyle(
-          backgroundColor: Colors.yellow,
-          fontWeight: FontWeight.bold,
+      spans.add(
+        TextSpan(
+          text: _extractedText.substring(range.start, range.end),
+          style: const TextStyle(
+            backgroundColor: Colors.yellow,
+            fontWeight: FontWeight.bold,
+          ),
         ),
-      ));
+      );
 
       currentIndex = range.end;
     }
 
     // ✅ النص المتبقي
     if (currentIndex < _extractedText.length) {
-      spans.add(TextSpan(
-        text: _extractedText.substring(currentIndex),
-      ));
+      spans.add(TextSpan(text: _extractedText.substring(currentIndex)));
     }
 
-    return spans.isEmpty
-        ? [TextSpan(text: _extractedText)]
-        : spans;
+    return spans.isEmpty ? [TextSpan(text: _extractedText)] : spans;
   }
 
   Widget _buildFloatingButtons() {

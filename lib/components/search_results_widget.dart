@@ -13,6 +13,7 @@ import 'package:http/http.dart' as http;
 import 'dart:io';
 import 'package:path_provider/path_provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:filevo/generated/l10n.dart';
 
 /// Widget مشترك لعرض نتائج البحث (ملفات ومجلدات)
 class SearchResultsWidget extends StatelessWidget {
@@ -44,7 +45,7 @@ class SearchResultsWidget extends StatelessWidget {
           children: [
             CircularProgressIndicator(),
             SizedBox(height: 16),
-            Text('جاري البحث...'),
+            Text(S.of(context).searching),
           ],
         ),
       );
@@ -58,12 +59,12 @@ class SearchResultsWidget extends StatelessWidget {
             Icon(Icons.search_off, size: 64, color: Colors.grey[400]),
             SizedBox(height: 16),
             Text(
-              'لا توجد نتائج للبحث: "$searchQuery"',
+              ' "${S.of(context).noResultsFor}  $searchQuery "',
               style: TextStyle(fontSize: 18, color: Colors.grey[600]),
             ),
             SizedBox(height: 8),
             Text(
-              'جرب البحث بكلمات مختلفة',
+              S.of(context).tryDifferentKeywords,
               style: TextStyle(fontSize: 14, color: Colors.grey[500]),
             ),
           ],
@@ -79,7 +80,7 @@ class SearchResultsWidget extends StatelessWidget {
             Icon(Icons.search, size: 64, color: Colors.grey),
             SizedBox(height: 16),
             Text(
-              'ابحث في ملفاتك',
+              S.of(context).searchYourFiles,
               style: TextStyle(fontSize: 16, color: Colors.grey),
             ),
           ],
@@ -99,14 +100,16 @@ class SearchResultsWidget extends StatelessWidget {
               SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  'تم العثور على ${results.length} نتيجة${searchQuery != null ? ' للبحث: "$searchQuery"' : ''}',
+                  '${S.of(context).foundText} ${results.length} ${S.of(context).resultWord}${searchQuery != null ? ' ${S.of(context).forSearch} "$searchQuery"' : ''}',
                   style: TextStyle(color: AppColors.accent, fontSize: 14),
                 ),
               ),
               IconButton(
                 icon: Icon(isGridView ? Icons.list : Icons.grid_view),
                 onPressed: () => onViewToggle(!isGridView),
-                tooltip: isGridView ? 'عرض كقائمة' : 'عرض كشبكة',
+                tooltip: isGridView
+                    ? S.of(context).tooltipListView
+                    : S.of(context).tooltipGridView,
               ),
             ],
           ),
@@ -157,7 +160,8 @@ class SearchResultsWidget extends StatelessWidget {
     Map<String, dynamic> item, {
     bool isList = false,
   }) {
-    final searchType = item['searchType']?.toString() ?? item['type']?.toString();
+    final searchType =
+        item['searchType']?.toString() ?? item['type']?.toString();
     final isFolder = searchType == 'folder' || item['category'] != null;
 
     if (isFolder) {
@@ -172,9 +176,10 @@ class SearchResultsWidget extends StatelessWidget {
     Map<String, dynamic> folder, {
     bool isList = false,
   }) {
-    final folderName = folder['title']?.toString() ?? 
-                      folder['name']?.toString() ?? 
-                      'مجلد بدون اسم';
+    final folderName =
+        folder['title']?.toString() ??
+        folder['name']?.toString() ??
+        S.of(context).unnamedFolder;
     final folderType = folder['type']?.toString() ?? 'folder';
     final isCategory = folderType == 'category';
 
@@ -283,7 +288,7 @@ class SearchResultsWidget extends StatelessWidget {
     Map<String, dynamic> file, {
     bool isList = false,
   }) {
-    final fileName = file['name']?.toString() ?? 'ملف بدون اسم';
+    final fileName = file['name']?.toString() ?? S.of(context).unnamedfile;
     final filePath = file['path']?.toString() ?? '';
     final fileId = file['_id']?.toString() ?? file['id']?.toString();
     final fileType = _getFileType(fileName);
@@ -688,7 +693,7 @@ class SearchResultsWidget extends StatelessWidget {
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Text('رابط الملف غير متوفر'),
+          content: Text(S.of(context).fileLinkNotAvailable),
           backgroundColor: Colors.orange,
         ),
       );
@@ -698,14 +703,14 @@ class SearchResultsWidget extends StatelessWidget {
     if (!_isValidUrl(url)) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Text('رابط غير صالح'),
+          content: Text(S.of(context).invalidLink),
           backgroundColor: Colors.red,
         ),
       );
       return;
     }
 
-    final fileName = file['name']?.toString() ?? 'ملف بدون اسم';
+    final fileName = file['name']?.toString() ?? S.of(context).unnamedfile;
     final name = fileName.toLowerCase();
 
     showDialog(
@@ -721,7 +726,7 @@ class SearchResultsWidget extends StatelessWidget {
           Navigator.pop(context);
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: const Text('يجب تسجيل الدخول أولاً'),
+              content: Text(S.of(context).mustLoginFirst),
               backgroundColor: Colors.red,
             ),
           );
@@ -808,10 +813,10 @@ class SearchResultsWidget extends StatelessWidget {
               final tempDir = await getTemporaryDirectory();
               final tempFile = File('${tempDir.path}/$fileName');
               await tempFile.writeAsBytes(fullResponse.bodyBytes);
-              
+
               // ✅ استخراج fileId من بيانات الملف
               final fileId = file['_id']?.toString() ?? file['id']?.toString();
-              
+
               Navigator.push(
                 context,
                 MaterialPageRoute(
@@ -829,7 +834,9 @@ class SearchResultsWidget extends StatelessWidget {
               Navigator.pop(context);
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: Text('خطأ في تحميل الملف النصي: ${e.toString()}'),
+                  content: Text(
+                    S.of(context).errorLoadingTextFile(e.toString()),
+                  ),
                   backgroundColor: Colors.red,
                 ),
               );
@@ -853,7 +860,9 @@ class SearchResultsWidget extends StatelessWidget {
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('الملف غير متاح (خطأ ${response.statusCode})'),
+            content: Text(
+              S.of(context).fileNotAvailableError('${response.statusCode}'),
+            ),
             backgroundColor: Colors.red,
           ),
         );
@@ -863,7 +872,7 @@ class SearchResultsWidget extends StatelessWidget {
         Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('خطأ في تحميل الملف: ${e.toString()}'),
+            content: Text(S.of(context).errorLoadingFile(e.toString())),
             backgroundColor: Colors.red,
           ),
         );
@@ -871,6 +880,3 @@ class SearchResultsWidget extends StatelessWidget {
     }
   }
 }
-
-
-

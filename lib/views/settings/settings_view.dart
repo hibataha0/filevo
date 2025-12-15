@@ -237,9 +237,9 @@ class _SettingsPageState extends State<SettingsPage> {
                               /// 🔥 خيار المحذوفات هنا
                               SettingsItem(
                                 icon: Icons.delete_outline,
-                                title: 'المحذوفات',
+                                title: S.of(context).trash,
                                 subtitle:
-                                    'عرض الملفات والمجلدات المحذوفة وإدارتها',
+                                    S.of(context).viewDeletedFilesAndFolders,
                                 onTap: () async {
                                   final token = await StorageService.getToken();
 
@@ -311,8 +311,8 @@ class _SettingsPageState extends State<SettingsPage> {
                               ),
                               SettingsItem(
                                 icon: Icons.history,
-                                title: 'سجل النشاط',
-                                subtitle: 'عرض جميع أنشطتك في التطبيق',
+                                title: S.of(context).activityLog,
+                                subtitle: S.of(context).viewAllActivities,
                                 onTap: () {
                                   Navigator.push(
                                     context,

@@ -697,7 +697,11 @@ class _FilesListViewState extends State<FilesListView> {
               size: 20,
             ),
             SizedBox(width: 8),
-            Text(isStarred ? S.of(context).removeFromFavorites : S.of(context).addToFavorites),
+            Text(
+              isStarred
+                  ? S.of(context).removeFromFavorites
+                  : S.of(context).addToFavorites,
+            ),
           ],
         ),
       ),
@@ -1044,7 +1048,7 @@ class _FilesListViewState extends State<FilesListView> {
     if (folderId == null) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text('خطأ: معرف المجلد غير موجود')));
+      ).showSnackBar(SnackBar(content: Text(S.of(context).folderIdNotFound)));
       return;
     }
 
@@ -1059,9 +1063,9 @@ class _FilesListViewState extends State<FilesListView> {
 
     if (folderDetails == null || folderDetails['folder'] == null) {
       if (context.mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('فشل جلب معلومات المجلد')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(S.of(context).failedToFetchFolderInfo)),
+        );
       }
       return;
     }
@@ -1118,41 +1122,46 @@ class _FilesListViewState extends State<FilesListView> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _buildDetailItem('folder', '📁', S.of(context).type, S.of(context).folder),
+                    _buildDetailItem(
+                      'folder',
+                      '📁',
+                      S.of(context).type,
+                      S.of(context).folder,
+                    ),
                     _buildDetailItem(
                       'size',
                       '💾',
-                      'الحجم',
+                      S.of(context).size,
                       _formatBytesHelper(folderData['size'] ?? 0),
                     ),
                     _buildDetailItem(
                       'files',
                       '📄',
-                      'عدد الملفات',
+                      S.of(context).filesCount,
                       '${folderData['filesCount'] ?? 0}',
                     ),
                     _buildDetailItem(
                       'subfolders',
                       '📂',
-                      'عدد المجلدات الفرعية',
+                      S.of(context).subfoldersCount,
                       '${folderData['subfoldersCount'] ?? 0}',
                     ),
                     _buildDetailItem(
                       'time',
                       '🕐',
-                      'تاريخ الإنشاء',
+                      S.of(context).timeAndDate,
                       _formatDateHelper(folderData['createdAt']),
                     ),
                     _buildDetailItem(
                       'edit',
                       '✏️',
-                      'آخر تعديل',
+                      S.of(context).creationDate,
                       _formatDateHelper(folderData['updatedAt']),
                     ),
                     _buildDetailItem(
                       'description',
                       '📝',
-                      'الوصف',
+                      S.of(context).description,
                       folderData['description']?.isNotEmpty == true
                           ? folderData['description']
                           : "—",
@@ -1160,7 +1169,7 @@ class _FilesListViewState extends State<FilesListView> {
                     _buildDetailItem(
                       'tags',
                       '🏷️',
-                      'الوسوم',
+                      S.of(context).tags,
                       (folderData['tags'] as List?)?.join(', ') ?? "—",
                     ),
 
@@ -1174,7 +1183,7 @@ class _FilesListViewState extends State<FilesListView> {
                           _buildDetailItem(
                             'share',
                             '👥',
-                            'تمت المشاركة مع',
+                            S.of(context).sharedWith,
                             (folderData['sharedWith'] as List)
                                     .map<String>(
                                       (u) =>
@@ -1247,7 +1256,7 @@ class _FilesListViewState extends State<FilesListView> {
       if (scaffoldContext.mounted) {
         ScaffoldMessenger.of(
           scaffoldContext,
-        ).showSnackBar(SnackBar(content: Text('خطأ: معرف المجلد غير موجود')));
+        ).showSnackBar(SnackBar(content: Text(S.of(context).folderIdNotFound)));
       }
       return;
     }
@@ -1255,7 +1264,7 @@ class _FilesListViewState extends State<FilesListView> {
     showDialog(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: Text('تعديل المجلد'),
+        title: Text(S.of(context).editFolder),
         content: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -1263,8 +1272,8 @@ class _FilesListViewState extends State<FilesListView> {
               TextField(
                 controller: nameController,
                 decoration: InputDecoration(
-                  labelText: 'اسم المجلد',
-                  hintText: 'اسم المجلد',
+                  labelText: S.of(context).folderName,
+                  hintText: S.of(context).folderName,
                   border: OutlineInputBorder(),
                   prefixIcon: Icon(Icons.folder),
                 ),
@@ -1274,8 +1283,8 @@ class _FilesListViewState extends State<FilesListView> {
               TextField(
                 controller: descriptionController,
                 decoration: InputDecoration(
-                  labelText: 'الوصف',
-                  hintText: 'وصف المجلد (اختياري)',
+                  labelText: S.of(context).description,
+                  hintText: S.of(context).folderDescriptionHint,
                   border: OutlineInputBorder(),
                   prefixIcon: Icon(Icons.description),
                 ),
@@ -1285,8 +1294,8 @@ class _FilesListViewState extends State<FilesListView> {
               TextField(
                 controller: tagsController,
                 decoration: InputDecoration(
-                  labelText: 'الوسوم',
-                  hintText: 'وسوم مفصولة بفواصل (اختياري)',
+                  labelText: S.of(context).tags,
+                  hintText: S.of(context).folderTagsHint,
                   border: OutlineInputBorder(),
                   prefixIcon: Icon(Icons.tag),
                 ),
@@ -1297,7 +1306,7 @@ class _FilesListViewState extends State<FilesListView> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
-            child: Text('إلغاء'),
+            child: Text(S.of(context).cancel),
           ),
           TextButton(
             onPressed: () {
@@ -1305,7 +1314,9 @@ class _FilesListViewState extends State<FilesListView> {
               if (newName.isEmpty) {
                 if (dialogContext.mounted) {
                   ScaffoldMessenger.of(dialogContext).showSnackBar(
-                    SnackBar(content: Text('يرجى إدخال اسم المجلد')),
+                    SnackBar(
+                      content: Text(S.of(context).pleaseEnterFolderName),
+                    ),
                   );
                 }
                 return;
@@ -1330,7 +1341,7 @@ class _FilesListViewState extends State<FilesListView> {
                 tags.isEmpty ? null : tags,
               );
             },
-            child: Text('حفظ'),
+            child: Text(S.of(context).save),
           ),
         ],
       ),
@@ -1363,7 +1374,7 @@ class _FilesListViewState extends State<FilesListView> {
       if (success) {
         ScaffoldMessenger.of(scaffoldContext).showSnackBar(
           SnackBar(
-            content: Text('✅ تم تحديث المجلد بنجاح'),
+            content: Text(S.of(context).folderUpdatedSuccessfully),
             backgroundColor: Colors.green,
           ),
         );
@@ -1373,7 +1384,7 @@ class _FilesListViewState extends State<FilesListView> {
         ScaffoldMessenger.of(scaffoldContext).showSnackBar(
           SnackBar(
             content: Text(
-              folderController.errorMessage ?? '❌ فشل تحديث المجلد',
+              folderController.errorMessage ?? S.of(context).folderUpdateFailed,
             ),
             backgroundColor: Colors.red,
           ),
@@ -1392,7 +1403,7 @@ class _FilesListViewState extends State<FilesListView> {
     if (folderId == null) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text('خطأ: معرف المجلد غير موجود')));
+      ).showSnackBar(SnackBar(content: Text(S.of(context).folderIdNotFound)));
       return;
     }
 
@@ -1432,7 +1443,7 @@ class _FilesListViewState extends State<FilesListView> {
                 ),
               ),
               SizedBox(width: 12),
-              Text('جاري التحديث...'),
+              Text(S.of(context).updated),
             ],
           ),
           duration: Duration(seconds: 2),
@@ -1468,8 +1479,8 @@ class _FilesListViewState extends State<FilesListView> {
           SnackBar(
             content: Text(
               isStarred
-                  ? '✅ تم إضافة المجلد إلى المفضلة'
-                  : '✅ تم إزالة المجلد من المفضلة',
+                  ? S.of(context).folderAddedToFavorites
+                  : S.of(context).folderRemovedFromFavorites,
             ),
             backgroundColor: Colors.green,
             duration: Duration(seconds: 2),
@@ -1482,7 +1493,8 @@ class _FilesListViewState extends State<FilesListView> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              folderController.errorMessage ?? '❌ فشل تحديث حالة المفضلة',
+              folderController.errorMessage ??
+                  S.of(context).favoriteUpdateFailed,
             ),
             backgroundColor: Colors.red,
             duration: Duration(seconds: 2),
@@ -1511,7 +1523,8 @@ class _FilesListViewState extends State<FilesListView> {
     BuildContext context,
     Map<String, dynamic> category,
   ) {
-    final categoryTitle = category['title'] as String? ?? 'تصنيف';
+    final categoryTitle =
+        category['title'] as String? ?? S.of(context).category;
     final fileCount = category['fileCount'] as int? ?? 0;
     final size = category['size'] as String? ?? '0';
     final color = category['color'] as Color? ?? Colors.blue;
@@ -1565,14 +1578,24 @@ class _FilesListViewState extends State<FilesListView> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _buildDetailItem('folder', '📁', 'النوع', 'تصنيف'),
+                    _buildDetailItem(
+                      'folder',
+                      '📁',
+                      S.of(context).type,
+                      'تصنيف',
+                    ),
                     _buildDetailItem(
                       'files',
                       '📄',
-                      'عدد الملفات',
+                      S.of(context).filesCount,
                       '$fileCount',
                     ),
-                    _buildDetailItem('size', '💾', 'الحجم الإجمالي', size),
+                    _buildDetailItem(
+                      'size',
+                      '💾',
+                      S.of(context).totalSize,
+                      size,
+                    ),
                   ],
                 ),
               ),
@@ -1897,7 +1920,7 @@ class _FilesListViewState extends State<FilesListView> {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('❌ معرف الملف غير موجود'),
+            content: Text('❌ ${S.of(context).fileIdNotFound}'),
             backgroundColor: Colors.red,
           ),
         );
@@ -1916,7 +1939,7 @@ class _FilesListViewState extends State<FilesListView> {
               children: [
                 CircularProgressIndicator(color: Colors.white),
                 SizedBox(width: 16),
-                Text('جاري حفظ الملف...'),
+                Text(S.of(context).savingFile),
               ],
             ),
             duration: Duration(seconds: 30),
@@ -1939,14 +1962,16 @@ class _FilesListViewState extends State<FilesListView> {
         if (success) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('✅ تم حفظ الملف في حسابك بنجاح'),
+              content: Text('✅ ${S.of(context).fileSavedToAccount}'),
               backgroundColor: Colors.green,
             ),
           );
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(roomController.errorMessage ?? '❌ فشل حفظ الملف'),
+              content: Text(
+                roomController.errorMessage ?? S.of(context).failedToSaveFile,
+              ),
               backgroundColor: Colors.red,
             ),
           );
@@ -1957,7 +1982,7 @@ class _FilesListViewState extends State<FilesListView> {
         ScaffoldMessenger.of(context).hideCurrentSnackBar();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('❌ خطأ: ${e.toString()}'),
+            content: Text('❌${S.of(context).error} ${e.toString()}'),
             backgroundColor: Colors.red,
           ),
         );
@@ -1974,24 +1999,27 @@ class _FilesListViewState extends State<FilesListView> {
         file['title']?.toString() ??
         file['name']?.toString() ??
         file['originalName']?.toString() ??
-        'الملف';
+        S.of(context).file;
 
     showDialog(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: Text('إزالة الملف من الغرفة'),
-        content: Text('هل أنت متأكد من إزالة "$fileName" من الغرفة؟'),
+        title: Text(S.of(context).removeFileFromRoom),
+        content: Text(S.of(context).removeFileFromRoomConfirm(fileName)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
-            child: Text('إلغاء'),
+            child: Text(S.of(context).cancel),
           ),
           TextButton(
             onPressed: () {
               Navigator.pop(dialogContext);
               _removeFileFromRoom(context, file);
             },
-            child: Text('إزالة', style: TextStyle(color: Colors.red)),
+            child: Text(
+              S.of(context).remove,
+              style: TextStyle(color: Colors.red),
+            ),
           ),
         ],
       ),
@@ -2012,7 +2040,7 @@ class _FilesListViewState extends State<FilesListView> {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('❌ معرف الملف غير موجود'),
+            content: Text('❌ ${S.of(context).fileIdNotFound}'),
             backgroundColor: Colors.red,
           ),
         );
@@ -2034,7 +2062,7 @@ class _FilesListViewState extends State<FilesListView> {
         if (success) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('✅ تم إزالة الملف من الغرفة بنجاح'),
+              content: Text('✅ ${S.of(context).fileRemovedFromRoom}'),
               backgroundColor: Colors.green,
             ),
           );
@@ -2046,7 +2074,7 @@ class _FilesListViewState extends State<FilesListView> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
-                roomController.errorMessage ?? '❌ فشل إزالة الملف من الغرفة',
+                roomController.errorMessage ?? S.of(context).failedToRemoveFile,
               ),
               backgroundColor: Colors.red,
             ),
@@ -2057,7 +2085,7 @@ class _FilesListViewState extends State<FilesListView> {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('❌ خطأ: ${e.toString()}'),
+            content: Text('❌ ${S.of(context).error} ${e.toString()}'),
             backgroundColor: Colors.red,
           ),
         );
@@ -2089,7 +2117,7 @@ class _FilesListViewState extends State<FilesListView> {
           file['name'] ??
           (originalData is Map ? originalData['name'] : null),
       'url': url,
-      'type': file['type'] ?? 'file',
+      'type': file['type'] ?? S.of(context).file,
       'path': path,
       'originalData': originalData,
       'originalName':
@@ -2178,14 +2206,17 @@ class _FilesListViewState extends State<FilesListView> {
         file['originalData'] ?? file['itemData'] as Map<String, dynamic>? ?? {};
     final fileId = originalData['_id']?.toString();
     final fileName =
-        file['title'] ?? file['name'] ?? originalData['name'] ?? S.of(context).file;
+        file['title'] ??
+        file['name'] ??
+        originalData['name'] ??
+        S.of(context).file;
     final currentParentId = originalData['parentFolderId']?.toString();
 
     if (fileId == null) {
       if (context.mounted) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text('خطأ: معرف الملف غير موجود')));
+        ).showSnackBar(SnackBar(content: Text(S.of(context).fileIdNotFound)));
       }
       return;
     }
@@ -2204,9 +2235,9 @@ class _FilesListViewState extends State<FilesListView> {
 
     if (foldersResponse == null || foldersResponse['folders'] == null) {
       if (context.mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('فشل جلب قائمة المجلدات')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(S.of(context).failedToFetchFolderList)),
+        );
       }
       return;
     }
@@ -2252,7 +2283,7 @@ class _FilesListViewState extends State<FilesListView> {
                   SizedBox(width: 16),
                   Expanded(
                     child: Text(
-                      'نقل الملف: $fileName',
+                      '${S.of(context).movingFile}$fileName',
                       style: TextStyle(
                         color: Colors.white,
                         fontSize: 18,
@@ -2275,8 +2306,8 @@ class _FilesListViewState extends State<FilesListView> {
                   // ✅ خيار "الجذر"
                   ListTile(
                     leading: Icon(Icons.home_rounded, color: Colors.blue),
-                    title: Text('الجذر'),
-                    subtitle: Text('نقل الملف للجذر (بدون مجلد)'),
+                    title: Text(S.of(context).root),
+                    subtitle: Text(S.of(context).moveFileToRoot),
                     onTap: () {
                       Navigator.pop(context);
                       _moveFile(context, fileId, null, fileName);
@@ -2289,7 +2320,7 @@ class _FilesListViewState extends State<FilesListView> {
                     child: availableFolders.isEmpty
                         ? Center(
                             child: Text(
-                              'لا توجد مجلدات متاحة',
+                              S.of(context).noFoldersAvailable,
                               style: TextStyle(color: Colors.grey),
                             ),
                           )
@@ -2299,7 +2330,7 @@ class _FilesListViewState extends State<FilesListView> {
                               final folder = availableFolders[index];
                               final folderId = folder['_id']?.toString();
                               final folderName =
-                                  folder['name'] ?? 'مجلد بدون اسم';
+                                  folder['name'] ?? S.of(context).unnamedFolder;
 
                               return ListTile(
                                 leading: Icon(
@@ -2308,7 +2339,7 @@ class _FilesListViewState extends State<FilesListView> {
                                 ),
                                 title: Text(folderName),
                                 subtitle: Text(
-                                  '${folder['filesCount'] ?? 0} ملف',
+                                  '${folder['filesCount'] ?? 0} ${S.of(context).file}',
                                 ),
                                 onTap: () {
                                   Navigator.pop(context);
@@ -2344,9 +2375,9 @@ class _FilesListViewState extends State<FilesListView> {
 
     if (token == null) {
       if (context.mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('خطأ: يجب تسجيل الدخول أولاً')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(S.of(context).mustLoginFirstError)),
+        );
       }
       return;
     }
@@ -2358,7 +2389,7 @@ class _FilesListViewState extends State<FilesListView> {
           children: [
             CircularProgressIndicator(color: Colors.white),
             SizedBox(width: 16),
-            Text('جاري نقل الملف...'),
+            Text(S.of(context).movingFile),
           ],
         ),
         duration: Duration(seconds: 30),
@@ -2377,7 +2408,7 @@ class _FilesListViewState extends State<FilesListView> {
       if (success) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('✅ تم نقل الملف بنجاح'),
+            content: Text('✅ ${S.of(context).fileMovedSuccessfully}'),
             backgroundColor: Colors.green,
           ),
         );
@@ -2390,7 +2421,9 @@ class _FilesListViewState extends State<FilesListView> {
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(fileController.errorMessage ?? '❌ فشل نقل الملف'),
+            content: Text(
+              fileController.errorMessage ?? S.of(context).failedToMoveFile,
+            ),
             backgroundColor: Colors.red,
           ),
         );
@@ -2414,7 +2447,7 @@ class _FilesListViewState extends State<FilesListView> {
       if (context.mounted) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text('خطأ: معرف المجلد غير موجود')));
+        ).showSnackBar(SnackBar(content: Text(S.of(context).folderIdNotFound)));
       }
       return;
     }
@@ -2433,9 +2466,9 @@ class _FilesListViewState extends State<FilesListView> {
 
     if (foldersResponse == null || foldersResponse['folders'] == null) {
       if (context.mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('فشل جلب قائمة المجلدات')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(S.of(context).failedToFetchFolderList)),
+        );
       }
       return;
     }
@@ -2481,7 +2514,7 @@ class _FilesListViewState extends State<FilesListView> {
                   SizedBox(width: 16),
                   Expanded(
                     child: Text(
-                      'نقل المجلد: $folderName',
+                      '${S.of(context).movingFile}$folderName',
                       style: TextStyle(
                         color: Colors.white,
                         fontSize: 18,
@@ -2504,8 +2537,8 @@ class _FilesListViewState extends State<FilesListView> {
                   // ✅ خيار "الجذر"
                   ListTile(
                     leading: Icon(Icons.home_rounded, color: Colors.blue),
-                    title: Text('الجذر'),
-                    subtitle: Text('نقل المجلد للجذر (بدون مجلد أب)'),
+                    title: Text(S.of(context).root),
+                    subtitle: Text(S.of(context).moveFolderToRootNoParent),
                     onTap: () {
                       Navigator.pop(context);
                       _moveFolder(context, folderId, null, folderName);
@@ -2518,7 +2551,7 @@ class _FilesListViewState extends State<FilesListView> {
                     child: availableFolders.isEmpty
                         ? Center(
                             child: Text(
-                              'لا توجد مجلدات متاحة',
+                              S.of(context).noFoldersAvailable,
                               style: TextStyle(color: Colors.grey),
                             ),
                           )
@@ -2527,7 +2560,8 @@ class _FilesListViewState extends State<FilesListView> {
                             itemBuilder: (context, index) {
                               final f = availableFolders[index];
                               final fId = f['_id']?.toString();
-                              final fName = f['name'] ?? 'مجلد بدون اسم';
+                              final fName =
+                                  f['name'] ?? S.of(context).unnamedFolder;
 
                               return ListTile(
                                 leading: Icon(
@@ -2535,7 +2569,9 @@ class _FilesListViewState extends State<FilesListView> {
                                   color: Colors.orange,
                                 ),
                                 title: Text(fName),
-                                subtitle: Text('${f['filesCount'] ?? 0} ملف'),
+                                subtitle: Text(
+                                  '${f['filesCount'] ?? 0}${S.of(context).file}',
+                                ),
                                 onTap: () {
                                   Navigator.pop(context);
                                   _moveFolder(
@@ -2687,7 +2723,9 @@ class _FilesListViewState extends State<FilesListView> {
             _buildMenuItem(
               bottomSheetContext,
               icon: isStarred ? Icons.star : Icons.star_border,
-              title: isStarred ? S.of(context).removeFromFavorites : S.of(context).addToFavorites,
+              title: isStarred
+                  ? S.of(context).removeFromFavorites
+                  : S.of(context).addToFavorites,
               iconColor: Colors.amber[700],
               onTap: () {
                 Navigator.pop(bottomSheetContext);
@@ -2861,7 +2899,9 @@ class _FilesListViewState extends State<FilesListView> {
             _buildMenuItem(
               bottomSheetContext,
               icon: isStarred ? Icons.star : Icons.star_border,
-              title: isStarred ? S.of(context).removeFromFavorites : S.of(context).addToFavorites,
+              title: isStarred
+                  ? S.of(context).removeFromFavorites
+                  : S.of(context).addToFavorites,
               iconColor: Colors.amber[700],
               onTap: () {
                 Navigator.pop(bottomSheetContext);
@@ -2943,7 +2983,7 @@ class _FilesListViewState extends State<FilesListView> {
             children: [
               CircularProgressIndicator(color: Colors.white),
               SizedBox(width: 16),
-              Text('جاري نقل المجلد...'),
+              Text(S.of(context).movingFolder),
             ],
           ),
           duration: Duration(seconds: 30),
@@ -2965,7 +3005,7 @@ class _FilesListViewState extends State<FilesListView> {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('✅ تم نقل المجلد بنجاح'),
+            content: Text('✅ ${S.of(context).folderMovedSuccessfully}'),
             backgroundColor: Colors.green,
           ),
         );
@@ -2974,7 +3014,7 @@ class _FilesListViewState extends State<FilesListView> {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('❌ فشل نقل المجلد - الميزة قيد التطوير'),
+            content: Text('❌ ${S.of(context).failedToMoveFolder}'),
             backgroundColor: Colors.orange,
           ),
         );

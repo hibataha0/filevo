@@ -98,7 +98,7 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      backgroundColor: Color(0xFFF8FAFD),
       appBar: AppBar(
         title: Text(
           S.of(context).roomDetails,
@@ -587,7 +587,7 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
               child: _buildActionButton(
                 icon: Icons.people,
                 label: S.of(context).members,
-                color: Theme.of(context).colorScheme.primary,
+                color: Color(0xFF4F6BED),
                 onTap: () async {
                   final result = await Navigator.push(
                     context,
@@ -613,7 +613,7 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
               child: _buildActionButton(
                 icon: Icons.comment,
                 label: S.of(context).comments,
-                color: AppColors.warning,
+                color: Color(0xFFF59E0B),
                 onTap: () {
                   Navigator.push(
                     context,
@@ -643,7 +643,7 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
                   child: _buildActionButton(
                     icon: Icons.people,
                     label: S.of(context).members,
-                    color: Theme.of(context).colorScheme.primary,
+                    color: Color(0xFF4F6BED),
                     onTap: () async {
                       final result = await Navigator.push(
                         context,
@@ -668,7 +668,7 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
                   child: _buildActionButton(
                     icon: Icons.comment,
                     label: S.of(context).comments,
-                    color: AppColors.warning,
+                    color: Color(0xFFF59E0B),
                     onTap: () {
                       Navigator.push(
                         context,
@@ -697,7 +697,7 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
                   child: _buildActionButton(
                     icon: Icons.person_add,
                     label: S.of(context).sendInvitation,
-                    color: AppColors.success,
+                    color: Color(0xFF10B981),
                     onTap: () async {
                       final result = await Navigator.push(
                         context,
@@ -723,7 +723,7 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
                 child: _buildActionButton(
                   icon: Icons.people,
                   label: S.of(context).members,
-                  color: Theme.of(context).colorScheme.primary,
+                  color: Color(0xFF4F6BED),
                   onTap: () async {
                     final result = await Navigator.push(
                       context,
@@ -749,7 +749,7 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
                 child: _buildActionButton(
                   icon: Icons.comment,
                   label: S.of(context).comments,
-                  color: AppColors.warning,
+                  color: Color(0xFFF59E0B),
                   onTap: () {
                     Navigator.push(
                       context,
@@ -923,7 +923,7 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
                 style: TextStyle(
                   fontSize: titleFontSize,
                   fontWeight: FontWeight.w700,
-                  color: Theme.of(context).colorScheme.surface,
+                  color: Color(0xFF1F2937),
                 ),
               ),
             ],
@@ -1004,7 +1004,7 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
                   style: TextStyle(
                     fontSize: valueFontSize,
                     fontWeight: FontWeight.w600,
-                    color: Theme.of(context).colorScheme.surface,
+                    color: Color(0xFF1F2937),
                   ),
                 ),
               ],
@@ -1112,7 +1112,7 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
                     height: iconSize,
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
-                        colors: [AppColors.success, AppColors.success],
+                        colors: [Color(0xFF10B981), Color(0xFF34D399)],
                       ),
                       shape: BoxShape.circle,
                     ),
@@ -1128,7 +1128,7 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
                     style: TextStyle(
                       fontSize: titleFontSize,
                       fontWeight: FontWeight.w700,
-                      color: Theme.of(context).colorScheme.surface,
+                      color: Color(0xFF1F2937),
                     ),
                   ),
                 ],
@@ -1338,7 +1338,7 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
                       height: iconSize,
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
-                          colors: [AppColors.warning, AppColors.warning],
+                          colors: [Color(0xFFF59E0B), Color(0xFFFBBF24)],
                         ),
                         shape: BoxShape.circle,
                       ),
@@ -1363,7 +1363,7 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
                         style: TextStyle(
                           fontSize: titleFontSize,
                           fontWeight: FontWeight.w700,
-                          color: Theme.of(context).colorScheme.surface,
+                          color: Color(0xFF1F2937),
                         ),
                         overflow: TextOverflow.ellipsis,
                         maxLines: 1,
@@ -1451,7 +1451,7 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
                       return IconButton(
                         icon: Icon(
                           Icons.add_circle_outline,
-                          color: AppColors.warning,
+                          color: Color(0xFFF59E0B),
                           size: ResponsiveUtils.getResponsiveValue(
                             context,
                             mobile: 24.0,
@@ -2165,7 +2165,7 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
                         style: TextStyle(
                           fontSize: titleFontSize,
                           fontWeight: FontWeight.w700,
-                          color: Theme.of(context).colorScheme.surface,
+                          color: Color(0xFF1F2937),
                         ),
                         overflow: TextOverflow.ellipsis,
                         maxLines: 1,
@@ -2475,7 +2475,7 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
       case 'editor':
         return Color(0xFFF59E0B);
       case 'viewer':
-        return AppColors.success;
+        return Color(0xFF10B981);
       case 'commenter':
         return Color(0xFF3B82F6);
       default:

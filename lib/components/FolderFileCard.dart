@@ -1,3 +1,4 @@
+import 'package:filevo/generated/l10n.dart';
 import 'package:flutter/material.dart';
 import 'package:filevo/responsive.dart';
 
@@ -184,7 +185,7 @@ class FolderFileCard extends StatelessWidget {
                   SizedBox(width: w * 0.03),
                   Expanded(
                     child: Text(
-                      _formatItemsCount(),
+                      _formatItemsCount(context),
                       style: TextStyle(
                         fontSize: w * 0.09,
                         color: Colors.grey[700],
@@ -273,7 +274,7 @@ class FolderFileCard extends StatelessWidget {
               children: [
                 if (showFileCount)
                   Text(
-                    "$fileCount Files",
+                    "$fileCount  ${S.of(context).files}",
                     style: TextStyle(
                       fontSize: w * 0.10,
                       color: Colors.grey[600],
@@ -293,7 +294,7 @@ class FolderFileCard extends StatelessWidget {
   }
 
   // ✅ تنسيق عدد العناصر (ملفات + مجلدات)
-  String _formatItemsCount() {
+  String _formatItemsCount(BuildContext context) {
     // ✅ محاولة جلب البيانات من folderData أولاً (للغرف، folderData = item)
     int? filesCount;
     int? foldersCount;
@@ -385,11 +386,11 @@ class FolderFileCard extends StatelessWidget {
 
     // ✅ عرض عدد العناصر فقط بدون تفاصيل
     if (finalTotal == 0) {
-      return "لا توجد عناصر";
+      return S.of(context).noItems;
     } else if (finalTotal == 1) {
-      return "عنصر واحد";
+      return S.of(context).oneItem;
     } else {
-      return "$finalTotal عنصر";
+      return "$finalTotal  ${S.of(context).item}";
     }
   }
 
@@ -476,7 +477,7 @@ class FolderFileCard extends StatelessWidget {
               _buildMenuItem(
                 context,
                 icon: Icons.open_in_new,
-                title: 'فتح',
+                title: S.of(context).open,
                 onTap: () {
                   Navigator.pop(context);
                   onOpenTap?.call();
@@ -487,7 +488,7 @@ class FolderFileCard extends StatelessWidget {
               _buildMenuItem(
                 context,
                 icon: Icons.info_outline,
-                title: 'عرض التفاصيل',
+                title: S.of(context).viewDetails,
                 onTap: () {
                   Navigator.pop(context);
                   onInfoTap?.call();
@@ -569,7 +570,7 @@ class FolderFileCard extends StatelessWidget {
               _buildMenuItem(
                 context,
                 icon: Icons.open_in_new,
-                title: 'فتح',
+                title: S.of(context).open,
                 onTap: () {
                   Navigator.pop(context);
                   onOpenTap?.call();
@@ -580,7 +581,7 @@ class FolderFileCard extends StatelessWidget {
               _buildMenuItem(
                 context,
                 icon: Icons.info_outline,
-                title: 'عرض المعلومات',
+                title: S.of(context).viewInfo,
                 onTap: () {
                   Navigator.pop(context);
                   onDetailsTap?.call();
@@ -591,7 +592,7 @@ class FolderFileCard extends StatelessWidget {
               _buildMenuItem(
                 context,
                 icon: Icons.edit,
-                title: 'تعديل',
+                title: S.of(context).update,
                 onTap: () {
                   Navigator.pop(context);
                   onRenameTap?.call();
@@ -673,7 +674,7 @@ class FolderFileCard extends StatelessWidget {
               _buildMenuItem(
                 context,
                 icon: Icons.open_in_new,
-                title: 'فتح',
+                title: S.of(context).open,
                 onTap: () {
                   Navigator.pop(context);
                   onOpenTap?.call();
@@ -684,7 +685,7 @@ class FolderFileCard extends StatelessWidget {
               _buildMenuItem(
                 context,
                 icon: Icons.info_outline,
-                title: 'عرض التفاصيل',
+                title: S.of(context).viewDetails,
                 onTap: () {
                   Navigator.pop(context);
                   onInfoTap?.call();
@@ -695,7 +696,7 @@ class FolderFileCard extends StatelessWidget {
               _buildMenuItem(
                 context,
                 icon: Icons.comment,
-                title: 'التعليقات',
+                title: S.of(context).comments,
                 iconColor: Color(0xFFF59E0B),
                 onTap: () {
                   Navigator.pop(context);
@@ -708,7 +709,9 @@ class FolderFileCard extends StatelessWidget {
               _buildMenuItem(
                 context,
                 icon: isStarred ? Icons.star : Icons.star_border,
-                title: isStarred ? 'إزالة من المفضلة' : 'إضافة إلى المفضلة',
+                title: isStarred
+                    ? S.of(context).folderAddedToFavorites
+                    : S.of(context).folderRemovedFromFavorites,
                 iconColor: Colors.amber[700],
                 onTap: () {
                   Navigator.pop(context);
@@ -721,7 +724,7 @@ class FolderFileCard extends StatelessWidget {
               _buildMenuItem(
                 context,
                 icon: Icons.save,
-                title: 'حفظ في حسابي',
+                title: S.of(context).saveToMyAccount,
                 iconColor: Colors.green,
                 onTap: () {
                   Navigator.pop(context);
@@ -733,7 +736,7 @@ class FolderFileCard extends StatelessWidget {
               _buildMenuItem(
                 context,
                 icon: Icons.download,
-                title: 'تحميل',
+                title: S.of(context).download,
                 iconColor: Colors.blue,
                 onTap: () {
                   Navigator.pop(context);
@@ -746,7 +749,7 @@ class FolderFileCard extends StatelessWidget {
               _buildMenuItem(
                 context,
                 icon: Icons.link_off,
-                title: 'إزالة من الغرفة',
+                title: S.of(context).removeFromRoom,
                 textColor: Colors.red,
                 iconColor: Colors.red,
                 onTap: () {
@@ -841,7 +844,7 @@ class FolderFileCard extends StatelessWidget {
                         _buildMenuItem(
                           context,
                           icon: Icons.open_in_new,
-                          title: 'فتح',
+                          title: S.of(context).open,
                           onTap: () {
                             Navigator.pop(context);
                             onOpenTap?.call();
@@ -852,7 +855,7 @@ class FolderFileCard extends StatelessWidget {
                         _buildMenuItem(
                           context,
                           icon: Icons.info_outline,
-                          title: 'عرض المعلومات',
+                          title: S.of(context).viewDetails,
                           onTap: () {
                             Navigator.pop(context);
                             onInfoTap?.call();
@@ -863,7 +866,7 @@ class FolderFileCard extends StatelessWidget {
                         _buildMenuItem(
                           context,
                           icon: Icons.edit,
-                          title: 'تعديل',
+                          title: S.of(context).update,
                           onTap: () {
                             Navigator.pop(context);
                             onRenameTap?.call();
@@ -874,7 +877,7 @@ class FolderFileCard extends StatelessWidget {
                         _buildMenuItem(
                           context,
                           icon: Icons.share,
-                          title: 'مشاركة',
+                          title: S.of(context).share,
                           onTap: () {
                             Navigator.pop(context);
                             onShareTap?.call();
@@ -896,7 +899,7 @@ class FolderFileCard extends StatelessWidget {
                         _buildMenuItem(
                           context,
                           icon: Icons.drive_file_move_rounded,
-                          title: 'نقل',
+                          title: S.of(context).move,
                           iconColor: Colors.purple,
                           onTap: () {
                             Navigator.pop(context);
@@ -909,8 +912,8 @@ class FolderFileCard extends StatelessWidget {
                           context,
                           icon: isStarred ? Icons.star : Icons.star_border,
                           title: isStarred
-                              ? 'إزالة من المفضلة'
-                              : 'إضافة إلى المفضلة',
+                              ? S.of(context).folderAddedToFavorites
+                              : S.of(context).folderRemovedFromFavorites,
                           iconColor: Colors.amber[700],
                           onTap: () {
                             Navigator.pop(context);
@@ -923,7 +926,7 @@ class FolderFileCard extends StatelessWidget {
                         _buildMenuItem(
                           context,
                           icon: Icons.delete,
-                          title: 'حذف',
+                          title: S.of(context).delete,
                           textColor: Colors.red,
                           iconColor: Colors.red,
                           onTap: () {

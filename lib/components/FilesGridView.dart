@@ -17,7 +17,7 @@ void _showFolderInfo(BuildContext context, Map<String, dynamic> folder) async {
   if (folderId == null) {
     ScaffoldMessenger.of(
       context,
-    ).showSnackBar(SnackBar(content: Text('خطأ: معرف المجلد غير موجود')));
+    ).showSnackBar(SnackBar(content: Text(S.of(context).folderIdNotFound)));
     return;
   }
 
@@ -32,9 +32,9 @@ void _showFolderInfo(BuildContext context, Map<String, dynamic> folder) async {
 
   if (folderDetails == null || folderDetails['folder'] == null) {
     if (context.mounted) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('فشل جلب معلومات المجلد')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(S.of(context).failedToFetchFolderInfo)),
+      );
     }
     return;
   }
@@ -91,41 +91,46 @@ void _showFolderInfo(BuildContext context, Map<String, dynamic> folder) async {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildDetailItem('folder', '📁', 'النوع', 'مجلد'),
+                  _buildDetailItem(
+                    'folder',
+                    '📁',
+                    S.of(context).type,
+                    S.of(context).folder,
+                  ),
                   _buildDetailItem(
                     'size',
                     '💾',
-                    'الحجم',
+                    S.of(context).size,
                     _formatBytes(folderData['size'] ?? 0),
                   ),
                   _buildDetailItem(
                     'files',
                     '📄',
-                    'عدد الملفات',
+                    S.of(context).filesCount,
                     '${folderData['filesCount'] ?? 0}',
                   ),
                   _buildDetailItem(
                     'subfolders',
                     '📂',
-                    'عدد المجلدات الفرعية',
+                    S.of(context).subfoldersCount,
                     '${folderData['subfoldersCount'] ?? 0}',
                   ),
                   _buildDetailItem(
                     'time',
                     '🕐',
-                    'تاريخ الإنشاء',
+                    S.of(context).creationDate,
                     _formatDate(folderData['createdAt']),
                   ),
                   _buildDetailItem(
                     'edit',
                     '✏️',
-                    'آخر تعديل',
+                    S.of(context).lastModified,
                     _formatDate(folderData['updatedAt']),
                   ),
                   _buildDetailItem(
                     'description',
                     '📝',
-                    'الوصف',
+                    S.of(context).description,
                     folderData['description']?.isNotEmpty == true
                         ? folderData['description']
                         : "—",
@@ -133,11 +138,10 @@ void _showFolderInfo(BuildContext context, Map<String, dynamic> folder) async {
                   _buildDetailItem(
                     'tags',
                     '🏷️',
-                    'الوسوم',
+                    S.of(context).tags,
                     (folderData['tags'] as List?)?.join(', ') ?? "—",
                   ),
 
-                  // ✅ Shared With Section
                   if (folderData['sharedWith'] != null &&
                       (folderData['sharedWith'] as List).isNotEmpty)
                     Column(
@@ -147,7 +151,7 @@ void _showFolderInfo(BuildContext context, Map<String, dynamic> folder) async {
                         _buildDetailItem(
                           'share',
                           '👥',
-                          'تمت المشاركة مع',
+                          S.of(context).sharedWith,
                           (folderData['sharedWith'] as List)
                                   .map<String>(
                                     (u) =>
@@ -278,7 +282,8 @@ Widget _buildDetailItem(String type, String emoji, String label, String value) {
 
 // ✅ دالة لعرض تفاصيل التصنيف (Category)
 void _showCategoryDetails(BuildContext context, Map<String, dynamic> category) {
-  final categoryTitle = category['title'] as String? ?? 'تصنيف';
+  final categoryTitle = category['title'] as String? ?? S.of(context).category;
+
   final fileCount = category['fileCount'] as int? ?? 0;
   final size = category['size'] as String? ?? '0';
   final color = category['color'] as Color? ?? Colors.blue;
@@ -332,9 +337,19 @@ void _showCategoryDetails(BuildContext context, Map<String, dynamic> category) {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildDetailItem('folder', '📁', 'النوع', 'تصنيف'),
-                  _buildDetailItem('files', '📄', 'عدد الملفات', '$fileCount'),
-                  _buildDetailItem('size', '💾', 'الحجم الإجمالي', size),
+                  _buildDetailItem(
+                    'folder',
+                    '📁',
+                    S.of(context).type,
+                    S.of(context).category,
+                  ),
+                  _buildDetailItem(
+                    'files',
+                    '📄',
+                    S.of(context).filesCount,
+                    '$fileCount',
+                  ),
+                  _buildDetailItem('size', '💾', S.of(context).totalSize, size),
                 ],
               ),
             ),
@@ -347,7 +362,9 @@ void _showCategoryDetails(BuildContext context, Map<String, dynamic> category) {
 
 void _showRenameDialog(BuildContext context, Map<String, dynamic> folder) {
   final folderName =
-      folder['title']?.toString() ?? folder['name']?.toString() ?? 'مجلد';
+      folder['title']?.toString() ??
+      folder['name']?.toString() ??
+      S.of(context).folder;
   final folderId = folder['folderId'] as String?;
   final folderData = folder['folderData'] as Map<String, dynamic>?;
 
@@ -364,14 +381,14 @@ void _showRenameDialog(BuildContext context, Map<String, dynamic> folder) {
   if (folderId == null) {
     ScaffoldMessenger.of(
       scaffoldContext,
-    ).showSnackBar(SnackBar(content: Text('خطأ: معرف المجلد غير موجود')));
+    ).showSnackBar(SnackBar(content: Text(S.of(context).folderIdNotFound)));
     return;
   }
 
   showDialog(
     context: context,
     builder: (dialogContext) => AlertDialog(
-      title: Text('تعديل المجلد'),
+      title: Text(S.of(context).editFileMetadata),
       content: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -379,8 +396,8 @@ void _showRenameDialog(BuildContext context, Map<String, dynamic> folder) {
             TextField(
               controller: nameController,
               decoration: InputDecoration(
-                labelText: 'اسم المجلد',
-                hintText: 'اسم المجلد',
+                labelText: S.of(context).folderName,
+                hintText: S.of(context).folderName,
                 border: OutlineInputBorder(),
                 prefixIcon: Icon(Icons.folder),
               ),
@@ -390,8 +407,8 @@ void _showRenameDialog(BuildContext context, Map<String, dynamic> folder) {
             TextField(
               controller: descriptionController,
               decoration: InputDecoration(
-                labelText: 'الوصف',
-                hintText: 'وصف المجلد (اختياري)',
+                labelText: S.of(context).folderDescription,
+                hintText: S.of(context).folderDescriptionHint,
                 border: OutlineInputBorder(),
                 prefixIcon: Icon(Icons.description),
               ),
@@ -401,8 +418,8 @@ void _showRenameDialog(BuildContext context, Map<String, dynamic> folder) {
             TextField(
               controller: tagsController,
               decoration: InputDecoration(
-                labelText: 'الوسوم',
-                hintText: 'وسوم مفصولة بفواصل (اختياري)',
+                labelText: S.of(context).folderTags,
+                hintText: S.of(context).folderTagsHint,
                 border: OutlineInputBorder(),
                 prefixIcon: Icon(Icons.tag),
               ),
@@ -413,15 +430,15 @@ void _showRenameDialog(BuildContext context, Map<String, dynamic> folder) {
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(dialogContext),
-          child: Text('إلغاء'),
+          child: Text(S.of(context).cancel),
         ),
         TextButton(
           onPressed: () {
             final newName = nameController.text.trim();
             if (newName.isEmpty) {
-              ScaffoldMessenger.of(
-                dialogContext,
-              ).showSnackBar(SnackBar(content: Text('يرجى إدخال اسم المجلد')));
+              ScaffoldMessenger.of(dialogContext).showSnackBar(
+                SnackBar(content: Text(S.of(context).pleaseEnterFolderName)),
+              );
               return;
             }
 
@@ -477,14 +494,17 @@ void _performUpdate(
     if (success) {
       ScaffoldMessenger.of(scaffoldContext).showSnackBar(
         SnackBar(
-          content: Text('✅ تم تحديث المجلد بنجاح'),
+          content: Text(S.of(scaffoldContext).folderUpdatedSuccessfully),
           backgroundColor: Colors.green,
         ),
       );
     } else {
       ScaffoldMessenger.of(scaffoldContext).showSnackBar(
         SnackBar(
-          content: Text(folderController.errorMessage ?? '❌ فشل تحديث المجلد'),
+          content: Text(
+            folderController.errorMessage ??
+                S.of(scaffoldContext).folderUpdateFailed,
+          ),
           backgroundColor: Colors.red,
         ),
       );
@@ -495,12 +515,14 @@ void _performUpdate(
 void _showShareDialog(BuildContext context, Map<String, dynamic> folder) async {
   final folderId = folder['folderId'] as String?;
   final folderName =
-      folder['title']?.toString() ?? folder['name']?.toString() ?? 'مجلد';
+      folder['title']?.toString() ??
+      folder['name']?.toString() ??
+      S.of(context).folder;
 
   if (folderId == null) {
     ScaffoldMessenger.of(
       context,
-    ).showSnackBar(SnackBar(content: Text('خطأ: معرف المجلد غير موجود')));
+    ).showSnackBar(SnackBar(content: Text(S.of(context).folderIdNotFound)));
     return;
   }
 
@@ -529,14 +551,15 @@ void _showMoveFolderDialog(
   final folderData = folder['folderData'] as Map<String, dynamic>? ?? {};
   final folderId =
       folder['folderId'] as String? ?? folderData['_id'] as String?;
-  final folderName = folder['title'] as String ?? folderData['name'] ?? 'مجلد';
+  final folderName =
+      folder['title'] as String ?? folderData['name'] ?? S.of(context).folder;
   final currentParentId = folderData['parentId']?.toString();
 
   if (folderId == null) {
     if (scaffoldContext.mounted) {
       ScaffoldMessenger.of(
         scaffoldContext,
-      ).showSnackBar(SnackBar(content: Text('خطأ: معرف المجلد غير موجود')));
+      ).showSnackBar(SnackBar(content: Text(S.of(context).folderIdNotFound)));
     }
     return;
   }
@@ -548,7 +571,8 @@ void _showMoveFolderDialog(
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
     builder: (modalContext) => _FolderNavigationDialog(
-      title: 'نقل المجلد: $folderName',
+      title: '${S.of(context).moveFolderTitle}: $folderName',
+
       excludeFolderId: folderId,
       excludeParentId: currentParentId,
       onSelect: (targetFolderId) async {
@@ -588,7 +612,7 @@ Future<void> _moveFolder(
         children: [
           CircularProgressIndicator(color: Colors.white),
           SizedBox(width: 16),
-          Text('جاري نقل المجلد...'),
+          Text(S.of(scaffoldContext).movingFolder),
         ],
       ),
       duration: Duration(seconds: 30),
@@ -607,7 +631,7 @@ Future<void> _moveFolder(
     if (success) {
       ScaffoldMessenger.of(scaffoldContext).showSnackBar(
         SnackBar(
-          content: Text('✅ تم نقل المجلد بنجاح'),
+          content: Text('✅ ${S.of(scaffoldContext).folderMovedSuccessfully}'),
           backgroundColor: Colors.green,
         ),
       );
@@ -619,7 +643,10 @@ Future<void> _moveFolder(
     } else {
       ScaffoldMessenger.of(scaffoldContext).showSnackBar(
         SnackBar(
-          content: Text(folderController.errorMessage ?? '❌ فشل نقل المجلد'),
+          content: Text(
+            folderController.errorMessage ??
+                S.of(scaffoldContext).folderUpdateFailed,
+          ),
           backgroundColor: Colors.red,
         ),
       );
@@ -657,7 +684,7 @@ void _toggleFavorite(
             ),
           ),
           SizedBox(width: 12),
-          Text('جاري التحديث...'),
+          Text(S.of(context).updating),
         ],
       ),
       duration: Duration(seconds: 2),
@@ -720,9 +747,10 @@ void _toggleFavorite(
       SnackBar(
         content: Text(
           updatedIsStarred
-              ? '✅ تم إضافة المجلد إلى المفضلة'
-              : '✅ تم إزالة المجلد من المفضلة',
+              ? S.of(context).folderAddedToFavorites
+              : S.of(context).folderRemovedFromFavorites,
         ),
+
         backgroundColor: Colors.green,
         duration: Duration(seconds: 2),
       ),
@@ -740,8 +768,9 @@ void _toggleFavorite(
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
-          folderController.errorMessage ?? '❌ فشل تحديث حالة المفضلة',
+          folderController.errorMessage ?? S.of(context).folderUpdateFailed,
         ),
+
         backgroundColor: Colors.red,
         duration: Duration(seconds: 2),
       ),
@@ -1185,7 +1214,7 @@ class _FolderNavigationDialogState extends State<_FolderNavigationDialog> {
   @override
   void initState() {
     super.initState();
-    _breadcrumb.add({'id': null, 'name': 'الجذر'});
+    _breadcrumb.add({'id': null, 'name': S.of(context).root});
     _loadRootFolders();
   }
 
@@ -1325,7 +1354,7 @@ class _FolderNavigationDialogState extends State<_FolderNavigationDialog> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('خطأ في جلب المجلدات الفرعية: ${e.toString()}'),
+            content: Text(S.of(context).errorFetchingSubfolders(e.toString())),
             backgroundColor: Colors.red,
           ),
         );
@@ -1339,7 +1368,7 @@ class _FolderNavigationDialogState extends State<_FolderNavigationDialog> {
       // ✅ العودة للجذر
       setState(() {
         _breadcrumb = [
-          {'id': null, 'name': 'الجذر'},
+          {'id': null, 'name': S.of(context).root},
         ];
       });
       _loadRootFolders();
@@ -1354,7 +1383,7 @@ class _FolderNavigationDialogState extends State<_FolderNavigationDialog> {
         if (folderId == null) {
           _loadRootFolders();
         } else {
-          final folderName = _breadcrumb.last['name'] ?? 'مجلد';
+          final folderName = _breadcrumb.last['name'] ?? S.of(context).folder;
           _loadSubfolders(folderId, folderName);
         }
       }
@@ -1435,7 +1464,7 @@ class _FolderNavigationDialogState extends State<_FolderNavigationDialog> {
                                   SizedBox(width: 4),
                                 ],
                                 Text(
-                                  item['name'] ?? 'الجذر',
+                                  item['name'] ?? S.of(context).root,
                                   style: TextStyle(
                                     color: isLast ? Colors.purple : Colors.blue,
                                     fontWeight: isLast
@@ -1465,8 +1494,8 @@ class _FolderNavigationDialogState extends State<_FolderNavigationDialog> {
                 if (_currentFolderId == null)
                   ListTile(
                     leading: Icon(Icons.home_rounded, color: Colors.blue),
-                    title: Text('نقل إلى الجذر'),
-                    subtitle: Text('نقل المجلد إلى المجلد الرئيسي'),
+                    title: Text(S.of(context).moveToRoot),
+                    subtitle: Text(S.of(context).moveFolderToMainFolder),
                     onTap: () => widget.onSelect(null),
                   ),
                 // ✅ خيار "اختيار المجلد الحالي" (إذا كنا داخل مجلد)
@@ -1474,9 +1503,13 @@ class _FolderNavigationDialogState extends State<_FolderNavigationDialog> {
                   ListTile(
                     leading: Icon(Icons.check_circle, color: Colors.green),
                     title: Text(
-                      'اختيار "${_breadcrumb.last['name'] ?? 'مجلد'}"',
+                      S
+                          .of(context)
+                          .selectFolderName(
+                            _breadcrumb.last['name'] ?? S.of(context).folder,
+                          ),
                     ),
-                    subtitle: Text('نقل إلى هذا المجلد'),
+                    subtitle: Text(S.of(context).moveToThisFolder),
                     onTap: () => widget.onSelect(_currentFolderId),
                   ),
                 // ✅ Divider بين الخيارات وقائمة المجلدات
@@ -1490,8 +1523,9 @@ class _FolderNavigationDialogState extends State<_FolderNavigationDialog> {
                       ? Center(
                           child: Text(
                             _currentFolderId == null
-                                ? 'لا توجد مجلدات متاحة'
-                                : 'لا توجد مجلدات فرعية',
+                                ? S.of(context).noFoldersAvailable
+                                : S.of(context).noSubfolders,
+
                             style: TextStyle(color: Colors.grey),
                           ),
                         )
@@ -1501,7 +1535,7 @@ class _FolderNavigationDialogState extends State<_FolderNavigationDialog> {
                             final folder = _currentFolders[index];
                             final folderId = folder['_id']?.toString();
                             final folderName =
-                                folder['name'] ?? 'مجلد بدون اسم';
+                                folder['name'] ?? S.of(context).unnamedFolder;
 
                             return InkWell(
                               onTap: () {
@@ -1524,7 +1558,7 @@ class _FolderNavigationDialogState extends State<_FolderNavigationDialog> {
                                 ),
                                 title: Text(folderName),
                                 subtitle: Text(
-                                  '${folder['filesCount'] ?? 0} ملف',
+                                  '${folder['filesCount'] ?? 0} ${S.of(context).file}',
                                 ),
                                 trailing: Row(
                                   mainAxisSize: MainAxisSize.min,

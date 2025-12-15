@@ -728,7 +728,7 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
             barrierDismissible: false,
             builder: (context) => Center(child: CircularProgressIndicator()),
           );
-
+          
           await OfficeFileOpener.openAnyFile(
             url: url,
             context: context,
@@ -743,17 +743,13 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
               }
             },
           );
-
+          
           // ✅ لا حاجة لإغلاق Loading Dialog يدوياً - يتم إغلاقه تلقائياً في OfficeFileOpener
         }
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(
-              S
-                  .of(context)
-                  .fileNotAvailableError(response.statusCode.toString()),
-            ),
+            content: Text(S.of(context).fileNotAvailableError(response.statusCode.toString())),
             behavior: SnackBarBehavior.floating,
             backgroundColor: Colors.red,
           ),
@@ -776,7 +772,7 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Theme.of(context).colorScheme.primary,
+      backgroundColor: const Color(0xff28336f),
       appBar: AppBar(
         title: _isSearching
             ? TextField(
@@ -1314,12 +1310,7 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _buildDetailItem(
-                      'folder',
-                      '📁',
-                      S.of(context).type,
-                      S.of(context).folder,
-                    ),
+                    _buildDetailItem('folder', '📁', S.of(context).type, S.of(context).folder),
                     _buildDetailItem(
                       'size',
                       '💾',
@@ -2082,11 +2073,7 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
               size: 20,
             ),
             SizedBox(width: 8),
-            Text(
-              isStarred
-                  ? S.of(context).removeFromFavorites
-                  : S.of(context).addToFavorites,
-            ),
+            Text(isStarred ? S.of(context).removeFromFavorites : S.of(context).addToFavorites),
           ],
         ),
       ),
@@ -2396,10 +2383,7 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
           children: [
             Icon(Icons.open_in_new_rounded, color: Colors.blue, size: 20),
             SizedBox(width: 12),
-            Text(
-              'Open',
-              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
-            ),
+            Text('Open', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
           ],
         ),
       ),
@@ -2410,10 +2394,7 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
           children: [
             Icon(Icons.info_outline_rounded, color: Colors.teal, size: 20),
             SizedBox(width: 12),
-            Text(
-              'View Info',
-              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
-            ),
+            Text('View Info', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
           ],
         ),
       ),
@@ -2424,10 +2405,7 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
           children: [
             Icon(Icons.download_rounded, color: Colors.blue, size: 20),
             SizedBox(width: 12),
-            Text(
-              S.of(context).download,
-              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
-            ),
+            Text(S.of(context).download, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
           ],
         ),
       ),
@@ -2438,10 +2416,7 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
           children: [
             Icon(Icons.edit_rounded, color: Colors.orange, size: 20),
             SizedBox(width: 12),
-            Text(
-              S.of(context).edit,
-              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
-            ),
+            Text(S.of(context).edit, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
           ],
         ),
       ),
@@ -2452,10 +2427,7 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
           children: [
             Icon(Icons.share_rounded, color: Colors.green, size: 20),
             SizedBox(width: 12),
-            Text(
-              S.of(context).share,
-              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
-            ),
+            Text(S.of(context).share, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
           ],
         ),
       ),
@@ -2466,10 +2438,7 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
           children: [
             Icon(Icons.drive_file_move_rounded, color: Colors.purple, size: 20),
             SizedBox(width: 12),
-            Text(
-              S.of(context).move,
-              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
-            ),
+            Text(S.of(context).move, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
           ],
         ),
       ),
@@ -2498,14 +2467,7 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
           children: [
             Icon(Icons.delete_outline_rounded, color: Colors.red, size: 20),
             SizedBox(width: 12),
-            Text(
-              'Delete',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-                color: Colors.red,
-              ),
-            ),
+            Text('Delete', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: Colors.red)),
           ],
         ),
       ),
@@ -2655,12 +2617,7 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _buildDetailItem(
-                      'folder',
-                      '📁',
-                      S.of(context).type,
-                      S.of(context).folder,
-                    ),
+                    _buildDetailItem('folder', '📁', S.of(context).type, S.of(context).folder),
                     _buildDetailItem(
                       'size',
                       '💾',
@@ -2758,9 +2715,7 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
     final folderId =
         folder['folderId'] as String? ?? folderData['_id'] as String?;
     final folderName =
-        folder['name'] as String? ??
-        folderData['name'] as String? ??
-        S.of(context).folder;
+        folder['name'] as String? ?? folderData['name'] as String? ?? S.of(context).folder;
     final currentParentId = folderData['parentId']?.toString();
 
     if (folderId == null) {
@@ -2821,9 +2776,9 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
   void _showFileInfoFromItem(BuildContext context, Map<String, dynamic> file) {
     // TODO: إضافة دالة معلومات الملف
     if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(S.of(context).featureUnderDevelopment)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(S.of(context).featureUnderDevelopment)));
     }
   }
 
@@ -2837,9 +2792,7 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
     final originalData = file['originalData'] ?? file;
     final fileId = originalData['_id']?.toString();
     final fileName =
-        file['name'] as String? ??
-        originalData['name'] as String? ??
-        S.of(context).file;
+        file['name'] as String? ?? originalData['name'] as String? ?? S.of(context).file;
     final currentParentId = originalData['parentFolderId']?.toString();
 
     if (fileId == null) {
@@ -3656,11 +3609,7 @@ class _FolderNavigationDialogState extends State<_FolderNavigationDialog> {
                   ListTile(
                     leading: Icon(Icons.check_circle, color: Colors.green),
                     title: Text(
-                      S
-                          .of(context)
-                          .selectFolder(
-                            _breadcrumb.last['name'] ?? S.of(context).folder,
-                          ),
+                      S.of(context).selectFolder(_breadcrumb.last['name'] ?? S.of(context).folder),
                     ),
                     subtitle: Text(S.of(context).moveToThisFolder),
                     onTap: () => widget.onSelect(_currentFolderId),
@@ -3687,8 +3636,7 @@ class _FolderNavigationDialogState extends State<_FolderNavigationDialog> {
                             final folder = _currentFolders[index];
                             final folderId = folder['_id']?.toString();
                             final folderName =
-                                folder['name'] ??
-                                S.of(context).folderWithoutName;
+                                folder['name'] ?? S.of(context).folderWithoutName;
 
                             return InkWell(
                               onTap: () {

@@ -287,3 +287,4 @@ class SearchResultsWidget extends StatelessWidget {
 
 
 
+
