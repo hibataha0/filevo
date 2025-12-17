@@ -5,6 +5,7 @@ import 'package:filevo/config/api_config.dart';
 import 'package:filevo/controllers/folders/room_controller.dart';
 import 'package:filevo/utils/room_permissions.dart';
 import 'package:filevo/generated/l10n.dart';
+import 'package:pull_to_refresh/pull_to_refresh.dart';
 
 class RoomMembersPage extends StatefulWidget {
   final String roomId;
@@ -19,6 +20,8 @@ class _RoomMembersPageState extends State<RoomMembersPage> {
   Map<String, dynamic>? roomData;
   bool isLoading = true;
   bool _hasChanges = false; // ✅ تتبع إذا كان هناك تغييرات
+  final RefreshController _refreshController =
+      RefreshController(initialRefresh: false);
 
   @override
   void initState() {
@@ -367,20 +370,25 @@ class _RoomMembersPageState extends State<RoomMembersPage> {
         ],
       ),
       body: isLoading
-          ? Center(child: CircularProgressIndicator())
+          ? const Center(child: CircularProgressIndicator())
           : roomData == null
-          ? Center(child: Text(S.of(context).failedToLoadRoomData))
-          : RefreshIndicator(
-              onRefresh: _loadRoomData,
-              child: ListView.builder(
-                padding: EdgeInsets.all(16),
-                itemCount: (roomData!['members'] as List?)?.length ?? 0,
-                itemBuilder: (context, index) {
-                  final member = roomData!['members'][index];
-                  return _buildMemberCard(member);
-                },
-              ),
-            ),
+              ? Center(child: Text(S.of(context).failedToLoadRoomData))
+              : SmartRefresher(
+                  controller: _refreshController,
+                  onRefresh: () async {
+                    await _loadRoomData();
+                    _refreshController.refreshCompleted();
+                  },
+                  header: const WaterDropHeader(),
+                  child: ListView.builder(
+                    padding: const EdgeInsets.all(16),
+                    itemCount: (roomData!['members'] as List?)?.length ?? 0,
+                    itemBuilder: (context, index) {
+                      final member = roomData!['members'][index];
+                      return _buildMemberCard(member);
+                    },
+                  ),
+                ),
     );
   }
 

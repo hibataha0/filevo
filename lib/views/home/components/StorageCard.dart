@@ -74,9 +74,7 @@ class StorageCard extends StatelessWidget {
     );
 
     return Center(
-      
       child: Container(
-        
         width: cardWidth,
         margin: EdgeInsets.all(margin),
         padding: EdgeInsets.all(padding),
@@ -101,7 +99,8 @@ class StorageCard extends StatelessWidget {
         ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.center, // المركزية عمودي
-          mainAxisAlignment: MainAxisAlignment.center, // ← المركزية أفقياً داخل الكارد
+          mainAxisAlignment:
+              MainAxisAlignment.center, // ← المركزية أفقياً داخل الكارد
           children: [
             // الدايرة
             Container(
@@ -115,14 +114,14 @@ class StorageCard extends StatelessWidget {
                     height: innerCircleSize,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: Color(0xFF00BFA5),
+                      color: Color(0xFF26A69A),
                     ),
                     child: Center(
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Text(
-                             S.of(context).storageUsed,
+                            S.of(context).storageUsed,
                             style: TextStyle(
                               color: Colors.white,
                               fontSize: textSizeLabel,
@@ -182,7 +181,7 @@ class StorageCard extends StatelessWidget {
                           ),
                         ),
                       ],
-                    )
+                    ),
                   ],
                 ),
                 SizedBox(height: spacing * 2.5),
@@ -217,7 +216,7 @@ class StorageCard extends StatelessWidget {
                           ),
                         ),
                       ],
-                    )
+                    ),
                   ],
                 ),
               ],

@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:filevo/controllers/folders/room_controller.dart';
 import 'package:filevo/constants/app_colors.dart';
 import 'package:filevo/generated/l10n.dart';
+import 'package:pull_to_refresh/pull_to_refresh.dart';
 
 class ShareFileWithRoomPage extends StatefulWidget {
   final String fileId;
@@ -25,12 +26,21 @@ class _ShareFileWithRoomPageState extends State<ShareFileWithRoomPage> {
   bool isOneTimeShare = false; // ✅ خيار المشاركة لمرة واحدة
   int? expiresInHours; // ✅ عدد الساعات للانتهاء (افتراضي 24)
 
+  final RefreshController _refreshController =
+      RefreshController(initialRefresh: false);
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadRooms();
     });
+  }
+
+  @override
+  void dispose() {
+    _refreshController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadRooms() async {
@@ -288,28 +298,30 @@ class _ShareFileWithRoomPageState extends State<ShareFileWithRoomPage> {
                       ],
                     ),
                   )
-                : RefreshIndicator(
-                    onRefresh: _loadRooms,
+                : SmartRefresher(
+                    controller: _refreshController,
+                    onRefresh: () async {
+                      await _loadRooms();
+                      _refreshController.refreshCompleted();
+                    },
+                    header: const WaterDropHeader(),
                     child: ListView.builder(
-                      padding: EdgeInsets.all(16),
+                      padding: const EdgeInsets.all(16),
                       itemCount: rooms.length,
                       itemBuilder: (context, index) {
                         final room = rooms[index];
                         final isSelected = selectedRoomId == room['_id'];
                         final membersCount =
                             (room['members'] as List?)?.length ?? 0;
-                        // ✅ ملاحظة: الـ backend يقوم بفلترة الملفات المشتركة لمرة واحدة تلقائياً
                         final filesCount =
                             (room['files'] as List?)?.length ?? 0;
-
-                        // ✅ التحقق من أن الملف مشارك بالفعل مع هذه الغرفة
                         final isAlreadyShared = _checkIfFileIsShared(
                           room,
                           widget.fileId,
                         );
 
                         return Card(
-                          margin: EdgeInsets.only(bottom: 12),
+                          margin: const EdgeInsets.only(bottom: 12),
                           elevation: isSelected ? 4 : (isAlreadyShared ? 2 : 1),
                           color: isAlreadyShared
                               ? Colors.green.shade50.withOpacity(0.3)
@@ -320,8 +332,8 @@ class _ShareFileWithRoomPageState extends State<ShareFileWithRoomPage> {
                               color: isSelected
                                   ? AppColors.lightAppBar
                                   : isAlreadyShared
-                                  ? Colors.green.shade300
-                                  : Colors.transparent,
+                                      ? Colors.green.shade300
+                                      : Colors.transparent,
                               width: isSelected ? 2 : (isAlreadyShared ? 1 : 0),
                             ),
                           ),
@@ -333,7 +345,7 @@ class _ShareFileWithRoomPageState extends State<ShareFileWithRoomPage> {
                             },
                             borderRadius: BorderRadius.circular(16),
                             child: Padding(
-                              padding: EdgeInsets.all(16),
+                              padding: const EdgeInsets.all(16),
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [

@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'package:filevo/services/folders_service.dart';
 import 'package:flutter/material.dart';
 
@@ -96,6 +95,9 @@ class FolderController with ChangeNotifier {
       );
 
       print('✅ FolderController: Upload successful, response: $response');
+      if (response['success'] == false) {
+        errorMessage = response['message']?.toString();
+      }
       return response;
     } catch (e, stackTrace) {
       print('❌ FolderController: Upload failed');

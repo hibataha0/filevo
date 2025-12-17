@@ -47,6 +47,7 @@ dependencies:
   video_editor: ^3.0.0
   speech_to_text: ^7.0.0
   # ffmpeg_kit_flutter_min: 6.0.3  # Temporarily disabled - package is discontinued and Android artifacts are not available
+  pull_to_refresh: ^2.0.0
 
 dev_dependencies:
   flutter_test:

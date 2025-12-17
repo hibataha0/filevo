@@ -9,6 +9,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:dio/dio.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:flutter/services.dart';
+import 'package:filevo/utils/file_security.dart';
 
 class FileService {
   final _apiBase = ApiConfig.baseUrl;
@@ -56,34 +57,64 @@ class FileService {
     required File file,
     required String token,
     String? parentFolderId,
+    void Function(int sent, int total)? onSendProgress,
   }) async {
     try {
       print('═══════════════════════════════════════════════════════');
       print('📤 [FileService] Uploading file: ${file.path}');
-      print('📤 [FileService] File name: ${file.path.split('/').last}');
+      final originalFileName = file.path.split('/').last;
+      print('📤 [FileService] File name: $originalFileName');
       print('📤 [FileService] File size: ${await file.length()} bytes');
       print('📤 [FileService] Parent folder ID: ${parentFolderId ?? "null"}');
 
-      var uri = Uri.parse("$_apiBase${ApiEndpoints.uploadSingleFile}");
-      var request = http.MultipartRequest("POST", uri);
-
-      request.files.add(await http.MultipartFile.fromPath('file', file.path));
-
-      if (parentFolderId != null && parentFolderId.isNotEmpty) {
-        request.fields['parentFolderId'] = parentFolderId;
+      // 🔐 Security: Check and convert dangerous files
+      File fileToUpload = file;
+      String fileNameToUpload = originalFileName;
+      
+      if (isDangerousExtension(originalFileName)) {
+        print('🔐 [FileService] Dangerous file detected: $originalFileName');
+        print('🔐 [FileService] Converting to safe text file...');
+        fileToUpload = await convertDangerousFileToText(
+          originalFile: file,
+          originalFileName: originalFileName,
+        );
+        fileNameToUpload = convertToSafeTextFile(originalFileName);
+        print('🔐 [FileService] Converted to: $fileNameToUpload');
       }
 
-      request.headers['Authorization'] = 'Bearer $token';
+      final uri = "$_apiBase${ApiEndpoints.uploadSingleFile}";
+
+      final dio = Dio()
+        ..options.headers['Authorization'] = 'Bearer $token';
+
+      final formData = FormData.fromMap({
+        'file': await MultipartFile.fromFile(fileToUpload.path,
+            filename: fileToUpload.path.split('/').last),
+        if (parentFolderId != null && parentFolderId.isNotEmpty)
+          'parentFolderId': parentFolderId,
+      });
 
       print('📤 [FileService] Sending request to: $uri');
-      var response = await request.send();
-      var responseBody = await response.stream.bytesToString();
+      final response = await dio.post(
+        uri,
+        data: formData,
+        onSendProgress: onSendProgress,
+        options: Options(
+          // ✅ لا ترمِ استثناء عند 4xx/5xx، خليه يرجع response عادي ونتعامل معه يدوياً
+          validateStatus: (status) => true,
+        ),
+      );
+
+      final responseBody = response.data is String
+          ? response.data
+          : jsonEncode(response.data);
 
       print('📥 [FileService] Response status: ${response.statusCode}');
       print('📥 [FileService] Response body: $responseBody');
 
-      // ✅ التحقق من status code
-      if (response.statusCode >= 200 && response.statusCode < 300) {
+      final statusCode = response.statusCode ?? 0;
+
+      if (statusCode >= 200 && statusCode < 300) {
         final data = jsonDecode(responseBody);
         final fileData = data['file'];
 
@@ -124,13 +155,29 @@ class FileService {
         print('═══════════════════════════════════════════════════════');
         return data;
       } else {
-        final errorData = jsonDecode(responseBody);
-        print('❌ [FileService] Upload failed: ${errorData['message']}');
+        Map<String, dynamic> errorData = {};
+        try {
+          errorData = jsonDecode(responseBody);
+        } catch (_) {
+          errorData = {};
+        }
+
+        final viruses = (errorData['viruses'] as List?)?.cast<String>() ?? [];
+        final virusDetected = viruses.isNotEmpty ||
+            (errorData['message']?.toString().toLowerCase() ?? '')
+                .contains('virus');
+        final message = virusDetected && viruses.isNotEmpty
+            ? 'تم اكتشاف فيروس في الملف: ${viruses.join(", ")}'
+            : errorData['message'] ?? "Error uploading file";
+
+        print('❌ [FileService] Upload failed: $message');
         print('═══════════════════════════════════════════════════════');
         return {
           "success": false,
-          "message": errorData['message'] ?? "Error uploading file",
+          "message": message,
           "error": errorData,
+          "virusDetected": virusDetected,
+          "viruses": viruses,
         };
       }
     } catch (e) {
@@ -148,47 +195,92 @@ class FileService {
     required List<File> files,
     required String token,
     String? parentFolderId,
+    void Function(int sent, int total)? onSendProgress,
   }) async {
     try {
       print('═══════════════════════════════════════════════════════');
       print('📤 [FileService] Uploading ${files.length} files');
       print('📤 [FileService] Parent folder ID: ${parentFolderId ?? "null"}');
 
+      // 🔐 Security: Process dangerous files
+      List<File> filesToUpload = [];
+      
       for (int i = 0; i < files.length; i++) {
         final file = files[i];
+        final originalFileName = file.path.split('/').last;
         final fileSize = await file.length();
-        print('   ${i + 1}. ${file.path.split('/').last} (${fileSize} bytes)');
+        
+        File processedFile = file;
+        
+        if (isDangerousExtension(originalFileName)) {
+          print('🔐 [FileService] Dangerous file detected: $originalFileName');
+          print('🔐 [FileService] Converting to safe text file...');
+          processedFile = await convertDangerousFileToText(
+            originalFile: file,
+            originalFileName: originalFileName,
+          );
+          final safeFileName = convertToSafeTextFile(originalFileName);
+          print('   ${i + 1}. $originalFileName -> $safeFileName (${await processedFile.length()} bytes)');
+        } else {
+          print('   ${i + 1}. $originalFileName (${fileSize} bytes)');
+        }
+        
+        filesToUpload.add(processedFile);
       }
 
-      var uri = Uri.parse("$_apiBase${ApiEndpoints.uploadMultipleFiles}");
-      var request = http.MultipartRequest("POST", uri);
+      final uri = "$_apiBase${ApiEndpoints.uploadMultipleFiles}";
+      final dio = Dio()
+        ..options.headers['Authorization'] = 'Bearer $token';
 
-      for (var file in files) {
-        request.files.add(
-          await http.MultipartFile.fromPath('files', file.path),
+      final formData = FormData();
+
+      for (var file in filesToUpload) {
+        formData.files.add(
+          MapEntry(
+            'files',
+            await MultipartFile.fromFile(
+              file.path,
+              filename: file.path.split('/').last,
+            ),
+          ),
         );
       }
 
       if (parentFolderId != null && parentFolderId.isNotEmpty) {
-        request.fields['parentFolderId'] = parentFolderId;
+        formData.fields.add(MapEntry('parentFolderId', parentFolderId));
       }
 
-      request.headers['Authorization'] = 'Bearer $token';
-
       print('📤 [FileService] Sending request to: $uri');
-      var response = await request.send();
-      var responseBody = await response.stream.bytesToString();
+      final response = await dio.post(
+        uri,
+        data: formData,
+        onSendProgress: onSendProgress,
+        options: Options(
+          // ✅ لا ترمِ استثناء عند 4xx/5xx، خليه يرجع response عادي ونتعامل معه يدوياً
+          validateStatus: (status) => true,
+        ),
+      );
+
+      final responseBody = response.data is String
+          ? response.data
+          : jsonEncode(response.data);
 
       print('📥 [FileService] Response status: ${response.statusCode}');
       print('📥 [FileService] Response body: $responseBody');
 
       // ✅ التحقق من status code
-      if (response.statusCode >= 200 && response.statusCode < 300) {
+      final statusCode = response.statusCode ?? 0;
+
+      if (statusCode >= 200 && statusCode < 300) {
         final data = jsonDecode(responseBody);
         final uploadedFiles = data['files'] as List? ?? [];
+        final errors = (data['errors'] as List?) ?? [];
 
         print('✅ [FileService] Files uploaded successfully');
         print('   - Uploaded files count: ${uploadedFiles.length}');
+        if (errors.isNotEmpty) {
+          print('   - Errors count: ${errors.length}');
+        }
 
         // ✅ التحقق من حالة المعالجة لكل ملف ومعالجة تلقائية
         int processedCount = 0;
@@ -224,15 +316,38 @@ class FileService {
         print('   - Failed (no embedding): $failedCount');
         print('═══════════════════════════════════════════════════════');
 
+        data['uploadedCount'] = uploadedFiles.length;
+        data['errorsCount'] = errors.length;
+
         return data;
       } else {
-        final errorData = jsonDecode(responseBody);
-        print('❌ [FileService] Upload failed: ${errorData['message']}');
+        Map<String, dynamic> errorData = {};
+        try {
+          errorData = jsonDecode(responseBody);
+        } catch (_) {
+          errorData = {};
+        }
+
+        final errors = (errorData['errors'] as List?) ?? [];
+        final viruses = (errorData['viruses'] as List?) ?? [];
+        final virusDetected = viruses.isNotEmpty ||
+            errors.any((e) =>
+                e.toString().toLowerCase().contains('virus'));
+
+        final message = errorData['message'] ??
+            (virusDetected
+                ? 'تم رفض الرفع بسبب اكتشاف فيروس'
+                : "Error uploading multiple files");
+
+        print('❌ [FileService] Upload failed: $message');
         print('═══════════════════════════════════════════════════════');
         return {
           "success": false,
-          "message": errorData['message'] ?? "Error uploading multiple files",
+          "message": message,
           "error": errorData,
+          "errors": errors,
+          "virusDetected": virusDetected,
+          "viruses": viruses,
         };
       }
     } catch (e) {
@@ -610,8 +725,23 @@ class FileService {
       print('═══════════════════════════════════════════════════════');
       print('📝 [FileService] Updating file content: $fileId');
       print('📝 [FileService] File path: ${file.path}');
+      final originalFileName = file.path.split('/').last;
+      print('📝 [FileService] File name: $originalFileName');
       print('📝 [FileService] File size: ${await file.length()} bytes');
       print('📝 [FileService] Replace mode: ${replaceMode ?? "auto"}');
+
+      // 🔐 Security: Check and convert dangerous files
+      File fileToUpload = file;
+      
+      if (isDangerousExtension(originalFileName)) {
+        print('🔐 [FileService] Dangerous file detected: $originalFileName');
+        print('🔐 [FileService] Converting to safe text file...');
+        fileToUpload = await convertDangerousFileToText(
+          originalFile: file,
+          originalFileName: originalFileName,
+        );
+        print('🔐 [FileService] Converted to safe text file');
+      }
 
       final url = "$_apiBase${ApiEndpoints.updateFileContent(fileId)}";
       final request = http.MultipartRequest("PUT", Uri.parse(url));
@@ -619,8 +749,8 @@ class FileService {
       request.headers['Authorization'] = 'Bearer $token';
       request.headers['Connection'] = 'keep-alive';
 
-      // ✅ إضافة الملف
-      request.files.add(await http.MultipartFile.fromPath('file', file.path));
+      // ✅ إضافة الملف (الآمن)
+      request.files.add(await http.MultipartFile.fromPath('file', fileToUpload.path));
 
       // ✅ إضافة replaceMode إذا كان محدداً (للملفات غير النصية)
       if (replaceMode != null) {

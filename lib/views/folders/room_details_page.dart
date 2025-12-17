@@ -27,6 +27,7 @@ import 'package:http/http.dart' as http;
 import 'package:filevo/responsive.dart';
 import 'package:filevo/services/storage_service.dart';
 import 'package:filevo/utils/room_permissions.dart';
+import 'package:pull_to_refresh/pull_to_refresh.dart';
 
 class RoomDetailsPage extends StatefulWidget {
   final String roomId;
@@ -40,6 +41,9 @@ class RoomDetailsPage extends StatefulWidget {
 class _RoomDetailsPageState extends State<RoomDetailsPage> {
   Map<String, dynamic>? roomData;
   bool isLoading = true;
+  final RefreshController _refreshController = RefreshController(
+    initialRefresh: false,
+  );
 
   @override
   void initState() {
@@ -93,6 +97,12 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
   Future<void> _refreshRoom() async {
     setState(() => isLoading = true);
     await _loadRoomDetails();
+  }
+
+  @override
+  void dispose() {
+    _refreshController.dispose();
+    super.dispose();
   }
 
   @override
@@ -222,7 +232,7 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
         ],
       ),
       body: isLoading
-          ? Center(child: CircularProgressIndicator())
+          ? const Center(child: CircularProgressIndicator())
           : roomData == null
           ? Center(
               child: Column(
@@ -239,68 +249,77 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
                 ],
               ),
             )
-          : RefreshIndicator(
-              onRefresh: _refreshRoom,
-              child: SingleChildScrollView(
-                physics: AlwaysScrollableScrollPhysics(),
-                child: Column(
-                  children: [
-                    _buildRoomHeader(),
-                    SizedBox(
-                      height: ResponsiveUtils.getResponsiveValue(
-                        context,
-                        mobile: 20.0,
-                        tablet: 24.0,
-                        desktop: 28.0,
-                      ),
-                    ),
-                    _buildQuickActions(),
-                    SizedBox(
-                      height: ResponsiveUtils.getResponsiveValue(
-                        context,
-                        mobile: 20.0,
-                        tablet: 24.0,
-                        desktop: 28.0,
-                      ),
-                    ),
-                    _buildRoomInfo(),
-                    SizedBox(
-                      height: ResponsiveUtils.getResponsiveValue(
-                        context,
-                        mobile: 20.0,
-                        tablet: 24.0,
-                        desktop: 28.0,
-                      ),
-                    ),
-                    _buildMembersSection(),
-                    SizedBox(
-                      height: ResponsiveUtils.getResponsiveValue(
-                        context,
-                        mobile: 20.0,
-                        tablet: 24.0,
-                        desktop: 28.0,
-                      ),
-                    ),
-                    _buildSharedFilesSection(),
-                    SizedBox(
-                      height: ResponsiveUtils.getResponsiveValue(
-                        context,
-                        mobile: 20.0,
-                        tablet: 24.0,
-                        desktop: 28.0,
-                      ),
-                    ),
-                    _buildSharedFoldersSection(),
-                    SizedBox(
-                      height: ResponsiveUtils.getResponsiveValue(
-                        context,
-                        mobile: 100.0,
-                        tablet: 120.0,
-                        desktop: 140.0,
-                      ),
-                    ),
-                  ],
+          : SmartRefresher(
+              controller: _refreshController,
+              physics: const BouncingScrollPhysics(
+                parent: AlwaysScrollableScrollPhysics(),
+              ),
+              onRefresh: () async {
+                await _refreshRoom();
+                _refreshController.refreshCompleted();
+              },
+              header: const WaterDropHeader(),
+              child: ListView(
+                padding: EdgeInsets.zero,
+                physics: const BouncingScrollPhysics(
+                  parent: AlwaysScrollableScrollPhysics(),
                 ),
+                children: [
+                  _buildRoomHeader(),
+                  SizedBox(
+                    height: ResponsiveUtils.getResponsiveValue(
+                      context,
+                      mobile: 20.0,
+                      tablet: 24.0,
+                      desktop: 28.0,
+                    ),
+                  ),
+                  _buildQuickActions(),
+                  SizedBox(
+                    height: ResponsiveUtils.getResponsiveValue(
+                      context,
+                      mobile: 20.0,
+                      tablet: 24.0,
+                      desktop: 28.0,
+                    ),
+                  ),
+                  _buildRoomInfo(),
+                  SizedBox(
+                    height: ResponsiveUtils.getResponsiveValue(
+                      context,
+                      mobile: 20.0,
+                      tablet: 24.0,
+                      desktop: 28.0,
+                    ),
+                  ),
+                  _buildMembersSection(),
+                  SizedBox(
+                    height: ResponsiveUtils.getResponsiveValue(
+                      context,
+                      mobile: 20.0,
+                      tablet: 24.0,
+                      desktop: 28.0,
+                    ),
+                  ),
+                  _buildSharedFilesSection(),
+                  SizedBox(
+                    height: ResponsiveUtils.getResponsiveValue(
+                      context,
+                      mobile: 20.0,
+                      tablet: 24.0,
+                      desktop: 28.0,
+                    ),
+                  ),
+                  _buildSharedFoldersSection(),
+                  SizedBox(
+                    height: ResponsiveUtils.getResponsiveValue(
+                      context,
+                      mobile: 100.0,
+                      tablet: 120.0,
+                      desktop: 140.0,
+                    ),
+                  ),
+                ],
               ),
             ),
     );

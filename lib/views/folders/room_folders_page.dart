@@ -9,6 +9,7 @@ import 'package:filevo/components/FilesGridView.dart';
 import 'package:filevo/views/folders/room_comments_page.dart';
 import 'package:filevo/utils/room_permissions.dart';
 import 'package:filevo/views/fileViewer/folder_actions_service.dart';
+import 'package:pull_to_refresh/pull_to_refresh.dart';
 
 class RoomFoldersPage extends StatefulWidget {
   final String roomId;
@@ -24,6 +25,8 @@ class _RoomFoldersPageState extends State<RoomFoldersPage> {
   bool isLoading = true;
   Map<String, Map<String, dynamic>> _folderDetailsCache =
       {}; // ✅ Cache لتفاصيل المجلدات
+  final RefreshController _refreshController =
+      RefreshController(initialRefresh: false);
 
   @override
   void initState() {
@@ -117,6 +120,12 @@ class _RoomFoldersPageState extends State<RoomFoldersPage> {
   }
 
   @override
+  void dispose() {
+    _refreshController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
@@ -152,13 +161,18 @@ class _RoomFoldersPageState extends State<RoomFoldersPage> {
         ],
       ),
       body: isLoading
-          ? Center(child: CircularProgressIndicator())
+          ? const Center(child: CircularProgressIndicator())
           : roomData == null
-          ? Center(child: Text(S.of(context).failedToLoadRoomData))
-          : RefreshIndicator(
-              onRefresh: _loadRoomData,
-              child: _buildFoldersList(),
-            ),
+              ? Center(child: Text(S.of(context).failedToLoadRoomData))
+              : SmartRefresher(
+                  controller: _refreshController,
+                  onRefresh: () async {
+                    await _loadRoomData();
+                    _refreshController.refreshCompleted();
+                  },
+                  header: const WaterDropHeader(),
+                  child: _buildFoldersList(),
+                ),
     );
   }
 

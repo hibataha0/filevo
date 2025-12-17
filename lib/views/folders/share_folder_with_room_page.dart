@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:filevo/controllers/folders/room_controller.dart';
 import 'package:filevo/generated/l10n.dart';
+import 'package:pull_to_refresh/pull_to_refresh.dart';
 
 class ShareFolderWithRoomPage extends StatefulWidget {
   final String folderId;
@@ -21,6 +22,9 @@ class _ShareFolderWithRoomPageState extends State<ShareFolderWithRoomPage> {
   List<Map<String, dynamic>> rooms = [];
   bool isLoading = true;
   String? selectedRoomId;
+
+  final RefreshController _refreshController =
+      RefreshController(initialRefresh: false);
 
   @override
   void initState() {
@@ -42,6 +46,12 @@ class _ShareFolderWithRoomPageState extends State<ShareFolderWithRoomPage> {
         isLoading = false;
       });
     }
+  }
+
+  @override
+  void dispose() {
+    _refreshController.dispose();
+    super.dispose();
   }
 
   Future<void> _shareFolderWithRoom(String roomId) async {
@@ -158,10 +168,15 @@ class _ShareFolderWithRoomPageState extends State<ShareFolderWithRoomPage> {
                           ],
                         ),
                       )
-                    : RefreshIndicator(
-                        onRefresh: _loadRooms,
+                    : SmartRefresher(
+                        controller: _refreshController,
+                        onRefresh: () async {
+                          await _loadRooms();
+                          _refreshController.refreshCompleted();
+                        },
+                        header: const WaterDropHeader(),
                         child: ListView.builder(
-                          padding: EdgeInsets.all(16),
+                          padding: const EdgeInsets.all(16),
                           itemCount: rooms.length,
                           itemBuilder: (context, index) {
                             final room = rooms[index];
@@ -171,37 +186,36 @@ class _ShareFolderWithRoomPageState extends State<ShareFolderWithRoomPage> {
                             final foldersCount =
                                 (room['folders'] as List?)?.length ?? 0;
 
-                            // Check if folder is already shared with this room
                             final isAlreadyShared = (room['folders'] as List?)
                                     ?.any((f) {
                                       final folderIdRef = f['folderId'];
                                       if (folderIdRef == null) return false;
-                                      
-                                      // إذا كان folderId هو String مباشرة
+
                                       if (folderIdRef is String) {
                                         return folderIdRef == widget.folderId;
                                       }
-                                      
-                                      // إذا كان folderId هو Map/Object
+
                                       if (folderIdRef is Map<String, dynamic>) {
-                                        final folderId = folderIdRef['_id']?.toString();
+                                        final folderId =
+                                            folderIdRef['_id']?.toString();
                                         return folderId == widget.folderId ||
-                                            folderIdRef['_id'] == widget.folderId;
+                                            folderIdRef['_id'] ==
+                                                widget.folderId;
                                       }
-                                      
-                                      // إذا كان folderId هو ObjectId أو أي نوع آخر
-                                      return folderIdRef.toString() == widget.folderId;
+
+                                      return folderIdRef.toString() ==
+                                          widget.folderId;
                                     }) ??
                                 false;
 
                             return Card(
-                              margin: EdgeInsets.only(bottom: 12),
+                              margin: const EdgeInsets.only(bottom: 12),
                               elevation: isSelected ? 4 : 1,
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(16),
                                 side: BorderSide(
                                   color: isSelected
-                                      ? Color(0xff28336f)
+                                      ? const Color(0xff28336f)
                                       : Colors.transparent,
                                   width: isSelected ? 2 : 0,
                                 ),
@@ -214,7 +228,7 @@ class _ShareFolderWithRoomPageState extends State<ShareFolderWithRoomPage> {
                                 },
                                 borderRadius: BorderRadius.circular(16),
                                 child: Padding(
-                                  padding: EdgeInsets.all(16),
+                                  padding: const EdgeInsets.all(16),
                                   child: Column(
                                     crossAxisAlignment:
                                         CrossAxisAlignment.start,

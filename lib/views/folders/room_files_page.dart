@@ -21,6 +21,7 @@ import 'package:http/http.dart' as http;
 import 'package:filevo/responsive.dart';
 import 'package:filevo/views/fileViewer/FilesGridView1.dart';
 import 'package:filevo/controllers/folders/folders_controller.dart';
+import 'package:pull_to_refresh/pull_to_refresh.dart';
 
 class RoomFilesPage extends StatefulWidget {
   final String roomId;
@@ -36,6 +37,10 @@ class _RoomFilesPageState extends State<RoomFilesPage> {
   bool isLoading = true;
   int _refreshTimestamp =
       DateTime.now().millisecondsSinceEpoch; // ✅ لتحديث الصور بعد التعديل
+
+  final RefreshController _refreshController = RefreshController(
+    initialRefresh: false,
+  );
 
   @override
   void initState() {
@@ -60,6 +65,12 @@ class _RoomFilesPageState extends State<RoomFilesPage> {
         isLoading = false;
       });
     }
+  }
+
+  @override
+  void dispose() {
+    _refreshController.dispose();
+    super.dispose();
   }
 
   String _getFileUrl(String? path) {
@@ -922,11 +933,19 @@ class _RoomFilesPageState extends State<RoomFilesPage> {
       ),
       floatingActionButton: SizedBox.shrink(), // ✅ إخفاء FloatingActionButton
       body: isLoading
-          ? Center(child: CircularProgressIndicator())
+          ? const Center(child: CircularProgressIndicator())
           : roomData == null
           ? Center(child: Text(S.of(context).failedToLoadRoomData))
-          : RefreshIndicator(
-              onRefresh: _loadRoomData,
+          : SmartRefresher(
+              controller: _refreshController,
+              physics: const BouncingScrollPhysics(
+                parent: AlwaysScrollableScrollPhysics(),
+              ),
+              onRefresh: () async {
+                await _loadRoomData();
+                _refreshController.refreshCompleted();
+              },
+              header: const WaterDropHeader(),
               child: _buildFilesList(),
             ),
     );
@@ -997,41 +1016,35 @@ class _RoomFilesPageState extends State<RoomFilesPage> {
     }
 
     // ✅ تحويل الملفات إلى format مناسب لـ FilesGrid
-    // ✅ ملاحظة: الـ backend يقوم بفلترة الملفات المشتركة لمرة واحدة تلقائياً
     final displayFiles = _mapFiles(files);
 
-    // ✅ لف FilesGrid في SingleChildScrollView للسماح بالسكرول
-    return SingleChildScrollView(
-      child: FilesGrid(
-        files: displayFiles,
-        roomId:
-            widget.roomId, // ✅ تمرير roomId لاستخدام getSharedFileDetailsInRoom
-        onFileTap: (file) {
-          final fileData =
-              file['originalData'] as Map<String, dynamic>? ?? file;
-          final fileId = file['fileId'] as String?;
-          _openFile(fileData, fileId);
-        },
-        onFileRemoved: () {
-          // ✅ إعادة تحميل بيانات الغرفة بعد إزالة الملف
-          _loadRoomData();
-        },
-        onFileUpdated: () {
-          // ✅ إعادة تحميل بيانات الغرفة بعد تحديث الملف
-          // ✅ استخدام Future.microtask لتأجيل الاستدعاء وتجنب التعليق
-          Future.microtask(() async {
-            // ✅ مسح cache الصور قبل إعادة التحميل لضمان ظهور التعديلات
-            PaintingBinding.instance.imageCache.clear();
-            PaintingBinding.instance.imageCache.clearLiveImages();
-            print(
-              '✅ [RoomFilesPage] Image cache cleared, reloading room data...',
-            );
-            if (mounted) {
-              await _loadRoomData();
-            }
-          });
-        },
-      ),
+    return FilesGrid(
+      files: displayFiles,
+      roomId:
+          widget.roomId, // ✅ تمرير roomId لاستخدام getSharedFileDetailsInRoom
+      onFileTap: (file) {
+        final fileData = file['originalData'] as Map<String, dynamic>? ?? file;
+        final fileId = file['fileId'] as String?;
+        _openFile(fileData, fileId);
+      },
+      onFileRemoved: () {
+        // ✅ إعادة تحميل بيانات الغرفة بعد إزالة الملف
+        _loadRoomData();
+      },
+      onFileUpdated: () {
+        // ✅ إعادة تحميل بيانات الغرفة بعد تحديث الملف
+        Future.microtask(() async {
+          // ✅ مسح cache الصور قبل إعادة التحميل لضمان ظهور التعديلات
+          PaintingBinding.instance.imageCache.clear();
+          PaintingBinding.instance.imageCache.clearLiveImages();
+          print(
+            '✅ [RoomFilesPage] Image cache cleared, reloading room data...',
+          );
+          if (mounted) {
+            await _loadRoomData();
+          }
+        });
+      },
     );
   }
 

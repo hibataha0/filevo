@@ -8,6 +8,7 @@ import 'package:filevo/controllers/ThemeController.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:filevo/constants/app_colors.dart';
+import 'package:pull_to_refresh/pull_to_refresh.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -17,7 +18,11 @@ class ProfilePage extends StatefulWidget {
 }
 
 class _ProfilePageState extends State<ProfilePage> {
-  final GlobalKey<StorageCardState> _storageCardKey = GlobalKey<StorageCardState>();
+  final GlobalKey<StorageCardState> _storageCardKey =
+      GlobalKey<StorageCardState>();
+  final RefreshController _refreshController = RefreshController(
+    initialRefresh: false,
+  );
 
   @override
   void initState() {
@@ -48,19 +53,25 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   @override
+  void dispose() {
+    _refreshController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final profileController = context.watch<ProfileController>();
     final themeController = context.watch<ThemeController>();
     final isDarkMode = themeController.isDarkMode;
 
     return Scaffold(
-      backgroundColor: isDarkMode ? AppColors.darkAppBar : AppColors.lightAppBar,
+      backgroundColor: isDarkMode
+          ? AppColors.darkAppBar
+          : AppColors.lightAppBar,
       body: Stack(
         children: [
           if (profileController.isLoading && profileController.userName == null)
-            const Center(
-              child: CircularProgressIndicator(color: Colors.white),
-            )
+            const Center(child: CircularProgressIndicator(color: Colors.white))
           else
             Column(
               children: [
@@ -93,25 +104,35 @@ class _ProfilePageState extends State<ProfilePage> {
                 Expanded(
                   child: Container(
                     decoration: BoxDecoration(
-                      color: isDarkMode ? const Color(0xFF121212) : const Color(0xFFE9E9E9),
-                      borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
+                      color: isDarkMode
+                          ? const Color(0xFF121212)
+                          : const Color(0xFFE9E9E9),
+                      borderRadius: const BorderRadius.vertical(
+                        top: Radius.circular(30),
+                      ),
                     ),
-                    child: RefreshIndicator(
+                    child: SmartRefresher(
+                      controller: _refreshController,
+                      physics: const BouncingScrollPhysics(
+                        parent: AlwaysScrollableScrollPhysics(),
+                      ),
                       onRefresh: () async {
-                        // تحديث بيانات التخزين عند السحب للأسفل
                         _storageCardKey.currentState?.refresh();
-                        await Future.delayed(Duration(milliseconds: 500));
+                        await Future.delayed(const Duration(milliseconds: 500));
+                        _refreshController.refreshCompleted();
                       },
-                      child: SingleChildScrollView(
-                        padding: EdgeInsets.all(20.0),
-                        child: Column(
-                          children: [
-                            StorageCard(key: _storageCardKey),
-                            FavoritesSection(),
-                            StarredFoldersSection(),
-                            SizedBox(height: 100),
-                          ],
+                      header: const WaterDropHeader(),
+                      child: ListView(
+                        padding: const EdgeInsets.all(20.0),
+                        physics: const BouncingScrollPhysics(
+                          parent: AlwaysScrollableScrollPhysics(),
                         ),
+                        children: [
+                          StorageCard(key: _storageCardKey),
+                          FavoritesSection(),
+                          StarredFoldersSection(),
+                          const SizedBox(height: 100),
+                        ],
                       ),
                     ),
                   ),
@@ -150,4 +171,3 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 }
-

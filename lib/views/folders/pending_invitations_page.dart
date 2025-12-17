@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:filevo/controllers/folders/room_controller.dart';
 import 'package:filevo/generated/l10n.dart';
+import 'package:pull_to_refresh/pull_to_refresh.dart';
 
 class PendingInvitationsPage extends StatefulWidget {
   @override
@@ -11,6 +12,8 @@ class PendingInvitationsPage extends StatefulWidget {
 class _PendingInvitationsPageState extends State<PendingInvitationsPage> {
   List<Map<String, dynamic>> invitations = [];
   bool isLoading = true;
+  final RefreshController _refreshController =
+      RefreshController(initialRefresh: false);
 
   @override
   void initState() {
@@ -33,6 +36,12 @@ class _PendingInvitationsPageState extends State<PendingInvitationsPage> {
         isLoading = false;
       });
     }
+  }
+
+  @override
+  void dispose() {
+    _refreshController.dispose();
+    super.dispose();
   }
 
   Future<void> _acceptInvitation(String invitationId) async {
@@ -148,10 +157,15 @@ class _PendingInvitationsPageState extends State<PendingInvitationsPage> {
                     ],
                   ),
                 )
-              : RefreshIndicator(
-                  onRefresh: _loadInvitations,
+              : SmartRefresher(
+                  controller: _refreshController,
+                  onRefresh: () async {
+                    await _loadInvitations();
+                    _refreshController.refreshCompleted();
+                  },
+                  header: const WaterDropHeader(),
                   child: ListView.builder(
-                    padding: EdgeInsets.all(16),
+                    padding: const EdgeInsets.all(16),
                     itemCount: invitations.length,
                     itemBuilder: (context, index) {
                       final invitation = invitations[index];

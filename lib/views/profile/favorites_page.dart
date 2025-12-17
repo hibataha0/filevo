@@ -1,6 +1,7 @@
 // views/favorites_page.dart
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:pull_to_refresh/pull_to_refresh.dart';
 import 'package:filevo/generated/l10n.dart';
 import 'package:provider/provider.dart';
 import 'package:filevo/controllers/folders/files_controller.dart';
@@ -28,6 +29,9 @@ class _FavoritesPageState extends State<FavoritesPage> {
   final ScrollController _scrollController = ScrollController();
   bool _isGridView = true;
 
+  final RefreshController _refreshController =
+      RefreshController(initialRefresh: false);
+
   @override
   void initState() {
     super.initState();
@@ -38,6 +42,7 @@ class _FavoritesPageState extends State<FavoritesPage> {
   @override
   void dispose() {
     _scrollController.dispose();
+    _refreshController.dispose();
     super.dispose();
   }
 
@@ -352,8 +357,13 @@ class _FavoritesPageState extends State<FavoritesPage> {
               ),
             ],
           ),
-          body: RefreshIndicator(
-            onRefresh: _refreshFiles,
+          body: SmartRefresher(
+            controller: _refreshController,
+            onRefresh: () async {
+              await _refreshFiles();
+              _refreshController.refreshCompleted();
+            },
+            header: const WaterDropHeader(),
             child: fileController.isLoading && starredFiles.isEmpty
                 ? const Center(
                     child: CircularProgressIndicator(color: Color(0xff28336f)),

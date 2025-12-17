@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:pull_to_refresh/pull_to_refresh.dart';
 import 'package:provider/provider.dart';
 import 'package:filevo/controllers/folders/folders_controller.dart';
 import 'package:filevo/components/FolderFileCard.dart';
@@ -20,6 +21,9 @@ class _StarredFoldersPageState extends State<StarredFoldersPage> {
   final ScrollController _scrollController = ScrollController();
   bool _isGridView = true;
 
+  final RefreshController _refreshController =
+      RefreshController(initialRefresh: false);
+
   @override
   void initState() {
     super.initState();
@@ -30,6 +34,7 @@ class _StarredFoldersPageState extends State<StarredFoldersPage> {
   @override
   void dispose() {
     _scrollController.dispose();
+    _refreshController.dispose();
     super.dispose();
   }
 
@@ -202,8 +207,13 @@ class _StarredFoldersPageState extends State<StarredFoldersPage> {
               ),
             ],
           ),
-          body: RefreshIndicator(
-            onRefresh: _refreshFolders,
+          body: SmartRefresher(
+            controller: _refreshController,
+            onRefresh: () async {
+              await _refreshFolders();
+              _refreshController.refreshCompleted();
+            },
+            header: const WaterDropHeader(),
             child: folderController.isLoading && starredFolders.isEmpty
                 ? const Center(
                     child: CircularProgressIndicator(

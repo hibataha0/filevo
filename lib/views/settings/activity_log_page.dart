@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:pull_to_refresh/pull_to_refresh.dart';
 import 'package:filevo/generated/l10n.dart';
 import 'package:provider/provider.dart';
 import 'package:filevo/controllers/activity_controller.dart';
@@ -13,6 +14,10 @@ class ActivityLogPage extends StatefulWidget {
 
 class _ActivityLogPageState extends State<ActivityLogPage> {
   int _currentPage = 1;
+
+  final RefreshController _refreshController = RefreshController(
+    initialRefresh: false,
+  );
   final int _limit = 20;
   String? _selectedAction;
   String? _selectedEntityType;
@@ -23,6 +28,12 @@ class _ActivityLogPageState extends State<ActivityLogPage> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadActivities();
     });
+  }
+
+  @override
+  void dispose() {
+    _refreshController.dispose();
+    super.dispose();
   }
 
   void _loadActivities() {
@@ -217,18 +228,18 @@ class _ActivityLogPageState extends State<ActivityLogPage> {
             );
           }
 
-          return RefreshIndicator(
+          return SmartRefresher(
+            controller: _refreshController,
             onRefresh: () async {
               _currentPage = 1;
               _loadActivities();
+              _refreshController.refreshCompleted();
             },
+            header: const WaterDropHeader(),
             child: Column(
               children: [
-                // ✅ إحصائيات سريعة
                 if (controller.statistics != null)
                   _buildStatisticsCard(controller.statistics!),
-
-                // ✅ قائمة الأنشطة
                 Expanded(
                   child: ListView.builder(
                     padding: const EdgeInsets.all(16),
@@ -250,8 +261,6 @@ class _ActivityLogPageState extends State<ActivityLogPage> {
                     },
                   ),
                 ),
-
-                // ✅ Pagination
                 if (controller.pagination != null)
                   _buildPagination(controller.pagination!),
               ],
@@ -472,7 +481,10 @@ class _ActivityLogPageState extends State<ActivityLogPage> {
                   border: OutlineInputBorder(),
                 ),
                 items: [
-                  DropdownMenuItem(value: null, child: Text(S.of(context).allActivities)),
+                  DropdownMenuItem(
+                    value: null,
+                    child: Text(S.of(context).allActivities),
+                  ),
                   DropdownMenuItem(
                     value: 'file_uploaded',
                     child: Text(S.of(context).uploadFile),
@@ -512,12 +524,30 @@ class _ActivityLogPageState extends State<ActivityLogPage> {
                   border: OutlineInputBorder(),
                 ),
                 items: [
-                  DropdownMenuItem(value: null, child: Text(S.of(context).allActivities)),
-                  DropdownMenuItem(value: 'file', child: Text(S.of(context).file)),
-                  DropdownMenuItem(value: 'folder', child: Text(S.of(context).folder)),
-                  DropdownMenuItem(value: 'user', child: Text(S.of(context).userLabel)),
-                  DropdownMenuItem(value: 'system', child: Text(S.of(context).system)),
-                  DropdownMenuItem(value: 'room', child: Text(S.of(context).roomLabel)),
+                  DropdownMenuItem(
+                    value: null,
+                    child: Text(S.of(context).allActivities),
+                  ),
+                  DropdownMenuItem(
+                    value: 'file',
+                    child: Text(S.of(context).file),
+                  ),
+                  DropdownMenuItem(
+                    value: 'folder',
+                    child: Text(S.of(context).folder),
+                  ),
+                  DropdownMenuItem(
+                    value: 'user',
+                    child: Text(S.of(context).userLabel),
+                  ),
+                  DropdownMenuItem(
+                    value: 'system',
+                    child: Text(S.of(context).system),
+                  ),
+                  DropdownMenuItem(
+                    value: 'room',
+                    child: Text(S.of(context).roomLabel),
+                  ),
                 ],
                 onChanged: (value) {
                   setState(() {

@@ -16,6 +16,7 @@ import 'package:filevo/services/storage_service.dart';
 import 'package:path/path.dart' as p;
 import 'package:permission_handler/permission_handler.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:filevo/utils/file_security.dart';
 
 class MainPage extends StatefulWidget {
   const MainPage({Key? key}) : super(key: key);
@@ -151,6 +152,39 @@ class _MainPageState extends State<MainPage> {
 
       print('✅ Selected ${result.files.length} files');
 
+      // 🔐 Security: Check for dangerous files
+      final fileNames = result.files.map((f) => f.name).toList();
+      final dangerousFiles = getDangerousFiles(fileNames);
+      
+      if (dangerousFiles.isNotEmpty) {
+        // Show warning dialog
+        final shouldProceed = await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('⚠️ تحذير أمني'),
+            content: Text(
+              'تم اكتشاف ملفات خطيرة:\n\n${dangerousFiles.join('\n')}\n\n'
+              'سيتم تحويل هذه الملفات إلى ملفات نصية آمنة (.txt) لمنع تنفيذها.\n\n'
+              'هل تريد المتابعة؟',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: const Text('إلغاء'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(true),
+                child: const Text('متابعة'),
+              ),
+            ],
+          ),
+        );
+        
+        if (shouldProceed != true) {
+          return;
+        }
+      }
+
       // ✅ 4. قراءة الملفات وتحويلها إلى bytes
       _showSnackBar('📁 جاري قراءة الملفات...');
 
@@ -161,12 +195,25 @@ class _MainPageState extends State<MainPage> {
         try {
           List<int> bytes;
           String fileName = platformFile.name;
+          String safeFileName = fileName;
 
           if (platformFile.path != null) {
             final file = File(platformFile.path!);
             if (await file.exists()) {
-              bytes = await file.readAsBytes();
-              print('✅ Read file: $fileName (${bytes.length} bytes)');
+              // 🔐 Security: Convert dangerous files to text
+              if (isDangerousExtension(fileName)) {
+                _showSnackBar('🔐 جاري تحويل الملف الخطير: $fileName');
+                final convertedFile = await convertDangerousFileToText(
+                  originalFile: file,
+                  originalFileName: fileName,
+                );
+                bytes = await convertedFile.readAsBytes();
+                safeFileName = convertToSafeTextFile(fileName);
+                print('🔐 Converted dangerous file: $fileName -> $safeFileName');
+              } else {
+                bytes = await file.readAsBytes();
+              }
+              print('✅ Read file: $safeFileName (${bytes.length} bytes)');
             } else {
               print('⚠️ File does not exist: ${platformFile.path}');
               continue;
@@ -174,16 +221,33 @@ class _MainPageState extends State<MainPage> {
           } else if (platformFile.bytes != null) {
             // ✅ إذا كان الملف في الذاكرة (مثل اختيار من Google Drive)
             bytes = platformFile.bytes!;
-            print('✅ Read file from memory: $fileName (${bytes.length} bytes)');
+            
+            // 🔐 Security: Convert dangerous files to text
+            if (isDangerousExtension(fileName)) {
+              _showSnackBar('🔐 جاري تحويل الملف الخطير: $fileName');
+              final tempDir = await getTemporaryDirectory();
+              final tempFile = File('${tempDir.path}/temp_$fileName');
+              await tempFile.writeAsBytes(bytes);
+              final convertedFile = await convertDangerousFileToText(
+                originalFile: tempFile,
+                originalFileName: fileName,
+              );
+              bytes = await convertedFile.readAsBytes();
+              safeFileName = convertToSafeTextFile(fileName);
+              await tempFile.delete(); // Clean up temp file
+              print('🔐 Converted dangerous file: $fileName -> $safeFileName');
+            }
+            
+            print('✅ Read file from memory: $safeFileName (${bytes.length} bytes)');
           } else {
             print('⚠️ No file data available for: $fileName');
             continue;
           }
 
-          filesData.add({'bytes': bytes, 'fileName': fileName});
+          filesData.add({'bytes': bytes, 'fileName': safeFileName});
 
-          // ✅ استخدام اسم الملف كـ relative path
-          relativePaths.add(fileName);
+          // ✅ استخدام اسم الملف الآمن كـ relative path
+          relativePaths.add(safeFileName);
         } catch (e) {
           print('❌ Error reading file ${platformFile.name}: $e');
         }
@@ -638,6 +702,39 @@ class _MainPageState extends State<MainPage> {
       final result = await FilePicker.platform.pickFiles(allowMultiple: true);
       if (result == null || result.files.isEmpty) return;
 
+      // 🔐 Security: Check for dangerous files
+      final selectedFileNames = result.files.map((f) => f.name).toList();
+      final dangerousFiles = getDangerousFiles(selectedFileNames);
+      
+      if (dangerousFiles.isNotEmpty) {
+        // Show warning dialog
+        final shouldProceed = await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('⚠️ تحذير أمني'),
+            content: Text(
+              'تم اكتشاف ملفات خطيرة:\n\n${dangerousFiles.join('\n')}\n\n'
+              'سيتم تحويل هذه الملفات إلى ملفات نصية آمنة (.txt) لمنع تنفيذها.\n\n'
+              'هل تريد المتابعة؟',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: const Text('إلغاء'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(true),
+                child: const Text('متابعة'),
+              ),
+            ],
+          ),
+        );
+        
+        if (shouldProceed != true) {
+          return;
+        }
+      }
+
       // ✅ 2. قراءة الملفات فوراً وتحويلها إلى bytes (قبل اختيار المجلد)
       // ✅ هذا مهم لأن الملفات المؤقتة من FilePicker قد تُحذف أثناء اختيار المجلد
       _showSnackBar('📁 جاري قراءة الملفات...');
@@ -651,19 +748,48 @@ class _MainPageState extends State<MainPage> {
         try {
           List<int> bytes;
           String fileName = platformFile.name;
+          String safeFileName = fileName;
 
           // ✅ محاولة قراءة من path أولاً
           if (platformFile.path != null) {
             final file = File(platformFile.path!);
             if (await file.exists()) {
-              bytes = await file.readAsBytes();
-              print('✅ Read file from path: $fileName (${bytes.length} bytes)');
+              // 🔐 Security: Convert dangerous files to text
+              if (isDangerousExtension(fileName)) {
+                _showSnackBar('🔐 جاري تحويل الملف الخطير: $fileName');
+                final convertedFile = await convertDangerousFileToText(
+                  originalFile: file,
+                  originalFileName: fileName,
+                );
+                bytes = await convertedFile.readAsBytes();
+                safeFileName = convertToSafeTextFile(fileName);
+                print('🔐 Converted dangerous file: $fileName -> $safeFileName');
+              } else {
+                bytes = await file.readAsBytes();
+              }
+              print('✅ Read file from path: $safeFileName (${bytes.length} bytes)');
             } else {
               // ✅ إذا لم يكن الملف موجوداً، حاول من bytes
               if (platformFile.bytes != null) {
                 bytes = platformFile.bytes!;
+                
+                // 🔐 Security: Convert dangerous files to text
+                if (isDangerousExtension(fileName)) {
+                  _showSnackBar('🔐 جاري تحويل الملف الخطير: $fileName');
+                  final tempFileForConversion = File('${tempDir.path}/temp_conv_$fileName');
+                  await tempFileForConversion.writeAsBytes(bytes);
+                  final convertedFile = await convertDangerousFileToText(
+                    originalFile: tempFileForConversion,
+                    originalFileName: fileName,
+                  );
+                  bytes = await convertedFile.readAsBytes();
+                  safeFileName = convertToSafeTextFile(fileName);
+                  await tempFileForConversion.delete(); // Clean up
+                  print('🔐 Converted dangerous file: $fileName -> $safeFileName');
+                }
+                
                 print(
-                  '✅ Read file from bytes: $fileName (${bytes.length} bytes)',
+                  '✅ Read file from bytes: $safeFileName (${bytes.length} bytes)',
                 );
               } else {
                 print('⚠️ No file data available for: $fileName');
@@ -673,19 +799,35 @@ class _MainPageState extends State<MainPage> {
           } else if (platformFile.bytes != null) {
             // ✅ إذا كان الملف في الذاكرة (مثل اختيار من Google Drive)
             bytes = platformFile.bytes!;
-            print('✅ Read file from memory: $fileName (${bytes.length} bytes)');
+            
+            // 🔐 Security: Convert dangerous files to text
+            if (isDangerousExtension(fileName)) {
+              _showSnackBar('🔐 جاري تحويل الملف الخطير: $fileName');
+              final tempFileForConversion = File('${tempDir.path}/temp_conv_$fileName');
+              await tempFileForConversion.writeAsBytes(bytes);
+              final convertedFile = await convertDangerousFileToText(
+                originalFile: tempFileForConversion,
+                originalFileName: fileName,
+              );
+              bytes = await convertedFile.readAsBytes();
+              safeFileName = convertToSafeTextFile(fileName);
+              await tempFileForConversion.delete(); // Clean up
+              print('🔐 Converted dangerous file: $fileName -> $safeFileName');
+            }
+            
+            print('✅ Read file from memory: $safeFileName (${bytes.length} bytes)');
           } else {
             print('⚠️ No file data available for: $fileName');
             continue;
           }
 
-          // ✅ حفظ الملف في مجلد مؤقت آمن
+          // ✅ حفظ الملف في مجلد مؤقت آمن (باستخدام الاسم الآمن)
           final tempFile = File(
-            '${tempDir.path}/${DateTime.now().millisecondsSinceEpoch}_$fileName',
+            '${tempDir.path}/${DateTime.now().millisecondsSinceEpoch}_$safeFileName',
           );
           await tempFile.writeAsBytes(bytes);
           tempFiles.add(tempFile);
-          fileNames.add(fileName);
+          fileNames.add(safeFileName);
         } catch (e) {
           print('❌ Error reading file ${platformFile.name}: $e');
         }
@@ -736,6 +878,63 @@ class _MainPageState extends State<MainPage> {
         listen: false,
       );
 
+      Future<T?> _showProgressDialog<T>({
+        required String title,
+        required Future<T> Function(void Function(int, int) onProgress) action,
+      }) {
+        return showDialog<T>(
+          context: context,
+          barrierDismissible: false,
+          builder: (dialogContext) {
+            double progressValue = 0;
+            bool started = false;
+
+            return StatefulBuilder(
+              builder: (ctx, setState) {
+                if (!started) {
+                  started = true;
+                  Future(() async {
+                    try {
+                      final result = await action((sent, total) {
+                        if (total > 0) {
+                          setState(() {
+                            progressValue = sent / total;
+                          });
+                        }
+                      });
+                      if (Navigator.of(dialogContext).canPop()) {
+                        Navigator.of(dialogContext).pop(result);
+                      }
+                    } catch (e) {
+                      if (Navigator.of(dialogContext).canPop()) {
+                        Navigator.of(dialogContext).pop(null);
+                      }
+                      rethrow;
+                    }
+                  });
+                }
+
+                final percent = (progressValue * 100).clamp(0, 100).toStringAsFixed(0);
+
+                return AlertDialog(
+                  title: Text(title),
+                  content: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      LinearProgressIndicator(
+                        value: progressValue > 0 ? progressValue : null,
+                      ),
+                      const SizedBox(height: 12),
+                      Text('$percent%'),
+                    ],
+                  ),
+                );
+              },
+            );
+          },
+        );
+      }
+
       // ✅ استخدام selectedFolderId ('ROOT' = الجذر = null)
       print('📁 MainView: Selected folder ID: $selectedFolderId');
       final parentFolderId = selectedFolderId == 'ROOT'
@@ -746,11 +945,16 @@ class _MainPageState extends State<MainPage> {
       // ✅ 4. رفع الملفات من الملفات المؤقتة
       try {
         if (tempFiles.length == 1) {
-          bool success = await fileController.uploadSingleFile(
-            file: tempFiles[0],
-            token: _token!,
-            parentFolderId: parentFolderId,
-          );
+          bool success = await _showProgressDialog<bool>(
+                title: 'جار رفع الملف...',
+                action: (onProgress) => fileController.uploadSingleFile(
+                  file: tempFiles[0],
+                  token: _token!,
+                  parentFolderId: parentFolderId,
+                  onSendProgress: onProgress,
+                ),
+              ) ??
+              false;
           _showSnackBar(
             success
                 ? S.of(context).upload_success
@@ -758,21 +962,83 @@ class _MainPageState extends State<MainPage> {
             isError: !success,
           );
         } else {
-          final response = await fileController.uploadMultipleFiles(
-            files: tempFiles,
-            token: _token!,
-            parentFolderId: parentFolderId,
-          );
+          final response = await _showProgressDialog<Map<String, dynamic>>(
+            title: 'جار رفع الملفات...',
+            action: (onProgress) => fileController.uploadMultipleFiles(
+              files: tempFiles,
+              token: _token!,
+              parentFolderId: parentFolderId,
+              onSendProgress: onProgress,
+            ),
+          ) ??
+              {};
           if (response['files'] != null &&
               (response['files'] as List).isNotEmpty) {
-            _showSnackBar('✅ تم رفع ${tempFiles.length} ملف بنجاح');
-          } else {
+            final uploadedCount = (response['files'] as List).length;
+            final errors = (response['errors'] as List?) ?? [];
+            final errorsCount = errors.length;
+
             _showSnackBar(
-              fileController.errorMessage ??
-                  response['message'] ??
-                  'فشل رفع الملفات',
-              isError: true,
+              errorsCount > 0
+                  ? '✅ تم رفع $uploadedCount ملف، مع رفض $errorsCount بعد الفحص'
+                  : '✅ تم رفع $uploadedCount ملف بنجاح',
             );
+
+            if (errorsCount > 0) {
+              final errorNames = errors
+                  .map((e) {
+                    if (e is Map && e['filename'] != null) {
+                      return e['filename'].toString();
+                    }
+                    return e is Map && e['error'] != null
+                        ? e['error'].toString()
+                        : e.toString();
+                  })
+                  .where((name) => name.isNotEmpty)
+                  .take(3)
+                  .join(', ');
+
+              final errorMessage = errorNames.isNotEmpty
+                  ? 'تم رفض بعض الملفات بعد فحص الفيروسات: $errorNames'
+                  : 'تم رفض بعض الملفات بعد فحص الفيروسات';
+
+              _showSnackBar(
+                errorMessage,
+                isError: true,
+              );
+            }
+          } else {
+            final errors = (response['errors'] as List?) ?? [];
+            if (errors.isNotEmpty) {
+              final errorNames = errors
+                  .map((e) {
+                    if (e is Map && e['filename'] != null) {
+                      return e['filename'].toString();
+                    }
+                    return e is Map && e['error'] != null
+                        ? e['error'].toString()
+                        : e.toString();
+                  })
+                  .where((name) => name.isNotEmpty)
+                  .take(3)
+                  .join(', ');
+
+              final errorMessage = errorNames.isNotEmpty
+                  ? '❌ تم رفض جميع الملفات بعد فحص الفيروسات: $errorNames'
+                  : '❌ تم رفض جميع الملفات بعد فحص الفيروسات';
+
+              _showSnackBar(
+                errorMessage,
+                isError: true,
+              );
+            } else {
+              _showSnackBar(
+                fileController.errorMessage ??
+                    response['message'] ??
+                    'فشل رفع الملفات',
+                isError: true,
+              );
+            }
           }
         }
       } finally {

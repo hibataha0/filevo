@@ -32,14 +32,15 @@ import 'dart:async';
 import 'package:path_provider/path_provider.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'package:permission_handler/permission_handler.dart';
+import 'package:pull_to_refresh/pull_to_refresh.dart';
 
 class FoldersPage extends StatefulWidget {
   @override
   State<FoldersPage> createState() => _FoldersPageState();
 }
 
-class _FoldersPageState extends State<FoldersPage> {
-  // ✅ قائمة امتدادات الملفات الخارجية التي تحتاج download endpoint
+class _FoldersPageState extends State<FoldersPage>
+    with SingleTickerProviderStateMixin {
   static const List<String> _externalFileExtensions = [
     'doc',
     'docx',
@@ -60,83 +61,72 @@ class _FoldersPageState extends State<FoldersPage> {
   final TextEditingController _searchController = TextEditingController();
   bool _showFilterOptions = false;
   String _selectedTimeFilter = 'All';
-  String? _selectedCategory; // ✅ التصنيف المحدد للبحث (Images, Videos, إلخ)
-  String? _selectedDateRange; // ✅ نطاق التاريخ (yesterday, last7days, إلخ)
-  DateTime? _customStartDate; // ✅ تاريخ البداية للفلترة المخصصة
-  DateTime? _customEndDate; // ✅ تاريخ النهاية للفلترة المخصصة
+  String? _selectedCategory;
+  String? _selectedDateRange;
+  DateTime? _customStartDate;
+  DateTime? _customEndDate;
   bool isFilesGridView = true;
   List<String> _selectedTypes = [];
-  bool isFoldersGridView = true;
-  bool isFoldersListView = true;
-  String _viewMode = 'all'; // 'all' or 'shared'
 
-  // نقل قائمة المجلدات لتكون جزء من الـ State
+  // ✅ تغيير نظام العرض - استخدام TabController بدلاً من _viewMode
+  TabController? _tabController;
+  int _currentTabIndex = 0; // 0: الكل، 1: الغرف
+
   List<Map<String, dynamic>> folders = [];
-  List<Map<String, dynamic>> sharedFolders = []; // ✅ المجلدات المشتركة معي
+  List<Map<String, dynamic>> sharedFolders = [];
   bool _isLoadingFolders = false;
   bool _isLoadingSharedFolders = false;
-  Map<String, Map<String, dynamic>> _previousCategoriesStats =
-      {}; // ✅ لتتبع تغييرات إحصائيات التصنيفات
+  Map<String, Map<String, dynamic>> _previousCategoriesStats = {};
 
-  // ✅ البحث المحلي (للمجلدات والتصنيفات)
   List<Map<String, dynamic>> _filteredFolders = [];
   List<Map<String, dynamic>> _filteredSharedFolders = [];
 
-  // ✅ البحث الذكي للملفات
   final FileSearchService _fileSearchService = FileSearchService();
   bool _isSearchLoadingFiles = false;
   List<Map<String, dynamic>> _searchFilesResults = [];
-  Timer? _searchDebounceTimer; // ✅ Timer للـ debounce
-  http.Client? _searchHttpClient; // ✅ HTTP client لإلغاء الطلبات السابقة
+  Timer? _searchDebounceTimer;
+  http.Client? _searchHttpClient;
 
-  // ✅ ميزة البحث بالصوت (Speech to Text)
   final stt.SpeechToText _speech = stt.SpeechToText();
   bool _isListening = false;
-  String _searchText = ''; // النص المعرّف من الصوت
+  String _searchText = '';
+
+  final RefreshController _refreshController = RefreshController(
+    initialRefresh: false,
+  );
 
   @override
   void initState() {
     super.initState();
 
-    // ✅ تحميل التصنيفات والمجلدات بعد اكتمال البناء
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _loadCategoriesAndFolders();
+    // ✅ تهيئة TabController
+    _tabController = TabController(length: 2, vsync: this);
+    _tabController!.addListener(() {
+      if (_tabController!.indexIsChanging) {
+        setState(() {
+          _currentTabIndex = _tabController!.index;
+        });
+      }
     });
 
-    // ✅ تحميل الغرف عند بدء الصفحة
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadCategoriesAndFolders();
       final roomController = Provider.of<RoomController>(
         context,
         listen: false,
       );
       roomController.getRooms();
-    });
-
-    // ✅ تحميل المجلدات المشتركة عند بدء الصفحة
-    WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadSharedFolders();
     });
 
-    // ✅ إضافة listener للبحث المحلي فقط
     _searchController.addListener(_onSearchChanged);
-
-    // ✅ تهيئة خدمة تحويل الصوت إلى نص
     _initializeSpeech();
   }
 
-  /// معالجة تغيير نص البحث
-  ///
-  /// تقوم هذه الدالة بـ:
-  /// 1. البحث المحلي الفوري في المجلدات والتصنيفات المشتركة
-  /// 2. البحث الذكي في الملفات مع debounce (500ms) لتقليل الطلبات للخادم
-  /// 3. إلغاء الطلبات السابقة عند تغيير نص البحث
-  ///
-  /// [Performance]: تستخدم computed values لتجنب إعادة الحساب غير الضرورية
   void _onSearchChanged() {
     final query = _searchController.text.trim();
 
     if (query.isEmpty) {
-      // ✅ إلغاء البحث السابق
       _searchDebounceTimer?.cancel();
       _searchHttpClient?.close();
       _searchHttpClient = null;
@@ -152,8 +142,6 @@ class _FoldersPageState extends State<FoldersPage> {
 
     final queryLower = query.toLowerCase();
 
-    // ✅ البحث المحلي في المجلدات والتصنيفات (محسّن)
-    // ✅ استخدام computed values لتجنب إعادة الحساب غير الضرورية
     final filteredFoldersList = folders.where((folder) {
       final name = (folder['title'] ?? folder['name'] ?? '')
           .toString()
@@ -166,7 +154,6 @@ class _FoldersPageState extends State<FoldersPage> {
       return name.contains(queryLower);
     }).toList();
 
-    // ✅ تحديث الـ state مرة واحدة فقط
     if (mounted) {
       setState(() {
         _filteredFolders = filteredFoldersList;
@@ -174,7 +161,6 @@ class _FoldersPageState extends State<FoldersPage> {
       });
     }
 
-    // ✅ البحث الذكي في الملفات (مع debounce محسّن)
     _searchDebounceTimer?.cancel();
     _searchDebounceTimer = Timer(Duration(milliseconds: 500), () {
       if (_searchController.text.trim() == query && query.isNotEmpty) {
@@ -183,20 +169,6 @@ class _FoldersPageState extends State<FoldersPage> {
     });
   }
 
-  /// تنفيذ البحث الذكي في الملفات
-  ///
-  /// تقوم هذه الدالة بـ:
-  /// 1. إلغاء أي طلب بحث سابق لتجنب تضارب النتائج
-  /// 2. تحويل الفلاتر (التصنيف، نطاق التاريخ) من العربية إلى الإنجليزية للباك إند
-  /// 3. استدعاء FileSearchService.smartSearch مع الفلاتر المحددة
-  /// 4. معالجة النتائج وإضافة metadata (type, searchType, relevanceScore)
-  ///
-  /// [Parameters]:
-  /// - [query]: نص البحث
-  ///
-  /// [Returns]: Future<void>
-  ///
-  /// [Throws]: يلتقط الأخطاء ويعرض رسالة للمستخدم
   Future<void> _performFileSearch(String query) async {
     if (query.trim().isEmpty) {
       setState(() {
@@ -206,7 +178,6 @@ class _FoldersPageState extends State<FoldersPage> {
       return;
     }
 
-    // ✅ إلغاء الطلب السابق إن وجد
     _searchHttpClient?.close();
     _searchHttpClient = http.Client();
 
@@ -215,10 +186,8 @@ class _FoldersPageState extends State<FoldersPage> {
     });
 
     try {
-      // ✅ تحويل التصنيف من العربية إلى الإنجليزية للباك إند
       String? categoryForBackend;
       if (_selectedCategory != null && _selectedCategory!.isNotEmpty) {
-        // ✅ تحويل من العربية إلى الإنجليزية
         final categoryMap = {
           'صور': 'Images',
           'فيديوهات': 'Videos',
@@ -233,7 +202,6 @@ class _FoldersPageState extends State<FoldersPage> {
             categoryMap[_selectedCategory] ?? _selectedCategory;
       }
 
-      // ✅ تحويل نطاق التاريخ من العربية إلى الإنجليزية
       String? dateRangeForBackend;
       if (_selectedDateRange != null &&
           _selectedDateRange != 'All' &&
@@ -264,29 +232,14 @@ class _FoldersPageState extends State<FoldersPage> {
         final results = List<Map<String, dynamic>>.from(
           result['results'] ?? [],
         );
-
-        // ✅ معالجة النتائج خارج setState لتحسين الأداء
         final processedResults = results.map<Map<String, dynamic>>((r) {
-          // ✅ نسخ جميع البيانات من الباك إند (بما فيها بيانات الصور والصوت والفيديو)
           final file = Map<String, dynamic>.from(r['item'] ?? r);
-
-          // ✅ إضافة type للتمييز بين الملفات والمجلدات
           file['type'] = 'file';
           file['searchType'] = r['searchType'] ?? 'text';
           file['relevanceScore'] = r['relevanceScore'] ?? 0.0;
-
-          // ✅ التأكد من وجود _id
           if (file['_id'] == null && file['id'] != null) {
             file['_id'] = file['id'];
           }
-
-          // ✅ حفظ جميع الحقول الجديدة من الباك إند:
-          // - imageDescription, imageObjects, imageScene, imageColors, imageMood, imageText
-          // - audioTranscript
-          // - videoTranscript, videoScenes, videoDescription
-          // - extractedText, summary, embedding
-          // هذه الحقول موجودة بالفعل في file لأننا نسخناها من r['item']
-
           return file;
         }).toList();
 
@@ -312,7 +265,6 @@ class _FoldersPageState extends State<FoldersPage> {
     }
   }
 
-  // ✅ تحميل التصنيفات والمجلدات من الباك
   Future<void> _loadCategoriesAndFolders() async {
     if (!mounted) return;
 
@@ -320,7 +272,6 @@ class _FoldersPageState extends State<FoldersPage> {
       _isLoadingFolders = true;
     });
 
-    // ✅ التصنيفات (categories) - قاعدة البيانات
     final categoriesBase = [
       {
         "category": "images",
@@ -404,8 +355,6 @@ class _FoldersPageState extends State<FoldersPage> {
       },
     ];
 
-    // ✅ جلب إحصائيات التصنيفات من الباك (الجذر فقط)
-    // ✅ الآن يتم حفظ القيم في Controller مباشرة
     try {
       final fileController = Provider.of<FileController>(
         context,
@@ -414,15 +363,12 @@ class _FoldersPageState extends State<FoldersPage> {
       final token = await StorageService.getToken();
 
       if (token != null) {
-        // ✅ جلب الإحصائيات للجذر فقط - سيتم حفظها في Controller تلقائياً
         await fileController.getRootCategoriesStats(token: token);
       }
     } catch (e) {
-      // ✅ في حالة الخطأ، نستخدم القيم الافتراضية (0) بهدوء
       print('⚠️ Error loading root categories stats: $e');
     }
 
-    // ✅ جلب المجلدات من الباك
     try {
       final folderController = Provider.of<FolderController>(
         context,
@@ -436,12 +382,9 @@ class _FoldersPageState extends State<FoldersPage> {
         final foldersList = result['folders'] as List;
         userFolders = foldersList.map((folder) {
           final folderData = folder as Map<String, dynamic>;
-
-          // ✅ التحويل الصحيح للحجم وعدد الملفات
           dynamic sizeValue = folderData['size'];
           dynamic filesCountValue = folderData['filesCount'];
 
-          // ✅ تحويل إلى int إذا كان String أو num
           int size = 0;
           int filesCount = 0;
 
@@ -465,42 +408,33 @@ class _FoldersPageState extends State<FoldersPage> {
             }
           }
 
-          // ✅ Log للتحقق من القيم
-          print(
-            '📁 Folder: ${folderData['name']} - Size: $size bytes, Files: $filesCount',
-          );
-          print('   Raw size: $sizeValue, Raw filesCount: $filesCountValue');
-
           return {
             "title": folderData['name'] ?? 'بدون اسم',
             "fileCount": filesCount,
             "size": _formatBytes(size),
             "icon": Icons.folder,
-            "color": Color(0xff28336f), // ✅ لون مختلف للمجلدات
-            "type": "folder", // ✅ للتمييز
-            "folderId": folderData['_id'], // ✅ ID المجلد
-            "folderData": folderData, // ✅ بيانات المجلد الكاملة
+            "color": Color(0xff28336f),
+            "type": "folder",
+            "folderId": folderData['_id'],
+            "folderData": folderData,
           };
         }).toList();
       }
 
       if (!mounted) return;
 
-      // ✅ الحصول على إحصائيات التصنيفات من Controller
       final fileController = Provider.of<FileController>(
         context,
         listen: false,
       );
       final categoriesStats = fileController.categoriesStats;
 
-      // ✅ تحديث _previousCategoriesStats عند التحميل الأول
       if (_previousCategoriesStats.isEmpty) {
         _previousCategoriesStats = Map<String, Map<String, dynamic>>.from(
           categoriesStats,
         );
       }
 
-      // ✅ تحديث التصنيفات بالقيم من Controller
       final updatedCategories = categoriesBase.map((category) {
         final categoryName = (category['category']?.toString() ?? '')
             .toLowerCase();
@@ -513,14 +447,13 @@ class _FoldersPageState extends State<FoldersPage> {
             'size': _formatBytes(stats['totalSize'] ?? 0),
           };
         }
-        return category; // ✅ القيم الافتراضية (0)
+        return category;
       }).toList();
 
-      // ✅ دمج التصنيفات المحدثة والمجلدات
       if (mounted) {
         setState(() {
           folders = [...updatedCategories, ...userFolders];
-          _filteredFolders = folders; // ✅ تهيئة القائمة المفلترة
+          _filteredFolders = folders;
           _isLoadingFolders = false;
         });
       }
@@ -529,7 +462,6 @@ class _FoldersPageState extends State<FoldersPage> {
 
       if (!mounted) return;
 
-      // ✅ في حالة الخطأ، نعرض التصنيفات فقط (مع القيم من Controller إن وجدت)
       final fileController = Provider.of<FileController>(
         context,
         listen: false,
@@ -554,14 +486,13 @@ class _FoldersPageState extends State<FoldersPage> {
       if (mounted) {
         setState(() {
           folders = updatedCategories;
-          _filteredFolders = folders; // ✅ تهيئة القائمة المفلترة
+          _filteredFolders = folders;
           _isLoadingFolders = false;
         });
       }
     }
   }
 
-  // ✅ تحميل المجلدات المشتركة معي
   Future<void> _loadSharedFolders() async {
     if (!mounted) return;
 
@@ -597,12 +528,12 @@ class _FoldersPageState extends State<FoldersPage> {
             "fileCount": filesCount,
             "size": _formatBytes(size),
             "icon": Icons.folder_shared,
-            "color": Colors.orange, // ✅ لون مختلف للمجلدات المشتركة
-            "type": "folder", // ✅ للتمييز
-            "folderId": folderData['_id'], // ✅ ID المجلد
-            "folderData": folderData, // ✅ بيانات المجلد الكاملة
-            "owner": ownerName, // ✅ اسم المالك
-            "myPermission": folderData['myPermission'] ?? 'view', // ✅ صلاحياتي
+            "color": Colors.orange,
+            "type": "folder",
+            "folderId": folderData['_id'],
+            "folderData": folderData,
+            "owner": ownerName,
+            "myPermission": folderData['myPermission'] ?? 'view',
           };
         }).toList();
       }
@@ -612,7 +543,7 @@ class _FoldersPageState extends State<FoldersPage> {
       if (mounted) {
         setState(() {
           sharedFolders = sharedFoldersList;
-          _filteredSharedFolders = sharedFolders; // ✅ تهيئة القائمة المفلترة
+          _filteredSharedFolders = sharedFolders;
           _isLoadingSharedFolders = false;
         });
       }
@@ -624,7 +555,7 @@ class _FoldersPageState extends State<FoldersPage> {
       if (mounted) {
         setState(() {
           sharedFolders = [];
-          _filteredSharedFolders = []; // ✅ تهيئة القائمة المفلترة
+          _filteredSharedFolders = [];
           _isLoadingSharedFolders = false;
         });
       }
@@ -636,7 +567,6 @@ class _FoldersPageState extends State<FoldersPage> {
     const k = 1024;
     const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
 
-    // ✅ حساب الفهرس بشكل صحيح
     int i = 0;
     double size = bytes.toDouble();
 
@@ -645,7 +575,6 @@ class _FoldersPageState extends State<FoldersPage> {
       i++;
     }
 
-    // ✅ التأكد من أن الفهرس ضمن النطاق
     if (i >= sizes.length) {
       i = sizes.length - 1;
     }
@@ -655,14 +584,15 @@ class _FoldersPageState extends State<FoldersPage> {
 
   @override
   void dispose() {
+    _tabController?.dispose();
     _searchDebounceTimer?.cancel();
     _searchHttpClient?.close();
     _searchController.dispose();
-    _speech.stop(); // ✅ إيقاف الاستماع عند إغلاق الصفحة
+    _speech.stop();
+    _refreshController.dispose();
     super.dispose();
   }
 
-  /// تهيئة خدمة تحويل الصوت إلى نص
   Future<void> _initializeSpeech() async {
     try {
       await _speech.initialize(
@@ -687,12 +617,9 @@ class _FoldersPageState extends State<FoldersPage> {
     }
   }
 
-  /// بدء الاستماع للصوت وتحويله لنص
   Future<void> _startListening() async {
-    // ✅ التحقق من حالة الإذن أولاً
     PermissionStatus status = await Permission.microphone.status;
-    
-    // ✅ إذا كان الإذن مرفوض بشكل دائم، نفتح الإعدادات
+
     if (status.isPermanentlyDenied) {
       if (mounted) {
         showDialog(
@@ -700,8 +627,7 @@ class _FoldersPageState extends State<FoldersPage> {
           builder: (context) => AlertDialog(
             title: const Text('إذن الميكروفون مطلوب'),
             content: const Text(
-              'يجب السماح بالوصول إلى الميكروفون للبحث بالصوت.\n\n'
-              'افتح إعدادات التطبيق وسمح بالوصول إلى الميكروفون.',
+              'يجب السماح بالوصول إلى الميكروفون للبحث بالصوت.\n\nافتح إعدادات التطبيق وسمح بالوصول إلى الميكروفون.',
             ),
             actions: [
               TextButton(
@@ -711,7 +637,7 @@ class _FoldersPageState extends State<FoldersPage> {
               TextButton(
                 onPressed: () {
                   Navigator.pop(context);
-                  openAppSettings(); // ✅ فتح إعدادات التطبيق
+                  openAppSettings();
                 },
                 child: const Text('فتح الإعدادات'),
               ),
@@ -721,23 +647,19 @@ class _FoldersPageState extends State<FoldersPage> {
       }
       return;
     }
-    
-    // ✅ إذا لم يكن الإذن ممنوحاً، نطلب الإذن مباشرة
+
     if (!status.isGranted) {
-      // ✅ طلب إذن الميكروفون - سيظهر نافذة النظام تلقائياً
       status = await Permission.microphone.request();
-      
-      // ✅ إعادة التحقق من حالة الإذن بعد الطلب
-      // ✅ ننتظر قليلاً للتأكد من تحديث الحالة
       await Future.delayed(const Duration(milliseconds: 100));
       status = await Permission.microphone.status;
-      
-      // ✅ إذا رفض المستخدم الإذن
+
       if (!status.isGranted) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('تم رفض الإذن. يجب السماح بالوصول إلى الميكروفون للبحث بالصوت.'),
+              content: Text(
+                'تم رفض الإذن. يجب السماح بالوصول إلى الميكروفون للبحث بالصوت.',
+              ),
               backgroundColor: Colors.orange,
               duration: Duration(seconds: 3),
             ),
@@ -746,8 +668,7 @@ class _FoldersPageState extends State<FoldersPage> {
         return;
       }
     }
-    
-    // ✅ التأكد مرة أخرى من أن الإذن ممنوح قبل المتابعة
+
     final finalStatus = await Permission.microphone.status;
     if (!finalStatus.isGranted) {
       if (mounted) {
@@ -762,7 +683,6 @@ class _FoldersPageState extends State<FoldersPage> {
       return;
     }
 
-    // ✅ التحقق من توفر الخدمة
     bool available = await _speech.initialize();
     if (!available) {
       if (mounted) {
@@ -776,23 +696,19 @@ class _FoldersPageState extends State<FoldersPage> {
       return;
     }
 
-    // ✅ بدء الاستماع
     _speech.listen(
-      localeId: "ar", // ✅ اللغة العربية
+      localeId: "ar",
       onResult: (result) {
         if (mounted) {
           setState(() {
             _searchText = result.recognizedWords;
-            // ✅ تحديث حقل البحث مباشرة
             if (_searchText.isNotEmpty) {
               _searchController.text = _searchText;
             }
           });
 
-          // ✅ إذا انتهى التعرف (final result)، نبحث تلقائياً
           if (result.finalResult && _searchText.isNotEmpty) {
             print('✅ النص المعرّف: $_searchText');
-            // ✅ البحث سيتم تلقائياً عبر listener
             _stopListening();
           }
         }
@@ -805,7 +721,6 @@ class _FoldersPageState extends State<FoldersPage> {
     });
   }
 
-  /// إيقاف الاستماع للصوت
   void _stopListening() {
     _speech.stop();
     setState(() {
@@ -813,84 +728,50 @@ class _FoldersPageState extends State<FoldersPage> {
     });
   }
 
-  /// بناء أيقونات suffix (الميكروفون ومسح النص)
   Widget? _buildSuffixIcons() {
     final hasText = _searchController.text.isNotEmpty;
-    
-    // ✅ إذا كان هناك نص وليس في حالة استماع، نعرض كلا الأيقونتين
+
     if (hasText && !_isListening) {
       return Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // ✅ زر الميكروفون
           IconButton(
-            icon: Icon(
-              Icons.mic_none,
-              color: Colors.grey[500],
-              size: 20,
-            ),
-            onPressed: _startListening, // ✅ السماح بالضغط دائماً
+            icon: Icon(Icons.mic_none, color: Colors.grey[500], size: 20),
+            onPressed: _startListening,
             tooltip: 'البحث بالصوت',
             padding: EdgeInsets.all(8),
-            constraints: BoxConstraints(
-              minWidth: 40,
-              minHeight: 40,
-            ),
+            constraints: BoxConstraints(minWidth: 40, minHeight: 40),
           ),
-          // ✅ زر مسح النص
           IconButton(
-            icon: Icon(
-              Icons.clear,
-              color: Colors.grey[500],
-              size: 20,
-            ),
+            icon: Icon(Icons.clear, color: Colors.grey[500], size: 20),
             onPressed: () {
               setState(() {
                 _searchController.clear();
               });
             },
             padding: EdgeInsets.all(8),
-            constraints: BoxConstraints(
-              minWidth: 40,
-              minHeight: 40,
-            ),
+            constraints: BoxConstraints(minWidth: 40, minHeight: 40),
           ),
         ],
       );
     }
-    
-    // ✅ إذا كان في حالة استماع، نعرض فقط أيقونة الميكروفون الحمراء
+
     if (_isListening) {
       return IconButton(
-        icon: Icon(
-          Icons.mic,
-          color: Colors.red,
-          size: 20,
-        ),
+        icon: Icon(Icons.mic, color: Colors.red, size: 20),
         onPressed: _stopListening,
         tooltip: 'إيقاف التسجيل',
         padding: EdgeInsets.all(8),
-        constraints: BoxConstraints(
-          minWidth: 40,
-          minHeight: 40,
-        ),
+        constraints: BoxConstraints(minWidth: 40, minHeight: 40),
       );
     }
-    
-    // ✅ إذا لم يكن هناك نص، نعرض فقط أيقونة الميكروفون
+
     return IconButton(
-      icon: Icon(
-        Icons.mic_none,
-        color: Colors.grey[500],
-        size: 20,
-      ),
-      onPressed: _startListening, // ✅ السماح بالضغط دائماً
+      icon: Icon(Icons.mic_none, color: Colors.grey[500], size: 20),
+      onPressed: _startListening,
       tooltip: 'البحث بالصوت',
       padding: EdgeInsets.all(8),
-      constraints: BoxConstraints(
-        minWidth: 40,
-        minHeight: 40,
-      ),
+      constraints: BoxConstraints(minWidth: 40, minHeight: 40),
     );
   }
 
@@ -902,246 +783,351 @@ class _FoldersPageState extends State<FoldersPage> {
       backgroundColor: isDarkMode
           ? const Color(0xFF1E1E1E)
           : const Color(0xff28336f),
-      body: Padding(
-        padding: EdgeInsets.only(top: MediaQuery.of(context).padding.top),
-        child: Column(
-          children: [
-            // شريط البحث والفلتر
-            Padding(
-              padding: EdgeInsets.symmetric(
-                horizontal: ResponsiveUtils.getResponsiveValue(
-                  context,
-                  mobile: 16.0,
-                  tablet: 24.0,
-                  desktop: 32.0,
-                ),
-                vertical: 12.0,
-              ),
-              child: Row(
-                children: [
-                  // حقل البحث
-                  Expanded(
-                    child: Container(
+      body: Column(
+        children: [
+          // ✅ شريط العلوي مع البحث والأزرار
+          Container(
+            padding: EdgeInsets.only(
+              top: MediaQuery.of(context).padding.top + 12,
+              left: 16,
+              right: 16,
+              bottom: 12,
+            ),
+            decoration: BoxDecoration(
+              color: isDarkMode
+                  ? const Color(0xFF1E1E1E)
+                  : const Color(0xff28336f),
+            ),
+            child: Column(
+              children: [
+                // شريط البحث والأزرار
+                Row(
+                  children: [
+                    Expanded(
+                      child: Container(
+                        height: 50,
+                        decoration: BoxDecoration(
+                          color: Color(0xFFF5F5F5).withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(10),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.05),
+                              blurRadius: 4,
+                              offset: Offset(0, 1),
+                            ),
+                          ],
+                        ),
+                        child: TextField(
+                          controller: _searchController,
+                          decoration: InputDecoration(
+                            hintText: S.of(context).searchHint,
+                            hintStyle: TextStyle(
+                              color: Colors.grey[500],
+                              fontSize: 16,
+                            ),
+                            prefixIcon: Icon(
+                              Icons.search,
+                              color: Colors.grey[500],
+                              size: 22,
+                            ),
+                            suffixIcon: _buildSuffixIcons(),
+                            border: InputBorder.none,
+                            contentPadding: EdgeInsets.symmetric(
+                              horizontal: 20,
+                              vertical: 15,
+                            ),
+                            filled: true,
+                            fillColor: Colors.transparent,
+                          ),
+                          style: TextStyle(color: Colors.white, fontSize: 16),
+                        ),
+                      ),
+                    ),
+                    SizedBox(width: 12),
+                    Container(
                       height: 50,
+                      width: 50,
                       decoration: BoxDecoration(
-                        color: Color(0xFFF5F5F5).withOpacity(0.2),
+                        color: Color(0xFF00BFA5),
                         borderRadius: BorderRadius.circular(10),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.05),
-                            blurRadius: 4,
-                            offset: Offset(0, 1),
+                            color: Colors.black.withOpacity(0.1),
+                            blurRadius: 8,
+                            offset: Offset(0, 2),
                           ),
                         ],
                       ),
-                      child: TextField(
-                        controller: _searchController,
-                        decoration: InputDecoration(
-                          hintText: S.of(context).searchHint,
-                          hintStyle: TextStyle(
-                            color: Colors.grey[500],
-                            fontSize: 16,
-                          ),
-                          prefixIcon: Icon(
-                            Icons.search,
-                            color: Colors.grey[500],
-                            size: 22,
-                          ),
-                          suffixIcon: _buildSuffixIcons(),
-                          border: InputBorder.none,
-                          contentPadding: EdgeInsets.symmetric(
-                            horizontal: 20,
-                            vertical: 15,
-                          ),
-                          filled: true,
-                          fillColor: Colors.transparent,
-                        ),
-                        style: TextStyle(color: Colors.white, fontSize: 16),
-                        onChanged: (value) {
+                      child: IconButton(
+                        icon: Icon(Icons.filter_list, color: Colors.white),
+                        tooltip: 'الفلتر',
+                        onPressed: () {
                           setState(() {
-                            // ✅ البحث يتم تلقائياً عبر listener
+                            _showFilterOptions = !_showFilterOptions;
                           });
-                        },
-                        onSubmitted: (value) {
-                          // ✅ البحث يتم تلقائياً عبر listener
                         },
                       ),
                     ),
-                  ),
-                  SizedBox(width: 12),
-                  // زر الفلتر
-                  Container(
-                    height: 50,
-                    width: 50,
-                    decoration: BoxDecoration(
-                      color: Color(0xFF00BFA5),
-                      borderRadius: BorderRadius.circular(10),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.1),
-                          blurRadius: 8,
-                          offset: Offset(0, 2),
-                        ),
-                      ],
+                    SizedBox(width: 12),
+                    Container(
+                      height: 50,
+                      width: 50,
+                      decoration: BoxDecoration(
+                        color: Color(0xFFF59E0B),
+                        borderRadius: BorderRadius.circular(10),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.1),
+                            blurRadius: 8,
+                            offset: Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: IconButton(
+                        icon: Icon(Icons.mail_outline, color: Colors.white),
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  ChangeNotifierProvider.value(
+                                    value: Provider.of<RoomController>(
+                                      context,
+                                      listen: false,
+                                    ),
+                                    child: PendingInvitationsPage(),
+                                  ),
+                            ),
+                          );
+                        },
+                        tooltip: 'الدعوات المعلقة',
+                      ),
                     ),
-                    child: IconButton(
-                      icon: Icon(Icons.filter_list, color: Colors.white),
-                      tooltip: 'الفلتر',
-                      onPressed: () {
+                  ],
+                ),
+
+                // خيارات الفلتر
+                if (_showFilterOptions)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 12),
+                    child: FilterSection(
+                      selectedTypes: _selectedTypes,
+                      selectedTimeFilter: _selectedTimeFilter,
+                      selectedCategory: _selectedCategory,
+                      selectedDateRange: _selectedDateRange,
+                      onTypesChanged: (newTypes) {
                         setState(() {
-                          _showFilterOptions = !_showFilterOptions;
+                          _selectedTypes = newTypes;
                         });
                       },
-                    ),
-                  ),
-                  SizedBox(width: 12),
-                  // زر الدعوات المعلقة
-                  Container(
-                    height: 50,
-                    width: 50,
-                    decoration: BoxDecoration(
-                      color: Color(0xFFF59E0B),
-                      borderRadius: BorderRadius.circular(10),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.1),
-                          blurRadius: 8,
-                          offset: Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: IconButton(
-                      icon: Icon(Icons.mail_outline, color: Colors.white),
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => ChangeNotifierProvider.value(
-                              value: Provider.of<RoomController>(
-                                context,
-                                listen: false,
-                              ),
-                              child: PendingInvitationsPage(),
-                            ),
-                          ),
-                        );
+                      onTimeFilterChanged: (newTimeFilter) {
+                        setState(() {
+                          _selectedTimeFilter = newTimeFilter;
+                        });
                       },
-                      tooltip: 'الدعوات المعلقة',
+                      onCategoryChanged: (newCategory) {
+                        setState(() {
+                          _selectedCategory = newCategory;
+                        });
+                        if (_searchController.text.trim().isNotEmpty) {
+                          _performFileSearch(_searchController.text.trim());
+                        }
+                      },
+                      onDateRangeChanged: (newDateRange) {
+                        setState(() {
+                          _selectedDateRange = newDateRange;
+                          if (newDateRange == null) {
+                            _customStartDate = null;
+                            _customEndDate = null;
+                          }
+                        });
+                        if (_searchController.text.trim().isNotEmpty) {
+                          _performFileSearch(_searchController.text.trim());
+                        }
+                      },
+                      onStartDateChanged: (newStartDate) {
+                        setState(() {
+                          _customStartDate = newStartDate;
+                        });
+                        if (_searchController.text.trim().isNotEmpty) {
+                          _performFileSearch(_searchController.text.trim());
+                        }
+                      },
+                      onEndDateChanged: (newEndDate) {
+                        setState(() {
+                          _customEndDate = newEndDate;
+                        });
+                        if (_searchController.text.trim().isNotEmpty) {
+                          _performFileSearch(_searchController.text.trim());
+                        }
+                      },
                     ),
                   ),
-                  SizedBox(width: 12),
-
-                  // زر الفلتر
-                ],
-              ),
+              ],
             ),
+          ),
 
-            // خيارات الفلتر (تظهر/تختفي)
-            if (_showFilterOptions)
-              FilterSection(
-                selectedTypes: _selectedTypes,
-                selectedTimeFilter: _selectedTimeFilter,
-                selectedCategory: _selectedCategory,
-                selectedDateRange: _selectedDateRange,
-                onTypesChanged: (newTypes) {
-                  setState(() {
-                    _selectedTypes = newTypes;
-                  });
-                },
-                onTimeFilterChanged: (newTimeFilter) {
-                  setState(() {
-                    _selectedTimeFilter = newTimeFilter;
-                  });
-                },
-                onCategoryChanged: (newCategory) {
-                  setState(() {
-                    _selectedCategory = newCategory;
-                  });
-                  // ✅ إعادة البحث عند تغيير التصنيف
-                  if (_searchController.text.trim().isNotEmpty) {
-                    _performFileSearch(_searchController.text.trim());
-                  }
-                },
-                onDateRangeChanged: (newDateRange) {
-                  setState(() {
-                    _selectedDateRange = newDateRange;
-                    // ✅ إذا تم إلغاء التاريخ، أزل التواريخ المخصصة
-                    if (newDateRange == null) {
-                      _customStartDate = null;
-                      _customEndDate = null;
-                    }
-                  });
-                  // ✅ إعادة البحث عند تغيير التاريخ
-                  if (_searchController.text.trim().isNotEmpty) {
-                    _performFileSearch(_searchController.text.trim());
-                  }
-                },
-                onStartDateChanged: (newStartDate) {
-                  setState(() {
-                    _customStartDate = newStartDate;
-                  });
-                  // ✅ إعادة البحث عند تغيير تاريخ البداية
-                  if (_searchController.text.trim().isNotEmpty) {
-                    _performFileSearch(_searchController.text.trim());
-                  }
-                },
-                onEndDateChanged: (newEndDate) {
-                  setState(() {
-                    _customEndDate = newEndDate;
-                  });
-                  // ✅ إعادة البحث عند تغيير تاريخ النهاية
-                  if (_searchController.text.trim().isNotEmpty) {
-                    _performFileSearch(_searchController.text.trim());
-                  }
-                },
-              ),
-            SizedBox(height: 10),
-
-            // View Mode Selector
-            Padding(
-              padding: EdgeInsets.symmetric(horizontal: 20),
-              child: SegmentedButton<String>(
-                segments: [
-                  ButtonSegment<String>(
-                    value: 'all',
-                    label: Text(S.of(context).all),
-                    icon: Icon(Icons.folder, size: 18),
+          // ✅ TabBar الجديد - تصميم محسّن
+          if (_tabController != null)
+            Container(
+              color: isDarkMode
+                  ? const Color(0xFF1E1E1E)
+                  : const Color(0xff28336f),
+              child: Container(
+                margin: EdgeInsets.symmetric(horizontal: 16),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: TabBar(
+                  controller: _tabController!,
+                  indicator: BoxDecoration(
+                    color: Color(0xFF00BFA5),
+                    borderRadius: BorderRadius.circular(12),
                   ),
-                  ButtonSegment<String>(
-                    value: 'shared',
-                    label: Text(S.of(context).shared),
-                    icon: Icon(Icons.share, size: 18),
+                  labelColor: Colors.white,
+                  unselectedLabelColor: Colors.white70,
+                  labelStyle: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.bold,
                   ),
-                ],
-                selected: {_viewMode},
-                onSelectionChanged: (Set<String> newSelection) {
-                  setState(() {
-                    _viewMode = newSelection.first;
-                  });
-                },
-                style: SegmentedButton.styleFrom(
-                  selectedBackgroundColor: Color(0xFF00BFA5),
-                  selectedForegroundColor: Colors.white,
-                  backgroundColor: Colors.white.withOpacity(0.1),
-                  foregroundColor: Colors.white70,
-                  padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                  unselectedLabelStyle: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.normal,
+                  ),
+                  indicatorSize: TabBarIndicatorSize.tab,
+                  dividerColor: Colors.transparent,
+                  tabs: [
+                    Tab(
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.folder, size: 18),
+                          SizedBox(width: 6),
+                          Text('الكل'),
+                        ],
+                      ),
+                    ),
+                    Tab(
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.meeting_room, size: 18),
+                          SizedBox(width: 6),
+                          Text('غرف'),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
 
-            SizedBox(
-              height: ResponsiveUtils.getResponsiveValue(
-                context,
-                mobile: 8.0,
-                tablet: 12.0,
-                desktop: 16.0,
-              ),
-            ),
+          SizedBox(height: 12),
 
+          // ✅ المحتوى الرئيسي مع TabBarView
+          Expanded(
+            child: SmartRefresher(
+              controller: _refreshController,
+              onRefresh: () async {
+                await _loadCategoriesAndFolders();
+                await _loadSharedFolders();
+                final roomController = Provider.of<RoomController>(
+                  context,
+                  listen: false,
+                );
+                await roomController.getRooms();
+                _refreshController.refreshCompleted();
+              },
+              header: const WaterDropHeader(),
+              child: _tabController == null
+                  ? Center(child: CircularProgressIndicator())
+                  : TabBarView(
+                      controller: _tabController!,
+                      children: [
+                        // Tab 1: الكل (المجلدات والتصنيفات)
+                        _buildAllTab(),
+
+                        // Tab 2: المجلدات المشتركة
+                        //  _buildSharedFoldersTab(),
+
+                        // Tab 3: الغرف
+                        _buildRoomsTab(),
+                      ],
+                    ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ✅ Tab الكل
+  Widget _buildAllTab() {
+    final hasSearchQuery = _searchController.text.trim().isNotEmpty;
+
+    if (hasSearchQuery) {
+      return _buildSearchResults();
+    }
+
+    return Container(
+      decoration: BoxDecoration(
+        color: const Color(0xFFE9E9E9),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(25)),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            SizedBox(height: 10),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  S.of(context).allItems,
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: const Color(0xff28336f),
+                  ),
+                ),
+                Row(
+                  children: [
+                    IconButton(
+                      icon: Icon(
+                        Icons.create_new_folder,
+                        color: Color(0xff28336f),
+                      ),
+                      tooltip: S.of(context).createFolder,
+                      onPressed: () => _showCreateFolderDialog(),
+                    ),
+                    ViewToggleButtons(
+                      isGridView: isFilesGridView,
+                      onViewChanged: (isGrid) {
+                        setState(() {
+                          isFilesGridView = isGrid;
+                        });
+                      },
+                    ),
+                  ],
+                ),
+              ],
+            ),
+            SizedBox(height: 20),
+
+            // المحتوى
             Expanded(
-              child: _viewMode == 'all'
-                  ? _buildContent(_filteredFolders, true, true)
-                  : _buildContent(_filteredFolders, false, true),
+              child: _isLoadingFolders
+                  ? Center(child: CircularProgressIndicator())
+                  : SingleChildScrollView(
+                      child: Column(
+                        children: [
+                          _buildFoldersView(_filteredFolders),
+                          SizedBox(height: 100), // ✅ مسافة فاضية في النهاية
+                        ],
+                      ),
+                    ),
             ),
           ],
         ),
@@ -1149,7 +1135,402 @@ class _FoldersPageState extends State<FoldersPage> {
     );
   }
 
-  // ✅ بناء عرض نتائج البحث (مجلدات + ملفات)
+  // ✅ Tab الغرف
+  Widget _buildRoomsTab() {
+    return Container(
+      decoration: BoxDecoration(
+        color: const Color(0xFFE9E9E9),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(25)),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            SizedBox(height: 10),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'الغرف',
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: const Color(0xff28336f),
+                  ),
+                ),
+                Row(
+                  children: [
+                    IconButton(
+                      icon: Icon(
+                        Icons.add_circle_outline,
+                        color: Color(0xff28336f),
+                      ),
+                      tooltip: 'إنشاء غرفة مشاركة',
+                      onPressed: () => _showCreateRoomPage(),
+                    ),
+                    ViewToggleButtons(
+                      isGridView: isFilesGridView,
+                      onViewChanged: (isGrid) {
+                        setState(() {
+                          isFilesGridView = isGrid;
+                        });
+                      },
+                    ),
+                  ],
+                ),
+              ],
+            ),
+            SizedBox(height: 20),
+
+            Expanded(
+              child: Consumer<RoomController>(
+                builder: (context, roomController, child) {
+                  if (roomController.isLoading &&
+                      roomController.rooms.isEmpty) {
+                    return Center(child: CircularProgressIndicator());
+                  }
+
+                  if (roomController.errorMessage != null &&
+                      roomController.rooms.isEmpty) {
+                    return Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.error_outline,
+                            size: 48,
+                            color: Colors.red,
+                          ),
+                          SizedBox(height: 16),
+                          Text(
+                            roomController.errorMessage!,
+                            style: TextStyle(color: Colors.red),
+                            textAlign: TextAlign.center,
+                          ),
+                          SizedBox(height: 16),
+                          ElevatedButton(
+                            onPressed: () => roomController.getRooms(),
+                            child: Text('إعادة المحاولة'),
+                          ),
+                        ],
+                      ),
+                    );
+                  }
+
+                  if (roomController.rooms.isEmpty) {
+                    return Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.meeting_room_outlined,
+                            size: 64,
+                            color: Colors.grey,
+                          ),
+                          SizedBox(height: 16),
+                          Text(
+                            'لا توجد غرف مشاركة',
+                            style: TextStyle(
+                              fontSize: 18,
+                              color: Colors.grey[600],
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          SizedBox(height: 8),
+                          Text(
+                            'اضغط على + لإنشاء غرفة مشاركة جديدة',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.grey[500],
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ],
+                      ),
+                    );
+                  }
+
+                  final roomItems = roomController.rooms.map((room) {
+                    final membersCount = room['members']?.length ?? 0;
+                    int filesCount = 0;
+                    int foldersCount = 0;
+
+                    final filesCountValue = room['filesCount'];
+                    if (filesCountValue != null) {
+                      if (filesCountValue is int) {
+                        filesCount = filesCountValue;
+                      } else if (filesCountValue is num) {
+                        filesCount = filesCountValue.toInt();
+                      } else if (filesCountValue is String) {
+                        filesCount = int.tryParse(filesCountValue) ?? 0;
+                      }
+                    }
+
+                    if (filesCount == 0 && room['files'] is List) {
+                      filesCount = (room['files'] as List).length;
+                    }
+
+                    final foldersCountValue = room['foldersCount'];
+                    if (foldersCountValue != null) {
+                      if (foldersCountValue is int) {
+                        foldersCount = foldersCountValue;
+                      } else if (foldersCountValue is num) {
+                        foldersCount = foldersCountValue.toInt();
+                      } else if (foldersCountValue is String) {
+                        foldersCount = int.tryParse(foldersCountValue) ?? 0;
+                      }
+                    }
+
+                    if (foldersCount == 0 && room['folders'] is List) {
+                      foldersCount = (room['folders'] as List).length;
+                    }
+
+                    final totalItems = filesCount + foldersCount;
+
+                    return {
+                      "title": room['name'] ?? 'بدون اسم',
+                      "fileCount": totalItems,
+                      "filesCount": filesCount,
+                      "foldersCount": foldersCount,
+                      "size": _formatMemberCount(membersCount),
+                      "icon": Icons.meeting_room,
+                      "color": Color(0xff28336f),
+                      "description": room['description'] ?? '',
+                      "type": "room",
+                      "room": room,
+                    };
+                  }).toList();
+
+                  return SingleChildScrollView(
+                    child: Column(
+                      children: [
+                        _buildRoomsView(roomItems, roomController),
+                        SizedBox(height: 100), // ✅ مسافة فاضية في النهاية
+                      ],
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ✅ بناء عرض المجلدات
+  Widget _buildFoldersView(List<Map<String, dynamic>> items) {
+    if (isFilesGridView) {
+      return Consumer<FileController>(
+        builder: (context, fileController, child) {
+          final categoriesStats = fileController.categoriesStats;
+
+          final updatedCategories = items
+              .where((item) => item['type'] == 'category')
+              .map((category) {
+                final categoryName = (category['category']?.toString() ?? '')
+                    .toLowerCase();
+                final stats = categoriesStats[categoryName];
+
+                if (stats != null) {
+                  return {
+                    ...category,
+                    'fileCount': stats['filesCount'] ?? 0,
+                    'size': _formatBytes(stats['totalSize'] ?? 0),
+                  };
+                }
+                return category;
+              })
+              .toList();
+
+          final updatedFolders = [
+            ...updatedCategories,
+            ...items.where((item) => item['type'] != 'category').toList(),
+          ];
+
+          return FilesGridView(
+            items: updatedFolders,
+            showFileCount: true,
+            onFileRemoved: () => _loadCategoriesAndFolders(),
+            onItemTap: (item) => _handleFolderTap(item),
+          );
+        },
+      );
+    } else {
+      return Consumer<FileController>(
+        builder: (context, fileController, child) {
+          final categoriesStats = fileController.categoriesStats;
+
+          final updatedCategories = items
+              .where((item) => item['type'] == 'category')
+              .map((category) {
+                final categoryName = (category['category']?.toString() ?? '')
+                    .toLowerCase();
+                final stats = categoriesStats[categoryName];
+
+                if (stats != null) {
+                  return {
+                    ...category,
+                    'fileCount': stats['filesCount'] ?? 0,
+                    'size': _formatBytes(stats['totalSize'] ?? 0),
+                  };
+                }
+                return category;
+              })
+              .toList();
+
+          final updatedFolders = [
+            ...updatedCategories,
+            ...items.where((item) => item['type'] != 'category').toList(),
+          ];
+
+          return FilesListView(
+            items: updatedFolders,
+            itemMargin: EdgeInsets.only(bottom: 10),
+            showMoreOptions: true,
+            onFileRemoved: () => _loadCategoriesAndFolders(),
+            onItemTap: (item) => _handleFolderTap(item),
+          );
+        },
+      );
+    }
+  }
+
+  // ✅ بناء عرض المجلدات المشتركة
+  Widget _buildSharedFoldersView(List<Map<String, dynamic>> items) {
+    if (isFilesGridView) {
+      return FilesGridView(
+        items: items,
+        showFileCount: true,
+        onFileRemoved: () {
+          _loadSharedFolders();
+          _loadCategoriesAndFolders();
+        },
+        onItemTap: (item) => _handleFolderTap(item),
+      );
+    } else {
+      return FilesListView(
+        items: items,
+        itemMargin: EdgeInsets.only(bottom: 10),
+        showMoreOptions: true,
+        onItemTap: (item) => _handleFolderTap(item),
+      );
+    }
+  }
+
+  // ✅ بناء عرض الغرف
+  Widget _buildRoomsView(
+    List<Map<String, dynamic>> roomItems,
+    RoomController roomController,
+  ) {
+    if (isFilesGridView) {
+      return FilesGridView(
+        items: roomItems,
+        showFileCount: true,
+        onItemTap: (item) {
+          final room = item['room'] as Map<String, dynamic>?;
+          if (room != null && room['_id'] != null) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => ChangeNotifierProvider.value(
+                  value: roomController,
+                  child: RoomDetailsPage(roomId: room['_id']),
+                ),
+              ),
+            );
+          }
+        },
+        onRoomDetailsTap: (item) {
+          final room = item['room'] as Map<String, dynamic>?;
+          if (room != null && room['_id'] != null) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => ChangeNotifierProvider.value(
+                  value: roomController,
+                  child: RoomDetailsPage(roomId: room['_id']),
+                ),
+              ),
+            );
+          }
+        },
+        onRoomEditTap: (item) async {
+          final room = item['room'] as Map<String, dynamic>?;
+          if (room != null && room['_id'] != null) {
+            final canEdit = await RoomPermissions.canEditRoom(room);
+            if (canEdit) {
+              _showEditRoomDialog(context, roomController, room);
+            } else {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    '❌ فقط مالك الغرفة أو الأعضاء برتبة محرر يمكنهم تعديل الغرفة',
+                  ),
+                  backgroundColor: Colors.red,
+                ),
+              );
+            }
+          }
+        },
+      );
+    } else {
+      return FilesListView(
+        items: roomItems,
+        itemMargin: EdgeInsets.only(bottom: 10),
+        showMoreOptions: true,
+        onItemTap: (item) {
+          final room = item['room'] as Map<String, dynamic>?;
+          if (room != null && room['_id'] != null) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => ChangeNotifierProvider.value(
+                  value: roomController,
+                  child: RoomDetailsPage(roomId: room['_id']),
+                ),
+              ),
+            );
+          }
+        },
+        onRoomDetailsTap: (item) {
+          final room = item['room'] as Map<String, dynamic>?;
+          if (room != null && room['_id'] != null) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => ChangeNotifierProvider.value(
+                  value: roomController,
+                  child: RoomDetailsPage(roomId: room['_id']),
+                ),
+              ),
+            );
+          }
+        },
+        onRoomEditTap: (item) async {
+          final room = item['room'] as Map<String, dynamic>?;
+          if (room != null && room['_id'] != null) {
+            final canEdit = await RoomPermissions.canEditRoom(room);
+            if (canEdit) {
+              _showEditRoomDialog(context, roomController, room);
+            } else {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    '❌ فقط مالك الغرفة أو الأعضاء برتبة محرر يمكنهم تعديل الغرفة',
+                  ),
+                  backgroundColor: Colors.red,
+                ),
+              );
+            }
+          }
+        },
+      );
+    }
+  }
+
+  // باقي الدوال المساعدة (بدون تغيير)
   Widget _buildSearchResults() {
     return SearchResultsWidget(
       filteredFolders: _filteredFolders,
@@ -1175,7 +1556,6 @@ class _FoldersPageState extends State<FoldersPage> {
     );
   }
 
-  // ✅ دوال مساعدة لتحويل البيانات
   String _getFileTypeForSearch(String fileName) {
     final name = fileName.toLowerCase();
     if (name.endsWith('.jpg') ||
@@ -1223,7 +1603,6 @@ class _FoldersPageState extends State<FoldersPage> {
     return '${size.toStringAsFixed(1)} ${sizes[i]}';
   }
 
-  // ✅ استخراج بيانات الملف من Map
   Map<String, dynamic> _extractFileData(Map<String, dynamic> file) {
     final originalData = file['originalData'] ?? file;
     final filePath = file['path'] as String?;
@@ -1242,19 +1621,6 @@ class _FoldersPageState extends State<FoldersPage> {
     };
   }
 
-  /// بناء URL مناسب للملف
-  ///
-  /// تقوم هذه الدالة بـ:
-  /// 1. تحديد ما إذا كان يجب استخدام fileId أو filePath
-  /// 2. تحويل view endpoints إلى download endpoints للملفات الخارجية
-  /// 3. إرجاع URL و useDownloadEndpoint flag
-  ///
-  /// [Parameters]:
-  /// - [filePath]: مسار الملف (إن وجد)
-  /// - [fileId]: معرف الملف (إن لم يكن هناك filePath)
-  /// - [originalName]: الاسم الأصلي للملف (لتحديد الامتداد)
-  ///
-  /// [Returns]: Map يحتوي على 'url' و 'useDownloadEndpoint' أو null
   Map<String, dynamic>? _buildFileUrl({
     required String? filePath,
     required String? fileId,
@@ -1290,9 +1656,7 @@ class _FoldersPageState extends State<FoldersPage> {
     return null;
   }
 
-  // ✅ معالجة الضغط على ملف من نتائج البحث (مثل smart_search_page.dart)
   Future<void> _handleFileTap(Map<String, dynamic> file) async {
-    // ✅ استخراج بيانات الملف
     final fileData = _extractFileData(file);
     final originalData = fileData['originalData'] as Map<String, dynamic>;
     final filePath = fileData['filePath'] as String?;
@@ -1300,7 +1664,6 @@ class _FoldersPageState extends State<FoldersPage> {
     final originalName = fileData['originalName'] as String;
     final fileNameLower = originalName.toLowerCase();
 
-    // ✅ بناء URL
     final urlData = _buildFileUrl(
       filePath: filePath,
       fileId: fileId,
@@ -1334,7 +1697,6 @@ class _FoldersPageState extends State<FoldersPage> {
       return;
     }
 
-    // ✅ التحقق من نوع الملف وتحديد ما إذا كان يحتاج Loading Dialog
     final extension = fileNameLower.contains('.')
         ? fileNameLower.substring(fileNameLower.lastIndexOf('.') + 1)
         : '';
@@ -1405,7 +1767,6 @@ class _FoldersPageState extends State<FoldersPage> {
     }
   }
 
-  // ✅ دوال مساعدة
   void _showLoadingDialog(BuildContext context) {
     showDialog(
       context: context,
@@ -1425,21 +1786,6 @@ class _FoldersPageState extends State<FoldersPage> {
     }
   }
 
-  /// تحديد امتداد الملف
-  ///
-  /// تحاول هذه الدالة تحديد امتداد الملف من مصادر متعددة بالترتيب:
-  /// 1. originalData['name'] (من lastIndexOf('.'))
-  /// 2. originalData['contentType'] أو ['mimeType']
-  /// 3. fileNameLower (من lastIndexOf('.'))
-  /// 4. filePath (من lastIndexOf('.'))
-  ///
-  /// [Parameters]:
-  /// - [originalData]: البيانات الأصلية للملف
-  /// - [fileNameLower]: اسم الملف بحروف صغيرة
-  /// - [filePath]: مسار الملف
-  /// - [contentType]: Content-Type من HTTP response
-  ///
-  /// [Returns]: String? امتداد الملف أو null إن لم يتم العثور عليه
   String? _getFileExtension({
     required Map<String, dynamic> originalData,
     required String fileNameLower,
@@ -1479,7 +1825,6 @@ class _FoldersPageState extends State<FoldersPage> {
     return null;
   }
 
-  // ✅ التحقق من نوع الملف
   bool _isImageFile(String? extension, String contentType) {
     if (extension != null) {
       return ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp'].contains(extension);
@@ -1487,13 +1832,6 @@ class _FoldersPageState extends State<FoldersPage> {
     return contentType.startsWith('image/');
   }
 
-  /// التحقق من أن الملف فيديو
-  ///
-  /// [Parameters]:
-  /// - [extension]: امتداد الملف (mp4, mov, إلخ)
-  /// - [contentType]: Content-Type من HTTP response
-  ///
-  /// [Returns]: true إذا كان الملف فيديو
   bool _isVideoFile(String? extension, String contentType) {
     if (extension != null) {
       return [
@@ -1511,13 +1849,6 @@ class _FoldersPageState extends State<FoldersPage> {
     return contentType.startsWith('video/');
   }
 
-  /// التحقق من أن الملف صوتي
-  ///
-  /// [Parameters]:
-  /// - [extension]: امتداد الملف (mp3, wav, إلخ)
-  /// - [contentType]: Content-Type من HTTP response
-  ///
-  /// [Returns]: true إذا كان الملف صوتي
   bool _isAudioFile(String? extension, String contentType) {
     if (extension != null) {
       return [
@@ -1533,28 +1864,6 @@ class _FoldersPageState extends State<FoldersPage> {
     return contentType.startsWith('audio/');
   }
 
-  /// فتح الملف حسب نوعه
-  ///
-  /// تقوم هذه الدالة بتحليل نوع الملف وفتحه باستخدام الـ viewer المناسب:
-  /// - PDF: PdfViewerPage
-  /// - Video: VideoViewer
-  /// - Image: ImageViewer
-  /// - Text: TextViewerPage
-  /// - Audio: AudioPlayerPage
-  /// - External files (Office, compressed, etc.): OfficeFileOpener
-  ///
-  /// [Parameters]:
-  /// - [url]: رابط الملف
-  /// - [fileId]: معرف الملف
-  /// - [originalName]: الاسم الأصلي للملف
-  /// - [originalData]: البيانات الأصلية للملف
-  /// - [filePath]: مسار الملف (إن وجد)
-  /// - [fileNameLower]: اسم الملف بحروف صغيرة
-  /// - [response]: استجابة HTTP الأولية (للتحقق من نوع الملف)
-  /// - [useDownloadEndpoint]: هل يجب استخدام download endpoint
-  /// - [token]: token المصادقة
-  ///
-  /// [Returns]: Future<void>
   Future<void> _openFileByType({
     required String url,
     required String? fileId,
@@ -1576,7 +1885,6 @@ class _FoldersPageState extends State<FoldersPage> {
       contentType: contentType,
     );
 
-    // PDF
     if ((extension == 'pdf' || fileNameLower.endsWith('.pdf')) && isPdf) {
       Navigator.push(
         context,
@@ -1587,7 +1895,6 @@ class _FoldersPageState extends State<FoldersPage> {
       return;
     }
 
-    // فيديو
     if (_isVideoFile(extension, contentType)) {
       Navigator.push(
         context,
@@ -1596,7 +1903,6 @@ class _FoldersPageState extends State<FoldersPage> {
       return;
     }
 
-    // صورة
     if (_isImageFile(extension, contentType)) {
       final fileIdForImage = originalData['_id']?.toString();
       Navigator.push(
@@ -1609,7 +1915,6 @@ class _FoldersPageState extends State<FoldersPage> {
       return;
     }
 
-    // نص
     if (TextViewerPage.isTextFile(originalName) ||
         contentType.startsWith('text/')) {
       _showLoadingDialog(context);
@@ -1647,7 +1952,6 @@ class _FoldersPageState extends State<FoldersPage> {
       return;
     }
 
-    // صوت
     if (_isAudioFile(extension, contentType)) {
       Navigator.push(
         context,
@@ -1659,15 +1963,11 @@ class _FoldersPageState extends State<FoldersPage> {
       return;
     }
 
-    // ✅ باقي الملفات (Office, ZIP, إلخ) - تفتح خارج التطبيق
     String finalUrl = url;
     if (!useDownloadEndpoint && fileId != null && fileId.isNotEmpty) {
       final baseUrl = ApiConfig.baseUrl.replaceAll('/api/v1', '');
       final downloadPath = ApiEndpoints.downloadFile(fileId);
       finalUrl = "$baseUrl$downloadPath";
-      print(
-        '✅ Converted view URL to download URL for external file: $finalUrl',
-      );
     }
 
     _showLoadingDialog(context);
@@ -1687,7 +1987,6 @@ class _FoldersPageState extends State<FoldersPage> {
     );
   }
 
-  // ✅ دوال مساعدة لفتح الملفات من نتائج البحث
   bool _isValidPdfForSearch(List<int> bytes) {
     try {
       if (bytes.length < 4) return false;
@@ -1699,9 +1998,7 @@ class _FoldersPageState extends State<FoldersPage> {
   }
 
   String _getFileUrlForSearch(String path) {
-    if (path.startsWith('http')) {
-      return path;
-    }
+    if (path.startsWith('http')) return path;
     String cleanPath = path.replaceAll(r'\', '/').replaceAll('//', '/');
     while (cleanPath.startsWith('/')) {
       cleanPath = cleanPath.substring(1);
@@ -1713,7 +2010,6 @@ class _FoldersPageState extends State<FoldersPage> {
     return '$baseClean/$cleanPath';
   }
 
-  // ✅ معالجة الضغط على مجلد من نتائج البحث
   void _handleFolderTap(Map<String, dynamic> folder) {
     final type = folder['type'] as String?;
     if (type == 'category') {
@@ -1763,776 +2059,6 @@ class _FoldersPageState extends State<FoldersPage> {
     }
   }
 
-  // دالة لبناء المحتوى
-  Widget _buildContent(
-    List<Map<String, dynamic>> folders,
-    bool showFolders,
-    bool showFiles,
-  ) {
-    // ✅ إذا كان هناك بحث نشط، عرض نتائج البحث (مجلدات + ملفات)
-    final hasSearchQuery = _searchController.text.trim().isNotEmpty;
-    if (hasSearchQuery) {
-      return _buildSearchResults();
-    }
-
-    return Card(
-      elevation: 4,
-      margin: EdgeInsets.zero,
-      clipBehavior: Clip.antiAlias,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(
-          top: Radius.circular(
-            ResponsiveUtils.getResponsiveValue(
-              context,
-              mobile: 25.0,
-              tablet: 30.0,
-              desktop: 35.0,
-            ),
-          ),
-        ),
-      ),
-      color: const Color(0xFFE9E9E9),
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              SizedBox(height: 10),
-
-              // العنوان وأزرار العرض + زر إنشاء مجلد جديد أو غرفة
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    showFolders && showFiles
-                        ? S.of(context).allItems
-                        : showFolders
-                        ? S.of(context).myFolders
-                        : S.of(context).sharedFiles,
-                    style: TextStyle(
-                      fontSize: ResponsiveUtils.getResponsiveValue(
-                        context,
-                        mobile: 24.0,
-                        tablet: 28.0,
-                        desktop: 32.0,
-                      ),
-                      fontWeight: FontWeight.bold,
-                      color: const Color(0xff28336f),
-                    ),
-                  ),
-                  Row(
-                    children: [
-                      // ✅ زر إنشاء غرفة في tab المشتركة، أو زر إنشاء مجلد في باقي التابز
-                      if (!showFolders && showFiles)
-                        IconButton(
-                          icon: Icon(
-                            Icons.add_circle_outline,
-                            color: Color(0xff28336f),
-                          ),
-                          tooltip: 'إنشاء غرفة مشاركة',
-                          onPressed: () => _showCreateRoomPage(),
-                        )
-                      else
-                        IconButton(
-                          icon: Icon(
-                            Icons.create_new_folder,
-                            color: Color(0xff28336f),
-                          ),
-                          tooltip: S.of(context).createFolder,
-                          onPressed: () => _showCreateFolderDialog(),
-                        ),
-                      ViewToggleButtons(
-                        isGridView: isFilesGridView,
-                        onViewChanged: (isGrid) {
-                          setState(() {
-                            isFilesGridView = isGrid;
-                          });
-                        },
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-
-              SizedBox(height: 20),
-
-              // عرض المجلدات فقط
-              if (showFolders) ...[
-                if (_isLoadingFolders)
-                  Center(
-                    child: Padding(
-                      padding: const EdgeInsets.all(20.0),
-                      child: CircularProgressIndicator(),
-                    ),
-                  )
-                else if (isFilesGridView)
-                  Consumer<FileController>(
-                    builder: (context, fileController, child) {
-                      // ✅ استخدام Consumer للاستماع لتغييرات categoriesStats
-                      final categoriesStats = fileController.categoriesStats;
-
-                      // ✅ تحديث التصنيفات بالقيم من Controller (من القائمة المفلترة)
-                      final updatedCategories = _filteredFolders
-                          .where((item) => item['type'] == 'category')
-                          .map((category) {
-                            final categoryName =
-                                (category['category']?.toString() ?? '')
-                                    .toLowerCase();
-                            final stats = categoriesStats[categoryName];
-
-                            if (stats != null) {
-                              return {
-                                ...category,
-                                'fileCount': stats['filesCount'] ?? 0,
-                                'size': _formatBytes(stats['totalSize'] ?? 0),
-                              };
-                            }
-                            return category;
-                          })
-                          .toList();
-
-                      // ✅ دمج التصنيفات المحدثة مع المجلدات (من القائمة المفلترة)
-                      final updatedFolders = [
-                        ...updatedCategories,
-                        ..._filteredFolders
-                            .where((item) => item['type'] != 'category')
-                            .toList(),
-                      ];
-
-                      // ✅ تحديث folders في الـ state عند تغيير categoriesStats
-                      if (_previousCategoriesStats.toString() !=
-                          categoriesStats.toString()) {
-                        WidgetsBinding.instance.addPostFrameCallback((_) {
-                          if (mounted) {
-                            setState(() {
-                              folders = updatedFolders;
-                              // ✅ تحديث القائمة المفلترة أيضاً
-                              final query = _searchController.text
-                                  .trim()
-                                  .toLowerCase();
-                              if (query.isEmpty) {
-                                _filteredFolders = folders;
-                              } else {
-                                _filteredFolders = folders.where((item) {
-                                  final title = (item['title'] as String? ?? '')
-                                      .toLowerCase();
-                                  return title.contains(query);
-                                }).toList();
-                              }
-                            });
-                          }
-                        });
-                        _previousCategoriesStats =
-                            Map<String, Map<String, dynamic>>.from(
-                              categoriesStats,
-                            );
-                      }
-
-                      return FilesGridView(
-                        items: updatedFolders,
-                        showFileCount: true,
-                        onFileRemoved: () {
-                          // ✅ إعادة تحميل التصنيفات والمجلدات بعد نقل ملف أو مجلد
-                          _loadCategoriesAndFolders();
-                        },
-                        onItemTap: (item) {
-                          final type = item['type'] as String?;
-
-                          // ✅ إذا كان category، افتح صفحة التصنيف
-                          if (type == 'category') {
-                            final categoryTitle =
-                                item['title']?.toString() ?? '';
-                            final categoryColor = item['color'] is Color
-                                ? item['color'] as Color
-                                : Colors.blue;
-                            final categoryIcon = item['icon'] is IconData
-                                ? item['icon'] as IconData
-                                : Icons.folder;
-
-                            if (categoryTitle.isNotEmpty) {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => CategoryPage(
-                                    category: categoryTitle,
-                                    color: categoryColor,
-                                    icon: categoryIcon,
-                                  ),
-                                ),
-                              );
-                            }
-                          }
-                          // ✅ إذا كان folder، افتح محتويات المجلد
-                          else if (type == 'folder') {
-                            final folderId = item['folderId'] as String?;
-                            final folderName = item['title'] as String?;
-                            final folderColor = item['color'] as Color?;
-
-                            if (folderId != null) {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) =>
-                                      ChangeNotifierProvider.value(
-                                        value: Provider.of<FolderController>(
-                                          context,
-                                          listen: false,
-                                        ),
-                                        child: FolderContentsPage(
-                                          folderId: folderId,
-                                          folderName: folderName ?? 'مجلد',
-                                          folderColor: folderColor,
-                                        ),
-                                      ),
-                                ),
-                              ).then((_) {
-                                // ✅ إعادة تحميل المجلدات عند العودة من صفحة المحتويات
-                                if (mounted) {
-                                  _loadCategoriesAndFolders();
-                                }
-                              });
-                            }
-                          }
-                        },
-                      );
-                    },
-                  ),
-                if (!isFilesGridView)
-                  Consumer<FileController>(
-                    builder: (context, fileController, child) {
-                      // ✅ استخدام Consumer للاستماع لتغييرات categoriesStats
-                      final categoriesStats = fileController.categoriesStats;
-
-                      // ✅ تحديث التصنيفات بالقيم من Controller (من القائمة المفلترة)
-                      final updatedCategories = _filteredFolders
-                          .where((item) => item['type'] == 'category')
-                          .map((category) {
-                            final categoryName =
-                                (category['category']?.toString() ?? '')
-                                    .toLowerCase();
-                            final stats = categoriesStats[categoryName];
-
-                            if (stats != null) {
-                              return {
-                                ...category,
-                                'fileCount': stats['filesCount'] ?? 0,
-                                'size': _formatBytes(stats['totalSize'] ?? 0),
-                              };
-                            }
-                            return category;
-                          })
-                          .toList();
-
-                      // ✅ دمج التصنيفات المحدثة مع المجلدات (من القائمة المفلترة)
-                      final updatedFolders = [
-                        ...updatedCategories,
-                        ..._filteredFolders
-                            .where((item) => item['type'] != 'category')
-                            .toList(),
-                      ];
-
-                      // ✅ تحديث folders في الـ state عند تغيير categoriesStats
-                      if (_previousCategoriesStats.toString() !=
-                          categoriesStats.toString()) {
-                        WidgetsBinding.instance.addPostFrameCallback((_) {
-                          if (mounted) {
-                            setState(() {
-                              folders = updatedFolders;
-                              // ✅ تحديث القائمة المفلترة أيضاً
-                              final query = _searchController.text
-                                  .trim()
-                                  .toLowerCase();
-                              if (query.isEmpty) {
-                                _filteredFolders = folders;
-                              } else {
-                                _filteredFolders = folders.where((item) {
-                                  final title = (item['title'] as String? ?? '')
-                                      .toLowerCase();
-                                  return title.contains(query);
-                                }).toList();
-                              }
-                            });
-                          }
-                        });
-                        _previousCategoriesStats =
-                            Map<String, Map<String, dynamic>>.from(
-                              categoriesStats,
-                            );
-                      }
-
-                      return FilesListView(
-                        items: updatedFolders,
-                        itemMargin: EdgeInsets.only(bottom: 10),
-                        showMoreOptions: true,
-                        onFileRemoved: () {
-                          // ✅ إعادة تحميل التصنيفات والمجلدات بعد نقل ملف
-                          _loadCategoriesAndFolders();
-                        },
-                        onItemTap: (item) {
-                          final type = item['type'] as String?;
-
-                          // ✅ إذا كان category، افتح صفحة التصنيف
-                          if (type == 'category') {
-                            final categoryTitle =
-                                item['title']?.toString() ?? '';
-                            final categoryColor = item['color'] is Color
-                                ? item['color'] as Color
-                                : Colors.blue;
-                            final categoryIcon = item['icon'] is IconData
-                                ? item['icon'] as IconData
-                                : Icons.folder;
-
-                            if (categoryTitle.isNotEmpty) {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => CategoryPage(
-                                    category: categoryTitle,
-                                    color: categoryColor,
-                                    icon: categoryIcon,
-                                  ),
-                                ),
-                              );
-                            }
-                          }
-                          // ✅ إذا كان folder، افتح محتويات المجلد
-                          else if (type == 'folder') {
-                            final folderId = item['folderId'] as String?;
-                            final folderName = item['title'] as String?;
-                            final folderColor = item['color'] as Color?;
-
-                            if (folderId != null) {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) =>
-                                      ChangeNotifierProvider.value(
-                                        value: Provider.of<FolderController>(
-                                          context,
-                                          listen: false,
-                                        ),
-                                        child: FolderContentsPage(
-                                          folderId: folderId,
-                                          folderName: folderName ?? 'مجلد',
-                                          folderColor: folderColor,
-                                        ),
-                                      ),
-                                ),
-                              );
-                            }
-                          }
-                        },
-                      );
-                    },
-                  ),
-              ],
-
-              // ✅ عرض المجلدات المشتركة والغرف في tab المشتركة
-              if (showFiles && !showFolders) ...[
-                // ✅ عرض المجلدات المشتركة
-                if (_isLoadingSharedFolders)
-                  Center(
-                    child: Padding(
-                      padding: const EdgeInsets.all(20.0),
-                      child: CircularProgressIndicator(),
-                    ),
-                  )
-                else if (_filteredSharedFolders.isNotEmpty) ...[
-                  Text(
-                    'المجلدات المشتركة معي',
-                    style: TextStyle(
-                      fontSize: ResponsiveUtils.getResponsiveValue(
-                        context,
-                        mobile: 18.0,
-                        tablet: 20.0,
-                        desktop: 22.0,
-                      ),
-                      fontWeight: FontWeight.bold,
-                      color: const Color(0xff28336f),
-                    ),
-                  ),
-                  SizedBox(height: 16),
-                  if (isFilesGridView)
-                    FilesGridView(
-                      items: _filteredSharedFolders,
-                      showFileCount: true,
-                      onFileRemoved: () {
-                        // ✅ إعادة تحميل المجلدات المشتركة بعد نقل ملف أو مجلد
-                        _loadSharedFolders();
-                        _loadCategoriesAndFolders();
-                      },
-                      onItemTap: (item) {
-                        final type = item['type'] as String?;
-
-                        // ✅ إذا كان folder، افتح محتويات المجلد
-                        if (type == 'folder') {
-                          final folderId = item['folderId'] as String?;
-                          final folderName = item['title'] as String?;
-                          final folderColor = item['color'] as Color?;
-
-                          if (folderId != null) {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) =>
-                                    ChangeNotifierProvider.value(
-                                      value: Provider.of<FolderController>(
-                                        context,
-                                        listen: false,
-                                      ),
-                                      child: FolderContentsPage(
-                                        folderId: folderId,
-                                        folderName: folderName ?? 'مجلد',
-                                        folderColor: folderColor,
-                                      ),
-                                    ),
-                              ),
-                            );
-                          }
-                        }
-                      },
-                    ),
-                  if (!isFilesGridView)
-                    FilesListView(
-                      items: _filteredSharedFolders,
-                      itemMargin: EdgeInsets.only(bottom: 10),
-                      showMoreOptions: true,
-                      onItemTap: (item) {
-                        final type = item['type'] as String?;
-
-                        // ✅ إذا كان folder، افتح محتويات المجلد
-                        if (type == 'folder') {
-                          final folderId = item['folderId'] as String?;
-                          final folderName = item['title'] as String?;
-                          final folderColor = item['color'] as Color?;
-
-                          if (folderId != null) {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) =>
-                                    ChangeNotifierProvider.value(
-                                      value: Provider.of<FolderController>(
-                                        context,
-                                        listen: false,
-                                      ),
-                                      child: FolderContentsPage(
-                                        folderId: folderId,
-                                        folderName: folderName ?? 'مجلد',
-                                        folderColor: folderColor,
-                                      ),
-                                    ),
-                              ),
-                            );
-                          }
-                        }
-                      },
-                    ),
-                  SizedBox(height: 32),
-                ],
-
-                // ✅ عرض الغرف
-                Text(
-                  'الغرف',
-                  style: TextStyle(
-                    fontSize: ResponsiveUtils.getResponsiveValue(
-                      context,
-                      mobile: 18.0,
-                      tablet: 20.0,
-                      desktop: 22.0,
-                    ),
-                    fontWeight: FontWeight.bold,
-                    color: const Color(0xff28336f),
-                  ),
-                ),
-                SizedBox(height: 16),
-                Consumer<RoomController>(
-                  builder: (context, roomController, child) {
-                    if (roomController.isLoading &&
-                        roomController.rooms.isEmpty) {
-                      return Center(
-                        child: Padding(
-                          padding: const EdgeInsets.all(20.0),
-                          child: CircularProgressIndicator(),
-                        ),
-                      );
-                    }
-
-                    if (roomController.errorMessage != null &&
-                        roomController.rooms.isEmpty) {
-                      return Center(
-                        child: Padding(
-                          padding: const EdgeInsets.all(20.0),
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                Icons.error_outline,
-                                size: 48,
-                                color: Colors.red,
-                              ),
-                              SizedBox(height: 16),
-                              Text(
-                                roomController.errorMessage!,
-                                style: TextStyle(color: Colors.red),
-                                textAlign: TextAlign.center,
-                              ),
-                              SizedBox(height: 16),
-                              ElevatedButton(
-                                onPressed: () => roomController.getRooms(),
-                                child: Text('إعادة المحاولة'),
-                              ),
-                            ],
-                          ),
-                        ),
-                      );
-                    }
-
-                    if (roomController.rooms.isEmpty) {
-                      return Center(
-                        child: Padding(
-                          padding: const EdgeInsets.all(20.0),
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                Icons.meeting_room_outlined,
-                                size: 64,
-                                color: Colors.grey,
-                              ),
-                              SizedBox(height: 16),
-                              Text(
-                                'لا توجد غرف مشاركة',
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  color: Colors.grey[600],
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              SizedBox(height: 8),
-                              Text(
-                                'اضغط على + لإنشاء غرفة مشاركة جديدة',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  color: Colors.grey[500],
-                                ),
-                                textAlign: TextAlign.center,
-                              ),
-                            ],
-                          ),
-                        ),
-                      );
-                    }
-
-                    // ✅ تحويل الغرف إلى format مناسب للعرض
-                    final roomItems = roomController.rooms.map((room) {
-                      final membersCount = room['members']?.length ?? 0;
-
-                      // ✅ استخدام filesCount و foldersCount من الباك إند مباشرة
-                      // ✅ إذا لم تكن موجودة، احسبها من arrays
-                      int filesCount = 0;
-                      int foldersCount = 0;
-
-                      // ✅ محاولة جلب filesCount من الباك إند
-                      final filesCountValue = room['filesCount'];
-                      if (filesCountValue != null) {
-                        if (filesCountValue is int) {
-                          filesCount = filesCountValue;
-                        } else if (filesCountValue is num) {
-                          filesCount = filesCountValue.toInt();
-                        } else if (filesCountValue is String) {
-                          filesCount = int.tryParse(filesCountValue) ?? 0;
-                        }
-                      }
-
-                      // ✅ إذا لم يكن filesCount موجوداً، احسبه من array
-                      if (filesCount == 0 && room['files'] is List) {
-                        filesCount = (room['files'] as List).length;
-                      }
-
-                      // ✅ محاولة جلب foldersCount من الباك إند
-                      final foldersCountValue = room['foldersCount'];
-                      if (foldersCountValue != null) {
-                        if (foldersCountValue is int) {
-                          foldersCount = foldersCountValue;
-                        } else if (foldersCountValue is num) {
-                          foldersCount = foldersCountValue.toInt();
-                        } else if (foldersCountValue is String) {
-                          foldersCount = int.tryParse(foldersCountValue) ?? 0;
-                        }
-                      }
-
-                      // ✅ إذا لم يكن foldersCount موجوداً، احسبه من array
-                      if (foldersCount == 0 && room['folders'] is List) {
-                        foldersCount = (room['folders'] as List).length;
-                      }
-
-                      final totalItems =
-                          filesCount + foldersCount; // ✅ إجمالي العناصر
-
-                      return {
-                        "title": room['name'] ?? 'بدون اسم',
-                        "fileCount":
-                            totalItems, // ✅ إجمالي العناصر (ملفات + مجلدات)
-                        "filesCount": filesCount, // ✅ عدد الملفات فقط
-                        "foldersCount": foldersCount, // ✅ عدد المجلدات فقط
-                        "size": _formatMemberCount(membersCount),
-                        "icon": Icons.meeting_room,
-                        "color": Color(0xff28336f),
-                        "description": room['description'] ?? '',
-                        "type": "room", // ✅ تمييز الغرف
-                        "room": room, // ✅ إضافة بيانات الغرفة الكاملة
-                      };
-                    }).toList();
-
-                    if (isFilesGridView) {
-                      return FilesGridView(
-                        items: roomItems,
-                        showFileCount: true,
-                        onItemTap: (item) {
-                          final room = item['room'] as Map<String, dynamic>?;
-                          if (room != null && room['_id'] != null) {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) =>
-                                    ChangeNotifierProvider.value(
-                                      value: roomController,
-                                      child: RoomDetailsPage(
-                                        roomId: room['_id'],
-                                      ),
-                                    ),
-                              ),
-                            );
-                          }
-                        },
-                        onRoomDetailsTap: (item) {
-                          // ✅ عرض تفاصيل الغرفة عند الضغط على خيار "عرض التفاصيل" في القائمة
-                          final room = item['room'] as Map<String, dynamic>?;
-                          if (room != null && room['_id'] != null) {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) =>
-                                    ChangeNotifierProvider.value(
-                                      value: roomController,
-                                      child: RoomDetailsPage(
-                                        roomId: room['_id'],
-                                      ),
-                                    ),
-                              ),
-                            );
-                          }
-                        },
-                        onRoomEditTap: (item) async {
-                          // ✅ تعديل الغرفة عند الضغط على خيار "تعديل" في القائمة
-                          final room = item['room'] as Map<String, dynamic>?;
-                          if (room != null && room['_id'] != null) {
-                            // ✅ التحقق من الصلاحيات قبل فتح نافذة التعديل
-                            final canEdit = await RoomPermissions.canEditRoom(
-                              room,
-                            );
-                            if (canEdit) {
-                              _showEditRoomDialog(
-                                context,
-                                roomController,
-                                room,
-                              );
-                            } else {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(
-                                    '❌ فقط مالك الغرفة أو الأعضاء برتبة محرر يمكنهم تعديل الغرفة',
-                                  ),
-                                  backgroundColor: Colors.red,
-                                ),
-                              );
-                            }
-                          }
-                        },
-                      );
-                    } else {
-                      return FilesListView(
-                        items: roomItems,
-                        itemMargin: EdgeInsets.only(bottom: 10),
-                        showMoreOptions: true,
-                        onItemTap: (item) {
-                          final room = item['room'] as Map<String, dynamic>?;
-                          if (room != null && room['_id'] != null) {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) =>
-                                    ChangeNotifierProvider.value(
-                                      value: roomController,
-                                      child: RoomDetailsPage(
-                                        roomId: room['_id'],
-                                      ),
-                                    ),
-                              ),
-                            );
-                          }
-                        },
-                        onRoomDetailsTap: (item) {
-                          // ✅ عرض تفاصيل الغرفة عند الضغط على خيار "عرض المعلومات" في القائمة
-                          final room = item['room'] as Map<String, dynamic>?;
-                          if (room != null && room['_id'] != null) {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) =>
-                                    ChangeNotifierProvider.value(
-                                      value: roomController,
-                                      child: RoomDetailsPage(
-                                        roomId: room['_id'],
-                                      ),
-                                    ),
-                              ),
-                            );
-                          }
-                        },
-                        onRoomEditTap: (item) async {
-                          // ✅ تعديل الغرفة عند الضغط على خيار "تعديل" في القائمة
-                          final room = item['room'] as Map<String, dynamic>?;
-                          if (room != null && room['_id'] != null) {
-                            // ✅ التحقق من الصلاحيات قبل فتح نافذة التعديل
-                            final canEdit = await RoomPermissions.canEditRoom(
-                              room,
-                            );
-                            if (canEdit) {
-                              _showEditRoomDialog(
-                                context,
-                                roomController,
-                                room,
-                              );
-                            } else {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(
-                                    '❌ فقط مالك الغرفة أو الأعضاء برتبة محرر يمكنهم تعديل الغرفة',
-                                  ),
-                                  backgroundColor: Colors.red,
-                                ),
-                              );
-                            }
-                          }
-                        },
-                      );
-                    }
-                  },
-                ),
-              ],
-
-              SizedBox(height: 100),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  // Dialog لإنشاء مجلد جديد
   void _showCreateFolderDialog() async {
     final folderNameController = TextEditingController();
 
@@ -2587,7 +2113,6 @@ class _FoldersPageState extends State<FoldersPage> {
                     backgroundColor: success ? Colors.green : Colors.red,
                   ),
                 );
-                // ✅ إعادة تحميل المجلدات بعد إنشاء مجلد جديد
                 if (success) {
                   _loadCategoriesAndFolders();
                 }
@@ -2600,7 +2125,6 @@ class _FoldersPageState extends State<FoldersPage> {
     );
   }
 
-  // ✅ فتح صفحة إنشاء غرفة مشاركة جديدة
   Future<void> _showCreateRoomPage() async {
     final result = await Navigator.push(
       context,
@@ -2612,7 +2136,6 @@ class _FoldersPageState extends State<FoldersPage> {
       ),
     );
 
-    // ✅ إذا تم إنشاء غرفة بنجاح، تحديث القائمة
     if (result != null && mounted) {
       final roomController = Provider.of<RoomController>(
         context,
@@ -2629,7 +2152,6 @@ class _FoldersPageState extends State<FoldersPage> {
     }
   }
 
-  // ✅ عرض نافذة تعديل الغرفة
   Future<void> _showEditRoomDialog(
     BuildContext context,
     RoomController roomController,
@@ -2702,7 +2224,6 @@ class _FoldersPageState extends State<FoldersPage> {
       final newName = nameController.text.trim();
       final newDescription = descriptionController.text.trim();
 
-      // ✅ التحقق من أن الاسم غير فارغ (يتم التحقق في الباك إند أيضاً)
       if (newName.isEmpty) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -2715,7 +2236,6 @@ class _FoldersPageState extends State<FoldersPage> {
         return;
       }
 
-      // ✅ إظهار loading indicator
       showDialog(
         context: context,
         barrierDismissible: false,
@@ -2729,7 +2249,7 @@ class _FoldersPageState extends State<FoldersPage> {
       );
 
       if (mounted) {
-        Navigator.pop(context); // إغلاق loading indicator
+        Navigator.pop(context);
 
         if (success) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -2754,7 +2274,6 @@ class _FoldersPageState extends State<FoldersPage> {
     }
   }
 
-  // ✅ تنسيق عدد الأعضاء
   String _formatMemberCount(int count) {
     if (count == 0) {
       return 'لا يوجد أعضاء';

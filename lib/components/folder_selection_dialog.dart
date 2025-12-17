@@ -27,15 +27,25 @@ class _FolderSelectionDialogState extends State<FolderSelectionDialog> {
   List<Map<String, String?>> _breadcrumb = []; // [{id: null, name: 'الجذر'}]
   bool _isLoading = false;
   String? _currentFolderId;
+  bool _initializedBreadcrumb = false;
 
   @override
   void initState() {
     super.initState();
-    _breadcrumb.add({'id': null, 'name': S.of(context).root});
     // ✅ تأخير بسيط لضمان أن الـ widget تم بناؤه بالكامل
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadRootFolders();
     });
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // ✅ هنا مسموح نستخدم S.of(context) لأنه بعد initState وتم تهيئة Localizations
+    if (!_initializedBreadcrumb) {
+      _breadcrumb.add({'id': null, 'name': S.of(context).root});
+      _initializedBreadcrumb = true;
+    }
   }
 
   // ✅ جلب المجلدات الجذرية

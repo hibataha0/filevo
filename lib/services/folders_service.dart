@@ -180,19 +180,24 @@ class FolderService {
         print('❌ Upload failed with status: ${response.statusCode}');
         print('❌ Response body: ${response.body}');
 
-        // محاولة قراءة error message من الـ response
+        // محاولة قراءة error message من الـ response وإرجاعه بدلاً من الرمي
         try {
           final errorData = jsonDecode(response.body);
           final errorMessage =
               errorData['message'] ?? errorData['error'] ?? response.body;
-          throw Exception('Failed to upload folder: $errorMessage');
+          return {
+            'success': false,
+            'message': errorMessage,
+            'error': errorData,
+            'statusCode': response.statusCode,
+          };
         } catch (e) {
-          if (e.toString().contains('Failed to upload folder')) {
-            rethrow;
-          }
-          throw Exception(
-            'Failed to upload folder: ${response.statusCode} - ${response.body}',
-          );
+          return {
+            'success': false,
+            'message':
+                'Failed to upload folder: ${response.statusCode} - ${response.body}',
+            'statusCode': response.statusCode,
+          };
         }
       }
     } catch (e) {

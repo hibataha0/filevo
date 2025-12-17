@@ -1,11 +1,7 @@
-import 'dart:convert';
 import 'dart:io';
 import 'package:filevo/services/file_service.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
-import 'package:filevo/config/api_config.dart';
-import 'package:filevo/services/api_endpoints.dart';
 
 class FileController extends ChangeNotifier {
   final FileService _fileService = FileService();
@@ -88,6 +84,7 @@ class FileController extends ChangeNotifier {
     required File file,
     required String token,
     String? parentFolderId,
+    void Function(int sent, int total)? onSendProgress,
   }) async {
     setLoading(true);
     setError(null);
@@ -97,6 +94,7 @@ class FileController extends ChangeNotifier {
         file: file,
         token: token,
         parentFolderId: parentFolderId,
+        onSendProgress: onSendProgress,
       );
 
       if (result['file'] != null) {
@@ -105,7 +103,17 @@ class FileController extends ChangeNotifier {
         setSuccess(result['message'] ?? 'تم رفع الملف بنجاح');
         return true;
       } else {
-        setError(result['message'] ?? 'فشل في رفع الملف');
+        final viruses =
+            (result['viruses'] as List?)?.map((e) => e.toString()).toList() ??
+                [];
+        if (result['virusDetected'] == true || viruses.isNotEmpty) {
+          final virusMsg = viruses.isNotEmpty
+              ? 'تم اكتشاف فيروس في الملف (${viruses.join(", ")})'
+              : result['message'] ?? 'تم رفض الملف بسبب فحص الفيروسات';
+          setError(virusMsg);
+        } else {
+          setError(result['message'] ?? 'فشل في رفع الملف');
+        }
         return false;
       }
     } catch (e) {
@@ -121,6 +129,7 @@ class FileController extends ChangeNotifier {
     required List<File> files,
     required String token,
     String? parentFolderId,
+    void Function(int sent, int total)? onSendProgress,
   }) async {
     setLoading(true);
     setError(null);
@@ -130,14 +139,48 @@ class FileController extends ChangeNotifier {
         files: files,
         token: token,
         parentFolderId: parentFolderId,
+        onSendProgress: onSendProgress,
       );
 
-      if (result['files'] != null && result['files'] is List) {
-        _uploadedFiles.addAll(List<Map<String, dynamic>>.from(result['files']));
+      final uploadedList = result['files'] != null && result['files'] is List
+          ? List<Map<String, dynamic>>.from(result['files'])
+          : <Map<String, dynamic>>[];
+      final errorsRaw = (result['errors'] as List?) ?? [];
+      final errors = errorsRaw
+          .map((e) => e is Map<String, dynamic>
+              ? Map<String, dynamic>.from(e)
+              : {'error': e.toString()})
+          .toList();
+
+      if (uploadedList.isNotEmpty) {
+        _uploadedFiles.addAll(uploadedList);
         _safeNotifyListeners();
-        setSuccess(result['message'] ?? 'تم رفع ${files.length} ملف بنجاح');
-      } else {
-        setError(result['message'] ?? 'فشل في رفع الملفات');
+      }
+
+      final uploadedCount = uploadedList.length;
+      final errorsCount = errors.length;
+
+      if (uploadedCount > 0) {
+        final successText = errorsCount > 0
+            ? 'تم رفع $uploadedCount ملف، تم رفض $errorsCount ملف بعد الفحص'
+            : (result['message'] ?? 'تم رفع $uploadedCount ملف بنجاح');
+        setSuccess(successText);
+      }
+
+      if (uploadedCount == 0 || errorsCount > 0) {
+        if (errorsCount > 0) {
+          final errorNames = errors
+              .map((e) => e['filename'] ?? e['error'] ?? '')
+              .where((e) => e.toString().isNotEmpty)
+              .take(3)
+              .join(', ');
+          final errorText = errorsCount == 1
+              ? 'تم رفض ملف بعد فحص الفيروسات: $errorNames'
+              : 'تم رفض $errorsCount ملفات بعد الفحص: $errorNames';
+          setError(errorText);
+        } else if (uploadedCount == 0) {
+          setError(result['message'] ?? 'فشل في رفع الملفات');
+        }
       }
       return result;
     } catch (e) {

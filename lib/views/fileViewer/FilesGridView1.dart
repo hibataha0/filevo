@@ -997,364 +997,273 @@ class _FilesGridState extends State<FilesGrid> {
     Map<String, dynamic> file,
     bool isOneTimeShare,
   ) {
-    // ✅ الحصول على حالة النجمة من الـ state المحلي
     final fileId = file['originalData']?['_id'];
-    // ✅ قراءة isStarred من _starStates أولاً (الأحدث)، ثم من originalData
-    final cachedIsStarred = fileId != null ? _starStates[fileId] : null;
-    final originalIsStarred = file['originalData']?['isStarred'];
 
-    // ✅ استخدام _starStates أولاً (الأحدث من setState)، ثم originalData
-    final isStarred = cachedIsStarred ?? originalIsStarred ?? false;
+    final isStarred =
+        _starStates[fileId] ?? file['originalData']?['isStarred'] ?? false;
 
-    // ✅ تحديث _starStates إذا كانت القيمة في originalData موجودة ومختلفة
-    if (fileId != null &&
-        originalIsStarred != null &&
-        cachedIsStarred == null) {
-      _starStates[fileId] = originalIsStarred;
+    //final fileSize = _formatFileSize(file['size']?.toString() ?? '0');
+    final fileSize = file['size']?.toString() ?? '0';
+    final bool isImage = fileType == 'image' && fileUrl.isNotEmpty;
+    final bool isVideo = fileType == 'video';
+
+    IconData getIcon() {
+      switch (fileType) {
+        case 'image':
+          return Icons.image_rounded;
+        case 'video':
+          return Icons.play_circle_fill_rounded;
+        case 'pdf':
+          return Icons.picture_as_pdf_rounded;
+        case 'audio':
+          return Icons.music_note_rounded;
+        default:
+          return Icons.insert_drive_file_rounded;
+      }
     }
 
-    return GestureDetector(
-      onTap: () => widget.onFileTap?.call(file),
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.08),
-              blurRadius: 12,
-              offset: const Offset(0, 4),
-            ),
-          ],
+    Widget buildBackground() {
+      if (isImage) {
+        return Image.network(fileUrl, fit: BoxFit.cover);
+      }
+
+      if (isVideo) {
+        return FutureBuilder<String?>(
+          future: _generateVideoThumbnail(fileUrl),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.done &&
+                snapshot.data != null) {
+              return Image.file(File(snapshot.data!), fit: BoxFit.cover);
+            }
+
+            return Container(
+              color: const Color(0xff28336f),
+              child: const Center(
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: Colors.white,
+                ),
+              ),
+            );
+          },
+        );
+      }
+
+      // ✅ الأنواع الأخرى من الملفات
+      return Container(
+        color: const Color(0xff28336f),
+        child: Center(
+          child: Icon(
+            getIcon(), // ✅ استخدام دالة getIcon للحصول على الأيقونة المناسبة
+            size: 60,
+            color: Colors.white.withOpacity(0.7),
+          ),
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(
-              child: Stack(
-                children: [
-                  Container(
-                    decoration: BoxDecoration(
-                      color: Colors.grey[50],
-                      borderRadius: const BorderRadius.only(
-                        topLeft: Radius.circular(16),
-                        topRight: Radius.circular(16),
-                      ),
-                    ),
-                    child: widget.roomId != null && isOneTimeShare
-                        ? _buildOneTimeShareIndicatorForSharedFiles(fileType)
-                        : _buildFileContent(
-                            fileType,
-                            fileUrl,
-                            fileName,
-                            isOneTimeShare,
-                          ),
+      );
+    }
+
+    return AspectRatio(
+      aspectRatio: 0.8,
+      child: GestureDetector(
+        onTap: () => widget.onFileTap?.call(file),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(20),
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              // ===== الخلفية =====
+              buildBackground(),
+
+              // ===== Gradient =====
+              Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Colors.black.withOpacity(0.05),
+                      Colors.black.withOpacity(0.65),
+                    ],
                   ),
-                  Positioned(
-                    top: 4,
-                    right: 4,
-                    child: PopupMenuButton<String>(
-                      icon: Icon(
-                        Icons.more_vert,
-                        size: 20,
-                        color: Colors.grey[700],
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      elevation: 8,
+                ),
+              ),
+
+              // ===== ▶ Play للفيديو =====
+              if (isVideo)
+                Center(
+                  child: Container(
+                    width: 56,
+                    height: 56,
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.4),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.play_arrow_rounded,
+                      size: 36,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+
+              // ===== أزرار علوية =====
+              Positioned(
+                top: 10,
+                right: 10,
+                child: Row(
+                  children: [
+                    // _glassIcon(
+                    //   icon: isStarred
+                    //       ? Icons.star_rounded
+                    //       : Icons.star_border_rounded,
+                    //   color: Colors.amber,
+                    //   onTap: () {
+                    //     if (fileId == null) return;
+                    //     setState(() {
+                    //       _starStates[fileId] = !isStarred;
+                    //     });
+                    //   },
+                    // ),
+                    const SizedBox(width: 6),
+                    PopupMenuButton<String>(
+                      padding: EdgeInsets.zero,
+                      icon: _glassIcon(icon: Icons.more_vert),
                       itemBuilder: (context) {
-                        // ✅ قائمة منفصلة للملفات المشتركة في الغرف
-                        if (widget.roomId != null) {
-                          return _buildSharedFileMenuItems(file, isStarred);
-                        } else {
-                          // ✅ قائمة الملفات العادية
-                          return _buildNormalFileMenuItems(file, isStarred);
-                        }
+                        return widget.roomId != null
+                            ? _buildSharedFileMenuItems(file, isStarred)
+                            : _buildNormalFileMenuItems(file, isStarred);
                       },
                       onSelected: (value) {
-                        if (widget.roomId != null) {
-                          _handleSharedFileMenuAction(value, file);
-                        } else {
-                          _handleMenuAction(value, file);
-                        }
+                        widget.roomId != null
+                            ? _handleSharedFileMenuAction(value, file)
+                            : _handleMenuAction(value, file);
                       },
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    fileName,
-                    overflow: TextOverflow.ellipsis,
-                    maxLines: 2,
-                    style: const TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFF1A1A1A),
-                      height: 1.3,
+
+              // ===== مرة واحدة =====
+              if (isOneTimeShare)
+                Positioned(
+                  top: 12,
+                  left: 12,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.orange.withOpacity(0.9),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Text(
+                      'مرة واحدة',
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
                     ),
                   ),
-                  // ✅ عرض مؤشر "مشارك لمرة واحدة" لجميع الملفات المشتركة لمرة واحدة
-                  if (file['isOneTimeShare'] == true) ...[
-                    const SizedBox(height: 6),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.orange.shade50,
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(
-                          color: Colors.orange.shade300,
-                          width: 1.5,
-                        ),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            Icons.lock_clock_rounded,
-                            size: 14,
-                            color: Colors.orange.shade700,
-                          ),
-                          const SizedBox(width: 6),
-                          Text(
-                            'مشارك لمرة واحدة',
-                            style: TextStyle(
-                              fontSize: 10,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.orange.shade700,
-                            ),
-                          ),
-                        ],
+                ),
+
+              // ===== اسم الملف + الحجم =====
+              Positioned(
+                left: 12,
+                right: 12,
+                bottom: 12,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      fileName,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
-                    const SizedBox(height: 6),
+                    const SizedBox(height: 2),
+                    Text(
+                      fileSize,
+                      style: TextStyle(
+                        color: Colors.white.withOpacity(0.75),
+                        fontSize: 11,
+                      ),
+                    ),
                   ],
-                  // ✅ عرض معلومات إضافية للملفات المشتركة في الروم
-                  if (file['sharedBy'] != null ||
-                      file['category'] != null ||
-                      file['createdAt'] != null ||
-                      (file['isOneTimeShare'] == true &&
-                          file['shareStatus'] != null)) ...[
-                    const SizedBox(height: 6),
-                    // ✅ حالة الملف المشترك لمرة واحدة (لصاحب الملف فقط)
-                    if (file['isOneTimeShare'] == true &&
-                        file['shareStatus'] != null)
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 2),
-                        child: Container(
-                          padding: EdgeInsets.symmetric(
-                            horizontal: 6,
-                            vertical: 2,
-                          ),
-                          decoration: BoxDecoration(
-                            color: file['shareStatus'] == 'viewed_by_all'
-                                ? Colors.green.shade50
-                                : Colors.blue.shade50,
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                file['shareStatus'] == 'viewed_by_all'
-                                    ? Icons.check_circle_outline
-                                    : Icons.access_time,
-                                size: 10,
-                                color: file['shareStatus'] == 'viewed_by_all'
-                                    ? Colors.green.shade700
-                                    : Colors.blue.shade700,
-                              ),
-                              const SizedBox(width: 4),
-                              Text(
-                                file['shareStatus'] == 'viewed_by_all'
-                                    ? S.of(context).viewedByAll
-                                    : S.of(context).active,
-                                style: TextStyle(
-                                  fontSize: 9,
-                                  color: file['shareStatus'] == 'viewed_by_all'
-                                      ? Colors.green.shade700
-                                      : Colors.blue.shade700,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    // ✅ معلومات إضافية لصاحب الملف (للملفات المشتركة لمرة واحدة)
-                    if (file['isOneTimeShare'] == true &&
-                        file['shareStatus'] != null) ...[
-                      if (file['accessCount'] != null &&
-                          file['accessCount'] > 0)
-                        Padding(
-                          padding: const EdgeInsets.only(bottom: 2),
-                          child: Row(
-                            children: [
-                              Icon(
-                                Icons.visibility_outlined,
-                                size: 10,
-                                color: Colors.grey[600],
-                              ),
-                              const SizedBox(width: 4),
-                              Expanded(
-                                child: Text(
-                                  '${S.of(context).accessed}: ${file['accessCount']}${file['totalEligibleMembers'] != null ? ' / ${file['totalEligibleMembers']}' : ''}',
-                                  overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(
-                                    fontSize: 9,
-                                    color: Colors.grey[600],
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      if (file['viewedByAllAt'] != null)
-                        Padding(
-                          padding: const EdgeInsets.only(bottom: 2),
-                          child: Row(
-                            children: [
-                              Icon(
-                                Icons.check_circle,
-                                size: 10,
-                                color: Colors.green[600],
-                              ),
-                              const SizedBox(width: 4),
-                              Expanded(
-                                child: Text(
-                                  '${S.of(context).completed}: ${_formatDate(file['viewedByAllAt'])}',
-                                  overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(
-                                    fontSize: 9,
-                                    color: Colors.green[700],
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                    ],
-                    // ✅ التصنيف
-                    if (file['category'] != null &&
-                        file['category'].toString().isNotEmpty)
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 2),
-                        child: Row(
-                          children: [
-                            Icon(
-                              Icons.category_outlined,
-                              size: 11,
-                              color: Colors.grey[600],
-                            ),
-                            const SizedBox(width: 4),
-                            Expanded(
-                              child: Text(
-                                file['category'].toString(),
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                  fontSize: 10,
-                                  color: Colors.grey[600],
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    // ✅ من شارك الملف
-                    if (file['sharedBy'] != null &&
-                        file['sharedBy'].toString().isNotEmpty)
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 2),
-                        child: Row(
-                          children: [
-                            Icon(
-                              Icons.person_outline,
-                              size: 11,
-                              color: Colors.grey[600],
-                            ),
-                            const SizedBox(width: 4),
-                            Expanded(
-                              child: Text(
-                                '${S.of(context).sharedBy}: ${file['sharedBy']}',
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                  fontSize: 10,
-                                  color: Colors.grey[600],
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    // ✅ تاريخ الإنشاء
-                    if (file['createdAt'] != null)
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 2),
-                        child: Row(
-                          children: [
-                            Icon(
-                              Icons.calendar_today_outlined,
-                              size: 11,
-                              color: Colors.grey[600],
-                            ),
-                            const SizedBox(width: 4),
-                            Expanded(
-                              child: Text(
-                                _formatDate(file['createdAt']),
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                  fontSize: 10,
-                                  color: Colors.grey[600],
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    // ✅ تاريخ التعديل
-                    if (file['updatedAt'] != null)
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 2),
-                        child: Row(
-                          children: [
-                            Icon(
-                              Icons.edit_outlined,
-                              size: 11,
-                              color: Colors.grey[600],
-                            ),
-                            const SizedBox(width: 4),
-                            Expanded(
-                              child: Text(
-                                '${S.of(context).modified}: ${_formatDate(file['updatedAt'])}',
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                  fontSize: 10,
-                                  color: Colors.grey[600],
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                  ],
-                ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
+  }
+
+  // دالة مساعدة لتنسيق حجم الملف
+  String _formatFileSize(String size) {
+    try {
+      print('🚀 [FilesGridView1] size: $size');
+      final bytes = int.tryParse(size) ?? 0;
+      if (bytes < 1024) return '$bytes بايت';
+      if (bytes < 1048576)
+        return '${(bytes / 1024).toStringAsFixed(1)} كيلوبايت';
+      return '${(bytes / 1048576).toStringAsFixed(1)} ميجابايت';
+    } catch (e) {
+      return size;
+    }
+  }
+
+  Widget _glassIcon({
+    required IconData icon,
+    Color color = Colors.white,
+    VoidCallback? onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 34,
+        height: 34,
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(0.25),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: Colors.white.withOpacity(0.2)),
+        ),
+        child: Icon(icon, size: 18, color: color),
+      ),
+    );
+  }
+
+  // دالة مساعدة لتنسيق التاريخ
+  // String _formatDate(dynamic date) {
+  //   if (date == null) return '';
+  //   try {
+  //     DateTime dateTime;
+  //     if (date is DateTime) {
+  //       dateTime = date;
+  //     } else {
+  //       dateTime = DateTime.parse(date.toString());
+  //     }
+  //     return '${dateTime.day}/${dateTime.month}/${dateTime.year}';
+  //   } catch (e) {
+  //     return date.toString();
+  //   }
+  // }
+  Future<String?> _generateVideoThumbnail(String videoUrl) async {
+    try {
+      return await VideoThumbnail.thumbnailFile(
+        video: videoUrl,
+        imageFormat: ImageFormat.JPEG,
+        maxHeight: 300,
+        quality: 75,
+      );
+    } catch (e) {
+      return null;
+    }
   }
 
   PopupMenuItem<String> _buildMenuItem(

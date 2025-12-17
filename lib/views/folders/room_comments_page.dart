@@ -5,6 +5,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:filevo/config/api_config.dart';
 import 'package:filevo/controllers/folders/room_controller.dart';
 import 'package:filevo/utils/room_permissions.dart';
+import 'package:pull_to_refresh/pull_to_refresh.dart';
 
 class RoomCommentsPage extends StatefulWidget {
   final String roomId;
@@ -30,6 +31,8 @@ class _RoomCommentsPageState extends State<RoomCommentsPage> {
   String _selectedTargetId =
       ''; // ✅ إذا كان فارغاً، يعني تعليقات عامة على الروم
   Map<String, dynamic>? roomData; // ✅ بيانات الغرفة للتحقق من الصلاحيات
+  final RefreshController _refreshController =
+      RefreshController(initialRefresh: false);
 
   @override
   void initState() {
@@ -68,6 +71,7 @@ class _RoomCommentsPageState extends State<RoomCommentsPage> {
   @override
   void dispose() {
     _commentController.dispose();
+    _refreshController.dispose();
     super.dispose();
   }
 
@@ -393,10 +397,15 @@ class _RoomCommentsPageState extends State<RoomCommentsPage> {
                       ],
                     ),
                   )
-                : RefreshIndicator(
-                    onRefresh: _loadComments,
+                : SmartRefresher(
+                    controller: _refreshController,
+                    onRefresh: () async {
+                      await _loadComments();
+                      _refreshController.refreshCompleted();
+                    },
+                    header: const WaterDropHeader(),
                     child: ListView.builder(
-                      padding: EdgeInsets.all(16),
+                      padding: const EdgeInsets.all(16),
                       itemCount: comments.length,
                       itemBuilder: (context, index) {
                         return _buildCommentCard(comments[index]);

@@ -3,12 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:filevo/controllers/folders/files_controller.dart';
 import 'package:filevo/controllers/folders/folders_controller.dart';
+import 'package:filevo/controllers/folders/room_controller.dart';
 import 'package:filevo/views/fileViewer/file_actions_service.dart';
 import 'package:filevo/views/fileViewer/file_details_page.dart';
 import 'package:filevo/views/folders/room_comments_page.dart';
-import 'package:filevo/controllers/folders/room_controller.dart';
-import 'package:filevo/views/fileViewer/folder_actions_service.dart';
-import 'package:filevo/views/folders/share_folder_with_room_page.dart';
 import 'package:filevo/services/storage_service.dart';
 import 'package:filevo/generated/l10n.dart';
 
@@ -17,13 +15,10 @@ class FilesListView extends StatefulWidget {
   final EdgeInsetsGeometry? itemMargin;
   final bool showMoreOptions;
   final void Function(Map<String, dynamic>)? onItemTap;
-  final String? roomId; // ✅ معرف الغرفة (لتمييز الملفات المشتركة)
-  final void Function()?
-  onFileRemoved; // ✅ callback لإعادة تحميل البيانات بعد إزالة ملف
-  final void Function(Map<String, dynamic>)?
-  onRoomDetailsTap; // ✅ callback لعرض تفاصيل الغرفة
-  final void Function(Map<String, dynamic>)?
-  onRoomEditTap; // ✅ callback لتعديل الغرفة
+  final String? roomId;
+  final void Function()? onFileRemoved;
+  final void Function(Map<String, dynamic>)? onRoomDetailsTap;
+  final void Function(Map<String, dynamic>)? onRoomEditTap;
 
   const FilesListView({
     Key? key,
@@ -33,8 +28,8 @@ class FilesListView extends StatefulWidget {
     this.onItemTap,
     this.roomId,
     this.onFileRemoved,
-    this.onRoomDetailsTap, // ✅ Initialize new callback
-    this.onRoomEditTap, // ✅ Initialize new callback
+    this.onRoomDetailsTap,
+    this.onRoomEditTap,
   }) : super(key: key);
 
   @override
@@ -42,8 +37,8 @@ class FilesListView extends StatefulWidget {
 }
 
 class _FilesListViewState extends State<FilesListView> {
-  // ✅ إضافة: Map لتتبع حالة النجمة لكل ملف (مثل FilesGrid)
   final Map<String, bool> _starStates = {};
+  final Map<String, bool> _hoverStates = {};
 
   @override
   void initState() {
@@ -54,14 +49,13 @@ class _FilesListViewState extends State<FilesListView> {
   @override
   void didUpdateWidget(FilesListView oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // ✅ تحديث الحالات عند تغيير القائمة
     if (oldWidget.items != widget.items) {
       _initializeStarStates();
     }
   }
 
-  // ✅ إضافة: تهيئة حالات النجمة من البيانات (مثل FilesGrid)
   void _initializeStarStates() {
+    _starStates.clear();
     for (var file in widget.items) {
       final originalData = file['originalData'] ?? file['itemData'];
       if (originalData is Map<String, dynamic>) {
@@ -73,129 +67,536 @@ class _FilesListViewState extends State<FilesListView> {
     }
   }
 
-  // ✅ الحصول على حالة النجمة للاستخدام في key
-  bool _getStarState(Map<String, dynamic> file) {
-    final originalData = file['originalData'] ?? file['itemData'];
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final backgroundColor = isDark ? Color(0xFF1E1E1E) : Color(0xFFF8F9FA);
+    final cardColor = isDark ? Color(0xFF2D2D2D) : Colors.white;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        borderRadius: BorderRadius.circular(24),
+      ),
+      child: ListView.separated(
+        itemCount: widget.items.length,
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        padding: const EdgeInsets.symmetric(vertical: 8.0),
+        separatorBuilder: (context, index) => const SizedBox(height: 12),
+        itemBuilder: (context, index) {
+          final item = widget.items[index];
+          return _buildListItem(context, item, cardColor);
+        },
+      ),
+    );
+  }
+
+  Widget _buildListItem(
+    BuildContext context,
+    Map<String, dynamic> item,
+    Color cardColor,
+  ) {
+    final type = item['type'] as String?;
+    final iconSize = ResponsiveUtils.getResponsiveValue(
+      context,
+      mobile: 22.0,
+      tablet: 24.0,
+      desktop: 26.0,
+    );
+
+    final starState = _getStarState(item);
+    final itemId = item['originalData']?['_id']?.toString() ?? item['title'];
+    final isHovered = _hoverStates[itemId] ?? false;
+
+    return MouseRegion(
+      onEnter: (_) => setState(() => _hoverStates[itemId] = true),
+      onExit: (_) => setState(() => _hoverStates[itemId] = false),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeInOut,
+        transform: Matrix4.translationValues(0, isHovered ? -2 : 0, 0),
+        child: Card(
+          elevation: isHovered ? 8 : 4,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+            side: BorderSide(
+              color: isHovered
+                  ? _getTypeColor(type).withOpacity(0.3)
+                  : Colors.transparent,
+              width: 1.5,
+            ),
+          ),
+          color: cardColor,
+          shadowColor: Colors.black.withOpacity(0.1),
+          child: InkWell(
+            onTap: () => _handleItemTap(item),
+            borderRadius: BorderRadius.circular(20),
+            splashColor: _getTypeColor(type).withOpacity(0.1),
+            highlightColor: _getTypeColor(type).withOpacity(0.05),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  // Leading Icon/Thumbnail with animated background
+                  _buildLeadingWidget(item, iconSize, type, isHovered),
+                  const SizedBox(width: 16),
+
+                  // Main Content
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Title with animated color
+                        AnimatedDefaultTextStyle(
+                          duration: const Duration(milliseconds: 200),
+                          style: TextStyle(
+                            fontSize: ResponsiveUtils.getResponsiveValue(
+                              context,
+                              mobile: 16.0,
+                              tablet: 17.0,
+                              desktop: 18.0,
+                            ),
+                            fontWeight: FontWeight.w700,
+                            color: isHovered
+                                ? _getTypeColor(type)
+                                : Theme.of(context).colorScheme.onSurface,
+                            height: 1.3,
+                          ),
+                          child: Text(
+                            item['title'] as String,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+
+                        // Subtitle with icon
+                        _buildSubtitle(context, item),
+                      ],
+                    ),
+                  ),
+
+                  // Trailing: Actions or Arrow
+                  const SizedBox(width: 12),
+                  if (widget.showMoreOptions)
+                    _buildMenuButton(context, item)
+                  else
+                    AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: isHovered
+                            ? _getTypeColor(type).withOpacity(0.1)
+                            : Theme.of(context).colorScheme.surfaceVariant,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        Icons.arrow_forward_ios_rounded,
+                        size: ResponsiveUtils.getResponsiveValue(
+                          context,
+                          mobile: 14.0,
+                          tablet: 16.0,
+                          desktop: 18.0,
+                        ),
+                        color: isHovered
+                            ? _getTypeColor(type)
+                            : Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLeadingWidget(
+    Map<String, dynamic> item,
+    double iconSize,
+    String? type,
+    bool isHovered,
+  ) {
+    final url = item['url'] as String?;
+    final thumbnailUrl = item['thumbnailUrl'] as String?;
+
+    // For images and videos with thumbnails
+    if ((type == 'image' || type == 'video') &&
+        (thumbnailUrl != null || url != null)) {
+      return Container(
+        width: 56,
+        height: 56,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(14),
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              _getTypeColor(type).withOpacity(0.8),
+              _getTypeColor(type).withOpacity(0.4),
+            ],
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: _getTypeColor(type).withOpacity(0.3),
+              blurRadius: isHovered ? 12 : 8,
+              offset: Offset(0, isHovered ? 4 : 2),
+            ),
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(14),
+          child: Stack(
+            children: [
+              // Thumbnail
+              if (thumbnailUrl != null || url != null)
+                Image.network(
+                  thumbnailUrl ?? url!,
+                  width: 56,
+                  height: 56,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) {
+                    return _buildFileTypeIcon(type, iconSize, true);
+                  },
+                  loadingBuilder: (context, child, loadingProgress) {
+                    if (loadingProgress == null) return child;
+                    return Center(
+                      child: SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            _getTypeColor(type),
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+
+              // Play icon for videos
+              if (type == 'video')
+                Center(
+                  child: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.7),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      Icons.play_arrow_rounded,
+                      color: Colors.white,
+                      size: 20,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    // For other file types
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 200),
+      width: 56,
+      height: 56,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(14),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: isHovered
+              ? [
+                  _getTypeColor(type).withOpacity(0.9),
+                  _getTypeColor(type).withOpacity(0.6),
+                ]
+              : [
+                  _getTypeColor(type).withOpacity(0.7),
+                  _getTypeColor(type).withOpacity(0.4),
+                ],
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: _getTypeColor(type).withOpacity(0.2),
+            blurRadius: isHovered ? 12 : 8,
+            offset: Offset(0, isHovered ? 4 : 2),
+          ),
+        ],
+      ),
+      child: _buildFileTypeIcon(type, iconSize, false),
+    );
+  }
+
+  Widget _buildFileTypeIcon(String? type, double iconSize, bool isThumbnail) {
+    IconData icon;
+    Color iconColor = Colors.white;
+
+    switch (type) {
+      case 'image':
+        icon = Icons.image_rounded;
+        break;
+      case 'video':
+        icon = Icons.videocam_rounded;
+        break;
+      case 'audio':
+        icon = Icons.music_note_rounded;
+        break;
+      case 'pdf':
+        icon = Icons.picture_as_pdf_rounded;
+        break;
+      case 'zip':
+      case 'rar':
+      case 'archive':
+        icon = Icons.folder_zip_rounded;
+        break;
+      case 'doc':
+      case 'docx':
+        icon = Icons.description_rounded;
+        break;
+      case 'xls':
+      case 'xlsx':
+        icon = Icons.table_chart_rounded;
+        break;
+      case 'ppt':
+      case 'pptx':
+        icon = Icons.slideshow_rounded;
+        break;
+      case 'txt':
+        icon = Icons.text_snippet_rounded;
+        break;
+      case 'room':
+        icon = Icons.meeting_room_rounded;
+        break;
+      case 'folder':
+        icon = Icons.folder_rounded;
+        break;
+      case 'category':
+        icon = Icons.category_rounded;
+        break;
+      default:
+        icon = Icons.insert_drive_file_rounded;
+    }
+
+    return Center(
+      child: Icon(
+        icon,
+        color: iconColor,
+        size: isThumbnail ? 24 : iconSize + 8,
+      ),
+    );
+  }
+
+  Color _getTypeColor(String? type) {
+    switch (type) {
+      case 'room':
+        return Color(0xFF6366F1); // Indigo
+      case 'folder':
+        return Color(0xFFF59E0B); // Amber
+      case 'category':
+        return Color(0xFF8B5CF6); // Violet
+      case 'image':
+        return Color(0xFF10B981); // Emerald
+      case 'video':
+        return Color(0xFFEF4444); // Red
+      case 'pdf':
+        return Color(0xFFDC2626); // Red 600
+      case 'audio':
+        return Color(0xFF8B5CF6); // Violet
+      case 'doc':
+      case 'docx':
+        return Color(0xFF3B82F6); // Blue
+      case 'xls':
+      case 'xlsx':
+        return Color(0xFF10B981); // Emerald
+      case 'ppt':
+      case 'pptx':
+        return Color(0xFFF97316); // Orange
+      default:
+        return Color(0xFF6B7280); // Gray
+    }
+  }
+
+  Widget _buildSubtitle(BuildContext context, Map<String, dynamic> item) {
+    final type = item['type'] as String?;
+    final size = item['size'] as String? ?? '';
+    final fileCount = item['fileCount'] as int? ?? 0;
+
+    final subtitleStyle = TextStyle(
+      fontSize: ResponsiveUtils.getResponsiveValue(
+        context,
+        mobile: 13.0,
+        tablet: 14.0,
+        desktop: 15.0,
+      ),
+      color: Theme.of(context).colorScheme.onSurfaceVariant,
+    );
+
+    return Row(
+      children: [
+        Icon(
+          _getSubtitleIcon(type),
+          size: 14,
+          color: Theme.of(
+            context,
+          ).colorScheme.onSurfaceVariant.withOpacity(0.7),
+        ),
+        const SizedBox(width: 6),
+        Flexible(
+          child: Text(
+            type == 'room' || type == 'folder'
+                ? '$_getCountText(context, fileCount) • $size'
+                : size,
+            style: subtitleStyle,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ],
+    );
+  }
+
+  IconData _getSubtitleIcon(String? type) {
+    switch (type) {
+      case 'room':
+      case 'folder':
+        return Icons.folder_open_rounded;
+      case 'image':
+        return Icons.photo_size_select_actual_rounded;
+      case 'video':
+        return Icons.video_library_rounded;
+      case 'pdf':
+        return Icons.picture_as_pdf_rounded;
+      case 'audio':
+        return Icons.audiotrack_rounded;
+      default:
+        return Icons.insert_drive_file_rounded;
+    }
+  }
+
+  String _getCountText(BuildContext context, int count) {
+    if (count == 0) {
+      return S.of(context).noItems;
+    } else if (count == 1) {
+      return S.of(context).oneItem;
+    } else {
+      return '$count ${S.of(context).item}';
+    }
+  }
+
+  Widget _buildMenuButton(BuildContext context, Map<String, dynamic> item) {
+    final type = item['type'] as String?;
+    final itemId = item['originalData']?['_id']?.toString() ?? item['title'];
+    final isHovered = _hoverStates[itemId] ?? false;
+
+    if (type != 'room' && type != 'category' && type != 'folder') {
+      return AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: isHovered
+              ? _getTypeColor(type).withOpacity(0.1)
+              : Colors.transparent,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: PopupMenuButton<String>(
+          icon: Icon(
+            Icons.more_vert_rounded,
+            color: isHovered
+                ? _getTypeColor(type)
+                : Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          elevation: 8,
+          itemBuilder: (context) {
+            return widget.roomId != null
+                ? _buildSharedFileMenuItems(context, item)
+                : _buildNormalFileMenuItems(context, item);
+          },
+          onSelected: (value) {
+            if (widget.roomId != null) {
+              _handleSharedFileMenuAction(context, value, item);
+            } else {
+              _handleNormalFileMenuAction(context, value, item);
+            }
+          },
+        ),
+      );
+    }
+
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 200),
+      padding: const EdgeInsets.all(8),
+      decoration: BoxDecoration(
+        color: isHovered
+            ? _getTypeColor(type).withOpacity(0.1)
+            : Colors.transparent,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: IconButton(
+        icon: Icon(
+          Icons.more_vert_rounded,
+          color: isHovered
+              ? _getTypeColor(type)
+              : Theme.of(context).colorScheme.onSurfaceVariant,
+        ),
+        onPressed: () {
+          if (type == 'room') {
+            _showRoomMenu(context, item);
+          } else if (type == 'category') {
+            _showCategoryMenu(context, item);
+          } else if (type == 'folder') {
+            _showFolderMenu(context, item);
+          }
+        },
+      ),
+    );
+  }
+
+  bool _getStarState(Map<String, dynamic> item) {
+    final originalData = item['originalData'] ?? item['itemData'];
     if (originalData is Map<String, dynamic>) {
-      final fileId = originalData['_id']?.toString();
-      if (fileId != null) {
-        return _starStates[fileId] ?? originalData['isStarred'] ?? false;
+      final itemId = originalData['_id']?.toString();
+      if (itemId != null) {
+        return _starStates[itemId] ?? originalData['isStarred'] ?? false;
       }
     }
     return false;
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return ListView.builder(
-      itemCount: widget.items.length,
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      padding: const EdgeInsets.symmetric(horizontal: 8.0),
-      itemBuilder: (context, index) {
-        final file = widget.items[index];
-        final icon = file['icon'] as IconData? ?? Icons.insert_drive_file;
-        final color = file['color'] as Color? ?? Color(0xFF00BFA5);
-        final iconSize = ResponsiveUtils.getResponsiveValue(
-          context,
-          mobile: 24.0,
-          tablet: 28.0,
-          desktop: 32.0,
-        );
+  void _handleItemTap(Map<String, dynamic> item) {
+    final type = item['type'] as String?;
 
-        // ✅ الحصول على حالة النجمة الحالية
-        final originalData = file['originalData'] ?? file['itemData'];
-        final fileId = originalData is Map<String, dynamic>
-            ? originalData['_id']?.toString()
-            : null;
-        final starState = fileId != null
-            ? (_starStates[fileId] ??
-                  (originalData is Map<String, dynamic>
-                      ? originalData['isStarred']
-                      : false))
-            : false;
-
-        return Card(
-          // ✅ إضافة key يعتمد على حالة النجمة لإعادة بناء الـ widget
-          key: ValueKey('${file['title']}_$starState'),
-          margin: widget.itemMargin ?? EdgeInsets.only(bottom: 10),
-          child: ListTile(
-            leading: Container(
-              width: iconSize + 8,
-              height: iconSize + 8,
-              decoration: BoxDecoration(
-                color: color.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Icon(icon, color: color, size: iconSize),
-            ),
-            title: Text(
-              file['title'] as String,
-              style: TextStyle(
-                fontSize: ResponsiveUtils.getResponsiveValue(
-                  context,
-                  mobile: 14.0,
-                  tablet: 15.0,
-                  desktop: 16.0,
-                ),
-                fontWeight: FontWeight.w600,
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-            subtitle: _buildSubtitle(context, file),
-            trailing: widget.showMoreOptions
-                ? _buildMenuButton(context, file)
-                : Icon(
-                    Icons.arrow_forward_ios,
-                    size: ResponsiveUtils.getResponsiveValue(
-                      context,
-                      mobile: 16.0,
-                      tablet: 18.0,
-                      desktop: 20.0,
-                    ),
-                    color: Colors.grey,
-                  ),
-            onTap: () {
-              // ✅ التحقق من نوع الـ item
-              final type = file['type'] as String?;
-
-              // ✅ إذا كان room أو folder أو category، استخدم onItemTap مباشرة
-              if (type == 'room' || type == 'folder' || type == 'category') {
-                if (widget.onItemTap != null) {
-                  widget.onItemTap!(file);
-                }
-              } else {
-                // ✅ للملفات: استخدام FileActionsService.openFile
-                final originalData =
-                    file['originalData'] ??
-                    file['itemData'] as Map<String, dynamic>?;
-                final fileData = {
-                  'name':
-                      file['title'] ?? file['name'] ?? originalData?['name'],
-                  'url': file['url'] ?? '',
-                  'type': file['type'] ?? 'file',
-                  'path': file['path'] ?? originalData?['path'],
-                  'originalData': originalData ?? {},
-                };
-                FileActionsService.openFile(fileData, widget.onItemTap);
-              }
-            },
-          ),
-        );
-      },
-    );
+    if (type == 'room' || type == 'folder' || type == 'category') {
+      if (widget.onItemTap != null) {
+        widget.onItemTap!(item);
+      }
+    } else {
+      final originalData = item['originalData'] ?? item['itemData'];
+      final fileData = {
+        'name': item['title'] ?? item['name'] ?? originalData?['name'],
+        'url': item['url'] ?? '',
+        'type': item['type'] ?? 'file',
+        'path': item['path'] ?? originalData?['path'],
+        'originalData': originalData ?? {},
+      };
+      FileActionsService.openFile(fileData, widget.onItemTap);
+    }
   }
+  // ==================== FILE MENU ITEMS ====================
 
-  /// ✅ بناء قائمة الملفات المشتركة في الغرف (نفس FilesGrid)
   List<PopupMenuEntry<String>> _buildSharedFileMenuItems(
     BuildContext context,
-    Map<String, dynamic> file,
+    Map<String, dynamic> item,
   ) {
-    final originalData =
-        file['originalData'] ?? file['itemData'] as Map<String, dynamic>? ?? {};
+    final originalData = item['originalData'] ?? item['itemData'] ?? {};
     final fileId = originalData['_id']?.toString();
-    // ✅ استخدام _starStates لتتبع حالة النجمة (مثل FilesGrid)
     final isStarred = fileId != null
         ? (_starStates[fileId] ?? originalData['isStarred'] ?? false)
         : (originalData['isStarred'] ?? false);
@@ -205,8 +606,8 @@ class _FilesListViewState extends State<FilesListView> {
         value: 'open',
         child: Row(
           children: [
-            Icon(Icons.open_in_new_rounded, color: Colors.blue, size: 20),
-            SizedBox(width: 8),
+            const Icon(Icons.open_in_new_rounded, color: Colors.blue, size: 20),
+            const SizedBox(width: 8),
             Text(S.of(context).open),
           ],
         ),
@@ -215,8 +616,12 @@ class _FilesListViewState extends State<FilesListView> {
         value: 'info',
         child: Row(
           children: [
-            Icon(Icons.info_outline_rounded, color: Colors.teal, size: 20),
-            SizedBox(width: 8),
+            const Icon(
+              Icons.info_outline_rounded,
+              color: Colors.teal,
+              size: 20,
+            ),
+            const SizedBox(width: 8),
             Text(S.of(context).viewDetails),
           ],
         ),
@@ -225,8 +630,8 @@ class _FilesListViewState extends State<FilesListView> {
         value: 'download',
         child: Row(
           children: [
-            Icon(Icons.download_rounded, color: Colors.blue, size: 20),
-            SizedBox(width: 8),
+            const Icon(Icons.download_rounded, color: Colors.blue, size: 20),
+            const SizedBox(width: 8),
             Text(S.of(context).download),
           ],
         ),
@@ -235,8 +640,12 @@ class _FilesListViewState extends State<FilesListView> {
         value: 'comments',
         child: Row(
           children: [
-            Icon(Icons.comment_rounded, color: Color(0xFFF59E0B), size: 20),
-            SizedBox(width: 8),
+            const Icon(
+              Icons.comment_rounded,
+              color: Color(0xFFF59E0B),
+              size: 20,
+            ),
+            const SizedBox(width: 8),
             Text(S.of(context).comments),
           ],
         ),
@@ -251,7 +660,7 @@ class _FilesListViewState extends State<FilesListView> {
               color: Colors.amber[700],
               size: 20,
             ),
-            SizedBox(width: 8),
+            const SizedBox(width: 8),
             Text(
               isStarred
                   ? S.of(context).removeFromFavorites
@@ -264,8 +673,8 @@ class _FilesListViewState extends State<FilesListView> {
         value: 'save',
         child: Row(
           children: [
-            Icon(Icons.save_rounded, color: Colors.green, size: 20),
-            SizedBox(width: 8),
+            const Icon(Icons.save_rounded, color: Colors.green, size: 20),
+            const SizedBox(width: 8),
             Text(S.of(context).saveToMyAccount),
           ],
         ),
@@ -275,11 +684,11 @@ class _FilesListViewState extends State<FilesListView> {
         value: 'remove_from_room',
         child: Row(
           children: [
-            Icon(Icons.link_off_rounded, color: Colors.red, size: 20),
-            SizedBox(width: 8),
+            const Icon(Icons.link_off_rounded, color: Colors.red, size: 20),
+            const SizedBox(width: 8),
             Text(
               S.of(context).removeFromRoom,
-              style: TextStyle(color: Colors.red),
+              style: const TextStyle(color: Colors.red),
             ),
           ],
         ),
@@ -287,1404 +696,12 @@ class _FilesListViewState extends State<FilesListView> {
     ];
   }
 
-  /// ✅ بناء زر القائمة (PopupMenuButton للملفات، IconButton للباقي)
-  Widget _buildMenuButton(BuildContext context, Map<String, dynamic> file) {
-    final type = file['type'] as String?;
-
-    // ✅ للملفات: استخدام PopupMenuButton مثل Grid view
-    if (type != 'room' && type != 'category' && type != 'folder') {
-      return PopupMenuButton<String>(
-        icon: Icon(Icons.more_vert),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        elevation: 8,
-        itemBuilder: (context) {
-          // ✅ قائمة منفصلة للملفات المشتركة في الغرف
-          if (widget.roomId != null) {
-            return _buildSharedFileMenuItems(context, file);
-          } else {
-            // ✅ قائمة الملفات العادية
-            return _buildNormalFileMenuItems(context, file);
-          }
-        },
-        onSelected: (value) {
-          if (widget.roomId != null) {
-            _handleSharedFileMenuAction(context, value, file);
-          } else {
-            _handleNormalFileMenuAction(context, value, file);
-          }
-        },
-      );
-    }
-
-    // ✅ للرومات والمجلدات والتصنيفات: استخدام IconButton مع bottom sheet
-    return IconButton(
-      icon: Icon(Icons.more_vert),
-      onPressed: () {
-        // ✅ قائمة خاصة للرومات
-        if (type == 'room') {
-          _showRoomMenu(context, file);
-        }
-        // ✅ قائمة خاصة للـ categories
-        else if (type == 'category') {
-          _showCategoryMenu(context, file);
-        }
-        // ✅ قائمة خاصة للمجلدات - استخدام bottom sheet مثل grid
-        else if (type == 'folder') {
-          _showFolderMenu(context, file);
-        }
-      },
-    );
-  }
-
-  /// ✅ بناء subtitle للعناصر
-  Widget _buildSubtitle(BuildContext context, Map<String, dynamic> file) {
-    final type = file['type'] as String?;
-    final size = file['size'] as String? ?? '';
-    final fileCount = file['fileCount'] as int? ?? 0;
-
-    // ✅ للرومات والمجلدات: عرض fileCount و size
-    if (type == 'room' || type == 'folder') {
-      String countText;
-      if (fileCount == 0) {
-        countText = S.of(context).noItems;
-      } else if (fileCount == 1) {
-        countText = S.of(context).oneItem;
-      } else {
-        countText = '$fileCount ${S.of(context).item}';
-      }
-
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            countText,
-            style: TextStyle(
-              fontSize: ResponsiveUtils.getResponsiveValue(
-                context,
-                mobile: 12.0,
-                tablet: 13.0,
-                desktop: 14.0,
-              ),
-              color: Colors.grey[600],
-            ),
-          ),
-          if (size.isNotEmpty)
-            Text(
-              size,
-              style: TextStyle(
-                fontSize: ResponsiveUtils.getResponsiveValue(
-                  context,
-                  mobile: 11.0,
-                  tablet: 12.0,
-                  desktop: 13.0,
-                ),
-                color: Colors.grey[500],
-              ),
-            ),
-        ],
-      );
-    }
-
-    // ✅ للتصنيفات والملفات: عرض size فقط
-    return Text(
-      size,
-      style: TextStyle(
-        fontSize: ResponsiveUtils.getResponsiveValue(
-          context,
-          mobile: 12.0,
-          tablet: 13.0,
-          desktop: 14.0,
-        ),
-        color: Colors.grey[600],
-      ),
-    );
-  }
-
-  /// ✅ عرض قائمة الـ categories (bottom sheet)
-  void _showCategoryMenu(BuildContext context, Map<String, dynamic> category) {
-    final scaffoldContext = context; // ✅ حفظ context الأصلي
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      builder: (bottomSheetContext) => Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(
-            top: Radius.circular(
-              ResponsiveUtils.getResponsiveValue(
-                bottomSheetContext,
-                mobile: 20.0,
-                tablet: 24.0,
-                desktop: 28.0,
-              ),
-            ),
-          ),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // ✅ Handle bar
-            Container(
-              margin: EdgeInsets.only(
-                top: ResponsiveUtils.getResponsiveValue(
-                  bottomSheetContext,
-                  mobile: 12.0,
-                  tablet: 14.0,
-                  desktop: 16.0,
-                ),
-                bottom: ResponsiveUtils.getResponsiveValue(
-                  bottomSheetContext,
-                  mobile: 8.0,
-                  tablet: 10.0,
-                  desktop: 12.0,
-                ),
-              ),
-              width: ResponsiveUtils.getResponsiveValue(
-                bottomSheetContext,
-                mobile: 40.0,
-                tablet: 50.0,
-                desktop: 60.0,
-              ),
-              height: ResponsiveUtils.getResponsiveValue(
-                bottomSheetContext,
-                mobile: 4.0,
-                tablet: 5.0,
-                desktop: 6.0,
-              ),
-              decoration: BoxDecoration(
-                color: Colors.grey[300],
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            // ✅ قائمة خيارات الـ categories
-            if (widget.onItemTap != null)
-              _buildMenuItem(
-                bottomSheetContext,
-                icon: Icons.open_in_new,
-                title: S.of(context).open,
-                onTap: () {
-                  Navigator.pop(bottomSheetContext);
-                  WidgetsBinding.instance.addPostFrameCallback((_) {
-                    if (scaffoldContext.mounted) {
-                      widget.onItemTap!(category);
-                    }
-                  });
-                },
-              ),
-            _buildMenuItem(
-              bottomSheetContext,
-              icon: Icons.info_outline,
-              title: S.of(context).viewDetails,
-              onTap: () {
-                Navigator.pop(bottomSheetContext);
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  if (scaffoldContext.mounted) {
-                    _showCategoryDetails(scaffoldContext, category);
-                  }
-                });
-              },
-            ),
-            SizedBox(
-              height: ResponsiveUtils.getResponsiveValue(
-                bottomSheetContext,
-                mobile: 8.0,
-                tablet: 12.0,
-                desktop: 16.0,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  /// ✅ عرض قائمة الرومات (bottom sheet)
-  void _showRoomMenu(BuildContext context, Map<String, dynamic> room) {
-    final scaffoldContext = context; // ✅ حفظ context الأصلي
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      builder: (bottomSheetContext) => Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(
-            top: Radius.circular(
-              ResponsiveUtils.getResponsiveValue(
-                bottomSheetContext,
-                mobile: 20.0,
-                tablet: 24.0,
-                desktop: 28.0,
-              ),
-            ),
-          ),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // ✅ Handle bar
-            Container(
-              margin: EdgeInsets.only(
-                top: ResponsiveUtils.getResponsiveValue(
-                  bottomSheetContext,
-                  mobile: 12.0,
-                  tablet: 14.0,
-                  desktop: 16.0,
-                ),
-                bottom: ResponsiveUtils.getResponsiveValue(
-                  bottomSheetContext,
-                  mobile: 8.0,
-                  tablet: 10.0,
-                  desktop: 12.0,
-                ),
-              ),
-              width: ResponsiveUtils.getResponsiveValue(
-                bottomSheetContext,
-                mobile: 40.0,
-                tablet: 50.0,
-                desktop: 60.0,
-              ),
-              height: ResponsiveUtils.getResponsiveValue(
-                bottomSheetContext,
-                mobile: 4.0,
-                tablet: 5.0,
-                desktop: 6.0,
-              ),
-              decoration: BoxDecoration(
-                color: Colors.grey[300],
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            // ✅ قائمة خيارات الرومات
-            if (widget.onItemTap != null)
-              _buildMenuItem(
-                bottomSheetContext,
-                icon: Icons.open_in_new,
-                title: S.of(context).open,
-                onTap: () {
-                  Navigator.pop(bottomSheetContext);
-                  WidgetsBinding.instance.addPostFrameCallback((_) {
-                    if (scaffoldContext.mounted) {
-                      widget.onItemTap!(room);
-                    }
-                  });
-                },
-              ),
-            if (widget.onRoomDetailsTap != null)
-              _buildMenuItem(
-                bottomSheetContext,
-                icon: Icons.info_outline,
-                title: S.of(context).viewInfo,
-                onTap: () {
-                  Navigator.pop(bottomSheetContext);
-                  WidgetsBinding.instance.addPostFrameCallback((_) {
-                    if (scaffoldContext.mounted) {
-                      widget.onRoomDetailsTap!(room);
-                    }
-                  });
-                },
-              ),
-            if (widget.onRoomEditTap != null)
-              _buildMenuItem(
-                bottomSheetContext,
-                icon: Icons.edit,
-                title: S.of(context).edit,
-                onTap: () {
-                  Navigator.pop(bottomSheetContext);
-                  WidgetsBinding.instance.addPostFrameCallback((_) {
-                    if (scaffoldContext.mounted) {
-                      widget.onRoomEditTap!(room);
-                    }
-                  });
-                },
-              ),
-            SizedBox(
-              height: ResponsiveUtils.getResponsiveValue(
-                bottomSheetContext,
-                mobile: 8.0,
-                tablet: 12.0,
-                desktop: 16.0,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  /// ✅ بناء قائمة المجلدات
-  List<PopupMenuEntry<String>> _buildFolderMenuItems(
-    BuildContext context,
-    Map<String, dynamic> folder,
-  ) {
-    final folderController = Provider.of<FolderController>(
-      context,
-      listen: false,
-    );
-    final folderData = folder['folderData'] as Map<String, dynamic>? ?? {};
-    final folderId =
-        folder['folderId'] as String? ?? folderData['_id'] as String?;
-
-    // ✅ التحقق من حالة isStarred
-    var isStarred = folderData['isStarred'] ?? false;
-    if (folderId != null) {
-      final starredFolder = folderController.starredFolders.firstWhere(
-        (f) => f['_id'] == folderId,
-        orElse: () => {},
-      );
-      if (starredFolder.isNotEmpty) {
-        isStarred = starredFolder['isStarred'] ?? true;
-      }
-    }
-
-    return [
-      PopupMenuItem<String>(
-        value: 'open',
-        child: Row(
-          children: [
-            Icon(Icons.open_in_new_rounded, color: Colors.blue, size: 20),
-            SizedBox(width: 8),
-            Text(S.of(context).open),
-          ],
-        ),
-      ),
-      PopupMenuItem<String>(
-        value: 'info',
-        child: Row(
-          children: [
-            Icon(Icons.info_outline_rounded, color: Colors.teal, size: 20),
-            SizedBox(width: 8),
-            Text(S.of(context).viewInfo),
-          ],
-        ),
-      ),
-      PopupMenuItem<String>(
-        value: 'rename',
-        child: Row(
-          children: [
-            Icon(Icons.edit_rounded, color: Colors.orange, size: 20),
-            SizedBox(width: 8),
-            Text(S.of(context).edit),
-          ],
-        ),
-      ),
-      PopupMenuItem<String>(
-        value: 'share',
-        child: Row(
-          children: [
-            Icon(Icons.share_rounded, color: Colors.green, size: 20),
-            SizedBox(width: 8),
-            Text(S.of(context).share),
-          ],
-        ),
-      ),
-      PopupMenuItem<String>(
-        value: 'move',
-        child: Row(
-          children: [
-            Icon(Icons.drive_file_move_rounded, color: Colors.purple, size: 20),
-            SizedBox(width: 8),
-            Text(S.of(context).move),
-          ],
-        ),
-      ),
-      PopupMenuItem<String>(
-        value: 'favorite',
-        child: Row(
-          children: [
-            Icon(
-              isStarred ? Icons.star_rounded : Icons.star_border_rounded,
-              color: Colors.amber[700],
-              size: 20,
-            ),
-            SizedBox(width: 8),
-            Text(
-              isStarred
-                  ? S.of(context).removeFromFavorites
-                  : S.of(context).addToFavorites,
-            ),
-          ],
-        ),
-      ),
-      const PopupMenuDivider(),
-      PopupMenuItem<String>(
-        value: 'delete',
-        child: Row(
-          children: [
-            Icon(Icons.delete_outline_rounded, color: Colors.red, size: 20),
-            SizedBox(width: 8),
-            Text(S.of(context).delete, style: TextStyle(color: Colors.red)),
-          ],
-        ),
-      ),
-    ];
-  }
-
-  /// ✅ عرض قائمة المجلدات (bottom sheet) - مثل grid
-  void _showFolderMenu(BuildContext context, Map<String, dynamic> folder) {
-    final scaffoldContext = context; // ✅ حفظ context الأصلي
-    final folderController = Provider.of<FolderController>(
-      context,
-      listen: false,
-    );
-    final folderData = folder['folderData'] as Map<String, dynamic>? ?? {};
-    final folderId =
-        folder['folderId'] as String? ?? folderData['_id'] as String?;
-
-    // ✅ التحقق من حالة isStarred
-    var isStarred = folderData['isStarred'] ?? false;
-    if (folderId != null) {
-      final starredFolder = folderController.starredFolders.firstWhere(
-        (f) => f['_id'] == folderId,
-        orElse: () => {},
-      );
-      if (starredFolder.isNotEmpty) {
-        isStarred = starredFolder['isStarred'] ?? true;
-      }
-    }
-
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-      builder: (bottomSheetContext) => ConstrainedBox(
-        constraints: BoxConstraints(
-          maxHeight: MediaQuery.of(bottomSheetContext).size.height * 0.7,
-        ),
-        child: Container(
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.vertical(
-              top: Radius.circular(
-                ResponsiveUtils.getResponsiveValue(
-                  bottomSheetContext,
-                  mobile: 20.0,
-                  tablet: 24.0,
-                  desktop: 28.0,
-                ),
-              ),
-            ),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // ✅ Handle bar
-              Container(
-                margin: EdgeInsets.only(
-                  top: ResponsiveUtils.getResponsiveValue(
-                    bottomSheetContext,
-                    mobile: 12.0,
-                    tablet: 14.0,
-                    desktop: 16.0,
-                  ),
-                  bottom: ResponsiveUtils.getResponsiveValue(
-                    bottomSheetContext,
-                    mobile: 8.0,
-                    tablet: 10.0,
-                    desktop: 12.0,
-                  ),
-                ),
-                width: ResponsiveUtils.getResponsiveValue(
-                  bottomSheetContext,
-                  mobile: 40.0,
-                  tablet: 50.0,
-                  desktop: 60.0,
-                ),
-                height: ResponsiveUtils.getResponsiveValue(
-                  bottomSheetContext,
-                  mobile: 4.0,
-                  tablet: 5.0,
-                  desktop: 6.0,
-                ),
-                decoration: BoxDecoration(
-                  color: Colors.grey[300],
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-              // ✅ قائمة خيارات المجلدات - قابلة للتمرير
-              Flexible(
-                child: SingleChildScrollView(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      if (widget.onItemTap != null)
-                        _buildMenuItem(
-                          bottomSheetContext,
-                          icon: Icons.open_in_new,
-                          title: S.of(context).open,
-                          onTap: () {
-                            Navigator.pop(bottomSheetContext);
-                            WidgetsBinding.instance.addPostFrameCallback((_) {
-                              if (scaffoldContext.mounted) {
-                                widget.onItemTap!(folder);
-                              }
-                            });
-                          },
-                        ),
-                      _buildMenuItem(
-                        bottomSheetContext,
-                        icon: Icons.info_outline,
-                        title: S.of(context).viewInfo,
-                        onTap: () {
-                          Navigator.pop(bottomSheetContext);
-                          WidgetsBinding.instance.addPostFrameCallback((_) {
-                            if (scaffoldContext.mounted) {
-                              _showFolderInfo(scaffoldContext, folder);
-                            }
-                          });
-                        },
-                      ),
-                      _buildMenuItem(
-                        bottomSheetContext,
-                        icon: Icons.edit,
-                        title: S.of(context).edit,
-                        onTap: () {
-                          Navigator.pop(bottomSheetContext);
-                          WidgetsBinding.instance.addPostFrameCallback((_) {
-                            if (scaffoldContext.mounted) {
-                              _showRenameDialog(scaffoldContext, folder);
-                            }
-                          });
-                        },
-                      ),
-                      _buildMenuItem(
-                        bottomSheetContext,
-                        icon: Icons.share,
-                        title: S.of(context).share,
-                        onTap: () {
-                          Navigator.pop(bottomSheetContext);
-                          WidgetsBinding.instance.addPostFrameCallback((_) {
-                            if (scaffoldContext.mounted) {
-                              _showShareDialog(scaffoldContext, folder);
-                            }
-                          });
-                        },
-                      ),
-                      _buildMenuItem(
-                        bottomSheetContext,
-                        icon: Icons.download,
-                        title: S.of(context).download,
-                        iconColor: Colors.blue,
-                        onTap: () {
-                          Navigator.pop(bottomSheetContext);
-                          WidgetsBinding.instance.addPostFrameCallback((_) {
-                            if (scaffoldContext.mounted) {
-                              _handleFolderMenuAction(
-                                scaffoldContext,
-                                'download',
-                                folder,
-                              );
-                            }
-                          });
-                        },
-                      ),
-                      _buildMenuItem(
-                        bottomSheetContext,
-                        icon: Icons.drive_file_move_rounded,
-                        title: S.of(context).move,
-                        iconColor: Colors.purple,
-                        onTap: () {
-                          Navigator.pop(bottomSheetContext);
-                          WidgetsBinding.instance.addPostFrameCallback((_) {
-                            if (scaffoldContext.mounted) {
-                              _showMoveFolderDialog(scaffoldContext, folder);
-                            }
-                          });
-                        },
-                      ),
-                      _buildMenuItem(
-                        bottomSheetContext,
-                        icon: isStarred ? Icons.star : Icons.star_border,
-                        title: isStarred
-                            ? S.of(context).removeFromFavorites
-                            : S.of(context).addToFavorites,
-                        iconColor: Colors.amber[700],
-                        onTap: () {
-                          Navigator.pop(bottomSheetContext);
-                          WidgetsBinding.instance.addPostFrameCallback((_) {
-                            if (scaffoldContext.mounted) {
-                              _toggleFavorite(scaffoldContext, folder);
-                            }
-                          });
-                        },
-                      ),
-                      Divider(height: 1),
-                      _buildMenuItem(
-                        bottomSheetContext,
-                        icon: Icons.delete,
-                        title: S.of(context).delete,
-                        textColor: Colors.red,
-                        iconColor: Colors.red,
-                        onTap: () {
-                          Navigator.pop(bottomSheetContext);
-                          WidgetsBinding.instance.addPostFrameCallback((_) {
-                            if (scaffoldContext.mounted) {
-                              _showDeleteDialog(scaffoldContext, folder);
-                            }
-                          });
-                        },
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              SizedBox(
-                height: ResponsiveUtils.getResponsiveValue(
-                  bottomSheetContext,
-                  mobile: 8.0,
-                  tablet: 12.0,
-                  desktop: 16.0,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  /// ✅ بناء عنصر قائمة (menu item)
-  Widget _buildMenuItem(
-    BuildContext context, {
-    required IconData icon,
-    required String title,
-    required VoidCallback onTap,
-    Color? textColor,
-    Color? iconColor,
-  }) {
-    final iconSize = ResponsiveUtils.getResponsiveValue(
-      context,
-      mobile: 20.0,
-      tablet: 24.0,
-      desktop: 28.0,
-    );
-    final containerSize = ResponsiveUtils.getResponsiveValue(
-      context,
-      mobile: 40.0,
-      tablet: 48.0,
-      desktop: 56.0,
-    );
-    final fontSize = ResponsiveUtils.getResponsiveValue(
-      context,
-      mobile: 16.0,
-      tablet: 18.0,
-      desktop: 20.0,
-    );
-
-    return ListTile(
-      leading: Container(
-        width: containerSize,
-        height: containerSize,
-        decoration: BoxDecoration(
-          color: (iconColor ?? Colors.grey[700])!.withOpacity(0.1),
-          shape: BoxShape.circle,
-        ),
-        child: Icon(icon, color: iconColor ?? Colors.grey[700], size: iconSize),
-      ),
-      title: Text(
-        title,
-        style: TextStyle(
-          color: textColor ?? Colors.black87,
-          fontSize: fontSize,
-          fontWeight: FontWeight.w500,
-        ),
-      ),
-      onTap: onTap,
-    );
-  }
-
-  /// ✅ معالجة إجراءات المجلدات (للاحتفاظ بالتوافق - لكن لن تُستخدم)
-  void _handleFolderMenuAction(
-    BuildContext context,
-    String action,
-    Map<String, dynamic> folder,
-  ) {
-    switch (action) {
-      case 'open':
-        // ✅ فتح المجلد
-        if (widget.onItemTap != null) {
-          widget.onItemTap!(folder);
-        }
-        break;
-      case 'info':
-        // ✅ عرض معلومات المجلد (استخدام الدوال المساعدة من FilesGridView)
-        _showFolderInfo(context, folder);
-        break;
-      case 'rename':
-        // ✅ تعديل المجلد (استخدام الدوال المساعدة من FilesGridView)
-        _showRenameDialog(context, folder);
-        break;
-      case 'share':
-        // ✅ مشاركة المجلد (استخدام الدوال المساعدة من FilesGridView)
-        _showShareDialog(context, folder);
-        break;
-      case 'download':
-        // ✅ تحميل المجلد
-        FolderActionsService.downloadFolder(context, folder);
-        break;
-      case 'move':
-        // ✅ نقل المجلد
-        _showMoveFolderDialog(context, folder);
-        break;
-      case 'favorite':
-        // ✅ إضافة/إزالة من المفضلة (استخدام الدوال المساعدة من FilesGridView)
-        _toggleFavorite(context, folder);
-        break;
-      case 'delete':
-        // ✅ حذف المجلد (استخدام الدوال المساعدة من FilesGridView)
-        _showDeleteDialog(context, folder);
-        break;
-    }
-  }
-
-  // ✅ Helper functions للتعامل مع إجراءات المجلد
-  void _showFolderInfo(
-    BuildContext context,
-    Map<String, dynamic> folder,
-  ) async {
-    final folderId = folder['folderId'] as String?;
-    final folderName = folder['title'] as String;
-    final folderColor = folder['color'] as Color? ?? Colors.blue;
-
-    if (folderId == null) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(S.of(context).folderIdNotFound)));
-      return;
-    }
-
-    // ✅ جلب تفاصيل المجلد من الباك إند
-    final folderController = Provider.of<FolderController>(
-      context,
-      listen: false,
-    );
-    final folderDetails = await folderController.getFolderDetails(
-      folderId: folderId,
-    );
-
-    if (folderDetails == null || folderDetails['folder'] == null) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(S.of(context).failedToFetchFolderInfo)),
-        );
-      }
-      return;
-    }
-
-    final folderData = folderDetails['folder'] as Map<String, dynamic>;
-
-    if (!context.mounted) return;
-
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => Container(
-        height: MediaQuery.of(context).size.height * 0.8,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-        ),
-        child: Column(
-          children: [
-            // ✅ Header
-            Container(
-              padding: EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: folderColor,
-                borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-              ),
-              child: Row(
-                children: [
-                  Icon(Icons.folder, color: Colors.white, size: 32),
-                  SizedBox(width: 16),
-                  Expanded(
-                    child: Text(
-                      folderData['name'] ?? folderName,
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                  IconButton(
-                    icon: Icon(Icons.close, color: Colors.white),
-                    onPressed: () => Navigator.pop(context),
-                  ),
-                ],
-              ),
-            ),
-
-            // ✅ Content
-            Expanded(
-              child: SingleChildScrollView(
-                padding: EdgeInsets.all(20),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildDetailItem(
-                      'folder',
-                      '📁',
-                      S.of(context).type,
-                      S.of(context).folder,
-                    ),
-                    _buildDetailItem(
-                      'size',
-                      '💾',
-                      S.of(context).size,
-                      _formatBytesHelper(folderData['size'] ?? 0),
-                    ),
-                    _buildDetailItem(
-                      'files',
-                      '📄',
-                      S.of(context).filesCount,
-                      '${folderData['filesCount'] ?? 0}',
-                    ),
-                    _buildDetailItem(
-                      'subfolders',
-                      '📂',
-                      S.of(context).subfoldersCount,
-                      '${folderData['subfoldersCount'] ?? 0}',
-                    ),
-                    _buildDetailItem(
-                      'time',
-                      '🕐',
-                      S.of(context).timeAndDate,
-                      _formatDateHelper(folderData['createdAt']),
-                    ),
-                    _buildDetailItem(
-                      'edit',
-                      '✏️',
-                      S.of(context).creationDate,
-                      _formatDateHelper(folderData['updatedAt']),
-                    ),
-                    _buildDetailItem(
-                      'description',
-                      '📝',
-                      S.of(context).description,
-                      folderData['description']?.isNotEmpty == true
-                          ? folderData['description']
-                          : "—",
-                    ),
-                    _buildDetailItem(
-                      'tags',
-                      '🏷️',
-                      S.of(context).tags,
-                      (folderData['tags'] as List?)?.join(', ') ?? "—",
-                    ),
-
-                    // ✅ Shared With Section
-                    if (folderData['sharedWith'] != null &&
-                        (folderData['sharedWith'] as List).isNotEmpty)
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          SizedBox(height: 8),
-                          _buildDetailItem(
-                            'share',
-                            '👥',
-                            S.of(context).sharedWith,
-                            (folderData['sharedWith'] as List)
-                                    .map<String>(
-                                      (u) =>
-                                          u['user']?['email']?.toString() ??
-                                          u['email']?.toString() ??
-                                          '',
-                                    )
-                                    .where((email) => email.isNotEmpty)
-                                    .join(', ') ??
-                                "—",
-                          ),
-                        ],
-                      ),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  String _formatBytesHelper(int bytes) {
-    if (bytes == 0) return '0 B';
-    const k = 1024;
-    const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
-
-    int i = 0;
-    double size = bytes.toDouble();
-
-    while (size >= k && i < sizes.length - 1) {
-      size /= k;
-      i++;
-    }
-
-    if (i >= sizes.length) {
-      i = sizes.length - 1;
-    }
-
-    return '${size.toStringAsFixed(1)} ${sizes[i]}';
-  }
-
-  String _formatDateHelper(dynamic date) {
-    if (date == null) return "—";
-    try {
-      final dateTime = date is String ? DateTime.parse(date) : date as DateTime;
-      return "${dateTime.day}/${dateTime.month}/${dateTime.year} ${dateTime.hour}:${dateTime.minute.toString().padLeft(2, '0')}";
-    } catch (e) {
-      return "—";
-    }
-  }
-
-  void _showRenameDialog(BuildContext context, Map<String, dynamic> folder) {
-    final folderName = folder['title'] as String;
-    final folderId = folder['folderId'] as String?;
-    final folderData = folder['folderData'] as Map<String, dynamic>?;
-
-    final nameController = TextEditingController(text: folderName);
-    final descriptionController = TextEditingController(
-      text: folderData?['description'] as String? ?? '',
-    );
-    final tagsController = TextEditingController(
-      text: (folderData?['tags'] as List?)?.join(', ') ?? '',
-    );
-
-    final scaffoldContext = context; // ✅ حفظ context الأصلي
-
-    if (folderId == null) {
-      if (scaffoldContext.mounted) {
-        ScaffoldMessenger.of(
-          scaffoldContext,
-        ).showSnackBar(SnackBar(content: Text(S.of(context).folderIdNotFound)));
-      }
-      return;
-    }
-
-    showDialog(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: Text(S.of(context).editFolder),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: nameController,
-                decoration: InputDecoration(
-                  labelText: S.of(context).folderName,
-                  hintText: S.of(context).folderName,
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.folder),
-                ),
-                autofocus: true,
-              ),
-              SizedBox(height: 16),
-              TextField(
-                controller: descriptionController,
-                decoration: InputDecoration(
-                  labelText: S.of(context).description,
-                  hintText: S.of(context).folderDescriptionHint,
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.description),
-                ),
-                maxLines: 3,
-              ),
-              SizedBox(height: 16),
-              TextField(
-                controller: tagsController,
-                decoration: InputDecoration(
-                  labelText: S.of(context).tags,
-                  hintText: S.of(context).folderTagsHint,
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.tag),
-                ),
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: Text(S.of(context).cancel),
-          ),
-          TextButton(
-            onPressed: () {
-              final newName = nameController.text.trim();
-              if (newName.isEmpty) {
-                if (dialogContext.mounted) {
-                  ScaffoldMessenger.of(dialogContext).showSnackBar(
-                    SnackBar(
-                      content: Text(S.of(context).pleaseEnterFolderName),
-                    ),
-                  );
-                }
-                return;
-              }
-
-              final description = descriptionController.text.trim();
-              final tagsString = tagsController.text.trim();
-              final tags = tagsString.isNotEmpty
-                  ? tagsString
-                        .split(',')
-                        .map((t) => t.trim())
-                        .where((t) => t.isNotEmpty)
-                        .toList()
-                  : <String>[];
-
-              _performUpdate(
-                dialogContext,
-                scaffoldContext,
-                folderId!,
-                newName,
-                description.isEmpty ? null : description,
-                tags.isEmpty ? null : tags,
-              );
-            },
-            child: Text(S.of(context).save),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _performUpdate(
-    BuildContext dialogContext,
-    BuildContext scaffoldContext,
-    String folderId,
-    String newName,
-    String? description,
-    List<String>? tags,
-  ) async {
-    final folderController = Provider.of<FolderController>(
-      scaffoldContext,
-      listen: false,
-    );
-
-    Navigator.pop(dialogContext);
-
-    final success = await folderController.updateFolder(
-      folderId: folderId,
-      name: newName,
-      description: description,
-      tags: tags,
-    );
-
-    if (scaffoldContext.mounted) {
-      if (success) {
-        ScaffoldMessenger.of(scaffoldContext).showSnackBar(
-          SnackBar(
-            content: Text(S.of(context).folderUpdatedSuccessfully),
-            backgroundColor: Colors.green,
-          ),
-        );
-        // ✅ إعادة بناء الـ widget بعد التحديث
-        setState(() {});
-      } else {
-        ScaffoldMessenger.of(scaffoldContext).showSnackBar(
-          SnackBar(
-            content: Text(
-              folderController.errorMessage ?? S.of(context).folderUpdateFailed,
-            ),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    }
-  }
-
-  void _showShareDialog(
-    BuildContext context,
-    Map<String, dynamic> folder,
-  ) async {
-    final folderId = folder['folderId'] as String?;
-    final folderName = folder['title'] as String;
-
-    if (folderId == null) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(S.of(context).folderIdNotFound)));
-      return;
-    }
-
-    await Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) =>
-            ShareFolderWithRoomPage(folderId: folderId, folderName: folderName),
-      ),
-    );
-  }
-
-  void _toggleFavorite(
-    BuildContext context,
-    Map<String, dynamic> folder,
-  ) async {
-    final folderId = folder['folderId'] as String?;
-    if (folderId == null) return;
-
-    final folderController = Provider.of<FolderController>(
-      context,
-      listen: false,
-    );
-
-    // ✅ إظهار مؤشر التحميل
-    if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Row(
-            children: [
-              SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                ),
-              ),
-              SizedBox(width: 12),
-              Text(S.of(context).updated),
-            ],
-          ),
-          duration: Duration(seconds: 2),
-        ),
-      );
-    }
-
-    // ✅ استدعاء API لإضافة/إزالة من المفضلة
-    final result = await folderController.toggleStarFolder(folderId: folderId);
-
-    if (!context.mounted) return;
-
-    ScaffoldMessenger.of(context).hideCurrentSnackBar();
-
-    if (result['success'] == true) {
-      final isStarred = result['isStarred'] as bool? ?? false;
-
-      // ✅ تحديث البيانات المحلية
-      final folderData = folder['folderData'] as Map<String, dynamic>?;
-      if (folderData != null) {
-        folderData['isStarred'] = isStarred;
-      }
-      folder['isStarred'] = isStarred;
-
-      // ✅ إعادة بناء الـ widget
-      if (mounted) {
-        setState(() {});
-      }
-
-      // ✅ إظهار رسالة النجاح
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              isStarred
-                  ? S.of(context).folderAddedToFavorites
-                  : S.of(context).folderRemovedFromFavorites,
-            ),
-            backgroundColor: Colors.green,
-            duration: Duration(seconds: 2),
-          ),
-        );
-      }
-    } else {
-      // ✅ إظهار رسالة الخطأ
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              folderController.errorMessage ??
-                  S.of(context).favoriteUpdateFailed,
-            ),
-            backgroundColor: Colors.red,
-            duration: Duration(seconds: 2),
-          ),
-        );
-      }
-    }
-  }
-
-  void _showDeleteDialog(BuildContext context, Map<String, dynamic> folder) {
-    final folderController = Provider.of<FolderController>(
-      context,
-      listen: false,
-    );
-    final folderData = folder['folderData'] ?? folder;
-
-    FolderActionsService.deleteFolder(context, folderController, {
-      'name': folder['title'] ?? folderData['name'],
-      '_id': folder['folderId'] ?? folderData['_id'],
-      'folderData': folderData,
-    });
-  }
-
-  /// ✅ عرض تفاصيل التصنيف
-  void _showCategoryDetails(
-    BuildContext context,
-    Map<String, dynamic> category,
-  ) {
-    final categoryTitle =
-        category['title'] as String? ?? S.of(context).category;
-    final fileCount = category['fileCount'] as int? ?? 0;
-    final size = category['size'] as String? ?? '0';
-    final color = category['color'] as Color? ?? Colors.blue;
-    final icon = category['icon'] as IconData? ?? Icons.folder;
-
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => Container(
-        height: MediaQuery.of(context).size.height * 0.5,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-        ),
-        child: Column(
-          children: [
-            // ✅ Header
-            Container(
-              padding: EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: color,
-                borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-              ),
-              child: Row(
-                children: [
-                  Icon(icon, color: Colors.white, size: 32),
-                  SizedBox(width: 16),
-                  Expanded(
-                    child: Text(
-                      categoryTitle,
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                  IconButton(
-                    icon: Icon(Icons.close, color: Colors.white),
-                    onPressed: () => Navigator.pop(context),
-                  ),
-                ],
-              ),
-            ),
-
-            // ✅ Content
-            Expanded(
-              child: SingleChildScrollView(
-                padding: EdgeInsets.all(20),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildDetailItem(
-                      'folder',
-                      '📁',
-                      S.of(context).type,
-                      'تصنيف',
-                    ),
-                    _buildDetailItem(
-                      'files',
-                      '📄',
-                      S.of(context).filesCount,
-                      '$fileCount',
-                    ),
-                    _buildDetailItem(
-                      'size',
-                      '💾',
-                      S.of(context).totalSize,
-                      size,
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  /// ✅ بناء عنصر تفاصيل
-  Widget _buildDetailItem(
-    String type,
-    String emoji,
-    String label,
-    String value,
-  ) {
-    Color getIconColor() {
-      switch (type) {
-        case 'folder':
-          return Color(0xFF10B981);
-        case 'size':
-          return Color(0xFFF59E0B);
-        case 'files':
-          return Color(0xFF3B82F6);
-        default:
-          return Color(0xFF6B7280);
-      }
-    }
-
-    return Container(
-      margin: EdgeInsets.only(bottom: 20),
-      padding: EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.grey[50],
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey[200]!),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            padding: EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: getIconColor().withOpacity(0.1),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Text(emoji, style: TextStyle(fontSize: 20)),
-          ),
-          SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  label,
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey[600],
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                SizedBox(height: 4),
-                Text(
-                  value,
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: Colors.black87,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// ✅ بناء قائمة الملفات العادية
-  /// ✅ بناء قائمة الملفات العادية (نفس FilesGrid)
   List<PopupMenuEntry<String>> _buildNormalFileMenuItems(
     BuildContext context,
-    Map<String, dynamic> file,
+    Map<String, dynamic> item,
   ) {
-    final originalData =
-        file['originalData'] ?? file['itemData'] as Map<String, dynamic>? ?? {};
+    final originalData = item['originalData'] ?? item['itemData'] ?? {};
     final fileId = originalData['_id']?.toString();
-    // ✅ استخدام _starStates لتتبع حالة النجمة (مثل FilesGrid)
     final isStarred = fileId != null
         ? (_starStates[fileId] ?? originalData['isStarred'] ?? false)
         : (originalData['isStarred'] ?? false);
@@ -1694,8 +711,8 @@ class _FilesListViewState extends State<FilesListView> {
         value: 'open',
         child: Row(
           children: [
-            Icon(Icons.open_in_new_rounded, color: Colors.blue, size: 20),
-            SizedBox(width: 8),
+            const Icon(Icons.open_in_new_rounded, color: Colors.blue, size: 20),
+            const SizedBox(width: 8),
             Text(S.of(context).open),
           ],
         ),
@@ -1704,8 +721,12 @@ class _FilesListViewState extends State<FilesListView> {
         value: 'info',
         child: Row(
           children: [
-            Icon(Icons.info_outline_rounded, color: Colors.teal, size: 20),
-            SizedBox(width: 8),
+            const Icon(
+              Icons.info_outline_rounded,
+              color: Colors.teal,
+              size: 20,
+            ),
+            const SizedBox(width: 8),
             Text(S.of(context).viewInfo),
           ],
         ),
@@ -1714,8 +735,8 @@ class _FilesListViewState extends State<FilesListView> {
         value: 'download',
         child: Row(
           children: [
-            Icon(Icons.download_rounded, color: Colors.blue, size: 20),
-            SizedBox(width: 8),
+            const Icon(Icons.download_rounded, color: Colors.blue, size: 20),
+            const SizedBox(width: 8),
             Text(S.of(context).download),
           ],
         ),
@@ -1724,8 +745,8 @@ class _FilesListViewState extends State<FilesListView> {
         value: 'edit',
         child: Row(
           children: [
-            Icon(Icons.edit_rounded, color: Colors.orange, size: 20),
-            SizedBox(width: 8),
+            const Icon(Icons.edit_rounded, color: Colors.orange, size: 20),
+            const SizedBox(width: 8),
             Text(S.of(context).edit),
           ],
         ),
@@ -1734,8 +755,8 @@ class _FilesListViewState extends State<FilesListView> {
         value: 'share',
         child: Row(
           children: [
-            Icon(Icons.share_rounded, color: Colors.green, size: 20),
-            SizedBox(width: 8),
+            const Icon(Icons.share_rounded, color: Colors.green, size: 20),
+            const SizedBox(width: 8),
             Text(S.of(context).share),
           ],
         ),
@@ -1744,8 +765,12 @@ class _FilesListViewState extends State<FilesListView> {
         value: 'move',
         child: Row(
           children: [
-            Icon(Icons.drive_file_move_rounded, color: Colors.purple, size: 20),
-            SizedBox(width: 8),
+            const Icon(
+              Icons.drive_file_move_rounded,
+              color: Colors.purple,
+              size: 20,
+            ),
+            const SizedBox(width: 8),
             Text(S.of(context).move),
           ],
         ),
@@ -1759,7 +784,7 @@ class _FilesListViewState extends State<FilesListView> {
               color: Colors.amber[700],
               size: 20,
             ),
-            SizedBox(width: 8),
+            const SizedBox(width: 8),
             Text(
               isStarred
                   ? S.of(context).removeFromFavorites
@@ -1773,39 +798,44 @@ class _FilesListViewState extends State<FilesListView> {
         value: 'delete',
         child: Row(
           children: [
-            Icon(Icons.delete_outline_rounded, color: Colors.red, size: 20),
-            SizedBox(width: 8),
-            Text(S.of(context).delete, style: TextStyle(color: Colors.red)),
+            const Icon(
+              Icons.delete_outline_rounded,
+              color: Colors.red,
+              size: 20,
+            ),
+            const SizedBox(width: 8),
+            Text(
+              S.of(context).delete,
+              style: const TextStyle(color: Colors.red),
+            ),
           ],
         ),
       ),
     ];
   }
 
-  /// ✅ معالجة إجراءات الملفات المشتركة في الغرف
+  // ==================== MENU ACTION HANDLERS ====================
+
   void _handleSharedFileMenuAction(
     BuildContext context,
     String action,
-    Map<String, dynamic> file,
-  ) {
-    final fileController = Provider.of<FileController>(context, listen: false);
-    final originalData =
-        file['originalData'] ?? file['itemData'] as Map<String, dynamic>? ?? {};
-    // ✅ استخدام نفس format البيانات التي يستخدمها FilesGrid
+    Map<String, dynamic> item,
+  ) async {
+    final originalData = item['originalData'] ?? item['itemData'] ?? {};
+    final fileId = originalData['_id']?.toString();
     final fileData = {
-      'name': file['title'] ?? file['name'],
-      'url': file['url'] ?? '',
-      'type': file['type'] ?? 'file',
+      'name': item['title'] ?? item['name'],
+      'url': item['url'] ?? '',
+      'type': item['type'] ?? 'file',
       'originalData': originalData,
     };
 
     switch (action) {
       case 'open':
-        // ✅ استخدام FileActionsService.openFile مثل FilesGrid
         FileActionsService.openFile(fileData, widget.onItemTap);
         break;
+
       case 'info':
-        final fileId = originalData['_id']?.toString();
         if (fileId != null) {
           Navigator.push(
             context,
@@ -1816,137 +846,406 @@ class _FilesListViewState extends State<FilesListView> {
           );
         }
         break;
+
       case 'download':
-        // ✅ تحميل ملف مشترك في الروم
-        if (widget.roomId != null) {
-          final fileId = fileData['originalData']?['_id'] ?? fileData['fileId'];
-          final fileName =
-              fileData['name'] ?? fileData['originalData']?['name'];
-          if (fileId != null) {
-            final roomController = Provider.of<RoomController>(
-              context,
-              listen: false,
-            );
-            FileActionsService.downloadRoomFile(
-              context,
-              roomController,
-              widget.roomId!,
-              fileId,
-              fileName,
-            );
-          }
+        if (widget.roomId != null && fileId != null) {
+          final roomController = Provider.of<RoomController>(
+            context,
+            listen: false,
+          );
+          final fileName = fileData['name'] ?? originalData['name'];
+          FileActionsService.downloadRoomFile(
+            context,
+            roomController,
+            widget.roomId!,
+            fileId,
+            fileName,
+          );
         }
         break;
+
       case 'comments':
-        if (widget.roomId != null) {
-          final fileId = originalData['_id']?.toString();
-          if (fileId != null) {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => ChangeNotifierProvider.value(
-                  value: Provider.of<RoomController>(context, listen: false),
-                  child: RoomCommentsPage(
-                    roomId: widget.roomId!,
-                    targetType: 'file',
-                    targetId: fileId,
-                  ),
+        if (widget.roomId != null && fileId != null) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => ChangeNotifierProvider.value(
+                value: Provider.of<RoomController>(context, listen: false),
+                child: RoomCommentsPage(
+                  roomId: widget.roomId!,
+                  targetType: 'file',
+                  targetId: fileId,
                 ),
               ),
-            );
-          }
+            ),
+          );
         }
         break;
+
       case 'favorite':
-        FileActionsService.toggleStar(
+        final fileController = Provider.of<FileController>(
+          context,
+          listen: false,
+        );
+        await FileActionsService.toggleStar(
           context,
           fileController,
           fileData,
-          onToggle: () {
-            // ✅ تحديث حالة النجمة في _starStates (مثل FilesGrid)
-            final fileId = fileData['originalData']?['_id']?.toString();
-            if (fileId != null && mounted) {
-              setState(() {
-                // ✅ نقرأ القيمة المحدثة من fileData مباشرة (مثل FilesGrid)
-                _starStates[fileId] =
-                    fileData['originalData']['isStarred'] ?? false;
-                // ✅ تحديث البيانات في items أيضاً لتحديث القائمة
-                final originalData = fileData['originalData'];
-                if (originalData is Map<String, dynamic>) {
-                  originalData['isStarred'] = _starStates[fileId];
-                }
-                // ✅ تحديث file في widget.items أيضاً (إذا كان reference)
-                final fileIndex = widget.items.indexWhere((item) {
-                  final itemData = item['originalData'] ?? item['itemData'];
-                  return itemData is Map<String, dynamic> &&
-                      itemData['_id']?.toString() == fileId;
-                });
-                if (fileIndex != -1) {
-                  final itemOriginalData =
-                      widget.items[fileIndex]['originalData'] ??
-                      widget.items[fileIndex]['itemData'];
-                  if (itemOriginalData is Map<String, dynamic>) {
-                    itemOriginalData['isStarred'] = _starStates[fileId];
-                  }
-                }
-                print('🎨 UI Updated - Star state: ${_starStates[fileId]}');
-              });
-            }
-          },
+          onToggle: () => _updateStarState(fileData),
         );
         break;
+
       case 'save':
-        // ✅ حفظ الملف من الغرفة إلى حساب المستخدم
-        _saveFileFromRoom(context, file);
+        await _saveFileFromRoom(context, item);
         break;
+
       case 'remove_from_room':
-        // ✅ إزالة الملف من الغرفة
-        _showRemoveFileFromRoomDialog(context, file);
+        await _removeFileFromRoom(context, item);
         break;
     }
   }
 
-  /// ✅ حفظ الملف من الغرفة إلى حساب المستخدم
+  void _handleNormalFileMenuAction(
+    BuildContext context,
+    String action,
+    Map<String, dynamic> item,
+  ) {
+    final originalData = item['originalData'] ?? item['itemData'] ?? {};
+    final fileData = {
+      'name': item['title'] ?? item['name'] ?? originalData['name'],
+      'url': item['url'] ?? '',
+      'type': item['type'] ?? 'file',
+      'path': item['path'] ?? originalData['path'],
+      'originalData': originalData,
+    };
+
+    switch (action) {
+      case 'open':
+        FileActionsService.openFile(fileData, widget.onItemTap);
+        break;
+
+      case 'info':
+        final fileId = originalData['_id']?.toString();
+        if (fileId != null) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => FileDetailsPage(fileId: fileId)),
+          );
+        }
+        break;
+
+      case 'download':
+        FileActionsService.downloadFile(context, fileData);
+        break;
+
+      case 'edit':
+        FileActionsService.editFile(context, fileData);
+        break;
+
+      case 'share':
+        FileActionsService.shareFile(context, fileData);
+        break;
+
+      case 'move':
+        _showMoveFileDialog(context, item);
+        break;
+
+      case 'favorite':
+        final fileController = Provider.of<FileController>(
+          context,
+          listen: false,
+        );
+        FileActionsService.toggleStar(
+          context,
+          fileController,
+          fileData,
+          onToggle: () => _updateStarState(fileData),
+        );
+        break;
+
+      case 'delete':
+        final fileController = Provider.of<FileController>(
+          context,
+          listen: false,
+        );
+        FileActionsService.deleteFile(context, fileController, fileData);
+        break;
+    }
+  }
+
+  // ==================== ROOM, CATEGORY, FOLDER MENUS ====================
+
+  void _showRoomMenu(BuildContext context, Map<String, dynamic> room) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _buildBottomSheetHeader(
+                context,
+                room['title'] as String? ?? S.of(context).room,
+              ),
+              if (widget.onItemTap != null)
+                _buildBottomSheetItem(
+                  context,
+                  icon: Icons.open_in_new,
+                  title: S.of(context).open,
+                  onTap: () {
+                    Navigator.pop(context);
+                    widget.onItemTap!(room);
+                  },
+                ),
+              if (widget.onRoomDetailsTap != null)
+                _buildBottomSheetItem(
+                  context,
+                  icon: Icons.info_outline,
+                  title: S.of(context).viewInfo,
+                  onTap: () {
+                    Navigator.pop(context);
+                    widget.onRoomDetailsTap!(room);
+                  },
+                ),
+              if (widget.onRoomEditTap != null)
+                _buildBottomSheetItem(
+                  context,
+                  icon: Icons.edit,
+                  title: S.of(context).edit,
+                  onTap: () {
+                    Navigator.pop(context);
+                    widget.onRoomEditTap!(room);
+                  },
+                ),
+              const SizedBox(height: 20),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  void _showCategoryMenu(BuildContext context, Map<String, dynamic> category) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _buildBottomSheetHeader(
+                context,
+                category['title'] as String? ?? S.of(context).category,
+              ),
+              if (widget.onItemTap != null)
+                _buildBottomSheetItem(
+                  context,
+                  icon: Icons.open_in_new,
+                  title: S.of(context).open,
+                  onTap: () {
+                    Navigator.pop(context);
+                    widget.onItemTap!(category);
+                  },
+                ),
+              _buildBottomSheetItem(
+                context,
+                icon: Icons.info_outline,
+                title: S.of(context).viewDetails,
+                onTap: () {
+                  Navigator.pop(context);
+                  _showCategoryDetails(context, category);
+                },
+              ),
+              const SizedBox(height: 20),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  void _showFolderMenu(BuildContext context, Map<String, dynamic> folder) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      isScrollControlled: true,
+      builder: (context) {
+        return SafeArea(
+          child: Container(
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.of(context).size.height * 0.7,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _buildBottomSheetHeader(
+                  context,
+                  folder['title'] as String? ?? S.of(context).folder,
+                ),
+                Expanded(
+                  child: SingleChildScrollView(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (widget.onItemTap != null)
+                          _buildBottomSheetItem(
+                            context,
+                            icon: Icons.open_in_new,
+                            title: S.of(context).open,
+                            onTap: () {
+                              Navigator.pop(context);
+                              widget.onItemTap!(folder);
+                            },
+                          ),
+                        _buildBottomSheetItem(
+                          context,
+                          icon: Icons.info_outline,
+                          title: S.of(context).viewInfo,
+                          onTap: () {
+                            Navigator.pop(context);
+                            _showFolderInfo(context, folder);
+                          },
+                        ),
+                        _buildBottomSheetItem(
+                          context,
+                          icon: Icons.edit,
+                          title: S.of(context).edit,
+                          onTap: () {
+                            Navigator.pop(context);
+                            _showRenameDialog(context, folder);
+                          },
+                        ),
+                        _buildBottomSheetItem(
+                          context,
+                          icon: Icons.share,
+                          title: S.of(context).share,
+                          onTap: () {
+                            Navigator.pop(context);
+                            _showShareDialog(context, folder);
+                          },
+                        ),
+                        _buildBottomSheetItem(
+                          context,
+                          icon: Icons.download,
+                          title: S.of(context).download,
+                          iconColor: Colors.blue,
+                          onTap: () {
+                            Navigator.pop(context);
+                            // TODO: Implement folder download
+                          },
+                        ),
+                        _buildBottomSheetItem(
+                          context,
+                          icon: Icons.drive_file_move_rounded,
+                          title: S.of(context).move,
+                          iconColor: Colors.purple,
+                          onTap: () {
+                            Navigator.pop(context);
+                            _showMoveFolderDialog(context, folder);
+                          },
+                        ),
+                        _buildBottomSheetItem(
+                          context,
+                          icon: Icons.star_border,
+                          title: S.of(context).addToFavorites,
+                          iconColor: Colors.amber[700],
+                          onTap: () {
+                            Navigator.pop(context);
+                            _toggleFavorite(context, folder);
+                          },
+                        ),
+                        const Divider(height: 1),
+                        _buildBottomSheetItem(
+                          context,
+                          icon: Icons.delete,
+                          title: S.of(context).delete,
+                          textColor: Colors.red,
+                          iconColor: Colors.red,
+                          onTap: () {
+                            Navigator.pop(context);
+                            _showDeleteDialog(context, folder);
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 20),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  // ==================== BOTTOM SHEET COMPONENTS ====================
+
+  Widget _buildBottomSheetHeader(BuildContext context, String title) {
+    return Padding(
+      padding: const EdgeInsets.all(20),
+      child: Text(
+        title,
+        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+        textAlign: TextAlign.center,
+      ),
+    );
+  }
+
+  Widget _buildBottomSheetItem(
+    BuildContext context, {
+    required IconData icon,
+    required String title,
+    required VoidCallback onTap,
+    Color? iconColor,
+    Color? textColor,
+  }) {
+    return ListTile(
+      leading: Icon(icon, color: iconColor ?? Colors.grey[700]),
+      title: Text(title, style: TextStyle(color: textColor ?? Colors.black87)),
+      onTap: onTap,
+    );
+  }
+
+  // ==================== HELPER METHODS ====================
+
+  void _updateStarState(Map<String, dynamic> fileData) {
+    final fileId = fileData['originalData']?['_id']?.toString();
+    if (fileId != null && mounted) {
+      setState(() {
+        _starStates[fileId] = fileData['originalData']['isStarred'] ?? false;
+      });
+    }
+  }
+
   Future<void> _saveFileFromRoom(
     BuildContext context,
-    Map<String, dynamic> file,
+    Map<String, dynamic> item,
   ) async {
     if (widget.roomId == null) return;
 
-    final originalData =
-        file['originalData'] ?? file['itemData'] as Map<String, dynamic>? ?? {};
+    final originalData = item['originalData'] ?? item['itemData'] ?? {};
     final fileId = originalData['_id']?.toString();
+
     if (fileId == null) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('❌ ${S.of(context).fileIdNotFound}'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('❌ ${S.of(context).fileIdNotFound}'),
+          backgroundColor: Colors.red,
+        ),
+      );
       return;
     }
 
-    // ✅ عرض dialog لاختيار المجلد (اختياري) - استخدام null للجذر
-    String? targetFolderId = null;
-
     try {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: [
-                CircularProgressIndicator(color: Colors.white),
-                SizedBox(width: 16),
-                Text(S.of(context).savingFile),
-              ],
-            ),
-            duration: Duration(seconds: 30),
-          ),
-        );
-      }
-
       final roomController = Provider.of<RoomController>(
         context,
         listen: false,
@@ -1954,99 +1253,81 @@ class _FilesListViewState extends State<FilesListView> {
       final success = await roomController.saveFileFromRoom(
         roomId: widget.roomId!,
         fileId: fileId,
-        parentFolderId: targetFolderId,
+        parentFolderId: null,
       );
 
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).hideCurrentSnackBar();
-        if (success) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('✅ ${S.of(context).fileSavedToAccount}'),
-              backgroundColor: Colors.green,
-            ),
-          );
-        } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                roomController.errorMessage ?? S.of(context).failedToSaveFile,
-              ),
-              backgroundColor: Colors.red,
-            ),
-          );
-        }
-      }
-    } catch (e) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      if (success) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('❌${S.of(context).error} ${e.toString()}'),
+            content: Text('✅ ${S.of(context).fileSavedToAccount}'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              roomController.errorMessage ?? S.of(context).failedToSaveFile,
+            ),
             backgroundColor: Colors.red,
           ),
         );
       }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('❌ ${S.of(context).error} ${e.toString()}'),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
   }
 
-  /// ✅ عرض dialog لتأكيد إزالة الملف من الغرفة
-  void _showRemoveFileFromRoomDialog(
+  Future<void> _removeFileFromRoom(
     BuildContext context,
-    Map<String, dynamic> file,
-  ) {
-    final fileName =
-        file['title']?.toString() ??
-        file['name']?.toString() ??
-        file['originalName']?.toString() ??
-        S.of(context).file;
+    Map<String, dynamic> item,
+  ) async {
+    if (widget.roomId == null) return;
 
-    showDialog(
+    final originalData = item['originalData'] ?? item['itemData'] ?? {};
+    final fileId = originalData['_id']?.toString();
+
+    if (fileId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('❌ ${S.of(context).fileIdNotFound}'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    final confirmed = await showDialog<bool>(
       context: context,
-      builder: (dialogContext) => AlertDialog(
+      builder: (context) => AlertDialog(
         title: Text(S.of(context).removeFileFromRoom),
-        content: Text(S.of(context).removeFileFromRoomConfirm(fileName)),
+        content: Text(
+          S
+              .of(context)
+              .removeFileFromRoomConfirm(item['title'] ?? S.of(context).file),
+        ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
+            onPressed: () => Navigator.pop(context, false),
             child: Text(S.of(context).cancel),
           ),
           TextButton(
-            onPressed: () {
-              Navigator.pop(dialogContext);
-              _removeFileFromRoom(context, file);
-            },
+            onPressed: () => Navigator.pop(context, true),
             child: Text(
               S.of(context).remove,
-              style: TextStyle(color: Colors.red),
+              style: const TextStyle(color: Colors.red),
             ),
           ),
         ],
       ),
     );
-  }
 
-  /// ✅ إزالة الملف من الغرفة
-  Future<void> _removeFileFromRoom(
-    BuildContext context,
-    Map<String, dynamic> file,
-  ) async {
-    if (widget.roomId == null) return;
-
-    final originalData =
-        file['originalData'] ?? file['itemData'] as Map<String, dynamic>? ?? {};
-    final fileId = originalData['_id']?.toString();
-    if (fileId == null) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('❌ ${S.of(context).fileIdNotFound}'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-      return;
-    }
+    if (confirmed != true) return;
 
     try {
       final roomController = Provider.of<RoomController>(
@@ -2058,363 +1339,13 @@ class _FilesListViewState extends State<FilesListView> {
         fileId: fileId,
       );
 
-      if (context.mounted) {
-        if (success) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('✅ ${S.of(context).fileRemovedFromRoom}'),
-              backgroundColor: Colors.green,
-            ),
-          );
-          // ✅ إعادة تحميل البيانات بعد إزالة الملف
-          if (widget.onFileRemoved != null) {
-            widget.onFileRemoved!();
-          }
-        } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                roomController.errorMessage ?? S.of(context).failedToRemoveFile,
-              ),
-              backgroundColor: Colors.red,
-            ),
-          );
-        }
-      }
-    } catch (e) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('❌ ${S.of(context).error} ${e.toString()}'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    }
-  }
-
-  /// ✅ معالجة إجراءات الملفات العادية
-  void _handleNormalFileMenuAction(
-    BuildContext context,
-    String action,
-    Map<String, dynamic> file,
-  ) {
-    final fileController = Provider.of<FileController>(context, listen: false);
-    final originalData =
-        file['originalData'] ?? file['itemData'] as Map<String, dynamic>? ?? {};
-    // ✅ استخدام نفس format البيانات التي يستخدمها FilesGrid
-    // ✅ الحصول على path من عدة مصادر
-    final path =
-        file['path'] ??
-        (originalData is Map ? originalData['path'] : null) ??
-        '';
-    // ✅ الحصول على url من عدة مصادر (url موجود في البيانات من home_view)
-    final url = file['url'] ?? '';
-
-    final fileData = {
-      'name':
-          file['title'] ??
-          file['name'] ??
-          (originalData is Map ? originalData['name'] : null),
-      'url': url,
-      'type': file['type'] ?? S.of(context).file,
-      'path': path,
-      'originalData': originalData,
-      'originalName':
-          file['originalName'] ??
-          (originalData is Map ? originalData['name'] : null),
-    };
-
-    switch (action) {
-      case 'open':
-        // ✅ استخدام FileActionsService.openFile مثل FilesGrid
-        FileActionsService.openFile(fileData, widget.onItemTap);
-        break;
-      case 'info':
-        final fileId = originalData['_id']?.toString();
-        if (fileId != null) {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => FileDetailsPage(fileId: fileId)),
-          );
-        }
-        break;
-      case 'download':
-        // ✅ تحميل الملف
-        FileActionsService.downloadFile(context, fileData);
-        break;
-      case 'edit':
-        FileActionsService.editFile(context, fileData);
-        break;
-      case 'share':
-        FileActionsService.shareFile(context, fileData);
-        break;
-      case 'move':
-        // ✅ نقل الملف
-        _showMoveFileDialog(context, file);
-        break;
-      case 'favorite':
-        FileActionsService.toggleStar(
-          context,
-          fileController,
-          fileData,
-          onToggle: () {
-            // ✅ تحديث حالة النجمة في _starStates (مثل FilesGrid)
-            final fileId = fileData['originalData']?['_id']?.toString();
-            if (fileId != null && mounted) {
-              setState(() {
-                // ✅ نقرأ القيمة المحدثة من fileData مباشرة (مثل FilesGrid)
-                _starStates[fileId] =
-                    fileData['originalData']['isStarred'] ?? false;
-                // ✅ تحديث البيانات في items أيضاً لتحديث القائمة
-                final originalData = fileData['originalData'];
-                if (originalData is Map<String, dynamic>) {
-                  originalData['isStarred'] = _starStates[fileId];
-                }
-                // ✅ تحديث file في widget.items أيضاً (إذا كان reference)
-                final fileIndex = widget.items.indexWhere((item) {
-                  final itemData = item['originalData'] ?? item['itemData'];
-                  return itemData is Map<String, dynamic> &&
-                      itemData['_id']?.toString() == fileId;
-                });
-                if (fileIndex != -1) {
-                  final itemOriginalData =
-                      widget.items[fileIndex]['originalData'] ??
-                      widget.items[fileIndex]['itemData'];
-                  if (itemOriginalData is Map<String, dynamic>) {
-                    itemOriginalData['isStarred'] = _starStates[fileId];
-                  }
-                }
-                print('🎨 UI Updated - Star state: ${_starStates[fileId]}');
-              });
-            }
-          },
-        );
-        break;
-      case 'delete':
-        FileActionsService.deleteFile(context, fileController, fileData);
-        break;
-    }
-  }
-
-  /// ✅ دالة لعرض dialog لاختيار المجلد الهدف لنقل الملف
-  void _showMoveFileDialog(
-    BuildContext context,
-    Map<String, dynamic> file,
-  ) async {
-    final originalData =
-        file['originalData'] ?? file['itemData'] as Map<String, dynamic>? ?? {};
-    final fileId = originalData['_id']?.toString();
-    final fileName =
-        file['title'] ??
-        file['name'] ??
-        originalData['name'] ??
-        S.of(context).file;
-    final currentParentId = originalData['parentFolderId']?.toString();
-
-    if (fileId == null) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(S.of(context).fileIdNotFound)));
-      }
-      return;
-    }
-
-    // ✅ جلب قائمة المجلدات
-    final folderController = Provider.of<FolderController>(
-      context,
-      listen: false,
-    );
-    final foldersResponse = await folderController.getAllFolders(
-      page: 1,
-      limit: 100,
-    );
-
-    if (!context.mounted) return;
-
-    if (foldersResponse == null || foldersResponse['folders'] == null) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(S.of(context).failedToFetchFolderList)),
-        );
-      }
-      return;
-    }
-
-    final folders = List<Map<String, dynamic>>.from(
-      foldersResponse['folders'] ?? [],
-    );
-
-    // ✅ تصفية المجلد الحالي (إذا كان الملف في مجلد)
-    final availableFolders = folders.where((folder) {
-      final folderId = folder['_id']?.toString();
-      return folderId != currentParentId;
-    }).toList();
-
-    if (!context.mounted) return;
-
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => Container(
-        height: MediaQuery.of(context).size.height * 0.7,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-        ),
-        child: Column(
-          children: [
-            // ✅ Header
-            Container(
-              padding: EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: Colors.purple,
-                borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-              ),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.drive_file_move_rounded,
-                    color: Colors.white,
-                    size: 32,
-                  ),
-                  SizedBox(width: 16),
-                  Expanded(
-                    child: Text(
-                      '${S.of(context).movingFile}$fileName',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                  IconButton(
-                    icon: Icon(Icons.close, color: Colors.white),
-                    onPressed: () => Navigator.pop(context),
-                  ),
-                ],
-              ),
-            ),
-
-            // ✅ Content
-            Expanded(
-              child: Column(
-                children: [
-                  // ✅ خيار "الجذر"
-                  ListTile(
-                    leading: Icon(Icons.home_rounded, color: Colors.blue),
-                    title: Text(S.of(context).root),
-                    subtitle: Text(S.of(context).moveFileToRoot),
-                    onTap: () {
-                      Navigator.pop(context);
-                      _moveFile(context, fileId, null, fileName);
-                    },
-                  ),
-                  Divider(),
-
-                  // ✅ قائمة المجلدات
-                  Expanded(
-                    child: availableFolders.isEmpty
-                        ? Center(
-                            child: Text(
-                              S.of(context).noFoldersAvailable,
-                              style: TextStyle(color: Colors.grey),
-                            ),
-                          )
-                        : ListView.builder(
-                            itemCount: availableFolders.length,
-                            itemBuilder: (context, index) {
-                              final folder = availableFolders[index];
-                              final folderId = folder['_id']?.toString();
-                              final folderName =
-                                  folder['name'] ?? S.of(context).unnamedFolder;
-
-                              return ListTile(
-                                leading: Icon(
-                                  Icons.folder_rounded,
-                                  color: Colors.orange,
-                                ),
-                                title: Text(folderName),
-                                subtitle: Text(
-                                  '${folder['filesCount'] ?? 0} ${S.of(context).file}',
-                                ),
-                                onTap: () {
-                                  Navigator.pop(context);
-                                  _moveFile(
-                                    context,
-                                    fileId,
-                                    folderId,
-                                    fileName,
-                                  );
-                                },
-                              );
-                            },
-                          ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  /// ✅ دالة لنقل الملف
-  Future<void> _moveFile(
-    BuildContext context,
-    String fileId,
-    String? targetFolderId,
-    String fileName,
-  ) async {
-    final fileController = Provider.of<FileController>(context, listen: false);
-    final token = await StorageService.getToken();
-
-    if (token == null) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(S.of(context).mustLoginFirstError)),
-        );
-      }
-      return;
-    }
-
-    if (!context.mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            CircularProgressIndicator(color: Colors.white),
-            SizedBox(width: 16),
-            Text(S.of(context).movingFile),
-          ],
-        ),
-        duration: Duration(seconds: 30),
-      ),
-    );
-
-    final success = await fileController.moveFile(
-      fileId: fileId,
-      token: token,
-      targetFolderId: targetFolderId,
-    );
-
-    if (context.mounted) {
-      ScaffoldMessenger.of(context).hideCurrentSnackBar();
-
       if (success) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('✅ ${S.of(context).fileMovedSuccessfully}'),
+            content: Text('✅ ${S.of(context).fileRemovedFromRoom}'),
             backgroundColor: Colors.green,
           ),
         );
-
-        // ✅ إعادة تحميل البيانات - استخدام callback إذا كان موجوداً
-        // هذا سيعيد تحميل الملفات في CategoryPage وإحصائيات التصنيفات في folders_view
         if (widget.onFileRemoved != null) {
           widget.onFileRemoved!();
         }
@@ -2422,603 +1353,83 @@ class _FilesListViewState extends State<FilesListView> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              fileController.errorMessage ?? S.of(context).failedToMoveFile,
+              roomController.errorMessage ?? S.of(context).failedToRemoveFile,
             ),
             backgroundColor: Colors.red,
           ),
         );
       }
-    }
-  }
-
-  /// ✅ دالة لعرض dialog لاختيار المجلد الهدف لنقل المجلد
-  void _showMoveFolderDialog(
-    BuildContext context,
-    Map<String, dynamic> folder,
-  ) async {
-    final folderData = folder['folderData'] as Map<String, dynamic>? ?? {};
-    final folderId =
-        folder['folderId'] as String? ?? folderData['_id'] as String?;
-    final folderName =
-        folder['title'] as String ?? folderData['name'] ?? S.of(context).folder;
-    final currentParentId = folderData['parentId']?.toString();
-
-    if (folderId == null) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(S.of(context).folderIdNotFound)));
-      }
-      return;
-    }
-
-    // ✅ جلب قائمة المجلدات
-    final folderController = Provider.of<FolderController>(
-      context,
-      listen: false,
-    );
-    final foldersResponse = await folderController.getAllFolders(
-      page: 1,
-      limit: 100,
-    );
-
-    if (!context.mounted) return;
-
-    if (foldersResponse == null || foldersResponse['folders'] == null) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(S.of(context).failedToFetchFolderList)),
-        );
-      }
-      return;
-    }
-
-    final folders = List<Map<String, dynamic>>.from(
-      foldersResponse['folders'] ?? [],
-    );
-
-    // ✅ تصفية المجلد الحالي والمجلدات الفرعية (لتجنب الحلقات)
-    final availableFolders = folders.where((f) {
-      final fId = f['_id']?.toString();
-      return fId != folderId && fId != currentParentId;
-    }).toList();
-
-    if (!context.mounted) return;
-
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => Container(
-        height: MediaQuery.of(context).size.height * 0.7,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-        ),
-        child: Column(
-          children: [
-            // ✅ Header
-            Container(
-              padding: EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: Colors.purple,
-                borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-              ),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.drive_file_move_rounded,
-                    color: Colors.white,
-                    size: 32,
-                  ),
-                  SizedBox(width: 16),
-                  Expanded(
-                    child: Text(
-                      '${S.of(context).movingFile}$folderName',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                  IconButton(
-                    icon: Icon(Icons.close, color: Colors.white),
-                    onPressed: () => Navigator.pop(context),
-                  ),
-                ],
-              ),
-            ),
-
-            // ✅ Content
-            Expanded(
-              child: Column(
-                children: [
-                  // ✅ خيار "الجذر"
-                  ListTile(
-                    leading: Icon(Icons.home_rounded, color: Colors.blue),
-                    title: Text(S.of(context).root),
-                    subtitle: Text(S.of(context).moveFolderToRootNoParent),
-                    onTap: () {
-                      Navigator.pop(context);
-                      _moveFolder(context, folderId, null, folderName);
-                    },
-                  ),
-                  Divider(),
-
-                  // ✅ قائمة المجلدات
-                  Expanded(
-                    child: availableFolders.isEmpty
-                        ? Center(
-                            child: Text(
-                              S.of(context).noFoldersAvailable,
-                              style: TextStyle(color: Colors.grey),
-                            ),
-                          )
-                        : ListView.builder(
-                            itemCount: availableFolders.length,
-                            itemBuilder: (context, index) {
-                              final f = availableFolders[index];
-                              final fId = f['_id']?.toString();
-                              final fName =
-                                  f['name'] ?? S.of(context).unnamedFolder;
-
-                              return ListTile(
-                                leading: Icon(
-                                  Icons.folder_rounded,
-                                  color: Colors.orange,
-                                ),
-                                title: Text(fName),
-                                subtitle: Text(
-                                  '${f['filesCount'] ?? 0}${S.of(context).file}',
-                                ),
-                                onTap: () {
-                                  Navigator.pop(context);
-                                  _moveFolder(
-                                    context,
-                                    folderId,
-                                    fId,
-                                    folderName,
-                                  );
-                                },
-                              );
-                            },
-                          ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  /// ✅ عرض قائمة الملفات المشتركة في الغرف (bottom sheet)
-  void _showSharedFileMenu(BuildContext context, Map<String, dynamic> file) {
-    final scaffoldContext = context; // ✅ حفظ context الأصلي
-    final originalData =
-        file['originalData'] ?? file['itemData'] as Map<String, dynamic>? ?? {};
-    final fileId = originalData['_id']?.toString();
-    final isStarred = fileId != null
-        ? (_starStates[fileId] ?? originalData['isStarred'] ?? false)
-        : (originalData['isStarred'] ?? false);
-
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      builder: (bottomSheetContext) => Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(
-            top: Radius.circular(
-              ResponsiveUtils.getResponsiveValue(
-                bottomSheetContext,
-                mobile: 20.0,
-                tablet: 24.0,
-                desktop: 28.0,
-              ),
-            ),
-          ),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // ✅ Handle bar
-            Container(
-              margin: EdgeInsets.only(
-                top: ResponsiveUtils.getResponsiveValue(
-                  bottomSheetContext,
-                  mobile: 12.0,
-                  tablet: 14.0,
-                  desktop: 16.0,
-                ),
-                bottom: ResponsiveUtils.getResponsiveValue(
-                  bottomSheetContext,
-                  mobile: 8.0,
-                  tablet: 10.0,
-                  desktop: 12.0,
-                ),
-              ),
-              width: ResponsiveUtils.getResponsiveValue(
-                bottomSheetContext,
-                mobile: 40.0,
-                tablet: 50.0,
-                desktop: 60.0,
-              ),
-              height: ResponsiveUtils.getResponsiveValue(
-                bottomSheetContext,
-                mobile: 4.0,
-                tablet: 5.0,
-                desktop: 6.0,
-              ),
-              decoration: BoxDecoration(
-                color: Colors.grey[300],
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            _buildMenuItem(
-              bottomSheetContext,
-              icon: Icons.open_in_new,
-              title: S.of(context).open,
-              onTap: () {
-                Navigator.pop(bottomSheetContext);
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  if (scaffoldContext.mounted) {
-                    _handleSharedFileMenuAction(scaffoldContext, 'open', file);
-                  }
-                });
-              },
-            ),
-            _buildMenuItem(
-              bottomSheetContext,
-              icon: Icons.info_outline,
-              title: S.of(context).viewDetails,
-              onTap: () {
-                Navigator.pop(bottomSheetContext);
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  if (scaffoldContext.mounted) {
-                    _handleSharedFileMenuAction(scaffoldContext, 'info', file);
-                  }
-                });
-              },
-            ),
-            _buildMenuItem(
-              bottomSheetContext,
-              icon: Icons.download,
-              title: S.of(context).download,
-              iconColor: Colors.blue,
-              onTap: () {
-                Navigator.pop(bottomSheetContext);
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  if (scaffoldContext.mounted) {
-                    _handleSharedFileMenuAction(
-                      scaffoldContext,
-                      'download',
-                      file,
-                    );
-                  }
-                });
-              },
-            ),
-            _buildMenuItem(
-              bottomSheetContext,
-              icon: Icons.comment,
-              title: S.of(context).comments,
-              iconColor: Color(0xFFF59E0B),
-              onTap: () {
-                Navigator.pop(bottomSheetContext);
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  if (scaffoldContext.mounted) {
-                    _handleSharedFileMenuAction(
-                      scaffoldContext,
-                      'comments',
-                      file,
-                    );
-                  }
-                });
-              },
-            ),
-            Divider(height: 1),
-            _buildMenuItem(
-              bottomSheetContext,
-              icon: isStarred ? Icons.star : Icons.star_border,
-              title: isStarred
-                  ? S.of(context).removeFromFavorites
-                  : S.of(context).addToFavorites,
-              iconColor: Colors.amber[700],
-              onTap: () {
-                Navigator.pop(bottomSheetContext);
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  if (scaffoldContext.mounted) {
-                    _handleSharedFileMenuAction(
-                      scaffoldContext,
-                      'favorite',
-                      file,
-                    );
-                  }
-                });
-              },
-            ),
-            _buildMenuItem(
-              bottomSheetContext,
-              icon: Icons.save,
-              title: S.of(context).saveToMyAccount,
-              iconColor: Colors.green,
-              onTap: () {
-                Navigator.pop(bottomSheetContext);
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  if (scaffoldContext.mounted) {
-                    _handleSharedFileMenuAction(scaffoldContext, 'save', file);
-                  }
-                });
-              },
-            ),
-            Divider(height: 1),
-            _buildMenuItem(
-              bottomSheetContext,
-              icon: Icons.link_off,
-              title: S.of(context).removeFromRoom,
-              textColor: Colors.red,
-              iconColor: Colors.red,
-              onTap: () {
-                Navigator.pop(bottomSheetContext);
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  if (scaffoldContext.mounted) {
-                    _handleSharedFileMenuAction(
-                      scaffoldContext,
-                      'remove_from_room',
-                      file,
-                    );
-                  }
-                });
-              },
-            ),
-            SizedBox(
-              height: ResponsiveUtils.getResponsiveValue(
-                bottomSheetContext,
-                mobile: 8.0,
-                tablet: 12.0,
-                desktop: 16.0,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  /// ✅ عرض قائمة الملفات العادية (bottom sheet)
-  void _showNormalFileMenu(BuildContext context, Map<String, dynamic> file) {
-    final scaffoldContext = context; // ✅ حفظ context الأصلي
-    final originalData =
-        file['originalData'] ?? file['itemData'] as Map<String, dynamic>? ?? {};
-    final fileId = originalData['_id']?.toString();
-    final isStarred = fileId != null
-        ? (_starStates[fileId] ?? originalData['isStarred'] ?? false)
-        : (originalData['isStarred'] ?? false);
-
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      builder: (bottomSheetContext) => Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(
-            top: Radius.circular(
-              ResponsiveUtils.getResponsiveValue(
-                bottomSheetContext,
-                mobile: 20.0,
-                tablet: 24.0,
-                desktop: 28.0,
-              ),
-            ),
-          ),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // ✅ Handle bar
-            Container(
-              margin: EdgeInsets.only(
-                top: ResponsiveUtils.getResponsiveValue(
-                  bottomSheetContext,
-                  mobile: 12.0,
-                  tablet: 14.0,
-                  desktop: 16.0,
-                ),
-                bottom: ResponsiveUtils.getResponsiveValue(
-                  bottomSheetContext,
-                  mobile: 8.0,
-                  tablet: 10.0,
-                  desktop: 12.0,
-                ),
-              ),
-              width: ResponsiveUtils.getResponsiveValue(
-                bottomSheetContext,
-                mobile: 40.0,
-                tablet: 50.0,
-                desktop: 60.0,
-              ),
-              height: ResponsiveUtils.getResponsiveValue(
-                bottomSheetContext,
-                mobile: 4.0,
-                tablet: 5.0,
-                desktop: 6.0,
-              ),
-              decoration: BoxDecoration(
-                color: Colors.grey[300],
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            _buildMenuItem(
-              bottomSheetContext,
-              icon: Icons.open_in_new,
-              title: S.of(context).open,
-              onTap: () {
-                Navigator.pop(bottomSheetContext);
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  if (scaffoldContext.mounted) {
-                    _handleNormalFileMenuAction(scaffoldContext, 'open', file);
-                  }
-                });
-              },
-            ),
-            _buildMenuItem(
-              bottomSheetContext,
-              icon: Icons.info_outline,
-              title: S.of(context).viewDetails,
-              onTap: () {
-                Navigator.pop(bottomSheetContext);
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  if (scaffoldContext.mounted) {
-                    _handleNormalFileMenuAction(scaffoldContext, 'info', file);
-                  }
-                });
-              },
-            ),
-            _buildMenuItem(
-              bottomSheetContext,
-              icon: Icons.download,
-              title: S.of(context).download,
-              iconColor: Colors.blue,
-              onTap: () {
-                Navigator.pop(bottomSheetContext);
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  if (scaffoldContext.mounted) {
-                    _handleNormalFileMenuAction(
-                      scaffoldContext,
-                      'download',
-                      file,
-                    );
-                  }
-                });
-              },
-            ),
-            Divider(height: 1),
-            _buildMenuItem(
-              bottomSheetContext,
-              icon: isStarred ? Icons.star : Icons.star_border,
-              title: isStarred
-                  ? S.of(context).removeFromFavorites
-                  : S.of(context).addToFavorites,
-              iconColor: Colors.amber[700],
-              onTap: () {
-                Navigator.pop(bottomSheetContext);
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  if (scaffoldContext.mounted) {
-                    _handleNormalFileMenuAction(
-                      scaffoldContext,
-                      'favorite',
-                      file,
-                    );
-                  }
-                });
-              },
-            ),
-            _buildMenuItem(
-              bottomSheetContext,
-              icon: Icons.drive_file_move_rounded,
-              title: S.of(context).move,
-              iconColor: Colors.purple,
-              onTap: () {
-                Navigator.pop(bottomSheetContext);
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  if (scaffoldContext.mounted) {
-                    _handleNormalFileMenuAction(scaffoldContext, 'move', file);
-                  }
-                });
-              },
-            ),
-            Divider(height: 1),
-            _buildMenuItem(
-              bottomSheetContext,
-              icon: Icons.delete,
-              title: S.of(context).delete,
-              textColor: Colors.red,
-              iconColor: Colors.red,
-              onTap: () {
-                Navigator.pop(bottomSheetContext);
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  if (scaffoldContext.mounted) {
-                    _handleNormalFileMenuAction(
-                      scaffoldContext,
-                      'delete',
-                      file,
-                    );
-                  }
-                });
-              },
-            ),
-            SizedBox(
-              height: ResponsiveUtils.getResponsiveValue(
-                bottomSheetContext,
-                mobile: 8.0,
-                tablet: 12.0,
-                desktop: 16.0,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  /// ✅ دالة لنقل المجلد
-  Future<void> _moveFolder(
-    BuildContext context,
-    String folderId,
-    String? targetFolderId,
-    String folderName,
-  ) async {
-    final folderController = Provider.of<FolderController>(
-      context,
-      listen: false,
-    );
-
-    if (context.mounted) {
+    } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Row(
-            children: [
-              CircularProgressIndicator(color: Colors.white),
-              SizedBox(width: 16),
-              Text(S.of(context).movingFolder),
-            ],
-          ),
-          duration: Duration(seconds: 30),
+          content: Text('❌ ${S.of(context).error} ${e.toString()}'),
+          backgroundColor: Colors.red,
         ),
       );
     }
+  }
 
-    // ✅ نقل المجلد
-    final success = await folderController.moveFolder(
-      folderId: folderId,
-      targetFolderId: targetFolderId,
+  // ==================== FOLDER SPECIFIC METHODS ====================
+
+  void _showFolderInfo(BuildContext context, Map<String, dynamic> folder) {
+    // TODO: Implement folder info dialog
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text('Folder Info: ${folder['title']}')));
+  }
+
+  void _showRenameDialog(BuildContext context, Map<String, dynamic> folder) {
+    // TODO: Implement rename dialog
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Rename Folder: ${folder['title']}')),
     );
+  }
 
-    if (!context.mounted) return;
+  void _showShareDialog(BuildContext context, Map<String, dynamic> folder) {
+    // TODO: Implement share dialog
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text('Share Folder: ${folder['title']}')));
+  }
 
-    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+  void _showMoveFolderDialog(
+    BuildContext context,
+    Map<String, dynamic> folder,
+  ) {
+    // TODO: Implement move folder dialog
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text('Move Folder: ${folder['title']}')));
+  }
 
-    if (success) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('✅ ${S.of(context).folderMovedSuccessfully}'),
-            backgroundColor: Colors.green,
-          ),
-        );
-      }
-    } else {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('❌ ${S.of(context).failedToMoveFolder}'),
-            backgroundColor: Colors.orange,
-          ),
-        );
-      }
-    }
+  void _toggleFavorite(BuildContext context, Map<String, dynamic> folder) {
+    // TODO: Implement toggle favorite
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Toggle Favorite: ${folder['title']}')),
+    );
+  }
+
+  void _showDeleteDialog(BuildContext context, Map<String, dynamic> folder) {
+    // TODO: Implement delete dialog
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Delete Folder: ${folder['title']}')),
+    );
+  }
+
+  void _showMoveFileDialog(BuildContext context, Map<String, dynamic> file) {
+    // TODO: Implement move file dialog
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text('Move File: ${file['title']}')));
+  }
+
+  void _showCategoryDetails(
+    BuildContext context,
+    Map<String, dynamic> category,
+  ) {
+    // TODO: Implement category details dialog
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Category Details: ${category['title']}')),
+    );
   }
 }

@@ -22,6 +22,7 @@ import 'package:filevo/services/storage_service.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:http/http.dart' as http;
 import 'dart:io';
+import 'package:pull_to_refresh/pull_to_refresh.dart';
 
 class HomeView extends StatefulWidget {
   final VoidCallback? onNavigateToFolders;
@@ -41,11 +42,20 @@ class _HomeViewState extends State<HomeView> {
 
   final FolderService _folderService = FolderService();
   final FileService _fileService = FileService();
+  final RefreshController _refreshController = RefreshController(
+    initialRefresh: false,
+  );
 
   @override
   void initState() {
     super.initState();
     _loadRecentData();
+  }
+
+  @override
+  void dispose() {
+    _refreshController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadRecentData() async {
@@ -108,7 +118,8 @@ class _HomeViewState extends State<HomeView> {
           setState(() {
             // ✅ عرض جميع الملفات
             _recentFiles = files.map((file) {
-              final fileName = file['name']?.toString() ?? S.of(context).fileWithoutName;
+              final fileName =
+                  file['name']?.toString() ?? S.of(context).fileWithoutName;
               final filePath = file['path']?.toString() ?? '';
               final size = file['size'];
 
@@ -143,6 +154,10 @@ class _HomeViewState extends State<HomeView> {
         setState(() {
           _isLoading = false;
         });
+        // ✅ إذا كان التحديث عن طريق السحب، أوقف المؤشر
+        if (_refreshController.isRefresh) {
+          _refreshController.refreshCompleted();
+        }
       }
     }
   }
@@ -237,7 +252,8 @@ class _HomeViewState extends State<HomeView> {
     }
 
     final originalData = file['originalData'] ?? file;
-    final originalName = file['originalName'] ?? file['name'] ?? S.of(context).fileWithoutName;
+    final originalName =
+        file['originalName'] ?? file['name'] ?? S.of(context).fileWithoutName;
     final name = originalName.toLowerCase();
     final url = _getFileUrl(filePath);
 
@@ -545,202 +561,197 @@ class _HomeViewState extends State<HomeView> {
                           ],
                         ),
                       )
-                    : RefreshIndicator(
+                    : SmartRefresher(
+                        controller: _refreshController,
                         onRefresh: _loadRecentData,
-                        child: SingleChildScrollView(
+                        header: const WaterDropHeader(),
+                        child: ListView(
+                          padding: const EdgeInsets.all(16.0),
                           physics: const AlwaysScrollableScrollPhysics(),
-                          child: Padding(
-                            padding: const EdgeInsets.all(16.0),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                SizedBox(
-                                  height: ResponsiveUtils.getResponsiveValue(
-                                    context,
-                                    mobile: 10.0,
-                                    tablet: 15.0,
-                                    desktop: 20.0,
-                                  ),
-                                ),
-                                // ✅ قسم المجلدات الحديثة
-                                Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 8.0,
-                                  ),
-                                  child: Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Text(
-                                        S.of(context).recentFolders,
-                                        style: TextStyle(
-                                          fontSize:
-                                              ResponsiveUtils.getResponsiveValue(
-                                                context,
-                                                mobile: 20.0,
-                                                tablet: 24.0,
-                                                desktop: 28.0,
-                                              ),
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                      TextButton(
-                                        onPressed: () {
-                                          // ✅ استخدام callback للتنقل إلى صفحة الفولدرات مع إبقاء Bottom Bar ظاهراً
-                                          if (widget.onNavigateToFolders !=
-                                              null) {
-                                            widget.onNavigateToFolders!();
-                                          } else {
-                                            // ✅ Fallback: استخدام Navigator إذا لم يكن callback متوفر
-                                            Navigator.push(
-                                              context,
-                                              MaterialPageRoute(
-                                                builder: (context) =>
-                                                    FoldersPage(),
-                                              ),
-                                            );
-                                          }
-                                        },
-                                        child: Text(
-                                          S.of(context).seeAll,
-                                          style: TextStyle(
-                                            color: Color(0xFF00BFA5),
-                                            fontSize:
-                                                ResponsiveUtils.getResponsiveValue(
-                                                  context,
-                                                  mobile: 14.0,
-                                                  tablet: 16.0,
-                                                  desktop: 18.0,
-                                                ),
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                SizedBox(
-                                  height: ResponsiveUtils.getResponsiveValue(
-                                    context,
-                                    mobile: 15.0,
-                                    tablet: 20.0,
-                                    desktop: 25.0,
-                                  ),
-                                ),
-                                // ✅ عرض المجلدات
-                                if (_recentFolders.isEmpty)
-                                  Center(
-                                    child: Padding(
-                                      padding: const EdgeInsets.all(20.0),
-                                      child: Text(
-                                        S.of(context).noRecentFolders,
-                                        style: TextStyle(
-                                          color: Colors.grey[600],
-                                        ),
-                                      ),
-                                    ),
-                                  )
-                                else
-                                  FilesGridView(
-                                    items: _recentFolders,
-                                    showFileCount: true,
-                                    onItemTap: _handleFolderTap,
-                                  ),
-                                SizedBox(
-                                  height: ResponsiveUtils.getResponsiveValue(
-                                    context,
-                                    mobile: 20.0,
-                                    tablet: 25.0,
-                                    desktop: 30.0,
-                                  ),
-                                ),
-                                // ✅ قسم الملفات الحديثة
-                                Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 8.0,
-                                  ),
-                                  child: Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Text(
-                                        S.of(context).recentFiles,
-                                        style: TextStyle(
-                                          fontSize:
-                                              ResponsiveUtils.getResponsiveValue(
-                                                context,
-                                                mobile: 20.0,
-                                                tablet: 24.0,
-                                                desktop: 28.0,
-                                              ),
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                      ViewToggleButtons(
-                                        isGridView: isFilesGridView,
-                                        onViewChanged: (isGrid) {
-                                          setState(() {
-                                            isFilesGridView = isGrid;
-                                          });
-                                        },
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                SizedBox(
-                                  height: ResponsiveUtils.getResponsiveValue(
-                                    context,
-                                    mobile: 15.0,
-                                    tablet: 20.0,
-                                    desktop: 25.0,
-                                  ),
-                                ),
-                                // ✅ عرض الملفات
-                                if (_recentFiles.isEmpty)
-                                  Center(
-                                    child: Padding(
-                                      padding: const EdgeInsets.all(20.0),
-                                      child: Text(
-                                        S.of(context).noRecentFiles,
-                                        style: TextStyle(
-                                          color: Colors.grey[600],
-                                        ),
-                                      ),
-                                    ),
-                                  )
-                                else if (isFilesGridView)
-                                  FilesGrid(
-                                    files: _recentFiles,
-                                    onFileTap: (file) {
-                                      _handleFileTap(file);
-                                    },
-                                  )
-                                else
-                                  FilesListView(
-                                    items: _recentFiles.map((f) {
-                                      return {
-                                        'title': f['name'] ?? S.of(context).fileWithoutName,
-                                        'size': f['size'] ?? '0 B',
-                                        'path': f['path'],
-                                        'createdAt': f['createdAt'],
-                                        'originalName':
-                                            f['originalName'] ?? f['name'],
-                                        '_id': f['originalData']?['_id']
-                                            ?.toString(),
-                                        'originalData': f['originalData'] ?? f,
-                                      };
-                                    }).toList(),
-                                    itemMargin: const EdgeInsets.only(
-                                      bottom: 10,
-                                    ),
-                                    showMoreOptions: true,
-                                    onItemTap: (item) {
-                                      _handleFileTap(item);
-                                    },
-                                  ),
-                                const SizedBox(height: 100),
-                              ],
+                          children: [
+                            SizedBox(
+                              height: ResponsiveUtils.getResponsiveValue(
+                                context,
+                                mobile: 10.0,
+                                tablet: 15.0,
+                                desktop: 20.0,
+                              ),
                             ),
-                          ),
+
+                            // ===== قسم المجلدات الحديثة =====
+                            Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8.0,
+                              ),
+                              child: Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    S.of(context).recentFolders,
+                                    style: TextStyle(
+                                      fontSize:
+                                          ResponsiveUtils.getResponsiveValue(
+                                            context,
+                                            mobile: 20.0,
+                                            tablet: 24.0,
+                                            desktop: 28.0,
+                                          ),
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  TextButton(
+                                    onPressed: () {
+                                      if (widget.onNavigateToFolders != null) {
+                                        widget.onNavigateToFolders!();
+                                      } else {
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (context) => FoldersPage(),
+                                          ),
+                                        );
+                                      }
+                                    },
+                                    child: Text(
+                                      S.of(context).seeAll,
+                                      style: TextStyle(
+                                        color: const Color(0xFF00BFA5),
+                                        fontSize:
+                                            ResponsiveUtils.getResponsiveValue(
+                                              context,
+                                              mobile: 14.0,
+                                              tablet: 16.0,
+                                              desktop: 18.0,
+                                            ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            SizedBox(
+                              height: ResponsiveUtils.getResponsiveValue(
+                                context,
+                                mobile: 15.0,
+                                tablet: 20.0,
+                                desktop: 25.0,
+                              ),
+                            ),
+
+                            // عرض المجلدات الحديثة
+                            if (_recentFolders.isEmpty)
+                              Center(
+                                child: Padding(
+                                  padding: const EdgeInsets.all(20.0),
+                                  child: Text(
+                                    S.of(context).noRecentFolders,
+                                    style: TextStyle(color: Colors.grey[600]),
+                                  ),
+                                ),
+                              )
+                            else
+                              FilesGridView(
+                                items: _recentFolders,
+                                showFileCount: true,
+                                onItemTap: _handleFolderTap,
+                              ),
+
+                            SizedBox(
+                              height: ResponsiveUtils.getResponsiveValue(
+                                context,
+                                mobile: 20.0,
+                                tablet: 25.0,
+                                desktop: 30.0,
+                              ),
+                            ),
+
+                            // ===== قسم الملفات الحديثة =====
+                            Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8.0,
+                              ),
+                              child: Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    S.of(context).recentFiles,
+                                    style: TextStyle(
+                                      fontSize:
+                                          ResponsiveUtils.getResponsiveValue(
+                                            context,
+                                            mobile: 20.0,
+                                            tablet: 24.0,
+                                            desktop: 28.0,
+                                          ),
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  ViewToggleButtons(
+                                    isGridView: isFilesGridView,
+                                    onViewChanged: (isGrid) {
+                                      setState(() {
+                                        isFilesGridView = isGrid;
+                                      });
+                                    },
+                                  ),
+                                ],
+                              ),
+                            ),
+                            SizedBox(
+                              height: ResponsiveUtils.getResponsiveValue(
+                                context,
+                                mobile: 15.0,
+                                tablet: 20.0,
+                                desktop: 25.0,
+                              ),
+                            ),
+
+                            // عرض الملفات الحديثة
+                            if (_recentFiles.isEmpty)
+                              Center(
+                                child: Padding(
+                                  padding: const EdgeInsets.all(20.0),
+                                  child: Text(
+                                    S.of(context).noRecentFiles,
+                                    style: TextStyle(color: Colors.grey[600]),
+                                  ),
+                                ),
+                              )
+                            else if (isFilesGridView)
+                              FilesGrid(
+                                files: _recentFiles,
+                                onFileTap: (file) {
+                                  _handleFileTap(file);
+                                },
+                              )
+                            else
+                              FilesListView(
+                                items: _recentFiles.map((f) {
+                                  return {
+                                    'title':
+                                        f['name'] ??
+                                        S.of(context).fileWithoutName,
+                                    'size': f['size'] ?? '0 B',
+                                    'path': f['path'],
+                                    'createdAt': f['createdAt'],
+                                    'originalName':
+                                        f['originalName'] ?? f['name'],
+                                    '_id': f['originalData']?['_id']
+                                        ?.toString(),
+                                    'originalData': f['originalData'] ?? f,
+                                  };
+                                }).toList(),
+                                itemMargin: const EdgeInsets.only(bottom: 10),
+                                showMoreOptions: true,
+                                onItemTap: (item) {
+                                  _handleFileTap(item);
+                                },
+                              ),
+
+                            const SizedBox(height: 100),
+                          ],
                         ),
                       ),
               ),
