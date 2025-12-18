@@ -616,7 +616,7 @@ class _HomeViewState extends State<HomeView> {
                                     child: Text(
                                       S.of(context).seeAll,
                                       style: TextStyle(
-                                        color: const Color(0xFF00BFA5),
+                                        color: const Color(0xFF28336F),
                                         fontSize:
                                             ResponsiveUtils.getResponsiveValue(
                                               context,

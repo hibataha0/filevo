@@ -12,7 +12,7 @@ class AppColors {
   static const Color lightTextSecondary = Color(0xFF666666);
   static const Color lightSurface = Color(0xFFF8EFFE);
   static const Color lightAppBar = Color(0xff28336f);
-  static const Color priii = Color(0xFF00BFA5);
+  // static const Color priii = Colors.grey[500];
 
   // ✅ Dark Mode Colors
   static const Color darkPrimary = Color(0xFF1E88E5);

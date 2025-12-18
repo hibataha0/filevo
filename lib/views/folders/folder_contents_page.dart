@@ -1,5 +1,7 @@
 import 'dart:io';
 import 'package:filevo/components/FilesListView.dart';
+import 'package:filevo/generated/l10n.dart';
+import 'package:filevo/responsive.dart';
 import 'package:filevo/views/fileViewer/FilesGridView1.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -1018,6 +1020,8 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
     );
   }
 
+  // ✅ استبدل دالة _buildFolderCard الموجودة بهذا الكود:
+
   Widget _buildFolderCard(Map<String, dynamic> folder) {
     final name = folder['name'] as String? ?? 'بدون اسم';
     final filesCount = folder['filesCount'] ?? 0;
@@ -1034,14 +1038,32 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: folderColor.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Icon(Icons.folder, color: folderColor, size: 24),
+              // ✅ الصف العلوي مع أيقونة المجلد وزر النقاط الثلاث
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: folderColor.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Icon(Icons.folder, color: folderColor, size: 24),
+                  ),
+                  // ✅ زر النقاط الثلاث
+                  GestureDetector(
+                    onTap: () => _showNormalFolderMenu(context, folder),
+                    child: Container(
+                      padding: EdgeInsets.all(4),
+                      child: Icon(
+                        Icons.more_vert,
+                        color: Colors.grey[600],
+                        size: 20,
+                      ),
+                    ),
+                  ),
+                ],
               ),
               SizedBox(height: 12),
               Text(
@@ -1081,5 +1103,536 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
         ),
       ),
     );
+  }
+
+  // ✅ أضف هذه الدالة (من FolderFileCard):
+  void _showNormalFolderMenu(
+    BuildContext context,
+    Map<String, dynamic> folder,
+  ) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) => ConstrainedBox(
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.of(context).size.height * 0.7,
+        ),
+        child: Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(
+              top: Radius.circular(
+                ResponsiveUtils.getResponsiveValue(
+                  context,
+                  mobile: 20.0,
+                  tablet: 24.0,
+                  desktop: 28.0,
+                ),
+              ),
+            ),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // ✅ Handle bar
+              Container(
+                margin: EdgeInsets.only(
+                  top: ResponsiveUtils.getResponsiveValue(
+                    context,
+                    mobile: 12.0,
+                    tablet: 14.0,
+                    desktop: 16.0,
+                  ),
+                  bottom: ResponsiveUtils.getResponsiveValue(
+                    context,
+                    mobile: 8.0,
+                    tablet: 10.0,
+                    desktop: 12.0,
+                  ),
+                ),
+                width: ResponsiveUtils.getResponsiveValue(
+                  context,
+                  mobile: 40.0,
+                  tablet: 50.0,
+                  desktop: 60.0,
+                ),
+                height: ResponsiveUtils.getResponsiveValue(
+                  context,
+                  mobile: 4.0,
+                  tablet: 5.0,
+                  desktop: 6.0,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.grey[300],
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+
+              // ✅ قائمة خيارات المجلدات العادية - قابلة للتمرير
+              Flexible(
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // ✅ فتح المجلد
+                      _buildMenuItem(
+                        context,
+                        icon: Icons.open_in_new,
+                        title: S.of(context).open,
+                        onTap: () {
+                          Navigator.pop(context);
+                          _handleItemTap(folder);
+                        },
+                      ),
+
+                      // ✅ عرض التفاصيل
+                      _buildMenuItem(
+                        context,
+                        icon: Icons.info_outline,
+                        title: S.of(context).viewDetails,
+                        onTap: () async {
+                          Navigator.pop(context);
+                          await _showFolderDetailsDialog(folder);
+                        },
+                      ),
+
+                      // ✅ إعادة التسمية
+                      _buildMenuItem(
+                        context,
+                        icon: Icons.edit,
+                        title: S.of(context).update,
+                        onTap: () {
+                          Navigator.pop(context);
+                          _showRenameDialog(context, folder);
+                        },
+                      ),
+
+                      // ✅ المشاركة
+                      _buildMenuItem(
+                        context,
+                        icon: Icons.share,
+                        title: S.of(context).share,
+                        onTap: () async {
+                          Navigator.pop(context);
+                          await _showShareDialog();
+                        },
+                      ),
+
+                      // ✅ النقل
+                      _buildMenuItem(
+                        context,
+                        icon: Icons.drive_file_move_rounded,
+                        title: S.of(context).move,
+                        iconColor: Colors.purple,
+                        onTap: () {
+                          Navigator.pop(context);
+                          _showSnackBar(
+                            'سيتم إضافة ميزة النقل قريباً',
+                            Colors.orange,
+                          );
+                        },
+                      ),
+
+                      // ✅ المفضلة
+                      _buildMenuItem(
+                        context,
+                        icon: Icons.star_border,
+                        title: S.of(context).folderRemovedFromFavorites,
+                        iconColor: Colors.amber[700],
+                        onTap: () {
+                          Navigator.pop(context);
+                          _showSnackBar('تمت الإضافة للمفضلة', Colors.green);
+                        },
+                      ),
+
+                      // ✅ خط فاصل قبل الحذف
+                      Divider(height: 1),
+
+                      // ✅ الحذف
+                      _buildMenuItem(
+                        context,
+                        icon: Icons.delete,
+                        title: S.of(context).delete,
+                        textColor: Colors.red,
+                        iconColor: Colors.red,
+                        onTap: () {
+                          Navigator.pop(context);
+                          _showDeleteFolderDialog(folder);
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+              SizedBox(
+                height: ResponsiveUtils.getResponsiveValue(
+                  context,
+                  mobile: 8.0,
+                  tablet: 12.0,
+                  desktop: 16.0,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ✅ أضف هذه الدالة (من FolderFileCard):
+  Widget _buildMenuItem(
+    BuildContext context, {
+    required IconData icon,
+    required String title,
+    required VoidCallback onTap,
+    Color? textColor,
+    Color? iconColor,
+  }) {
+    final iconSize = ResponsiveUtils.getResponsiveValue(
+      context,
+      mobile: 20.0,
+      tablet: 24.0,
+      desktop: 28.0,
+    );
+    final containerSize = ResponsiveUtils.getResponsiveValue(
+      context,
+      mobile: 40.0,
+      tablet: 48.0,
+      desktop: 56.0,
+    );
+    final fontSize = ResponsiveUtils.getResponsiveValue(
+      context,
+      mobile: 16.0,
+      tablet: 18.0,
+      desktop: 20.0,
+    );
+
+    return ListTile(
+      leading: Container(
+        width: containerSize,
+        height: containerSize,
+        decoration: BoxDecoration(
+          color: (iconColor ?? Colors.grey[700])!.withOpacity(0.1),
+          shape: BoxShape.circle,
+        ),
+        child: Icon(icon, color: iconColor ?? Colors.grey[700], size: iconSize),
+      ),
+      title: Text(
+        title,
+        style: TextStyle(
+          color: textColor ?? Colors.black87,
+          fontSize: fontSize,
+          fontWeight: FontWeight.w500,
+        ),
+      ),
+      onTap: onTap,
+    );
+  }
+
+  // ✅ أضف دالة عرض تفاصيل المجلد:
+  Future<void> _showFolderDetailsDialog(Map<String, dynamic> folder) async {
+    final folderId = folder['_id'] as String?;
+    if (folderId == null) return;
+
+    final folderController = Provider.of<FolderController>(
+      context,
+      listen: false,
+    );
+
+    final folderDetails = await folderController.getFolderDetails(
+      folderId: folderId,
+    );
+
+    if (folderDetails == null || folderDetails['folder'] == null) {
+      _showSnackBar('فشل جلب معلومات المجلد', Colors.red);
+      return;
+    }
+
+    final folderData = folderDetails['folder'] as Map<String, dynamic>;
+    final folderColor = widget.folderColor ?? Colors.blue;
+
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        child: Container(
+          padding: EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: folderColor.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.folder, color: folderColor, size: 28),
+                    SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        folderData['name'] ?? folder['name'] ?? 'مجلد',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.black87,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              SizedBox(height: 20),
+              _buildInfoRow(
+                'النوع',
+                'مجلد',
+                Icons.folder_outlined,
+                Colors.blue,
+              ),
+              _buildInfoRow(
+                'الحجم',
+                _formatBytes(folderData['size'] ?? 0),
+                Icons.storage,
+                Colors.green,
+              ),
+              _buildInfoRow(
+                'عدد الملفات',
+                '${folderData['filesCount'] ?? 0}',
+                Icons.insert_drive_file,
+                Colors.orange,
+              ),
+              _buildInfoRow(
+                'المجلدات الفرعية',
+                '${folderData['subfoldersCount'] ?? 0}',
+                Icons.folder_copy,
+                Colors.purple,
+              ),
+              _buildInfoRow(
+                'تاريخ الإنشاء',
+                _formatDate(folderData['createdAt']),
+                Icons.calendar_today,
+                Colors.red,
+              ),
+              SizedBox(height: 20),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () => Navigator.pop(context),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: folderColor,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    padding: EdgeInsets.symmetric(vertical: 14),
+                  ),
+                  child: Text('تم'),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ✅ أضف دالة إعادة التسمية:
+  void _showRenameDialog(BuildContext context, Map<String, dynamic> folder) {
+    final folderName =
+        folder['title']?.toString() ??
+        folder['name']?.toString() ??
+        S.of(context).folder;
+    final folderId = folder['folderId'] as String?;
+    final folderData = folder['folderData'] as Map<String, dynamic>?;
+
+    final nameController = TextEditingController(text: folderName);
+    final descriptionController = TextEditingController(
+      text: folderData?['description'] as String? ?? '',
+    );
+    final tagsController = TextEditingController(
+      text: (folderData?['tags'] as List?)?.join(', ') ?? '',
+    );
+
+    final scaffoldContext = context; // ✅ حفظ context الأصلي
+
+    if (folderId == null) {
+      ScaffoldMessenger.of(
+        scaffoldContext,
+      ).showSnackBar(SnackBar(content: Text(S.of(context).folderIdNotFound)));
+      return;
+    }
+
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(S.of(context).editFileMetadata),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: nameController,
+                decoration: InputDecoration(
+                  labelText: S.of(context).folderName,
+                  hintText: S.of(context).folderName,
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.folder),
+                ),
+                autofocus: true,
+              ),
+              SizedBox(height: 16),
+              TextField(
+                controller: descriptionController,
+                decoration: InputDecoration(
+                  labelText: S.of(context).folderDescription,
+                  hintText: S.of(context).folderDescriptionHint,
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.description),
+                ),
+                maxLines: 3,
+              ),
+              SizedBox(height: 16),
+              TextField(
+                controller: tagsController,
+                decoration: InputDecoration(
+                  labelText: S.of(context).folderTags,
+                  hintText: S.of(context).folderTagsHint,
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.tag),
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: Text(S.of(context).cancel),
+          ),
+          TextButton(
+            onPressed: () {
+              final newName = nameController.text.trim();
+              if (newName.isEmpty) {
+                ScaffoldMessenger.of(dialogContext).showSnackBar(
+                  SnackBar(content: Text(S.of(context).pleaseEnterFolderName)),
+                );
+                return;
+              }
+
+              final description = descriptionController.text.trim();
+              final tagsString = tagsController.text.trim();
+              final tags = tagsString.isNotEmpty
+                  ? tagsString
+                        .split(',')
+                        .map((t) => t.trim())
+                        .where((t) => t.isNotEmpty)
+                        .toList()
+                  : <String>[];
+
+              _performUpdate(
+                dialogContext,
+                scaffoldContext,
+                folderId,
+                newName,
+                description.isEmpty ? null : description,
+                tags.isEmpty ? null : tags,
+              );
+            },
+            child: Text(S.of(context).save),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ✅ أضف دالة الحذف:
+  void _showDeleteFolderDialog(Map<String, dynamic> folder) {
+    final folderName = folder['name'] ?? 'المجلد';
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            Icon(Icons.warning_rounded, color: Colors.red, size: 28),
+            SizedBox(width: 12),
+            Text('تأكيد الحذف', style: TextStyle(fontWeight: FontWeight.w600)),
+          ],
+        ),
+        content: Text(
+          'هل أنت متأكد من حذف المجلد "$folderName"؟\nسيتم حذف جميع المحتويات بشكل نهائي.',
+          style: TextStyle(fontSize: 15),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('إلغاء', style: TextStyle(color: Colors.grey)),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              _showSnackBar('سيتم إضافة ميزة الحذف قريباً', Colors.red);
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+            child: Text('حذف'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _performUpdate(
+    BuildContext dialogContext,
+    BuildContext scaffoldContext,
+    String folderId,
+    String newName,
+    String? description,
+    List<String>? tags,
+  ) async {
+    final folderController = Provider.of<FolderController>(
+      scaffoldContext,
+      listen: false,
+    );
+
+    Navigator.pop(dialogContext);
+
+    final success = await folderController.updateFolder(
+      folderId: folderId,
+      name: newName,
+      description: description,
+      tags: tags,
+    );
+
+    if (scaffoldContext.mounted) {
+      if (success) {
+        ScaffoldMessenger.of(scaffoldContext).showSnackBar(
+          SnackBar(
+            content: Text(S.of(scaffoldContext).folderUpdatedSuccessfully),
+            backgroundColor: Colors.green,
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(scaffoldContext).showSnackBar(
+          SnackBar(
+            content: Text(
+              folderController.errorMessage ??
+                  S.of(scaffoldContext).folderUpdateFailed,
+            ),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 }

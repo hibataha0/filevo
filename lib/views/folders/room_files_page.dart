@@ -916,19 +916,19 @@ class _RoomFilesPageState extends State<RoomFilesPage> {
           //   tooltip: 'إنشاء مجلد جديد',
           //   onPressed: () => _createNewFolder(),
           // ),
-          IconButton(
-            icon: Icon(Icons.refresh),
-            iconSize: ResponsiveUtils.getResponsiveValue(
-              context,
-              mobile: 24.0,
-              tablet: 26.0,
-              desktop: 28.0,
-            ),
-            onPressed: () {
-              setState(() => isLoading = true);
-              _loadRoomData();
-            },
-          ),
+          // IconButton(
+          //   icon: Icon(Icons.refresh),
+          //   iconSize: ResponsiveUtils.getResponsiveValue(
+          //     context,
+          //     mobile: 24.0,
+          //     tablet: 26.0,
+          //     desktop: 28.0,
+          //   ),
+          //   onPressed: () {
+          //     setState(() => isLoading = true);
+          //     _loadRoomData();
+          //   },
+          // ),
         ],
       ),
       floatingActionButton: SizedBox.shrink(), // ✅ إخفاء FloatingActionButton

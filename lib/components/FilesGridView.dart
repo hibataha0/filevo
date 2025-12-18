@@ -950,7 +950,7 @@ class FilesGridView extends StatelessWidget {
                       : 0,
                   size: item['size']?.toString() ?? '0 B',
                   showFileCount: showFileCount,
-                  color: item['color'] as Color? ?? const Color(0xFF00BFA5),
+                  color: item['color'] as Color? ?? const Color(0xFF28336F),
                   folderData: item,
                   isStarred: isStarred,
                   sharedBy: item['sharedBy'] as String?,
@@ -1070,7 +1070,7 @@ class FilesGridView extends StatelessWidget {
                 : 0,
             size: item['size']?.toString() ?? '0 B',
             showFileCount: showFileCount,
-            color: item['color'] as Color? ?? const Color(0xFF00BFA5),
+            color: item['color'] as Color? ?? const Color(0xFF28336F),
             folderData:
                 (type == 'folder' || type == 'category' || type == 'room')
                 ? item

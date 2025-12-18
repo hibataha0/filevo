@@ -1002,7 +1002,6 @@ class _FilesGridState extends State<FilesGrid> {
     final isStarred =
         _starStates[fileId] ?? file['originalData']?['isStarred'] ?? false;
 
-    //final fileSize = _formatFileSize(file['size']?.toString() ?? '0');
     final fileSize = file['size']?.toString() ?? '0';
     final bool isImage = fileType == 'image' && fileUrl.isNotEmpty;
     final bool isVideo = fileType == 'video';
@@ -1023,25 +1022,68 @@ class _FilesGridState extends State<FilesGrid> {
     }
 
     Widget buildBackground() {
-      if (isImage) {
-        return Image.network(fileUrl, fit: BoxFit.cover);
+      // إذا كان مشارك لمرة واحدة - نعرض أيقونة فقط
+      if (isOneTimeShare) {
+        return Container(
+          color: const Color(0xff28336f),
+          child: Center(
+            child: Stack(
+              children: [
+                // أيقونة الملف الأساسية
+                Icon(getIcon(), size: 70, color: Colors.white.withOpacity(0.7)),
+                // علامة "مرة واحدة" في الزاوية
+                Positioned(
+                  top: 5,
+                  right: 5,
+                  child: Container(
+                    padding: EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: Colors.orange,
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.3),
+                          blurRadius: 4,
+                          offset: Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Icon(Icons.timer, size: 16, color: Colors.white),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
       }
 
-      if (isVideo) {
-        return FutureBuilder<String?>(
-          future: _generateVideoThumbnail(fileUrl),
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.done &&
-                snapshot.data != null) {
-              return Image.file(File(snapshot.data!), fit: BoxFit.cover);
-            }
-
+      // الملف العادي - نعرض معاينة
+      if (isImage) {
+        return Image.network(
+          fileUrl,
+          fit: BoxFit.cover,
+          loadingBuilder: (context, child, loadingProgress) {
+            if (loadingProgress == null) return child;
             return Container(
               color: const Color(0xff28336f),
-              child: const Center(
+              child: Center(
                 child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  color: Colors.white,
+                  value: loadingProgress.expectedTotalBytes != null
+                      ? loadingProgress.cumulativeBytesLoaded /
+                            loadingProgress.expectedTotalBytes!
+                      : null,
+                ),
+              ),
+            );
+          },
+          errorBuilder: (context, error, stackTrace) {
+            return Container(
+              color: const Color(0xff28336f),
+              child: Center(
+                child: Icon(
+                  getIcon(),
+                  size: 60,
+                  color: Colors.white.withOpacity(0.7),
                 ),
               ),
             );
@@ -1049,12 +1091,64 @@ class _FilesGridState extends State<FilesGrid> {
         );
       }
 
-      // ✅ الأنواع الأخرى من الملفات
+      if (isVideo) {
+        return FutureBuilder<String?>(
+          future: _generateVideoThumbnail(fileUrl),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.done &&
+                snapshot.data != null &&
+                snapshot.data!.isNotEmpty) {
+              return Image.file(
+                File(snapshot.data!),
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) {
+                  return Container(
+                    color: const Color(0xff28336f),
+                    child: Center(
+                      child: Icon(
+                        getIcon(),
+                        size: 60,
+                        color: Colors.white.withOpacity(0.7),
+                      ),
+                    ),
+                  );
+                },
+              );
+            }
+
+            return Container(
+              color: const Color(0xff28336f),
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      getIcon(),
+                      size: 60,
+                      color: Colors.white.withOpacity(0.7),
+                    ),
+                    if (snapshot.connectionState == ConnectionState.waiting)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 10),
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      }
+
+      // الأنواع الأخرى من الملفات
       return Container(
         color: const Color(0xff28336f),
         child: Center(
           child: Icon(
-            getIcon(), // ✅ استخدام دالة getIcon للحصول على الأيقونة المناسبة
+            getIcon(),
             size: 60,
             color: Colors.white.withOpacity(0.7),
           ),
@@ -1074,22 +1168,23 @@ class _FilesGridState extends State<FilesGrid> {
               // ===== الخلفية =====
               buildBackground(),
 
-              // ===== Gradient =====
-              Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      Colors.black.withOpacity(0.05),
-                      Colors.black.withOpacity(0.65),
-                    ],
+              // ===== Gradient (للصور والفيديوهات العادية فقط) =====
+              if (!isOneTimeShare && (isImage || isVideo))
+                Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        Colors.black.withOpacity(0.05),
+                        Colors.black.withOpacity(0.65),
+                      ],
+                    ),
                   ),
                 ),
-              ),
 
-              // ===== ▶ Play للفيديو =====
-              if (isVideo)
+              // ===== ▶ Play للفيديو (فقط إذا ليس مشارك لمرة واحدة) =====
+              if (isVideo && !isOneTimeShare)
                 Center(
                   child: Container(
                     width: 56,
@@ -1106,67 +1201,71 @@ class _FilesGridState extends State<FilesGrid> {
                   ),
                 ),
 
-              // ===== أزرار علوية =====
-              Positioned(
-                top: 10,
-                right: 10,
-                child: Row(
-                  children: [
-                    // _glassIcon(
-                    //   icon: isStarred
-                    //       ? Icons.star_rounded
-                    //       : Icons.star_border_rounded,
-                    //   color: Colors.amber,
-                    //   onTap: () {
-                    //     if (fileId == null) return;
-                    //     setState(() {
-                    //       _starStates[fileId] = !isStarred;
-                    //     });
-                    //   },
-                    // ),
-                    const SizedBox(width: 6),
-                    PopupMenuButton<String>(
-                      padding: EdgeInsets.zero,
-                      icon: _glassIcon(icon: Icons.more_vert),
-                      itemBuilder: (context) {
-                        return widget.roomId != null
-                            ? _buildSharedFileMenuItems(file, isStarred)
-                            : _buildNormalFileMenuItems(file, isStarred);
-                      },
-                      onSelected: (value) {
-                        widget.roomId != null
-                            ? _handleSharedFileMenuAction(value, file)
-                            : _handleMenuAction(value, file);
-                      },
-                    ),
-                  ],
-                ),
-              ),
-
-              // ===== مرة واحدة =====
+              // ===== أيقونة "مرة واحدة" إضافية في الزاوية =====
               if (isOneTimeShare)
                 Positioned(
                   top: 12,
                   left: 12,
                   child: Container(
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 4,
+                      horizontal: 10,
+                      vertical: 6,
                     ),
                     decoration: BoxDecoration(
                       color: Colors.orange.withOpacity(0.9),
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.2),
+                          blurRadius: 4,
+                          offset: Offset(0, 2),
+                        ),
+                      ],
                     ),
-                    child: const Text(
-                      'مرة واحدة',
-                      style: TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.timer, size: 16, color: Colors.white),
+                        SizedBox(width: 5),
+                        Text(
+                          'مرة واحدة',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
+
+              // ===== أزرار علوية =====
+              Positioned(
+                top: 10,
+                right: 10,
+                child: PopupMenuButton<String>(
+                  padding: EdgeInsets.zero,
+                  icon: Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.2),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(Icons.more_vert, color: Colors.white, size: 20),
+                  ),
+                  itemBuilder: (context) {
+                    return widget.roomId != null
+                        ? _buildSharedFileMenuItems(file, isStarred)
+                        : _buildNormalFileMenuItems(file, isStarred);
+                  },
+                  onSelected: (value) {
+                    widget.roomId != null
+                        ? _handleSharedFileMenuAction(value, file)
+                        : _handleMenuAction(value, file);
+                  },
+                ),
+              ),
 
               // ===== اسم الملف + الحجم =====
               Positioned(
@@ -1178,15 +1277,15 @@ class _FilesGridState extends State<FilesGrid> {
                   children: [
                     Text(
                       fileName,
-                      maxLines: 1,
+                      maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
                         color: Colors.white,
-                        fontSize: 15,
+                        fontSize: 14,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
-                    const SizedBox(height: 2),
+                    const SizedBox(height: 4),
                     Text(
                       fileSize,
                       style: TextStyle(

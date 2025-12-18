@@ -848,7 +848,7 @@ class _FoldersPageState extends State<FoldersPage>
                       height: 50,
                       width: 50,
                       decoration: BoxDecoration(
-                        color: Color(0xFF00BFA5),
+                        color: Color(0xFF6B7280),
                         borderRadius: BorderRadius.circular(10),
                         boxShadow: [
                           BoxShadow(
@@ -873,7 +873,7 @@ class _FoldersPageState extends State<FoldersPage>
                       height: 50,
                       width: 50,
                       decoration: BoxDecoration(
-                        color: Color(0xFFF59E0B),
+                        color: Color(0xFF6B7280),
                         borderRadius: BorderRadius.circular(10),
                         boxShadow: [
                           BoxShadow(
@@ -982,7 +982,7 @@ class _FoldersPageState extends State<FoldersPage>
                 child: TabBar(
                   controller: _tabController!,
                   indicator: BoxDecoration(
-                    color: Color(0xFF00BFA5),
+                    color: Colors.grey[300]?.withOpacity(0.3),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   labelColor: Colors.white,

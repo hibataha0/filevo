@@ -67,8 +67,7 @@ class _FilterSectionState extends State<FilterSection> {
               _buildCategoryChip(S.of(context).code),
               _buildCategoryChip(S.of(context).other),
               // ✅ زر لإلغاء التصنيف
-              if (widget.selectedCategory != null)
-                _buildClearCategoryChip(),
+              if (widget.selectedCategory != null) _buildClearCategoryChip(),
             ],
           ),
           SizedBox(height: 16),
@@ -93,7 +92,8 @@ class _FilterSectionState extends State<FilterSection> {
               _buildDateRangeChip(S.of(context).lastYear),
               _buildDateRangeChip(S.of(context).custom),
               // ✅ زر لإلغاء التاريخ
-              if (widget.selectedDateRange != null && widget.selectedDateRange != S.of(context).all)
+              if (widget.selectedDateRange != null &&
+                  widget.selectedDateRange != S.of(context).all)
                 _buildClearDateRangeChip(),
             ],
           ),
@@ -123,10 +123,7 @@ class _FilterSectionState extends State<FilterSection> {
                       ),
                       SizedBox(width: 8),
                       Expanded(
-                        child: _buildDatePicker(
-                          'إلى',
-                          widget.onEndDateChanged,
-                        ),
+                        child: _buildDatePicker('إلى', widget.onEndDateChanged),
                       ),
                     ],
                   ),
@@ -144,7 +141,6 @@ class _FilterSectionState extends State<FilterSection> {
     if (width < 900) return 24.0;
     return 32.0;
   }
-
 
   // ✅ بناء chip للتصنيف (واحد فقط)
   Widget _buildCategoryChip(String category) {
@@ -196,7 +192,7 @@ class _FilterSectionState extends State<FilterSection> {
         ],
       ),
       selected: isSelected,
-      selectedColor: Color(0xFF00BFA5),
+      selectedColor: Color(0xFF28336F),
       onSelected: (selected) {
         widget.onCategoryChanged(selected ? category : null);
       },
@@ -237,7 +233,7 @@ class _FilterSectionState extends State<FilterSection> {
     return ChoiceChip(
       label: Text(dateRange),
       selected: isSelected,
-      selectedColor: Color(0xFF00BFA5),
+      selectedColor: Color(0xFF28336F),
       onSelected: (selected) {
         widget.onDateRangeChanged(selected ? dateRange : null);
       },
@@ -296,13 +292,7 @@ class _FilterSectionState extends State<FilterSection> {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(
-              label,
-              style: TextStyle(
-                color: Colors.black87,
-                fontSize: 12,
-              ),
-            ),
+            Text(label, style: TextStyle(color: Colors.black87, fontSize: 12)),
             Icon(Icons.calendar_today, size: 16, color: Colors.black54),
           ],
         ),

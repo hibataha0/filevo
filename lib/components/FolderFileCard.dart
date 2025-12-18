@@ -31,7 +31,7 @@ class FolderFileCard extends StatelessWidget {
     required this.title,
     required this.fileCount,
     required this.size,
-    this.color = const Color(0xFF00BFA5),
+    this.color = const Color(0xFF28336F),
     this.onTap,
     this.showFileCount = true,
     this.onInfoTap,
