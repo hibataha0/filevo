@@ -48,6 +48,9 @@ dependencies:
   speech_to_text: ^7.0.0
   # ffmpeg_kit_flutter_min: 6.0.3  # Temporarily disabled - package is discontinued and Android artifacts are not available
   pull_to_refresh: ^2.0.0
+  shimmer: ^3.0.0
+  flutter_windowmanager: ^0.2.0
+  local_auth: ^2.1.8
 
 dev_dependencies:
   flutter_test:

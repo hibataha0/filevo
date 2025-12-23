@@ -12,8 +12,9 @@ class PendingInvitationsPage extends StatefulWidget {
 class _PendingInvitationsPageState extends State<PendingInvitationsPage> {
   List<Map<String, dynamic>> invitations = [];
   bool isLoading = true;
-  final RefreshController _refreshController =
-      RefreshController(initialRefresh: false);
+  final RefreshController _refreshController = RefreshController(
+    initialRefresh: false,
+  );
 
   @override
   void initState() {
@@ -26,7 +27,7 @@ class _PendingInvitationsPageState extends State<PendingInvitationsPage> {
 
   Future<void> _loadInvitations() async {
     if (!mounted) return;
-    
+
     final roomController = Provider.of<RoomController>(context, listen: false);
     final result = await roomController.getPendingInvitations();
 
@@ -57,6 +58,9 @@ class _PendingInvitationsPageState extends State<PendingInvitationsPage> {
           ),
         );
         _loadInvitations();
+
+        // ✅ تحديث قائمة الغرف لتحديث عدد الأعضاء
+        await roomController.getRooms();
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -81,14 +85,20 @@ class _PendingInvitationsPageState extends State<PendingInvitationsPage> {
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: Text(S.of(context).reject, style: TextStyle(color: Colors.red)),
+            child: Text(
+              S.of(context).reject,
+              style: TextStyle(color: Colors.red),
+            ),
           ),
         ],
       ),
     );
 
     if (confirmed == true && mounted) {
-      final roomController = Provider.of<RoomController>(context, listen: false);
+      final roomController = Provider.of<RoomController>(
+        context,
+        listen: false,
+      );
       final success = await roomController.rejectInvitation(invitationId);
 
       if (mounted) {
@@ -131,48 +141,45 @@ class _PendingInvitationsPageState extends State<PendingInvitationsPage> {
       body: isLoading
           ? Center(child: CircularProgressIndicator())
           : invitations.isEmpty
-              ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.mail_outline, size: 64, color: Colors.grey),
-                      SizedBox(height: 16),
-                      Text(
-                        'لا توجد دعوات معلقة',
-                        style: TextStyle(
-                          fontSize: 18,
-                          color: Colors.grey[600],
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      SizedBox(height: 8),
-                      Text(
-                        'سيتم عرض الدعوات هنا عند استلامها',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.grey[500],
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                    ],
+          ? Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.mail_outline, size: 64, color: Colors.grey),
+                  SizedBox(height: 16),
+                  Text(
+                    'لا توجد دعوات معلقة',
+                    style: TextStyle(
+                      fontSize: 18,
+                      color: Colors.grey[600],
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
-                )
-              : SmartRefresher(
-                  controller: _refreshController,
-                  onRefresh: () async {
-                    await _loadInvitations();
-                    _refreshController.refreshCompleted();
-                  },
-                  header: const WaterDropHeader(),
-                  child: ListView.builder(
-                    padding: const EdgeInsets.all(16),
-                    itemCount: invitations.length,
-                    itemBuilder: (context, index) {
-                      final invitation = invitations[index];
-                      return _buildInvitationCard(invitation);
-                    },
+                  SizedBox(height: 8),
+                  Text(
+                    'سيتم عرض الدعوات هنا عند استلامها',
+                    style: TextStyle(fontSize: 14, color: Colors.grey[500]),
+                    textAlign: TextAlign.center,
                   ),
-                ),
+                ],
+              ),
+            )
+          : SmartRefresher(
+              controller: _refreshController,
+              onRefresh: () async {
+                await _loadInvitations();
+                _refreshController.refreshCompleted();
+              },
+              header: const WaterDropHeader(),
+              child: ListView.builder(
+                padding: const EdgeInsets.all(16),
+                itemCount: invitations.length,
+                itemBuilder: (context, index) {
+                  final invitation = invitations[index];
+                  return _buildInvitationCard(invitation);
+                },
+              ),
+            ),
     );
   }
 
@@ -185,9 +192,7 @@ class _PendingInvitationsPageState extends State<PendingInvitationsPage> {
     return Card(
       margin: EdgeInsets.only(bottom: 16),
       elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Padding(
         padding: EdgeInsets.all(16),
         child: Column(
@@ -197,10 +202,7 @@ class _PendingInvitationsPageState extends State<PendingInvitationsPage> {
               children: [
                 CircleAvatar(
                   backgroundColor: Color(0xff28336f).withOpacity(0.1),
-                  child: Icon(
-                    Icons.person,
-                    color: Color(0xff28336f),
-                  ),
+                  child: Icon(Icons.person, color: Color(0xff28336f)),
                 ),
                 SizedBox(width: 12),
                 Expanded(
@@ -216,10 +218,7 @@ class _PendingInvitationsPageState extends State<PendingInvitationsPage> {
                       ),
                       Text(
                         'دعاك للانضمام إلى غرفة',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey[600],
-                        ),
+                        style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                       ),
                     ],
                   ),
@@ -238,7 +237,11 @@ class _PendingInvitationsPageState extends State<PendingInvitationsPage> {
                 children: [
                   Row(
                     children: [
-                      Icon(Icons.meeting_room, size: 20, color: Color(0xff28336f)),
+                      Icon(
+                        Icons.meeting_room,
+                        size: 20,
+                        color: Color(0xff28336f),
+                      ),
                       SizedBox(width: 8),
                       Expanded(
                         child: Text(
@@ -256,10 +259,7 @@ class _PendingInvitationsPageState extends State<PendingInvitationsPage> {
                     SizedBox(height: 8),
                     Text(
                       room['description'],
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.grey[700],
-                      ),
+                      style: TextStyle(fontSize: 14, color: Colors.grey[700]),
                     ),
                   ],
                 ],
@@ -280,10 +280,7 @@ class _PendingInvitationsPageState extends State<PendingInvitationsPage> {
                     Icon(Icons.message, size: 20, color: Colors.blue),
                     SizedBox(width: 8),
                     Expanded(
-                      child: Text(
-                        message,
-                        style: TextStyle(fontSize: 14),
-                      ),
+                      child: Text(message, style: TextStyle(fontSize: 14)),
                     ),
                   ],
                 ),
@@ -310,10 +307,7 @@ class _PendingInvitationsPageState extends State<PendingInvitationsPage> {
                 Spacer(),
                 Text(
                   _formatDate(invitation['createdAt']),
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey[600],
-                  ),
+                  style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                 ),
               ],
             ),
@@ -375,4 +369,3 @@ class _PendingInvitationsPageState extends State<PendingInvitationsPage> {
     }
   }
 }
-

@@ -6,6 +6,7 @@ import 'package:filevo/controllers/folders/room_controller.dart';
 import 'package:filevo/utils/room_permissions.dart';
 import 'package:filevo/generated/l10n.dart';
 import 'package:pull_to_refresh/pull_to_refresh.dart';
+import 'package:shimmer/shimmer.dart';
 
 class RoomMembersPage extends StatefulWidget {
   final String roomId;
@@ -130,6 +131,9 @@ class _RoomMembersPageState extends State<RoomMembersPage> {
           // ✅ تحديث بيانات الصفحة الحالية أولاً
           await _loadRoomData();
           _hasChanges = true; // ✅ تم تسجيل تغيير
+          
+          // ✅ تحديث قائمة الغرف لتحديث عدد الأعضاء
+          await roomController.getRooms();
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -370,7 +374,7 @@ class _RoomMembersPageState extends State<RoomMembersPage> {
         ],
       ),
       body: isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? _buildShimmerLoading()
           : roomData == null
               ? Center(child: Text(S.of(context).failedToLoadRoomData))
               : SmartRefresher(
@@ -580,5 +584,29 @@ class _RoomMembersPageState extends State<RoomMembersPage> {
         ),
       );
     }
+  }
+
+  // ✅ بناء shimmer loading لصفحة أعضاء الروم
+  Widget _buildShimmerLoading() {
+    return ListView(
+      padding: EdgeInsets.all(16),
+      children: List.generate(
+        6,
+        (index) => Padding(
+          padding: EdgeInsets.only(bottom: 12),
+          child: Shimmer.fromColors(
+            baseColor: Colors.grey[300]!,
+            highlightColor: Colors.grey[100]!,
+            child: Container(
+              height: 80,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }

@@ -10,12 +10,14 @@ import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
 import 'package:filevo/controllers/folders/files_controller.dart';
 import 'package:filevo/generated/l10n.dart';
+import 'package:filevo/services/screen_protection_service.dart';
 
 class TextViewerPage extends StatefulWidget {
   final String filePath; // مسار الملف المحلي
   final String fileName;
   final String? fileId; // ✅ معرف الملف على السيرفر (لرفع التحديثات)
   final String? fileUrl; // ✅ رابط الملف الأصلي (لرفع التحديثات)
+  final bool isOneTimeShare; // ✅ للملفات المشتركة لمرة واحدة
 
   const TextViewerPage({
     Key? key,
@@ -23,6 +25,7 @@ class TextViewerPage extends StatefulWidget {
     required this.fileName,
     this.fileId,
     this.fileUrl,
+    this.isOneTimeShare = false,
   }) : super(key: key);
 
   @override
@@ -210,11 +213,19 @@ class _TextViewerPageState extends State<TextViewerPage> {
   @override
   void initState() {
     super.initState();
+    // ✅ تفعيل الحماية من السكرين شوت والريكورد للملفات المشتركة لمرة واحدة
+    if (widget.isOneTimeShare) {
+      ScreenProtectionService.enableProtection();
+    }
     _loadFile();
   }
 
   @override
   void dispose() {
+    // ✅ إلغاء تفعيل الحماية عند إغلاق المشاهد
+    if (widget.isOneTimeShare) {
+      ScreenProtectionService.disableProtection();
+    }
     _textController.dispose();
     super.dispose();
   }

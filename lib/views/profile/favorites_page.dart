@@ -406,6 +406,7 @@ class _FavoritesPageState extends State<FavoritesPage> {
                         'type': _getFileType(fileName),
                         'size': f['size']?.toString() ?? '0',
                         'originalData': f,
+                        'originalName': fileName, // ✅ إضافة originalName للتحقق من نوع الملف بشكل صحيح
                       };
                     }).toList(),
                     onFileTap: (file) =>

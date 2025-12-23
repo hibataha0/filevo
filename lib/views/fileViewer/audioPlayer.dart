@@ -1,14 +1,18 @@
 import 'package:filevo/generated/l10n.dart';
 import 'package:flutter/material.dart';
 import 'package:audioplayers/audioplayers.dart';
+import 'package:filevo/services/screen_protection_service.dart';
 
 class AudioPlayerPage extends StatefulWidget {
   final String audioUrl;
   final String fileName;
+  final bool isOneTimeShare; // ✅ للملفات المشتركة لمرة واحدة
+  
   const AudioPlayerPage({
     Key? key,
     required this.audioUrl,
     required this.fileName,
+    this.isOneTimeShare = false,
   }) : super(key: key);
 
   @override
@@ -29,6 +33,10 @@ class _AudioPlayerPageState extends State<AudioPlayerPage> {
   @override
   void initState() {
     super.initState();
+    // ✅ تفعيل الحماية من السكرين شوت والريكورد للملفات المشتركة لمرة واحدة
+    if (widget.isOneTimeShare) {
+      ScreenProtectionService.enableProtection();
+    }
     _setupAudioPlayer();
   }
 
@@ -193,6 +201,10 @@ class _AudioPlayerPageState extends State<AudioPlayerPage> {
 
   @override
   void dispose() {
+    // ✅ إلغاء تفعيل الحماية عند إغلاق المشاهد
+    if (widget.isOneTimeShare) {
+      ScreenProtectionService.disableProtection();
+    }
     _player.dispose();
     super.dispose();
   }

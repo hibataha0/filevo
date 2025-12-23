@@ -384,20 +384,49 @@ class FolderService {
       'targetFolderId': targetFolderId, // يمكن أن يكون null
     };
 
+    final url = "${ApiConfig.baseUrl}${ApiEndpoints.moveFolder(folderId)}";
+    print('🔄 Moving folder: $folderId to $targetFolderId');
+    print('🔄 URL: $url');
+
     final response = await http.put(
-      Uri.parse("${ApiConfig.baseUrl}${ApiEndpoints.moveFolder(folderId)}"),
+      Uri.parse(url),
       headers: {
         'Authorization': 'Bearer $token',
         'Content-Type': 'application/json',
       },
       body: jsonEncode(body),
+    ).timeout(
+      Duration(seconds: 60), // ✅ timeout 60 ثانية لنقل المجلدات الكبيرة
+      onTimeout: () {
+        throw Exception('انتهت مهلة الطلب. قد يكون المجلد كبيراً جداً. يرجى المحاولة مرة أخرى.');
+      },
     );
 
-    if (response.statusCode == 200) {
+    print('🔄 Response status: ${response.statusCode}');
+    print('🔄 Response body: ${response.body}');
+
+    if (response.statusCode == 200 || response.statusCode == 201) {
       return jsonDecode(response.body);
+    } else if (response.statusCode == 404) {
+      // ✅ معالجة خاصة لخطأ 404 (route غير موجود)
+      try {
+        final errorData = jsonDecode(response.body);
+        throw Exception(
+          errorData['message'] ?? 
+          'Route not found: ${ApiEndpoints.moveFolder(folderId)}. Please check backend implementation.',
+        );
+      } catch (e) {
+        throw Exception(
+          'Route not found: ${ApiEndpoints.moveFolder(folderId)}. Please check backend implementation.',
+        );
+      }
     } else {
-      final errorData = jsonDecode(response.body);
-      throw Exception(errorData['message'] ?? 'Failed to move folder');
+      try {
+        final errorData = jsonDecode(response.body);
+        throw Exception(errorData['message'] ?? 'Failed to move folder: ${response.statusCode}');
+      } catch (e) {
+        throw Exception('Failed to move folder: ${response.statusCode} - ${response.body}');
+      }
     }
   }
 
@@ -863,6 +892,148 @@ class FolderService {
       return {
         'success': false,
         'error': 'خطأ في تحميل المجلد: ${e.toString()}',
+      };
+    }
+  }
+
+  // 🔒 Folder Protection Functions
+
+  /// تعيين حماية المجلد (كلمة سر أو بصمة)
+  Future<Map<String, dynamic>> setFolderProtection({
+    required String folderId,
+    required String protectionType, // 'password' or 'biometric'
+    String? password,
+  }) async {
+    final token = await StorageService.getToken();
+    if (token == null) {
+      return {
+        'success': false,
+        'message': 'Authentication token not found.',
+      };
+    }
+
+    final body = jsonEncode({
+      'protectionType': protectionType,
+      if (password != null) 'password': password,
+    });
+
+    try {
+      final response = await http.put(
+        Uri.parse(
+          "${ApiConfig.baseUrl}${ApiEndpoints.protectFolder(folderId)}",
+        ),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+        body: body,
+      ).timeout(ApiConfig.timeout);
+
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        return jsonDecode(response.body);
+      } else {
+        final errorData = jsonDecode(response.body);
+        return {
+          'success': false,
+          'message': errorData['message'] ?? 'Failed to set protection',
+        };
+      }
+    } catch (e) {
+      return {
+        'success': false,
+        'message': 'Error setting protection: $e',
+      };
+    }
+  }
+
+  /// التحقق من الوصول للمجلد (كلمة سر أو بصمة)
+  Future<Map<String, dynamic>> verifyFolderAccess({
+    required String folderId,
+    String? password,
+    String? biometricToken,
+  }) async {
+    final token = await StorageService.getToken();
+    if (token == null) {
+      return {
+        'success': false,
+        'message': 'Authentication token not found.',
+      };
+    }
+
+    final body = jsonEncode({
+      if (password != null) 'password': password,
+      if (biometricToken != null) 'biometricToken': biometricToken,
+    });
+
+    try {
+      final response = await http.post(
+        Uri.parse(
+          "${ApiConfig.baseUrl}${ApiEndpoints.verifyFolderAccess(folderId)}",
+        ),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+        body: body,
+      ).timeout(ApiConfig.timeout);
+
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        return jsonDecode(response.body);
+      } else {
+        final errorData = jsonDecode(response.body);
+        return {
+          'success': false,
+          'message': errorData['message'] ?? 'Access denied',
+        };
+      }
+    } catch (e) {
+      return {
+        'success': false,
+        'message': 'Error verifying access: $e',
+      };
+    }
+  }
+
+  /// إزالة حماية المجلد
+  Future<Map<String, dynamic>> removeFolderProtection({
+    required String folderId,
+    required String password,
+  }) async {
+    final token = await StorageService.getToken();
+    if (token == null) {
+      return {
+        'success': false,
+        'message': 'Authentication token not found.',
+      };
+    }
+
+    final body = jsonEncode({'password': password});
+
+    try {
+      final response = await http.delete(
+        Uri.parse(
+          "${ApiConfig.baseUrl}${ApiEndpoints.protectFolder(folderId)}",
+        ),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+        body: body,
+      ).timeout(ApiConfig.timeout);
+
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        return jsonDecode(response.body);
+      } else {
+        final errorData = jsonDecode(response.body);
+        return {
+          'success': false,
+          'message': errorData['message'] ?? 'Failed to remove protection',
+        };
+      }
+    } catch (e) {
+      return {
+        'success': false,
+        'message': 'Error removing protection: $e',
       };
     }
   }

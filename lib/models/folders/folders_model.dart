@@ -1,5 +1,3 @@
-import 'dart:convert';
-
 class FolderModel {
   final String id;
   final String name;
@@ -15,6 +13,9 @@ class FolderModel {
   final bool isStarred;
   final String? description;
   final List<String> tags;
+  // 🔒 Folder Protection Fields
+  final bool isProtected;
+  final String protectionType; // 'none', 'password', 'biometric'
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -33,6 +34,8 @@ class FolderModel {
     required this.isStarred,
     this.description,
     required this.tags,
+    this.isProtected = false,
+    this.protectionType = 'none',
     required this.createdAt,
     required this.updatedAt,
   });
@@ -59,6 +62,8 @@ class FolderModel {
       isStarred: json["isStarred"] ?? false,
       description: json["description"],
       tags: json["tags"] != null ? List<String>.from(json["tags"]) : [],
+      isProtected: json["isProtected"] ?? false,
+      protectionType: json["protectionType"] ?? 'none',
       createdAt: DateTime.parse(json["createdAt"]),
       updatedAt: DateTime.parse(json["updatedAt"]),
     );

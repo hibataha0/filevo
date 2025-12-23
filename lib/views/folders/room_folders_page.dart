@@ -10,6 +10,7 @@ import 'package:filevo/views/folders/room_comments_page.dart';
 import 'package:filevo/utils/room_permissions.dart';
 import 'package:filevo/views/fileViewer/folder_actions_service.dart';
 import 'package:pull_to_refresh/pull_to_refresh.dart';
+import 'package:shimmer/shimmer.dart';
 
 class RoomFoldersPage extends StatefulWidget {
   final String roomId;
@@ -161,7 +162,7 @@ class _RoomFoldersPageState extends State<RoomFoldersPage> {
         ],
       ),
       body: isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? _buildShimmerLoading()
           : roomData == null
               ? Center(child: Text(S.of(context).failedToLoadRoomData))
               : SmartRefresher(
@@ -736,5 +737,29 @@ class _RoomFoldersPageState extends State<RoomFoldersPage> {
     }
 
     return null;
+  }
+
+  // ✅ بناء shimmer loading لصفحة مجلدات الروم
+  Widget _buildShimmerLoading() {
+    return ListView(
+      padding: EdgeInsets.all(16),
+      children: List.generate(
+        6,
+        (index) => Padding(
+          padding: EdgeInsets.only(bottom: 12),
+          child: Shimmer.fromColors(
+            baseColor: Colors.grey[300]!,
+            highlightColor: Colors.grey[100]!,
+            child: Container(
+              height: 80,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }

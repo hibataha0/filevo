@@ -14,6 +14,7 @@ import 'dart:io';
 import 'package:path_provider/path_provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:filevo/generated/l10n.dart';
+import 'package:video_thumbnail/video_thumbnail.dart';
 
 /// Widget مشترك لعرض نتائج البحث (ملفات ومجلدات)
 class SearchResultsWidget extends StatelessWidget {
@@ -297,16 +298,24 @@ class SearchResultsWidget extends StatelessWidget {
     final category = file['category']?.toString();
     final isStarred = file['isStarred'] ?? false;
 
-    // بناء URL
-    String fileUrl;
+    // ✅ بناء URL - تحسين بناء URL للمعاينة
+    String fileUrl = '';
     if (filePath.isNotEmpty) {
       fileUrl = _getFileUrl(filePath);
     } else if (fileId != null && fileId.isNotEmpty) {
       final baseUrl = ApiConfig.baseUrl.replaceAll('/api/v1', '');
       final downloadPath = ApiEndpoints.downloadFile(fileId);
       fileUrl = "$baseUrl$downloadPath";
-    } else {
-      fileUrl = '';
+    }
+    
+    // ✅ طباعة للتحقق من URL (يمكن إزالتها لاحقاً)
+    if (fileType == 'image' || fileType == 'video') {
+      print('🔍 [SearchResults] Building preview for $fileType:');
+      print('   - fileName: $fileName');
+      print('   - filePath: $filePath');
+      print('   - fileId: $fileId');
+      print('   - fileUrl: $fileUrl');
+      print('   - isValidUrl: ${_isValidUrl(fileUrl)}');
     }
 
     return GestureDetector(
@@ -527,13 +536,19 @@ class SearchResultsWidget extends StatelessWidget {
   Widget _buildFilePreview(String fileType, String fileUrl, String fileName) {
     switch (fileType.toLowerCase()) {
       case 'image':
-        if (fileUrl.isNotEmpty) {
-          final needsToken = fileUrl.contains('/api/');
+        // ✅ معاينة الصور - عرض الصورة مباشرة
+        if (fileUrl.isNotEmpty && _isValidUrl(fileUrl)) {
+          final needsToken = fileUrl.contains('/api/') || fileUrl.contains('/download/');
           return FutureBuilder<Map<String, String>?>(
             future: needsToken ? _getImageHeaders() : Future.value(null),
             builder: (context, snapshot) {
+              // ✅ إضافة cache busting للصور
+              final imageUrl = fileUrl.contains('?') 
+                  ? fileUrl 
+                  : '$fileUrl?v=${DateTime.now().millisecondsSinceEpoch}';
+              
               return CachedNetworkImage(
-                imageUrl: fileUrl,
+                imageUrl: imageUrl,
                 fit: BoxFit.cover,
                 httpHeaders: snapshot.data,
                 placeholder: (context, url) => Container(
@@ -542,27 +557,378 @@ class SearchResultsWidget extends StatelessWidget {
                     child: CircularProgressIndicator(strokeWidth: 2),
                   ),
                 ),
-                errorWidget: (context, url, error) => Container(
-                  color: Colors.grey[200],
-                  child: Icon(
-                    Icons.image_not_supported,
-                    color: Colors.grey[400],
-                    size: 32,
-                  ),
-                ),
+                errorWidget: (context, url, error) {
+                  print('❌ Error loading image preview: $error, URL: $url');
+                  return Container(
+                    color: Colors.grey[200],
+                    child: Icon(
+                      Icons.image_not_supported,
+                      color: Colors.grey[400],
+                      size: 32,
+                    ),
+                  );
+                },
               );
             },
           );
         }
+        // ✅ إذا كان fileUrl فارغاً، عرض أيقونة
+        print('⚠️ Image preview: fileUrl is empty or invalid. fileName: $fileName, fileUrl: $fileUrl');
         return _buildFileIcon(Icons.image, Colors.blue);
       case 'pdf':
+        // ✅ معاينة PDF - محاولة عرض الصفحة الأولى
+        if (fileUrl.isNotEmpty) {
+          return _buildPdfPreview(fileUrl);
+        }
         return _buildFileIcon(Icons.picture_as_pdf, Colors.red);
       case 'video':
+        // ✅ معاينة الفيديو - عرض thumbnail
+        if (fileUrl.isNotEmpty && _isValidUrl(fileUrl)) {
+          return _buildVideoPreview(fileUrl, fileName);
+        }
+        // ✅ إذا كان fileUrl فارغاً، عرض أيقونة
+        print('⚠️ Video preview: fileUrl is empty or invalid. fileName: $fileName, fileUrl: $fileUrl');
         return _buildFileIcon(Icons.video_library, Colors.purple);
       case 'audio':
-        return _buildFileIcon(Icons.audiotrack, Colors.orange);
+        // ✅ معاينة الصوت - أيقونة مع معلومات
+        return _buildAudioPreview(fileName);
       default:
+        // ✅ معاينة النصوص - محاولة عرض أول سطور
+        if (_isTextFile(fileName) && fileUrl.isNotEmpty) {
+          return _buildTextPreview(fileUrl, fileName);
+        }
         return _buildFileIcon(Icons.insert_drive_file, Colors.grey);
+    }
+  }
+
+  // ✅ معاينة PDF
+  Widget _buildPdfPreview(String fileUrl) {
+    return FutureBuilder<String?>(
+      future: _getPdfThumbnail(fileUrl),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Container(
+            color: Colors.grey[200],
+            child: const Center(
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
+          );
+        }
+        if (snapshot.hasData && snapshot.data != null) {
+          return Stack(
+            children: [
+              Image.file(
+                File(snapshot.data!),
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stack) =>
+                    _buildFileIcon(Icons.picture_as_pdf, Colors.red),
+              ),
+              Positioned(
+                top: 8,
+                right: 8,
+                child: Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    color: Colors.red.withOpacity(0.8),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: const Icon(
+                    Icons.picture_as_pdf,
+                    color: Colors.white,
+                    size: 16,
+                  ),
+                ),
+              ),
+            ],
+          );
+        }
+        return _buildFileIcon(Icons.picture_as_pdf, Colors.red);
+      },
+    );
+  }
+
+  // ✅ معاينة الفيديو
+  Widget _buildVideoPreview(String fileUrl, String fileName) {
+    return FutureBuilder<String?>(
+      future: _getVideoThumbnail(fileUrl),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Container(
+            color: Colors.grey[200],
+            child: const Center(
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
+          );
+        }
+        if (snapshot.hasData && snapshot.data != null) {
+          final thumbnailPath = snapshot.data!;
+          final thumbnailFile = File(thumbnailPath);
+          if (thumbnailFile.existsSync()) {
+            return Stack(
+              fit: StackFit.expand,
+              children: [
+                Image.file(
+                  thumbnailFile,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stack) {
+                    print('❌ Error loading video thumbnail: $error');
+                    return _buildFileIcon(Icons.video_library, Colors.purple);
+                  },
+                ),
+                Positioned.fill(
+                  child: Container(
+                    color: Colors.black.withOpacity(0.3),
+                    child: const Center(
+                      child: Icon(
+                        Icons.play_circle_filled,
+                        color: Colors.white,
+                        size: 48,
+                      ),
+                    ),
+                  ),
+                ),
+                Positioned(
+                  top: 8,
+                  right: 8,
+                  child: Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(
+                      color: Colors.purple.withOpacity(0.8),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: const Icon(
+                      Icons.videocam,
+                      color: Colors.white,
+                      size: 16,
+                    ),
+                  ),
+                ),
+              ],
+            );
+          }
+        }
+        // ✅ إذا فشل إنشاء thumbnail، عرض أيقونة
+        return _buildFileIcon(Icons.video_library, Colors.purple);
+      },
+    );
+  }
+
+  // ✅ معاينة الصوت
+  Widget _buildAudioPreview(String fileName) {
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        _buildFileIcon(Icons.audiotrack, Colors.orange),
+        Positioned(
+          bottom: 8,
+          left: 8,
+          right: 8,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: Colors.orange.withOpacity(0.9),
+              borderRadius: BorderRadius.circular(4),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.music_note, color: Colors.white, size: 12),
+                const SizedBox(width: 4),
+                Flexible(
+                  child: Text(
+                    fileName.length > 15
+                        ? '${fileName.substring(0, 15)}...'
+                        : fileName,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 10,
+                      fontWeight: FontWeight.w500,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ✅ معاينة النصوص
+  Widget _buildTextPreview(String fileUrl, String fileName) {
+    return FutureBuilder<String?>(
+      future: _getTextPreview(fileUrl),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Container(
+            color: Colors.grey[200],
+            child: const Center(
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
+          );
+        }
+        if (snapshot.hasData && snapshot.data != null) {
+          return Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.grey[50],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.description,
+                  color: Colors.blue,
+                  size: 24,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  snapshot.data!,
+                  maxLines: 3,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 10,
+                    color: Colors.grey[700],
+                    height: 1.4,
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
+        return _buildFileIcon(Icons.description, Colors.blue);
+      },
+    );
+  }
+
+  // ✅ التحقق من أن الملف نصي
+  bool _isTextFile(String fileName) {
+    final name = fileName.toLowerCase();
+    final textExtensions = [
+      'txt', 'json', 'xml', 'csv', 'html', 'htm', 'css', 'js', 'dart',
+      'py', 'java', 'cpp', 'c', 'h', 'php', 'rb', 'go', 'rs', 'swift',
+      'kt', 'sh', 'md', 'yaml', 'yml', 'ini', 'conf', 'log', 'sql',
+    ];
+    return textExtensions.any((ext) => name.endsWith('.$ext'));
+  }
+
+  // ✅ جلب thumbnail للـ PDF
+  Future<String?> _getPdfThumbnail(String fileUrl) async {
+    try {
+      final token = await StorageService.getToken();
+      if (token == null) return null;
+
+      // ✅ تحميل أول 10KB من PDF
+      final response = await http.get(
+        Uri.parse(fileUrl),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Range': 'bytes=0-10240',
+        },
+      ).timeout(const Duration(seconds: 5));
+
+      if (response.statusCode == 200 || response.statusCode == 206) {
+        // ✅ محاولة استخراج صورة من PDF (هذا يتطلب مكتبة PDF معقدة)
+        // ✅ للبساطة، سنستخدم أيقونة PDF
+        return null;
+      }
+      return null;
+    } catch (e) {
+      print('❌ Error getting PDF thumbnail: $e');
+      return null;
+    }
+  }
+
+  // ✅ جلب thumbnail للفيديو
+  Future<String?> _getVideoThumbnail(String fileUrl) async {
+    try {
+      final tempDir = await getTemporaryDirectory();
+      // ✅ تحميل الفيديو مؤقتاً إذا كان يحتاج token
+      String localVideoPath;
+      bool isDownloaded = false;
+      
+      if (fileUrl.contains('/api/')) {
+        final token = await StorageService.getToken();
+        if (token == null) return null;
+        
+        try {
+          final response = await http.get(
+            Uri.parse(fileUrl),
+            headers: {'Authorization': 'Bearer $token'},
+          ).timeout(const Duration(seconds: 10));
+          
+          if (response.statusCode == 200) {
+            final fileName = fileUrl.split('/').last.split('?').first;
+            localVideoPath = '${tempDir.path}/$fileName';
+            await File(localVideoPath).writeAsBytes(response.bodyBytes);
+            isDownloaded = true;
+          } else {
+            return null;
+          }
+        } catch (e) {
+          print('❌ Error downloading video for thumbnail: $e');
+          return null;
+        }
+      } else {
+        localVideoPath = fileUrl;
+      }
+      
+      final thumbnailPath = await VideoThumbnail.thumbnailFile(
+        video: localVideoPath,
+        thumbnailPath: tempDir.path,
+        imageFormat: ImageFormat.PNG,
+        maxHeight: 200,
+        quality: 75,
+      );
+      
+      // ✅ حذف الملف المؤقت إذا كان محمولاً
+      if (isDownloaded) {
+        try {
+          await File(localVideoPath).delete();
+        } catch (e) {
+          // تجاهل خطأ الحذف
+        }
+      }
+      
+      return thumbnailPath;
+    } catch (e) {
+      print('❌ Error generating video thumbnail: $e');
+      return null;
+    }
+  }
+
+  // ✅ جلب معاينة النص
+  Future<String?> _getTextPreview(String fileUrl) async {
+    try {
+      final token = await StorageService.getToken();
+      if (token == null) return null;
+
+      // ✅ تحميل أول 500 حرف من الملف النصي
+      final response = await http.get(
+        Uri.parse(fileUrl),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Range': 'bytes=0-500',
+        },
+      ).timeout(const Duration(seconds: 5));
+
+      if (response.statusCode == 200 || response.statusCode == 206) {
+        final text = response.body;
+        // ✅ تنظيف النص من الأحرف الخاصة
+        final cleanText = text
+            .replaceAll(RegExp(r'[^\w\s\u0600-\u06FF]'), ' ')
+            .trim();
+        if (cleanText.length > 100) {
+          return cleanText.substring(0, 100);
+        }
+        return cleanText;
+      }
+      return null;
+    } catch (e) {
+      print('❌ Error getting text preview: $e');
+      return null;
     }
   }
 

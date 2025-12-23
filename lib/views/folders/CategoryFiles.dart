@@ -19,6 +19,7 @@ import 'package:http/http.dart' as http;
 import 'package:filevo/components/FilesListView.dart';
 import 'package:pull_to_refresh/pull_to_refresh.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:shimmer/shimmer.dart';
 
 class CategoryPage extends StatefulWidget {
   final String category;
@@ -334,39 +335,175 @@ class _CategoryPageState extends State<CategoryPage> {
   Widget _buildLoadingState() {
     return Scaffold(
       backgroundColor: const Color(0xff28336f),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              width: 80,
-              height: 80,
+      body: _buildShimmerLoading(),
+    );
+  }
+
+  Widget _buildShimmerLoading() {
+    return SingleChildScrollView(
+      padding: EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(height: 20),
+          // Shimmer للعنوان
+          Shimmer.fromColors(
+            baseColor: Colors.grey[300]!,
+            highlightColor: Colors.grey[100]!,
+            child: Container(
+              height: 30,
+              width: 200,
               decoration: BoxDecoration(
-                color: widget.color.withOpacity(0.2),
-                shape: BoxShape.circle,
-              ),
-              child: Stack(
-                children: [
-                  Center(
-                    child: Icon(
-                      widget.icon,
-                      color: Colors.white.withOpacity(0.7),
-                      size: 40,
-                    ),
-                  ),
-                  CircularProgressIndicator(
-                    valueColor: AlwaysStoppedAnimation<Color>(widget.color),
-                    strokeWidth: 3,
-                  ),
-                ],
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(8),
               ),
             ),
-            const SizedBox(height: 20),
-            Text(
-              'جاري التحميل...',
-              style: TextStyle(
-                color: Colors.white.withOpacity(0.8),
-                fontSize: 16,
+          ),
+          SizedBox(height: 30),
+          // Shimmer للملفات
+          _isGridView
+              ? Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: List.generate(
+                    6,
+                    (index) => SizedBox(
+                      width: (MediaQuery.of(context).size.width - 40) / 2,
+                      child: _buildFileShimmerCard(),
+                    ),
+                  ),
+                )
+              : Column(
+                  children: List.generate(
+                    6,
+                    (index) => Padding(
+                      padding: EdgeInsets.only(bottom: 12),
+                      child: _buildFileListShimmerCard(),
+                    ),
+                  ),
+                ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFileShimmerCard() {
+    return Shimmer.fromColors(
+      baseColor: Colors.grey[300]!,
+      highlightColor: Colors.grey[100]!,
+      child: Container(
+        height: 200,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.grey.withOpacity(0.1),
+              spreadRadius: 1,
+              blurRadius: 4,
+              offset: Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              flex: 3,
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
+                ),
+              ),
+            ),
+            Expanded(
+              flex: 1,
+              child: Padding(
+                padding: EdgeInsets.all(8),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      height: 12,
+                      width: double.infinity,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                    ),
+                    SizedBox(height: 4),
+                    Container(
+                      height: 10,
+                      width: 80,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFileListShimmerCard() {
+    return Shimmer.fromColors(
+      baseColor: Colors.grey[300]!,
+      highlightColor: Colors.grey[100]!,
+      child: Container(
+        height: 80,
+        padding: EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.grey.withOpacity(0.1),
+              spreadRadius: 1,
+              blurRadius: 4,
+              offset: Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 56,
+              height: 56,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    height: 14,
+                    width: double.infinity,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                  ),
+                  SizedBox(height: 8),
+                  Container(
+                    height: 12,
+                    width: 150,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                  ),
+                ],
               ),
             ),
           ],
@@ -471,11 +608,36 @@ class _CategoryPageState extends State<CategoryPage> {
     );
   }
 
+  Widget _buildFilesShimmerLoading() {
+    return SingleChildScrollView(
+      padding: EdgeInsets.all(16),
+      child: _isGridView
+          ? Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: List.generate(
+                6,
+                (index) => SizedBox(
+                  width: (MediaQuery.of(context).size.width - 40) / 2,
+                  child: _buildFileShimmerCard(),
+                ),
+              ),
+            )
+          : Column(
+              children: List.generate(
+                6,
+                (index) => Padding(
+                  padding: EdgeInsets.only(bottom: 12),
+                  child: _buildFileListShimmerCard(),
+                ),
+              ),
+            ),
+    );
+  }
+
   Widget _buildFileContent(FileController fileController) {
     if (fileController.isLoading) {
-      return const Center(
-        child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
-      );
+      return _buildFilesShimmerLoading();
     }
 
     if (fileController.errorMessage != null) {

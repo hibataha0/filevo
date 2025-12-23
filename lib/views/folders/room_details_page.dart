@@ -28,6 +28,7 @@ import 'package:filevo/responsive.dart';
 import 'package:filevo/services/storage_service.dart';
 import 'package:filevo/utils/room_permissions.dart';
 import 'package:pull_to_refresh/pull_to_refresh.dart';
+import 'package:shimmer/shimmer.dart';
 
 class RoomDetailsPage extends StatefulWidget {
   final String roomId;
@@ -232,7 +233,7 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
         ],
       ),
       body: isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? _buildShimmerLoading()
           : roomData == null
           ? Center(
               child: Column(
@@ -732,6 +733,12 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
                       );
                       if (result == true) {
                         _refreshRoom();
+                        // ✅ تحديث قائمة الغرف (الدعوة لا تضيف عضواً مباشرة، لكن للتأكد)
+                        final roomController = Provider.of<RoomController>(
+                          context,
+                          listen: false,
+                        );
+                        await roomController.getRooms();
                       }
                     },
                   ),
@@ -2837,6 +2844,9 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
 
           // ✅ إعادة تحميل بيانات الغرفة
           _refreshRoom();
+
+          // ✅ تحديث قائمة الغرف لتحديث عدد الملفات
+          await roomController.getRooms();
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -2917,6 +2927,9 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
 
           // ✅ إعادة تحميل بيانات الغرفة
           _refreshRoom();
+
+          // ✅ تحديث قائمة الغرف لتحديث عدد المجلدات
+          await roomController.getRooms();
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -3123,5 +3136,307 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
         );
       }
     }
+  }
+
+  // ✅ بناء shimmer loading لصفحة تفاصيل الروم
+  Widget _buildShimmerLoading() {
+    return SingleChildScrollView(
+      child: Column(
+        children: [
+          _buildShimmerRoomHeader(),
+          SizedBox(height: 20),
+          _buildShimmerQuickActions(),
+          SizedBox(height: 20),
+          _buildShimmerRoomInfo(),
+          SizedBox(height: 20),
+          _buildShimmerMembersSection(),
+          SizedBox(height: 20),
+          _buildShimmerSharedFilesSection(),
+          SizedBox(height: 20),
+          _buildShimmerSharedFoldersSection(),
+          SizedBox(height: 100),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildShimmerRoomHeader() {
+    return Shimmer.fromColors(
+      baseColor: Colors.grey[300]!,
+      highlightColor: Colors.grey[100]!,
+      child: Container(
+        margin: EdgeInsets.all(20),
+        padding: EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(24),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  width: 60,
+                  height: 60,
+                  decoration: BoxDecoration(
+                    color: Colors.grey[300],
+                    shape: BoxShape.circle,
+                  ),
+                ),
+                SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        width: double.infinity,
+                        height: 24,
+                        decoration: BoxDecoration(
+                          color: Colors.grey[300],
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      SizedBox(height: 8),
+                      Container(
+                        width: 150,
+                        height: 16,
+                        decoration: BoxDecoration(
+                          color: Colors.grey[300],
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            SizedBox(height: 16),
+            Container(
+              width: double.infinity,
+              height: 14,
+              decoration: BoxDecoration(
+                color: Colors.grey[300],
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            SizedBox(height: 8),
+            Container(
+              width: 200,
+              height: 14,
+              decoration: BoxDecoration(
+                color: Colors.grey[300],
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildShimmerQuickActions() {
+    return Shimmer.fromColors(
+      baseColor: Colors.grey[300]!,
+      highlightColor: Colors.grey[100]!,
+      child: Container(
+        margin: EdgeInsets.symmetric(horizontal: 20),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: List.generate(
+            4,
+            (index) => Container(
+              width: 70,
+              height: 70,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildShimmerRoomInfo() {
+    return Shimmer.fromColors(
+      baseColor: Colors.grey[300]!,
+      highlightColor: Colors.grey[100]!,
+      child: Container(
+        margin: EdgeInsets.symmetric(horizontal: 20),
+        padding: EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Column(
+          children: [
+            Container(
+              width: double.infinity,
+              height: 20,
+              decoration: BoxDecoration(
+                color: Colors.grey[300],
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            SizedBox(height: 16),
+            Row(
+              children: List.generate(
+                3,
+                (index) => Expanded(
+                  child: Container(
+                    margin: EdgeInsets.only(right: index < 2 ? 12 : 0),
+                    height: 60,
+                    decoration: BoxDecoration(
+                      color: Colors.grey[300],
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildShimmerMembersSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: EdgeInsets.symmetric(horizontal: 20),
+          child: Shimmer.fromColors(
+            baseColor: Colors.grey[300]!,
+            highlightColor: Colors.grey[100]!,
+            child: Container(
+              width: 120,
+              height: 20,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+          ),
+        ),
+        SizedBox(height: 12),
+        Shimmer.fromColors(
+          baseColor: Colors.grey[300]!,
+          highlightColor: Colors.grey[100]!,
+          child: Container(
+            height: 100,
+            margin: EdgeInsets.symmetric(horizontal: 20),
+            child: ListView(
+              scrollDirection: Axis.horizontal,
+              children: List.generate(
+                5,
+                (index) => Container(
+                  width: 80,
+                  margin: EdgeInsets.only(right: 12),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildShimmerSharedFilesSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: EdgeInsets.symmetric(horizontal: 20),
+          child: Shimmer.fromColors(
+            baseColor: Colors.grey[300]!,
+            highlightColor: Colors.grey[100]!,
+            child: Container(
+              width: 140,
+              height: 20,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+          ),
+        ),
+        SizedBox(height: 12),
+        Shimmer.fromColors(
+          baseColor: Colors.grey[300]!,
+          highlightColor: Colors.grey[100]!,
+          child: Container(
+            height: 120,
+            margin: EdgeInsets.symmetric(horizontal: 20),
+            child: ListView(
+              scrollDirection: Axis.horizontal,
+              children: List.generate(
+                6,
+                (index) => Container(
+                  width: 100,
+                  margin: EdgeInsets.only(right: 12),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildShimmerSharedFoldersSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: EdgeInsets.symmetric(horizontal: 20),
+          child: Shimmer.fromColors(
+            baseColor: Colors.grey[300]!,
+            highlightColor: Colors.grey[100]!,
+            child: Container(
+              width: 160,
+              height: 20,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+          ),
+        ),
+        SizedBox(height: 12),
+        Shimmer.fromColors(
+          baseColor: Colors.grey[300]!,
+          highlightColor: Colors.grey[100]!,
+          child: Container(
+            height: 120,
+            margin: EdgeInsets.symmetric(horizontal: 20),
+            child: ListView(
+              scrollDirection: Axis.horizontal,
+              children: List.generate(
+                6,
+                (index) => Container(
+                  width: 100,
+                  margin: EdgeInsets.only(right: 12),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
   }
 }

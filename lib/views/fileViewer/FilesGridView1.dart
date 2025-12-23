@@ -311,49 +311,58 @@ class _FilesGridState extends State<FilesGrid> {
     Map<String, dynamic> file,
     bool isStarred,
   ) {
-    return [
+    // ✅ التحقق من أن الملف مشترك لمرة واحدة
+    final isOneTimeShare = file['isOneTimeShare'] == true;
+    
+    final List<PopupMenuEntry<String>> items = [
       _buildMenuItem(
         'open',
         Icons.open_in_new_rounded,
         S.of(context).open,
         Colors.blue,
       ),
-      _buildMenuItem(
+    ];
+    
+    // ✅ إخفاء الخيارات التالية للملفات المشتركة لمرة واحدة
+    if (!isOneTimeShare) {
+      items.add(_buildMenuItem(
         'info',
         Icons.info_outline_rounded,
         S.of(context).viewDetails,
         Colors.teal,
-      ),
-      _buildMenuItem(
+      ));
+      items.add(_buildMenuItem(
         'download',
         Icons.download_rounded,
         S.of(context).download,
         Colors.blue,
-      ),
-      _buildMenuItem(
+      ));
+      items.add(_buildMenuItem(
         'comments',
         Icons.comment_rounded,
         S.of(context).comments,
         Color(0xFFF59E0B),
-      ),
-      const PopupMenuDivider(),
-      // ✅ إزالة خيار "إضافة إلى المفضلة" من الملفات المشتركة في الروم
-      _buildMenuItem(
+      ));
+      items.add(const PopupMenuDivider());
+      items.add(_buildMenuItem(
         'save',
         Icons.save_rounded,
         S.of(context).saveToMyAccount,
         Colors.green,
-      ),
-      const PopupMenuDivider(),
-      // ✅ إضافة خيار "إزالة من الغرفة" دائماً
-      // ✅ التحقق من الصلاحيات يتم في _handleSharedFileMenuAction
-      _buildMenuItem(
-        'remove_from_room',
-        Icons.link_off_rounded,
-        S.of(context).removeFromRoom,
-        Colors.red,
-      ),
-    ];
+      ));
+    }
+    
+    items.add(const PopupMenuDivider());
+    // ✅ إضافة خيار "إزالة من الغرفة" دائماً
+    // ✅ التحقق من الصلاحيات يتم في _handleSharedFileMenuAction
+    items.add(_buildMenuItem(
+      'remove_from_room',
+      Icons.link_off_rounded,
+      S.of(context).removeFromRoom,
+      Colors.red,
+    ));
+    
+    return items;
   }
 
   /// ✅ بناء قائمة الملفات العادية
@@ -419,6 +428,21 @@ class _FilesGridState extends State<FilesGrid> {
   /// ✅ معالجة إجراءات الملفات المشتركة في الغرف
   void _handleSharedFileMenuAction(String action, Map<String, dynamic> file) {
     if (!mounted) return;
+
+    // ✅ التحقق من أن الملف مشترك لمرة واحدة
+    final isOneTimeShare = file['isOneTimeShare'] == true;
+    
+    // ✅ منع الإجراءات التالية للملفات المشتركة لمرة واحدة
+    if (isOneTimeShare && ['info', 'download', 'comments', 'save'].contains(action)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('❌ الملفات المشتركة لمرة واحدة لا يمكن عرض تفاصيلها أو تحميلها أو التعليق عليها أو حفظها'),
+          backgroundColor: Colors.orange,
+          duration: Duration(seconds: 3),
+        ),
+      );
+      return;
+    }
 
     final fileController = Provider.of<FileController>(context, listen: false);
 
@@ -1057,35 +1081,44 @@ class _FilesGridState extends State<FilesGrid> {
         );
       }
 
-      // الملف العادي - نعرض معاينة
+      // ✅ الملف العادي - نعرض معاينة
       if (isImage) {
-        return Image.network(
-          fileUrl,
-          fit: BoxFit.cover,
-          loadingBuilder: (context, child, loadingProgress) {
-            if (loadingProgress == null) return child;
-            return Container(
-              color: const Color(0xff28336f),
-              child: Center(
-                child: CircularProgressIndicator(
-                  value: loadingProgress.expectedTotalBytes != null
-                      ? loadingProgress.cumulativeBytesLoaded /
-                            loadingProgress.expectedTotalBytes!
-                      : null,
+        // ✅ استخدام CachedNetworkImage مع headers للصور التي تحتاج token
+        final needsToken = fileUrl.contains('/api/') || fileUrl.contains('/download/');
+        return FutureBuilder<Map<String, String>?>(
+          future: needsToken ? _getImageHeaders() : Future.value(null),
+          builder: (context, snapshot) {
+            // ✅ إضافة cache busting للصور
+            final imageUrl = fileUrl.contains('?') 
+                ? fileUrl 
+                : '$fileUrl?v=${DateTime.now().millisecondsSinceEpoch}';
+            
+            return CachedNetworkImage(
+              imageUrl: imageUrl,
+              fit: BoxFit.cover,
+              httpHeaders: snapshot.data,
+              placeholder: (context, url) => Container(
+                color: const Color(0xff28336f),
+                child: const Center(
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: Colors.white,
+                  ),
                 ),
               ),
-            );
-          },
-          errorBuilder: (context, error, stackTrace) {
-            return Container(
-              color: const Color(0xff28336f),
-              child: Center(
-                child: Icon(
-                  getIcon(),
-                  size: 60,
-                  color: Colors.white.withOpacity(0.7),
-                ),
-              ),
+              errorWidget: (context, url, error) {
+                print('❌ Error loading image preview in FilesGrid: $error, URL: $url');
+                return Container(
+                  color: const Color(0xff28336f),
+                  child: Center(
+                    child: Icon(
+                      getIcon(),
+                      size: 60,
+                      color: Colors.white.withOpacity(0.7),
+                    ),
+                  ),
+                );
+              },
             );
           },
         );
@@ -1727,6 +1760,17 @@ class _FilesGridState extends State<FilesGrid> {
         }
       },
     );
+  }
+
+  // ✅ دالة لجلب headers للصور
+  Future<Map<String, String>?> _getImageHeaders() async {
+    if (_cachedToken == null) {
+      await _loadToken();
+    }
+    if (_cachedToken != null) {
+      return {'Authorization': 'Bearer $_cachedToken'};
+    }
+    return null;
   }
 
   Widget _buildNetworkImage(String url) {

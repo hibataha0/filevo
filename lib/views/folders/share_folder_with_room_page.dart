@@ -69,6 +69,10 @@ class _ShareFolderWithRoomPageState extends State<ShareFolderWithRoomPage> {
             backgroundColor: Colors.green,
           ),
         );
+        
+        // ✅ تحديث قائمة الغرف لتحديث عدد المجلدات
+        await roomController.getRooms();
+        
         Navigator.pop(context, true);
       } else {
         ScaffoldMessenger.of(context).showSnackBar(

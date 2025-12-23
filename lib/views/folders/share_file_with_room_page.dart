@@ -4,6 +4,7 @@ import 'package:filevo/controllers/folders/room_controller.dart';
 import 'package:filevo/constants/app_colors.dart';
 import 'package:filevo/generated/l10n.dart';
 import 'package:pull_to_refresh/pull_to_refresh.dart';
+import 'package:filevo/utils/file_type_utils.dart';
 
 class ShareFileWithRoomPage extends StatefulWidget {
   final String fileId;
@@ -25,13 +26,34 @@ class _ShareFileWithRoomPageState extends State<ShareFileWithRoomPage> {
   String? selectedRoomId;
   bool isOneTimeShare = false; // ✅ خيار المشاركة لمرة واحدة
   int? expiresInHours; // ✅ عدد الساعات للانتهاء (افتراضي 24)
+  late bool canOneTimeShare; // ✅ هل يمكن مشاركة الملف لمرة واحدة
 
-  final RefreshController _refreshController =
-      RefreshController(initialRefresh: false);
+  final RefreshController _refreshController = RefreshController(
+    initialRefresh: false,
+  );
 
   @override
   void initState() {
     super.initState();
+    // ✅ التحقق من أن الملف يمكن مشاركته لمرة واحدة
+    // ✅ الملفات التي تفتح داخل التطبيق (PDF, الصور, الفيديو, الصوت, النصوص) يمكن مشاركتها لمرة واحدة
+    // ❌ الملفات التي تفتح خارج التطبيق (Office, ZIP, etc.) لا يمكن مشاركتها لمرة واحدة
+
+    // ✅ استخراج اسم الملف مع الامتداد
+    final fileName = widget.fileName.trim();
+    final opensInside = FileTypeUtils.opensInsideApp(fileName);
+    canOneTimeShare = FileTypeUtils.canBeOneTimeShared(fileName);
+
+    print(
+      '🔍 [ShareFileWithRoomPage] ==========================================',
+    );
+    print('🔍 [ShareFileWithRoomPage] fileName: $fileName');
+    print('🔍 [ShareFileWithRoomPage] opensInsideApp: $opensInside');
+    print('🔍 [ShareFileWithRoomPage] canBeOneTimeShared: $canOneTimeShare');
+    print(
+      '🔍 [ShareFileWithRoomPage] ==========================================',
+    );
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadRooms();
     });
@@ -132,6 +154,10 @@ class _ShareFileWithRoomPageState extends State<ShareFileWithRoomPage> {
             duration: Duration(seconds: 2),
           ),
         );
+
+        // ✅ تحديث قائمة الغرف لتحديث عدد الملفات
+        await roomController.getRooms();
+
         Navigator.pop(context, true);
       } else {
         final errorMessage =
@@ -332,8 +358,8 @@ class _ShareFileWithRoomPageState extends State<ShareFileWithRoomPage> {
                               color: isSelected
                                   ? AppColors.lightAppBar
                                   : isAlreadyShared
-                                      ? Colors.green.shade300
-                                      : Colors.transparent,
+                                  ? Colors.green.shade300
+                                  : Colors.transparent,
                               width: isSelected ? 2 : (isAlreadyShared ? 1 : 0),
                             ),
                           ),
@@ -500,6 +526,8 @@ class _ShareFileWithRoomPageState extends State<ShareFileWithRoomPage> {
                                   if (isSelected && !isAlreadyShared) ...[
                                     SizedBox(height: 12),
                                     // ✅ خيار المشاركة لمرة واحدة
+                                    // ✅ فقط الملفات التي تفتح داخل التطبيق (الصور، الفيديو، الصوت، PDF، النصوص) يمكن مشاركتها لمرة واحدة
+                                    // ❌ الملفات التي تفتح خارج التطبيق (Office, ZIP, etc.) لا يمكن مشاركتها لمرة واحدة
                                     Row(
                                       children: [
                                         Expanded(
@@ -519,20 +547,34 @@ class _ShareFileWithRoomPageState extends State<ShareFileWithRoomPage> {
                                                       fontSize: 12,
                                                     ),
                                                   )
+                                                : !canOneTimeShare
+                                                ? Text(
+                                                    '⚠️ الملفات التي تفتح خارج التطبيق (Office, ZIP, etc.) لا يمكن مشاركتها لمرة واحدة',
+                                                    style: TextStyle(
+                                                      fontSize: 11,
+                                                      color: Colors.orange[700],
+                                                    ),
+                                                  )
                                                 : null,
                                             value: isOneTimeShare,
-                                            onChanged: (value) {
-                                              setState(() {
-                                                isOneTimeShare = value ?? false;
-                                                if (isOneTimeShare &&
-                                                    expiresInHours == null) {
-                                                  expiresInHours = 24;
-                                                }
-                                              });
-                                              if (value == true) {
-                                                _showOneTimeShareDialog();
-                                              }
-                                            },
+                                            enabled:
+                                                canOneTimeShare, // ✅ تعطيل الخيار للملفات التي تفتح خارج التطبيق
+                                            onChanged: canOneTimeShare
+                                                ? (value) {
+                                                    setState(() {
+                                                      isOneTimeShare =
+                                                          value ?? false;
+                                                      if (isOneTimeShare &&
+                                                          expiresInHours ==
+                                                              null) {
+                                                        expiresInHours = 24;
+                                                      }
+                                                    });
+                                                    if (value == true) {
+                                                      _showOneTimeShareDialog();
+                                                    }
+                                                  }
+                                                : null, // ✅ منع التغيير للملفات التي تفتح خارج التطبيق
                                             contentPadding: EdgeInsets.zero,
                                             controlAffinity:
                                                 ListTileControlAffinity.leading,

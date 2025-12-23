@@ -21,6 +21,7 @@ class FolderFileCard extends StatelessWidget {
   final VoidCallback? onRemoveFromRoomTap; // ✅ callback لإزالة المجلد من الغرفة
   final VoidCallback? onSaveTap; // ✅ callback لحفظ المجلد من الغرفة
   final VoidCallback? onDownloadTap; // ✅ callback لتحميل المجلد من الغرفة
+  final VoidCallback? onProtectTap; // ✅ callback لقفل/إلغاء قفل المجلد
   final bool isStarred; // ✅ حالة المفضلة
   final Map<String, dynamic>? folderData; // ✅ بيانات المجلد الكاملة
   final String? sharedBy; // ✅ معلومات من شارك المجلد/الملف
@@ -46,6 +47,7 @@ class FolderFileCard extends StatelessWidget {
     this.onRemoveFromRoomTap,
     this.onSaveTap,
     this.onDownloadTap,
+    this.onProtectTap,
     this.isStarred = false,
     this.folderData,
     this.sharedBy,
@@ -250,7 +252,8 @@ class FolderFileCard extends StatelessWidget {
                     onCommentTap != null ||
                     onRemoveFromRoomTap != null ||
                     onSaveTap != null ||
-                    onDownloadTap != null) {
+                    onDownloadTap != null ||
+                    onProtectTap != null) {
                   _showContextMenu(context);
                 }
               },
@@ -921,6 +924,23 @@ class FolderFileCard extends StatelessWidget {
                           },
                         ),
 
+                      if (onProtectTap != null) ...[
+                        Divider(height: 1),
+                        _buildMenuItem(
+                          context,
+                          icon: folderData?['isProtected'] == true
+                              ? Icons.lock_open
+                              : Icons.lock,
+                          title: folderData?['isProtected'] == true
+                              ? 'إلغاء قفل المجلد'
+                              : 'قفل المجلد',
+                          iconColor: Colors.orange[700],
+                          onTap: () {
+                            Navigator.pop(context);
+                            onProtectTap?.call();
+                          },
+                        ),
+                      ],
                       if (onDeleteTap != null) ...[
                         Divider(height: 1),
                         _buildMenuItem(

@@ -3,6 +3,7 @@ import 'package:filevo/responsive.dart';
 import 'package:filevo/services/file_service.dart';
 import 'package:filevo/services/storage_service.dart';
 import 'package:flutter/material.dart';
+import 'package:shimmer/shimmer.dart';
 import 'dart:math' as math;
 
 class StorageCard extends StatefulWidget {
@@ -344,12 +345,7 @@ class StorageCardState extends State<StorageCard> {
 
           SizedBox(height: 8),
           _isLoading
-              ? Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(20.0),
-                    child: CircularProgressIndicator(),
-                  ),
-                )
+              ? _buildShimmerLoading()
               : Row(
                   children: [
                     SizedBox(
@@ -516,6 +512,32 @@ class StorageCardState extends State<StorageCard> {
         decoration: BoxDecoration(
           color: color,
           shape: BoxShape.circle,
+        ),
+      ),
+    );
+  }
+
+  // ✅ بناء shimmer loading لبطاقة التخزين
+  Widget _buildShimmerLoading() {
+    return Padding(
+      padding: const EdgeInsets.all(20.0),
+      child: Shimmer.fromColors(
+        baseColor: Colors.grey[300]!,
+        highlightColor: Colors.grey[100]!,
+        child: Row(
+          children: List.generate(
+            4,
+            (index) => Expanded(
+              child: Container(
+                margin: EdgeInsets.only(right: index < 3 ? 8 : 0),
+                height: 30,
+                decoration: BoxDecoration(
+                  color: Colors.grey[300],
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+            ),
+          ),
         ),
       ),
     );

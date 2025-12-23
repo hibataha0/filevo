@@ -2,10 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
 import 'package:flutter/services.dart';
 import 'package:chewie/chewie.dart';
+import 'package:filevo/services/screen_protection_service.dart';
 
 class VideoViewer extends StatefulWidget {
   final String url;
-  const VideoViewer({Key? key, required this.url}) : super(key: key);
+  final bool isOneTimeShare; // ✅ للملفات المشتركة لمرة واحدة
+  
+  const VideoViewer({
+    Key? key,
+    required this.url,
+    this.isOneTimeShare = false,
+  }) : super(key: key);
 
   @override
   _VideoViewerState createState() => _VideoViewerState();
@@ -33,6 +40,10 @@ class _VideoViewerState extends State<VideoViewer> {
   @override
   void initState() {
     super.initState();
+    // ✅ تفعيل الحماية من السكرين شوت والريكورد للملفات المشتركة لمرة واحدة
+    if (widget.isOneTimeShare) {
+      ScreenProtectionService.enableProtection();
+    }
     _initializeVideo();
     _setupControlsTimer();
     _loadSubtitles();
@@ -804,6 +815,10 @@ class _VideoViewerState extends State<VideoViewer> {
 
   @override
   void dispose() {
+    // ✅ إلغاء تفعيل الحماية عند إغلاق المشاهد
+    if (widget.isOneTimeShare) {
+      ScreenProtectionService.disableProtection();
+    }
     _controller.dispose();
     _chewieController?.dispose();
     if (_isFullScreen) {

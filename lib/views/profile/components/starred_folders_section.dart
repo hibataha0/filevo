@@ -4,6 +4,7 @@ import 'package:filevo/views/folders/folder_contents_page.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:filevo/generated/l10n.dart';
+import 'package:shimmer/shimmer.dart';
 
 class StarredFoldersSection extends StatefulWidget {
   const StarredFoldersSection({Key? key}) : super(key: key);
@@ -90,15 +91,7 @@ class _StarredFoldersSectionState extends State<StarredFoldersSection> {
 
   Widget _buildContent(FolderController controller, List starred) {
     if (controller.isLoading && starred.isEmpty) {
-      return SizedBox(
-        height: 120,
-        child: Center(
-          child: CircularProgressIndicator(
-            color: const Color(0xff28336f),
-            strokeWidth: 2,
-          ),
-        ),
-      );
+      return _buildShimmerLoading();
     }
 
     if (starred.isEmpty) {
@@ -403,6 +396,73 @@ class _StarredFoldersSectionState extends State<StarredFoldersSection> {
         content: Text(text),
         backgroundColor: color,
         duration: const Duration(seconds: 2),
+      ),
+    );
+  }
+
+  // ✅ بناء shimmer loading لقسم المجلدات المفضلة
+  Widget _buildShimmerLoading() {
+    return SizedBox(
+      height: 120,
+      child: ListView(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 8),
+        children: List.generate(
+          6,
+          (index) => Shimmer.fromColors(
+            baseColor: Colors.grey[300]!,
+            highlightColor: Colors.grey[100]!,
+            child: Container(
+              width: 100,
+              margin: const EdgeInsets.only(right: 12),
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black12,
+                    blurRadius: 6,
+                    offset: Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  // ✅ Icon shimmer
+                  Container(
+                    width: 32,
+                    height: 32,
+                    decoration: BoxDecoration(
+                      color: Colors.grey[300],
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  // ✅ Text shimmer
+                  Container(
+                    width: double.infinity,
+                    height: 10,
+                    decoration: BoxDecoration(
+                      color: Colors.grey[300],
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Container(
+                    width: 60,
+                    height: 10,
+                    decoration: BoxDecoration(
+                      color: Colors.grey[300],
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }

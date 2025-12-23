@@ -22,6 +22,7 @@ import 'package:filevo/responsive.dart';
 import 'package:filevo/views/fileViewer/FilesGridView1.dart';
 import 'package:filevo/controllers/folders/folders_controller.dart';
 import 'package:pull_to_refresh/pull_to_refresh.dart';
+import 'package:shimmer/shimmer.dart';
 
 class RoomFilesPage extends StatefulWidget {
   final String roomId;
@@ -162,12 +163,18 @@ class _RoomFilesPageState extends State<RoomFilesPage> {
         // ✅ فتح الملف حسب نوعه
         final name = fileName.toLowerCase();
 
+        // ✅ التحقق من أن الملف مشترك لمرة واحدة
+        final isOneTimeShare = fileData['isOneTimeShare'] == true;
+
         if (name.endsWith('.pdf')) {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (_) =>
-                  PdfViewerPage(pdfUrl: tempFile.path, fileName: fileName),
+              builder: (_) => PdfViewerPage(
+                pdfUrl: tempFile.path,
+                fileName: fileName,
+                isOneTimeShare: isOneTimeShare,
+              ),
             ),
           );
         } else if (name.endsWith('.mp4') ||
@@ -175,7 +182,12 @@ class _RoomFilesPageState extends State<RoomFilesPage> {
             name.endsWith('.mkv')) {
           Navigator.push(
             context,
-            MaterialPageRoute(builder: (_) => VideoViewer(url: tempFile.path)),
+            MaterialPageRoute(
+              builder: (_) => VideoViewer(
+                url: tempFile.path,
+                isOneTimeShare: isOneTimeShare,
+              ),
+            ),
           );
         } else if (name.endsWith('.jpg') ||
             name.endsWith('.jpeg') ||
@@ -191,6 +203,7 @@ class _RoomFilesPageState extends State<RoomFilesPage> {
                 imageUrl: tempFile.path,
                 roomId: widget.roomId,
                 fileId: fileId,
+                isOneTimeShare: isOneTimeShare,
               ),
             ),
           );
@@ -202,8 +215,11 @@ class _RoomFilesPageState extends State<RoomFilesPage> {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (_) =>
-                  TextViewerPage(filePath: tempFile.path, fileName: fileName),
+              builder: (_) => TextViewerPage(
+                filePath: tempFile.path,
+                fileName: fileName,
+                isOneTimeShare: isOneTimeShare,
+              ),
             ),
           );
         } else if (name.endsWith('.mp3') ||
@@ -213,8 +229,11 @@ class _RoomFilesPageState extends State<RoomFilesPage> {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (_) =>
-                  AudioPlayerPage(audioUrl: tempFile.path, fileName: fileName),
+              builder: (_) => AudioPlayerPage(
+                audioUrl: tempFile.path,
+                fileName: fileName,
+                isOneTimeShare: isOneTimeShare,
+              ),
             ),
           );
         } else {
@@ -933,7 +952,7 @@ class _RoomFilesPageState extends State<RoomFilesPage> {
       ),
       floatingActionButton: SizedBox.shrink(), // ✅ إخفاء FloatingActionButton
       body: isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? _buildShimmerLoading()
           : roomData == null
           ? Center(child: Text(S.of(context).failedToLoadRoomData))
           : SmartRefresher(
@@ -1214,5 +1233,29 @@ class _RoomFilesPageState extends State<RoomFilesPage> {
     }
 
     return null;
+  }
+
+  // ✅ بناء shimmer loading لصفحة ملفات الروم
+  Widget _buildShimmerLoading() {
+    return ListView(
+      padding: EdgeInsets.all(16),
+      children: List.generate(
+        8,
+        (index) => Padding(
+          padding: EdgeInsets.only(bottom: 12),
+          child: Shimmer.fromColors(
+            baseColor: Colors.grey[300]!,
+            highlightColor: Colors.grey[100]!,
+            child: Container(
+              height: 80,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }

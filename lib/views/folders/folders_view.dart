@@ -33,6 +33,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'package:permission_handler/permission_handler.dart';
 import 'package:pull_to_refresh/pull_to_refresh.dart';
+import 'package:shimmer/shimmer.dart';
 
 class FoldersPage extends StatefulWidget {
   @override
@@ -1041,7 +1042,7 @@ class _FoldersPageState extends State<FoldersPage>
               },
               header: const WaterDropHeader(),
               child: _tabController == null
-                  ? Center(child: CircularProgressIndicator())
+                  ? _buildShimmerLoading()
                   : TabBarView(
                       controller: _tabController!,
                       children: [
@@ -1059,6 +1060,382 @@ class _FoldersPageState extends State<FoldersPage>
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildShimmerLoading() {
+    return Center(
+      child: Shimmer.fromColors(
+        baseColor: Colors.grey[300]!,
+        highlightColor: Colors.grey[100]!,
+        child: Container(
+          width: 100,
+          height: 100,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            shape: BoxShape.circle,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFoldersShimmerLoading() {
+    if (isFilesGridView) {
+      // ✅ حساب عدد العناصر المطلوبة لملء الشاشة
+      final screenHeight = MediaQuery.of(context).size.height;
+      final cardHeight =
+          (MediaQuery.of(context).size.width - 48) /
+          3 /
+          0.95; // عرض الكارد / childAspectRatio
+      final itemsPerRow = 3;
+      final rowsNeeded =
+          (screenHeight / cardHeight).ceil() + 1; // +1 للتأكد من ملء الشاشة
+      final itemCount = rowsNeeded * itemsPerRow;
+
+      return GridView.builder(
+        padding: EdgeInsets.symmetric(
+          horizontal: 8.0,
+        ), // ✅ نفس padding الكاردات الفعلية
+        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 3, // ✅ 3 كاردات في السطر
+          crossAxisSpacing: 10.0, // ✅ نفس spacing الكاردات الفعلية
+          mainAxisSpacing: 10.0, // ✅ نفس spacing الكاردات الفعلية
+          childAspectRatio: 0.95, // ✅ نفس childAspectRatio الكاردات الفعلية
+        ),
+        itemCount: itemCount,
+        itemBuilder: (context, index) {
+          return _buildFolderShimmerCard();
+        },
+      );
+    } else {
+      // ✅ حساب عدد العناصر المطلوبة لملء الشاشة في ListView
+      final screenHeight = MediaQuery.of(context).size.height;
+      final cardHeight = 80.0 + 12.0; // ارتفاع الكارد + padding
+      final itemCount =
+          (screenHeight / cardHeight).ceil() + 2; // +2 للتأكد من ملء الشاشة
+
+      return ListView.builder(
+        padding: EdgeInsets.all(12),
+        itemCount: itemCount,
+        itemBuilder: (context, index) {
+          return Padding(
+            padding: EdgeInsets.only(bottom: 12),
+            child: _buildFolderListShimmerCard(),
+          );
+        },
+      );
+    }
+  }
+
+  Widget _buildRoomsShimmerLoading() {
+    // ✅ حساب عدد العناصر المطلوبة لملء الشاشة
+    final screenHeight = MediaQuery.of(context).size.height;
+    final cardHeight =
+        (MediaQuery.of(context).size.width - 48) /
+        3 /
+        0.95; // عرض الكارد / childAspectRatio
+    final itemsPerRow = 3;
+    final rowsNeeded =
+        (screenHeight / cardHeight).ceil() + 1; // +1 للتأكد من ملء الشاشة
+    final itemCount = rowsNeeded * itemsPerRow;
+
+    return GridView.builder(
+      padding: EdgeInsets.symmetric(
+        horizontal: 8.0,
+      ), // ✅ نفس padding الكاردات الفعلية
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 3, // ✅ 3 كاردات في السطر
+        mainAxisSpacing: 10.0, // ✅ نفس spacing الكاردات الفعلية
+        crossAxisSpacing: 10.0, // ✅ نفس spacing الكاردات الفعلية
+        childAspectRatio: 0.95, // ✅ نفس childAspectRatio الكاردات الفعلية
+      ),
+      itemCount: itemCount,
+      itemBuilder: (context, index) {
+        return _buildRoomShimmerCard();
+      },
+    );
+  }
+
+  Widget _buildFolderShimmerCard() {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final w = constraints.maxWidth;
+        return Shimmer.fromColors(
+          baseColor: Colors.grey[300]!,
+          highlightColor: Colors.grey[100]!,
+          child: Container(
+            padding: EdgeInsets.all(
+              w * 0.08,
+            ), // ✅ نفس padding الكارد الفعلي (8% من العرض)
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(
+                w * 0.08,
+              ), // ✅ نفس borderRadius الكارد الفعلي
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.grey.withOpacity(
+                    0.2,
+                  ), // ✅ نفس shadow الكارد الفعلي
+                  spreadRadius: 2,
+                  blurRadius: 5,
+                  offset: Offset(0, 3),
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                // ✅ Header مع أيقونة و3 نقاط
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Container(
+                      width: w * 0.22,
+                      height: w * 0.22,
+                      decoration: BoxDecoration(
+                        color: Colors.grey[300],
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    Container(
+                      width: w * 0.12,
+                      height: w * 0.12,
+                      decoration: BoxDecoration(
+                        color: Colors.grey[300],
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                  ],
+                ),
+                // ✅ Title shimmer
+                Container(
+                  height: w * 0.12,
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    color: Colors.grey[300],
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                ),
+                // ✅ File count and size shimmer
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Container(
+                          height: w * 0.10,
+                          width: w * 0.35,
+                          decoration: BoxDecoration(
+                            color: Colors.grey[300],
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                        ),
+                        Container(
+                          height: w * 0.10,
+                          width: w * 0.35,
+                          decoration: BoxDecoration(
+                            color: Colors.grey[300],
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildFolderListShimmerCard() {
+    return Shimmer.fromColors(
+      baseColor: Colors.grey[300]!,
+      highlightColor: Colors.grey[100]!,
+      child: Container(
+        height: 80,
+        padding: EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.grey.withOpacity(0.1),
+              spreadRadius: 1,
+              blurRadius: 4,
+              offset: Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 56,
+              height: 56,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    height: 14,
+                    width: double.infinity,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                  ),
+                  SizedBox(height: 8),
+                  Container(
+                    height: 12,
+                    width: 150,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildRoomShimmerCard() {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final w = constraints.maxWidth;
+        final h = constraints.maxHeight;
+        return Shimmer.fromColors(
+          baseColor: Colors.grey[300]!,
+          highlightColor: Colors.grey[100]!,
+          child: Container(
+            padding: EdgeInsets.all(w * 0.08), // ✅ نفس padding الكارد الفعلي
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(
+                w * 0.08,
+              ), // ✅ نفس borderRadius الكارد الفعلي
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.grey.withOpacity(
+                    0.2,
+                  ), // ✅ نفس shadow الكارد الفعلي
+                  spreadRadius: 2,
+                  blurRadius: 5,
+                  offset: Offset(0, 3),
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                // ✅ Header مع أيقونة غرفة و3 نقاط
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Container(
+                      padding: EdgeInsets.all(w * 0.06),
+                      width: w * 0.3,
+                      height: w * 0.3,
+                      decoration: BoxDecoration(
+                        color: Colors.grey[300],
+                        borderRadius: BorderRadius.circular(w * 0.06),
+                      ),
+                    ),
+                    Container(
+                      padding: EdgeInsets.all(w * 0.03),
+                      width: w * 0.16,
+                      height: w * 0.16,
+                      decoration: BoxDecoration(
+                        color: Colors.grey[300],
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                  ],
+                ),
+                // ✅ Title shimmer
+                Container(
+                  height: w * 0.13,
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    color: Colors.grey[300],
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                ),
+                // ✅ معلومات الغرفة
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    SizedBox(height: h * 0.015),
+                    // ✅ Items count shimmer
+                    Row(
+                      children: [
+                        Container(
+                          padding: EdgeInsets.all(w * 0.02),
+                          width: w * 0.11,
+                          height: w * 0.11,
+                          decoration: BoxDecoration(
+                            color: Colors.grey[300],
+                            borderRadius: BorderRadius.circular(w * 0.02),
+                          ),
+                        ),
+                        SizedBox(width: w * 0.03),
+                        Container(
+                          height: w * 0.09,
+                          width: w * 0.4,
+                          decoration: BoxDecoration(
+                            color: Colors.grey[300],
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: h * 0.008),
+                    // ✅ Members count shimmer
+                    Row(
+                      children: [
+                        Container(
+                          width: w * 0.08,
+                          height: w * 0.08,
+                          decoration: BoxDecoration(
+                            color: Colors.grey[300],
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                        SizedBox(width: w * 0.02),
+                        Container(
+                          height: w * 0.09,
+                          width: w * 0.35,
+                          decoration: BoxDecoration(
+                            color: Colors.grey[300],
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -1119,7 +1496,7 @@ class _FoldersPageState extends State<FoldersPage>
             // المحتوى
             Expanded(
               child: _isLoadingFolders
-                  ? Center(child: CircularProgressIndicator())
+                  ? _buildFoldersShimmerLoading()
                   : SingleChildScrollView(
                       child: Column(
                         children: [
@@ -1188,7 +1565,7 @@ class _FoldersPageState extends State<FoldersPage>
                 builder: (context, roomController, child) {
                   if (roomController.isLoading &&
                       roomController.rooms.isEmpty) {
-                    return Center(child: CircularProgressIndicator());
+                    return _buildRoomsShimmerLoading();
                   }
 
                   if (roomController.errorMessage != null &&
@@ -1428,6 +1805,7 @@ class _FoldersPageState extends State<FoldersPage>
       return FilesGridView(
         items: roomItems,
         showFileCount: true,
+        crossAxisCount: 3, // ✅ إجبار عرض 3 كاردات في السطر
         onItemTap: (item) {
           final room = item['room'] as Map<String, dynamic>?;
           if (room != null && room['_id'] != null) {
@@ -2051,6 +2429,10 @@ class _FoldersPageState extends State<FoldersPage>
                 folderColor: folder['color'] is Color
                     ? folder['color'] as Color?
                     : null,
+                onFolderUpdated: () {
+                  // ✅ إعادة تحميل المجلدات لتحديث عدد الملفات
+                  _loadCategoriesAndFolders();
+                },
               ),
             ),
           ),

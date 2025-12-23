@@ -10,19 +10,19 @@ String _formatBytesHelper(int bytes) {
   if (bytes == 0) return '0 B';
   const k = 1024;
   const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
-  
+
   int i = 0;
   double size = bytes.toDouble();
-  
+
   while (size >= k && i < sizes.length - 1) {
     size /= k;
     i++;
   }
-  
+
   if (i >= sizes.length) {
     i = sizes.length - 1;
   }
-  
+
   return '${size.toStringAsFixed(1)} ${sizes[i]}';
 }
 
@@ -36,19 +36,34 @@ String _formatDateHelper(dynamic date) {
   }
 }
 
-Widget _buildDetailItemHelper(String type, String emoji, String label, String value) {
+Widget _buildDetailItemHelper(
+  String type,
+  String emoji,
+  String label,
+  String value,
+) {
   Color getIconColor() {
     switch (type) {
-      case 'folder': return Color(0xFF10B981);
-      case 'size': return Color(0xFFF59E0B);
-      case 'files': return Color(0xFF3B82F6);
-      case 'subfolders': return Color(0xFF8B5CF6);
-      case 'time': return Color(0xFFEF4444);
-      case 'edit': return Color(0xFF8B5CF6);
-      case 'description': return Color(0xFF4F6BED);
-      case 'tags': return Color(0xFFEC4899);
-      case 'share': return Color(0xFF06B6D4);
-      default: return Color(0xFF6B7280);
+      case 'folder':
+        return Color(0xFF10B981);
+      case 'size':
+        return Color(0xFFF59E0B);
+      case 'files':
+        return Color(0xFF3B82F6);
+      case 'subfolders':
+        return Color(0xFF8B5CF6);
+      case 'time':
+        return Color(0xFFEF4444);
+      case 'edit':
+        return Color(0xFF8B5CF6);
+      case 'description':
+        return Color(0xFF4F6BED);
+      case 'tags':
+        return Color(0xFFEC4899);
+      case 'share':
+        return Color(0xFF06B6D4);
+      default:
+        return Color(0xFF6B7280);
     }
   }
 
@@ -101,34 +116,42 @@ Widget _buildDetailItemHelper(String type, String emoji, String label, String va
   );
 }
 
-Future<void> showFolderInfoHelper(BuildContext context, Map<String, dynamic> folder) async {
+Future<void> showFolderInfoHelper(
+  BuildContext context,
+  Map<String, dynamic> folder,
+) async {
   final folderId = folder['folderId'] as String?;
   final folderName = folder['title'] as String;
   final folderColor = folder['color'] as Color? ?? Colors.blue;
-  
+
   if (folderId == null) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('خطأ: معرف المجلد غير موجود')),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text('خطأ: معرف المجلد غير موجود')));
     return;
   }
 
-  final folderController = Provider.of<FolderController>(context, listen: false);
-  final folderDetails = await folderController.getFolderDetails(folderId: folderId);
-  
+  final folderController = Provider.of<FolderController>(
+    context,
+    listen: false,
+  );
+  final folderDetails = await folderController.getFolderDetails(
+    folderId: folderId,
+  );
+
   if (folderDetails == null || folderDetails['folder'] == null) {
     if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('فشل جلب معلومات المجلد')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('فشل جلب معلومات المجلد')));
     }
     return;
   }
 
   final folderData = folderDetails['folder'] as Map<String, dynamic>;
-  
+
   if (!context.mounted) return;
-  
+
   showModalBottomSheet(
     context: context,
     isScrollControlled: true,
@@ -175,16 +198,52 @@ Future<void> showFolderInfoHelper(BuildContext context, Map<String, dynamic> fol
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   _buildDetailItemHelper('folder', '📁', 'النوع', 'مجلد'),
-                  _buildDetailItemHelper('size', '💾', 'الحجم', _formatBytesHelper(folderData['size'] ?? 0)),
-                  _buildDetailItemHelper('files', '📄', 'عدد الملفات', '${folderData['filesCount'] ?? 0}'),
-                  _buildDetailItemHelper('subfolders', '📂', 'عدد المجلدات الفرعية', '${folderData['subfoldersCount'] ?? 0}'),
-                  _buildDetailItemHelper('time', '🕐', 'تاريخ الإنشاء', _formatDateHelper(folderData['createdAt'])),
-                  _buildDetailItemHelper('edit', '✏️', 'آخر تعديل', _formatDateHelper(folderData['updatedAt'])),
-                  _buildDetailItemHelper('description', '📝', 'الوصف', 
-                      folderData['description']?.isNotEmpty == true ? folderData['description'] : "—"),
-                  _buildDetailItemHelper('tags', '🏷️', 'الوسوم', 
-                      (folderData['tags'] as List?)?.join(', ') ?? "—"),
-                  if (folderData['sharedWith'] != null && (folderData['sharedWith'] as List).isNotEmpty)
+                  _buildDetailItemHelper(
+                    'size',
+                    '💾',
+                    'الحجم',
+                    _formatBytesHelper(folderData['size'] ?? 0),
+                  ),
+                  _buildDetailItemHelper(
+                    'files',
+                    '📄',
+                    'عدد الملفات',
+                    '${folderData['filesCount'] ?? 0}',
+                  ),
+                  _buildDetailItemHelper(
+                    'subfolders',
+                    '📂',
+                    'عدد المجلدات الفرعية',
+                    '${folderData['subfoldersCount'] ?? 0}',
+                  ),
+                  _buildDetailItemHelper(
+                    'time',
+                    '🕐',
+                    'تاريخ الإنشاء',
+                    _formatDateHelper(folderData['createdAt']),
+                  ),
+                  _buildDetailItemHelper(
+                    'edit',
+                    '✏️',
+                    'آخر تعديل',
+                    _formatDateHelper(folderData['updatedAt']),
+                  ),
+                  _buildDetailItemHelper(
+                    'description',
+                    '📝',
+                    'الوصف',
+                    folderData['description']?.isNotEmpty == true
+                        ? folderData['description']
+                        : "—",
+                  ),
+                  _buildDetailItemHelper(
+                    'tags',
+                    '🏷️',
+                    'الوسوم',
+                    (folderData['tags'] as List?)?.join(', ') ?? "—",
+                  ),
+                  if (folderData['sharedWith'] != null &&
+                      (folderData['sharedWith'] as List).isNotEmpty)
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -194,9 +253,15 @@ Future<void> showFolderInfoHelper(BuildContext context, Map<String, dynamic> fol
                           '👥',
                           'تمت المشاركة مع',
                           (folderData['sharedWith'] as List)
-                              .map<String>((u) => u['user']?['email']?.toString() ?? u['email']?.toString() ?? '')
-                              .where((email) => email.isNotEmpty)
-                              .join(', ') ?? "—",
+                                  .map<String>(
+                                    (u) =>
+                                        u['user']?['email']?.toString() ??
+                                        u['email']?.toString() ??
+                                        '',
+                                  )
+                                  .where((email) => email.isNotEmpty)
+                                  .join(', ') ??
+                              "—",
                         ),
                       ],
                     ),
@@ -210,11 +275,15 @@ Future<void> showFolderInfoHelper(BuildContext context, Map<String, dynamic> fol
   );
 }
 
-Future<void> showRenameDialogHelper(BuildContext context, Map<String, dynamic> folder, VoidCallback? onUpdated) async {
+Future<void> showRenameDialogHelper(
+  BuildContext context,
+  Map<String, dynamic> folder,
+  VoidCallback? onUpdated,
+) async {
   final folderName = folder['title'] as String;
   final folderId = folder['folderId'] as String?;
   final folderData = folder['folderData'] as Map<String, dynamic>?;
-  
+
   final nameController = TextEditingController(text: folderName);
   final descriptionController = TextEditingController(
     text: folderData?['description'] as String? ?? '',
@@ -222,14 +291,14 @@ Future<void> showRenameDialogHelper(BuildContext context, Map<String, dynamic> f
   final tagsController = TextEditingController(
     text: (folderData?['tags'] as List?)?.join(', ') ?? '',
   );
-  
+
   if (folderId == null) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('خطأ: معرف المجلد غير موجود')),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text('خطأ: معرف المجلد غير موجود')));
     return;
   }
-  
+
   final result = await showDialog<bool>(
     context: context,
     builder: (dialogContext) => AlertDialog(
@@ -281,9 +350,9 @@ Future<void> showRenameDialogHelper(BuildContext context, Map<String, dynamic> f
           onPressed: () {
             final newName = nameController.text.trim();
             if (newName.isEmpty) {
-              ScaffoldMessenger.of(dialogContext).showSnackBar(
-                SnackBar(content: Text('يرجى إدخال اسم المجلد')),
-              );
+              ScaffoldMessenger.of(
+                dialogContext,
+              ).showSnackBar(SnackBar(content: Text('يرجى إدخال اسم المجلد')));
               return;
             }
             Navigator.pop(dialogContext, true);
@@ -295,21 +364,28 @@ Future<void> showRenameDialogHelper(BuildContext context, Map<String, dynamic> f
   );
 
   if (result == true) {
-    final folderController = Provider.of<FolderController>(context, listen: false);
+    final folderController = Provider.of<FolderController>(
+      context,
+      listen: false,
+    );
     final newName = nameController.text.trim();
     final description = descriptionController.text.trim();
     final tagsString = tagsController.text.trim();
-    final tags = tagsString.isNotEmpty 
-        ? tagsString.split(',').map((t) => t.trim()).where((t) => t.isNotEmpty).toList()
+    final tags = tagsString.isNotEmpty
+        ? tagsString
+              .split(',')
+              .map((t) => t.trim())
+              .where((t) => t.isNotEmpty)
+              .toList()
         : <String>[];
-    
+
     final success = await folderController.updateFolder(
       folderId: folderId,
       name: newName,
       description: description.isEmpty ? null : description,
       tags: tags.isEmpty ? null : tags,
     );
-    
+
     if (context.mounted) {
       if (success) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -322,7 +398,9 @@ Future<void> showRenameDialogHelper(BuildContext context, Map<String, dynamic> f
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(folderController.errorMessage ?? '❌ فشل تحديث المجلد'),
+            content: Text(
+              folderController.errorMessage ?? '❌ فشل تحديث المجلد',
+            ),
             backgroundColor: Colors.red,
           ),
         );
@@ -331,32 +409,40 @@ Future<void> showRenameDialogHelper(BuildContext context, Map<String, dynamic> f
   }
 }
 
-Future<void> showShareDialogHelper(BuildContext context, Map<String, dynamic> folder) async {
+Future<void> showShareDialogHelper(
+  BuildContext context,
+  Map<String, dynamic> folder,
+) async {
   final folderId = folder['folderId'] as String?;
   final folderName = folder['title'] as String;
-  
+
   if (folderId == null) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('خطأ: معرف المجلد غير موجود')),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text('خطأ: معرف المجلد غير موجود')));
     return;
   }
-  
+
   await Navigator.push(
     context,
     MaterialPageRoute(
-      builder: (context) => ShareFolderWithRoomPage(
-        folderId: folderId,
-        folderName: folderName,
-      ),
+      builder: (context) =>
+          ShareFolderWithRoomPage(folderId: folderId, folderName: folderName),
     ),
   );
 }
 
-void showDeleteDialogHelper(BuildContext context, Map<String, dynamic> folder, VoidCallback? onDeleted) {
-  final folderController = Provider.of<FolderController>(context, listen: false);
+void showDeleteDialogHelper(
+  BuildContext context,
+  Map<String, dynamic> folder,
+  VoidCallback? onDeleted,
+) {
+  final folderController = Provider.of<FolderController>(
+    context,
+    listen: false,
+  );
   final folderData = folder['folderData'] ?? folder;
-  
+
   FolderActionsService.deleteFolder(
     context,
     folderController,
@@ -371,32 +457,45 @@ void showDeleteDialogHelper(BuildContext context, Map<String, dynamic> folder, V
   );
 }
 
-Future<void> showMoveFolderDialogHelper(BuildContext context, Map<String, dynamic> folder) async {
+Future<void> showMoveFolderDialogHelper(
+  BuildContext context,
+  Map<String, dynamic> folder, {
+  VoidCallback? onUpdated,
+}) async {
   final folderData = folder['folderData'] as Map<String, dynamic>? ?? {};
-  final folderId = folder['folderId'] as String? ?? folderData['_id'] as String?;
+  final folderId =
+      folder['folderId'] as String? ?? folderData['_id'] as String?;
   final folderName = folder['title'] as String ?? folderData['name'] ?? 'مجلد';
   final currentParentId = folderData['parentId']?.toString();
-  
+
   if (folderId == null) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('خطأ: معرف المجلد غير موجود')),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text('خطأ: معرف المجلد غير موجود')));
     return;
   }
 
   // ✅ جلب قائمة المجلدات
-  final folderController = Provider.of<FolderController>(context, listen: false);
-  final foldersResponse = await folderController.getAllFolders(page: 1, limit: 100);
-  
+  final folderController = Provider.of<FolderController>(
+    context,
+    listen: false,
+  );
+  final foldersResponse = await folderController.getAllFolders(
+    page: 1,
+    limit: 100,
+  );
+
   if (foldersResponse == null || foldersResponse['folders'] == null) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('فشل جلب قائمة المجلدات')),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text('فشل جلب قائمة المجلدات')));
     return;
   }
 
-  final folders = List<Map<String, dynamic>>.from(foldersResponse['folders'] ?? []);
-  
+  final folders = List<Map<String, dynamic>>.from(
+    foldersResponse['folders'] ?? [],
+  );
+
   // ✅ تصفية المجلد الحالي والمجلدات الفرعية (لتجنب الحلقات)
   final availableFolders = folders.where((f) {
     final fId = f['_id']?.toString();
@@ -426,7 +525,11 @@ Future<void> showMoveFolderDialogHelper(BuildContext context, Map<String, dynami
             ),
             child: Row(
               children: [
-                Icon(Icons.drive_file_move_rounded, color: Colors.white, size: 32),
+                Icon(
+                  Icons.drive_file_move_rounded,
+                  color: Colors.white,
+                  size: 32,
+                ),
                 SizedBox(width: 16),
                 Expanded(
                   child: Text(
@@ -445,7 +548,7 @@ Future<void> showMoveFolderDialogHelper(BuildContext context, Map<String, dynami
               ],
             ),
           ),
-          
+
           // ✅ Content
           Expanded(
             child: Column(
@@ -457,11 +560,17 @@ Future<void> showMoveFolderDialogHelper(BuildContext context, Map<String, dynami
                   subtitle: Text('نقل المجلد للجذر (بدون مجلد أب)'),
                   onTap: () {
                     Navigator.pop(context);
-                    _moveFolderHelper(context, folderId, null, folderName);
+                    _moveFolderHelper(
+                      context,
+                      folderId,
+                      null,
+                      folderName,
+                      onUpdated: onUpdated,
+                    );
                   },
                 ),
                 Divider(),
-                
+
                 // ✅ قائمة المجلدات
                 Expanded(
                   child: availableFolders.isEmpty
@@ -477,14 +586,23 @@ Future<void> showMoveFolderDialogHelper(BuildContext context, Map<String, dynami
                             final f = availableFolders[index];
                             final fId = f['_id']?.toString();
                             final fName = f['name'] ?? 'مجلد بدون اسم';
-                            
+
                             return ListTile(
-                              leading: Icon(Icons.folder_rounded, color: Colors.orange),
+                              leading: Icon(
+                                Icons.folder_rounded,
+                                color: Colors.orange,
+                              ),
                               title: Text(fName),
                               subtitle: Text('${f['filesCount'] ?? 0} ملف'),
                               onTap: () {
                                 Navigator.pop(context);
-                                _moveFolderHelper(context, folderId, fId, folderName);
+                                _moveFolderHelper(
+                                  context,
+                                  folderId,
+                                  fId,
+                                  folderName,
+                                  onUpdated: onUpdated,
+                                );
                               },
                             );
                           },
@@ -500,31 +618,76 @@ Future<void> showMoveFolderDialogHelper(BuildContext context, Map<String, dynami
 }
 
 /// ✅ دالة مساعدة لنقل المجلد
-Future<void> _moveFolderHelper(BuildContext context, String folderId, String? targetFolderId, String folderName) async {
-  final folderController = Provider.of<FolderController>(context, listen: false);
-  
+Future<void> _moveFolderHelper(
+  BuildContext context,
+  String folderId,
+  String? targetFolderId,
+  String folderName, {
+  VoidCallback? onUpdated,
+}) async {
+  final folderController = Provider.of<FolderController>(
+    context,
+    listen: false,
+  );
+
+  // ✅ إظهار مؤشر تحميل محسّن
   ScaffoldMessenger.of(context).showSnackBar(
     SnackBar(
       content: Row(
         children: [
-          CircularProgressIndicator(color: Colors.white),
+          SizedBox(
+            width: 20,
+            height: 20,
+            child: CircularProgressIndicator(
+              color: Colors.white,
+              strokeWidth: 2,
+            ),
+          ),
           SizedBox(width: 16),
-          Text('جاري نقل المجلد...'),
+          Expanded(
+            child: Text(
+              targetFolderId == null
+                  ? 'جاري نقل المجلد للجذر...'
+                  : 'جاري نقل المجلد...',
+              style: TextStyle(fontSize: 14),
+            ),
+          ),
         ],
       ),
-      duration: Duration(seconds: 30),
+      duration: Duration(seconds: 120), // ✅ زيادة المدة للمجلدات الكبيرة
+      backgroundColor: Colors.blue[700],
     ),
   );
 
-  // ✅ نقل المجلد
-  final success = await folderController.moveFolder(
-    folderId: folderId,
-    targetFolderId: targetFolderId,
-  );
+  // ✅ نقل المجلد مع معالجة الأخطاء
+  bool success = false;
+  try {
+    success = await folderController.moveFolder(
+      folderId: folderId,
+      targetFolderId: targetFolderId,
+    );
+  } catch (e) {
+    // ✅ معالجة timeout أو أخطاء أخرى
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            e.toString().contains('timeout') || e.toString().contains('مهلة')
+                ? 'انتهت مهلة الطلب. قد يكون المجلد كبيراً جداً. يرجى المحاولة مرة أخرى.'
+                : 'حدث خطأ أثناء نقل المجلد: ${e.toString()}',
+          ),
+          backgroundColor: Colors.orange,
+          duration: Duration(seconds: 5),
+        ),
+      );
+    }
+    return;
+  }
 
   if (context.mounted) {
     ScaffoldMessenger.of(context).hideCurrentSnackBar();
-    
+
     if (success) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -532,6 +695,10 @@ Future<void> _moveFolderHelper(BuildContext context, String folderId, String? ta
           backgroundColor: Colors.green,
         ),
       );
+      // ✅ استدعاء callback لإعادة تحميل البيانات بعد النقل الناجح
+      if (onUpdated != null) {
+        onUpdated();
+      }
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -542,5 +709,3 @@ Future<void> _moveFolderHelper(BuildContext context, String folderId, String? ta
     }
   }
 }
-
-

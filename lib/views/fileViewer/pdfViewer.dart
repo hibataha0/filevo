@@ -6,13 +6,19 @@ import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
 import 'package:filevo/services/storage_service.dart';
 import 'package:filevo/generated/l10n.dart';
+import 'package:filevo/services/screen_protection_service.dart';
 
 class PdfViewerPage extends StatefulWidget {
   final String pdfUrl;
   final String fileName;
+  final bool isOneTimeShare; // ✅ للملفات المشتركة لمرة واحدة
 
-  const PdfViewerPage({Key? key, required this.pdfUrl, required this.fileName})
-    : super(key: key);
+  const PdfViewerPage({
+    Key? key,
+    required this.pdfUrl,
+    required this.fileName,
+    this.isOneTimeShare = false,
+  }) : super(key: key);
 
   @override
   State<PdfViewerPage> createState() => _PdfViewerPageState();
@@ -48,11 +54,19 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
   @override
   void initState() {
     super.initState();
+    // ✅ تفعيل الحماية من السكرين شوت والريكورد للملفات المشتركة لمرة واحدة
+    if (widget.isOneTimeShare) {
+      ScreenProtectionService.enableProtection();
+    }
     _loadPdf();
   }
 
   @override
   void dispose() {
+    // ✅ إلغاء تفعيل الحماية عند إغلاق المشاهد
+    if (widget.isOneTimeShare) {
+      ScreenProtectionService.disableProtection();
+    }
     _searchController.dispose();
     _pageController.dispose();
     _textController.dispose();

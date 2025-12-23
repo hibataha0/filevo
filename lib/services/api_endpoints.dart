@@ -50,6 +50,10 @@ class ApiEndpoints {
   static String downloadFolder(String id) =>
       '/folders/$id/download'; // ✅ تحميل مجلد كـ ZIP
   static const String recentFolders = '/folders/recent'; // ✅ المجلدات الحديثة
+  
+  // 🔒 Folder Protection endpoints
+  static String protectFolder(String id) => '/folders/$id/protect';
+  static String verifyFolderAccess(String id) => '/folders/$id/verify-access';
 
   // Files endpoints
   static const String files = '/files';
