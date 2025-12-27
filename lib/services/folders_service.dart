@@ -273,6 +273,7 @@ class FolderService {
   }
 
   // ✅ جلب محتويات مجلد معين (subfolders + files)
+  // ✅ لا نحتاج password هنا لأن الـ backend يستخدم session بعد التحقق
   Future<Map<String, dynamic>> getFolderContents({
     required String folderId,
     int page = 1,
@@ -284,30 +285,42 @@ class FolderService {
         Uri.parse(
           "${ApiConfig.baseUrl}${ApiEndpoints.folderContents(folderId)}",
         ).replace(
-          queryParameters: {'page': page.toString(), 'limit': limit.toString()},
+          queryParameters: {
+            'page': page.toString(),
+            'limit': limit.toString(),
+          },
         );
+
+    final headers = <String, String>{
+      'Authorization': 'Bearer $token',
+      'Content-Type': 'application/json',
+    };
 
     final response = await http.get(
       uri,
-      headers: {
-        'Authorization': 'Bearer $token',
-        'Content-Type': 'application/json',
-      },
+      headers: headers,
     );
 
+    print('📡 [FolderService] getFolderContents response status: ${response.statusCode}');
+    print('📡 [FolderService] getFolderContents response body: ${response.body}');
+    
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body);
+      print('✅ [FolderService] getFolderContents success, data keys: ${data.keys}');
       // ✅ الباك إند الجديد يعيد contents, subfolders, files, totalItems
       // ✅ التأكد من أن البيانات في الصيغة الصحيحة
       return data;
     } else if (response.statusCode == 403) {
+      print('❌ [FolderService] getFolderContents: Access denied (403)');
       throw Exception(
-        'Access denied: You do not have permission to access this folder',
+        'Access denied: You do not have permission to access this folder. Please verify folder protection.',
       );
     } else if (response.statusCode == 404) {
+      print('❌ [FolderService] getFolderContents: Folder not found (404)');
       throw Exception('Folder not found');
     } else {
       final errorData = jsonDecode(response.body);
+      print('❌ [FolderService] getFolderContents error: ${errorData['message']}');
       throw Exception(
         errorData['message'] ??
             'Failed to get folder contents: ${response.body}',
@@ -388,19 +401,23 @@ class FolderService {
     print('🔄 Moving folder: $folderId to $targetFolderId');
     print('🔄 URL: $url');
 
-    final response = await http.put(
-      Uri.parse(url),
-      headers: {
-        'Authorization': 'Bearer $token',
-        'Content-Type': 'application/json',
-      },
-      body: jsonEncode(body),
-    ).timeout(
-      Duration(seconds: 60), // ✅ timeout 60 ثانية لنقل المجلدات الكبيرة
-      onTimeout: () {
-        throw Exception('انتهت مهلة الطلب. قد يكون المجلد كبيراً جداً. يرجى المحاولة مرة أخرى.');
-      },
-    );
+    final response = await http
+        .put(
+          Uri.parse(url),
+          headers: {
+            'Authorization': 'Bearer $token',
+            'Content-Type': 'application/json',
+          },
+          body: jsonEncode(body),
+        )
+        .timeout(
+          Duration(seconds: 60), // ✅ timeout 60 ثانية لنقل المجلدات الكبيرة
+          onTimeout: () {
+            throw Exception(
+              'انتهت مهلة الطلب. قد يكون المجلد كبيراً جداً. يرجى المحاولة مرة أخرى.',
+            );
+          },
+        );
 
     print('🔄 Response status: ${response.statusCode}');
     print('🔄 Response body: ${response.body}');
@@ -412,8 +429,8 @@ class FolderService {
       try {
         final errorData = jsonDecode(response.body);
         throw Exception(
-          errorData['message'] ?? 
-          'Route not found: ${ApiEndpoints.moveFolder(folderId)}. Please check backend implementation.',
+          errorData['message'] ??
+              'Route not found: ${ApiEndpoints.moveFolder(folderId)}. Please check backend implementation.',
         );
       } catch (e) {
         throw Exception(
@@ -423,9 +440,14 @@ class FolderService {
     } else {
       try {
         final errorData = jsonDecode(response.body);
-        throw Exception(errorData['message'] ?? 'Failed to move folder: ${response.statusCode}');
+        throw Exception(
+          errorData['message'] ??
+              'Failed to move folder: ${response.statusCode}',
+        );
       } catch (e) {
-        throw Exception('Failed to move folder: ${response.statusCode} - ${response.body}');
+        throw Exception(
+          'Failed to move folder: ${response.statusCode} - ${response.body}',
+        );
       }
     }
   }
@@ -896,145 +918,242 @@ class FolderService {
     }
   }
 
-  // 🔒 Folder Protection Functions
 
   /// تعيين حماية المجلد (كلمة سر أو بصمة)
-  Future<Map<String, dynamic>> setFolderProtection({
+  // Future<Map<String, dynamic>> setFolderProtection({
+  //   required String folderId,
+  //   required String protectionType, // 'password' or 'biometric'
+  //   String? password,
+  // }) async {
+  //   final token = await StorageService.getToken();
+  //   if (token == null) {
+  //     return {
+  //       'success': false,
+  //       'message': 'Authentication token not found.',
+  //     };
+  //   }
+
+  //   final body = jsonEncode({
+  //     'protectionType': protectionType,
+  //     if (password != null) 'password': password,
+  //   });
+
+  //   try {
+  //     final response = await http.put(
+  //       Uri.parse(
+  //         "${ApiConfig.baseUrl}${ApiEndpoints.protectFolder(folderId)}",
+  //       ),
+  //       headers: {
+  //         'Authorization': 'Bearer $token',
+  //         'Content-Type': 'application/json',
+  //       },
+  //       body: body,
+  //     ).timeout(ApiConfig.timeout);
+
+  //     if (response.statusCode >= 200 && response.statusCode < 300) {
+  //       return jsonDecode(response.body);
+  //     } else {
+  //       final errorData = jsonDecode(response.body);
+  //       return {
+  //         'success': false,
+  //         'message': errorData['message'] ?? 'Failed to set protection',
+  //       };
+  //     }
+  //   } catch (e) {
+  //     return {
+  //       'success': false,
+  //       'message': 'Error setting protection: $e',
+  //     };
+  //   }
+  // }
+
+  /// التحقق من الوصول للمجلد (كلمة سر أو بصمة)
+  // Future<Map<String, dynamic>> verifyFolderAccess({
+  //   required String folderId,
+  //   String? password,
+  //   String? biometricToken,
+  // }) async {
+  //   final token = await StorageService.getToken();
+  //   if (token == null) {
+  //     return {'success': false, 'message': 'Authentication token not found.'};
+  //   }
+
+  //   final body = jsonEncode({
+  //     if (password != null) 'password': password,
+  //     if (biometricToken != null) 'biometricToken': biometricToken,
+  //   });
+
+  //   try {
+  //     final response = await http
+  //         .post(
+  //           Uri.parse(
+  //             "${ApiConfig.baseUrl}${ApiEndpoints.verifyFolderAccess(folderId)}",
+  //           ),
+  //           headers: {
+  //             'Authorization': 'Bearer $token',
+  //             'Content-Type': 'application/json',
+  //           },
+  //           body: body,
+  //         )
+  //         .timeout(ApiConfig.timeout);
+
+  //     if (response.statusCode >= 200 && response.statusCode < 300) {
+  //       return jsonDecode(response.body);
+  //     } else {
+  //       final errorData = jsonDecode(response.body);
+  //       return {
+  //         'success': false,
+  //         'message': errorData['message'] ?? 'Access denied',
+  //       };
+  //     }
+  //   } catch (e) {
+  //     return {'success': false, 'message': 'Error verifying access: $e'};
+  //   }
+  // }
+
+  /// إزالة حماية المجلد
+  // Future<Map<String, dynamic>> removeFolderProtection({
+  //   required String folderId,
+  //   required String password,
+  // }) async {
+  //   final token = await StorageService.getToken();
+  //   if (token == null) {
+  //     return {'success': false, 'message': 'Authentication token not found.'};
+  //   }
+
+  //   final body = jsonEncode({'password': password});
+
+  //   try {
+  //     final response = await http
+  //         .delete(
+  //           Uri.parse(
+  //             "${ApiConfig.baseUrl}${ApiEndpoints.protectFolder(folderId)}",
+  //           ),
+  //           headers: {
+  //             'Authorization': 'Bearer $token',
+  //             'Content-Type': 'application/json',
+  //           },
+  //           body: body,
+  //         )
+  //         .timeout(ApiConfig.timeout);
+
+  //     if (response.statusCode >= 200 && response.statusCode < 300) {
+  //       return jsonDecode(response.body);
+  //     } else {
+  //       final errorData = jsonDecode(response.body);
+  //       return {
+  //         'success': false,
+  //         'message': errorData['message'] ?? 'Failed to remove protection',
+  //       };
+  //     }
+  //   } catch (e) {
+  //     return {'success': false, 'message': 'Error removing protection: $e'};
+  //   }
+  // }
+
+  // ============================================
+  // 🔒 Folder Protection Service Methods
+  // ============================================
+
+  /// 🔒 تعيين حماية مجلد (password أو biometric)
+  Future<Map<String, dynamic>> protectFolder({
     required String folderId,
-    required String protectionType, // 'password' or 'biometric'
+    required String protectionType, // "password" | "biometric"
     String? password,
   }) async {
     final token = await StorageService.getToken();
-    if (token == null) {
-      return {
-        'success': false,
-        'message': 'Authentication token not found.',
-      };
-    }
 
     final body = jsonEncode({
       'protectionType': protectionType,
-      if (password != null) 'password': password,
+      if (password != null && password.isNotEmpty) 'password': password,
     });
 
-    try {
-      final response = await http.put(
-        Uri.parse(
-          "${ApiConfig.baseUrl}${ApiEndpoints.protectFolder(folderId)}",
-        ),
-        headers: {
-          'Authorization': 'Bearer $token',
-          'Content-Type': 'application/json',
-        },
-        body: body,
-      ).timeout(ApiConfig.timeout);
+    final response = await http.put(
+      Uri.parse("${ApiConfig.baseUrl}${ApiEndpoints.protectFolder(folderId)}"),
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+      body: body,
+    );
 
-      if (response.statusCode >= 200 && response.statusCode < 300) {
-        return jsonDecode(response.body);
-      } else {
-        final errorData = jsonDecode(response.body);
-        return {
-          'success': false,
-          'message': errorData['message'] ?? 'Failed to set protection',
-        };
-      }
-    } catch (e) {
-      return {
-        'success': false,
-        'message': 'Error setting protection: $e',
-      };
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    } else {
+      final errorData = jsonDecode(response.body);
+      throw Exception(
+        errorData['message'] ?? 'Failed to protect folder',
+      );
     }
   }
 
-  /// التحقق من الوصول للمجلد (كلمة سر أو بصمة)
+  /// 🔓 التحقق من الوصول لمجلد محمي
   Future<Map<String, dynamic>> verifyFolderAccess({
     required String folderId,
     String? password,
     String? biometricToken,
   }) async {
     final token = await StorageService.getToken();
-    if (token == null) {
-      return {
-        'success': false,
-        'message': 'Authentication token not found.',
-      };
-    }
 
     final body = jsonEncode({
-      if (password != null) 'password': password,
-      if (biometricToken != null) 'biometricToken': biometricToken,
+      if (password != null && password.isNotEmpty) 'password': password,
+      if (biometricToken != null && biometricToken.isNotEmpty)
+        'biometricToken': biometricToken,
     });
 
-    try {
-      final response = await http.post(
-        Uri.parse(
-          "${ApiConfig.baseUrl}${ApiEndpoints.verifyFolderAccess(folderId)}",
-        ),
-        headers: {
-          'Authorization': 'Bearer $token',
-          'Content-Type': 'application/json',
-        },
-        body: body,
-      ).timeout(ApiConfig.timeout);
+    final response = await http.post(
+      Uri.parse(
+        "${ApiConfig.baseUrl}${ApiEndpoints.verifyFolderAccess(folderId)}",
+      ),
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+      body: body,
+    );
 
-      if (response.statusCode >= 200 && response.statusCode < 300) {
-        return jsonDecode(response.body);
-      } else {
-        final errorData = jsonDecode(response.body);
-        return {
-          'success': false,
-          'message': errorData['message'] ?? 'Access denied',
-        };
-      }
-    } catch (e) {
-      return {
-        'success': false,
-        'message': 'Error verifying access: $e',
-      };
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      print('🔐 [FolderService] verifyFolderAccess response: $data');
+      return data;
+    } else {
+      final errorData = jsonDecode(response.body);
+      print('❌ [FolderService] verifyFolderAccess error: ${errorData['message']}');
+      throw Exception(
+        errorData['message'] ?? 'Failed to verify folder access',
+      );
     }
   }
 
-  /// إزالة حماية المجلد
+  /// 🔓 إزالة حماية مجلد
   Future<Map<String, dynamic>> removeFolderProtection({
     required String folderId,
-    required String password,
+    String? password, // مطلوب إذا كان نوع الحماية password
   }) async {
     final token = await StorageService.getToken();
-    if (token == null) {
-      return {
-        'success': false,
-        'message': 'Authentication token not found.',
-      };
-    }
 
-    final body = jsonEncode({'password': password});
+    final body = jsonEncode({
+      if (password != null && password.isNotEmpty) 'password': password,
+    });
 
-    try {
-      final response = await http.delete(
-        Uri.parse(
-          "${ApiConfig.baseUrl}${ApiEndpoints.protectFolder(folderId)}",
-        ),
-        headers: {
-          'Authorization': 'Bearer $token',
-          'Content-Type': 'application/json',
-        },
-        body: body,
-      ).timeout(ApiConfig.timeout);
+    final response = await http.delete(
+      Uri.parse(
+        "${ApiConfig.baseUrl}${ApiEndpoints.removeFolderProtection(folderId)}",
+      ),
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+      body: body,
+    );
 
-      if (response.statusCode >= 200 && response.statusCode < 300) {
-        return jsonDecode(response.body);
-      } else {
-        final errorData = jsonDecode(response.body);
-        return {
-          'success': false,
-          'message': errorData['message'] ?? 'Failed to remove protection',
-        };
-      }
-    } catch (e) {
-      return {
-        'success': false,
-        'message': 'Error removing protection: $e',
-      };
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    } else {
+      final errorData = jsonDecode(response.body);
+      throw Exception(
+        errorData['message'] ?? 'Failed to remove folder protection',
+      );
     }
   }
 }

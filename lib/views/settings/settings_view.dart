@@ -1,4 +1,10 @@
 import 'package:filevo/main.dart';
+import 'package:filevo/views/settings/AboutPage.dart';
+import 'package:filevo/views/settings/HelpSupportPage.dart';
+import 'package:filevo/views/settings/LegalPolicyPage.dart';
+import 'package:filevo/views/settings/NotificationsPage.dart';
+import 'package:filevo/views/settings/PrivacySecurityPage.dart';
+import 'package:filevo/views/settings/StoragePage%20.dart';
 import 'package:filevo/views/settings/components/settings_item.dart';
 import 'package:filevo/views/settings/components/settings_section.dart';
 import 'package:flutter/material.dart';
@@ -32,7 +38,10 @@ class _SettingsPageState extends State<SettingsPage> {
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(false),
-              child: Text(S.of(context).cancel, style: TextStyle(color: Colors.grey[600])),
+              child: Text(
+                S.of(context).cancel,
+                style: TextStyle(color: Colors.grey[600]),
+              ),
             ),
             TextButton(
               onPressed: () => Navigator.of(context).pop(true),
@@ -219,27 +228,43 @@ class _SettingsPageState extends State<SettingsPage> {
                                 icon: Icons.notifications_outlined,
                                 title: S.of(context).notifications,
                                 subtitle: S.of(context).manageNotifications,
-                                onTap: () {},
+                                onTap: () => Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => const NotificationsPage(),
+                                  ),
+                                ),
                               ),
                               SettingsItem(
                                 icon: Icons.storage,
                                 title: S.of(context).storage,
                                 subtitle: S.of(context).manageStorageSettings,
-                                onTap: () {},
+                                onTap: () => Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => const StoragePage(),
+                                  ),
+                                ),
                               ),
                               SettingsItem(
                                 icon: Icons.security,
                                 title: S.of(context).privacySecurity,
                                 subtitle: S.of(context).privacySettings,
-                                onTap: () {},
+                                onTap: () => Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => const PrivacySecurityPage(),
+                                  ),
+                                ),
                               ),
 
                               /// 🔥 خيار المحذوفات هنا
                               SettingsItem(
                                 icon: Icons.delete_outline,
                                 title: S.of(context).trash,
-                                subtitle:
-                                    S.of(context).viewDeletedFilesAndFolders,
+                                subtitle: S
+                                    .of(context)
+                                    .viewDeletedFilesAndFolders,
                                 onTap: () async {
                                   final token = await StorageService.getToken();
 
@@ -337,19 +362,34 @@ class _SettingsPageState extends State<SettingsPage> {
                                 icon: Icons.description_outlined,
                                 title: S.of(context).legalPolicies,
                                 subtitle: S.of(context).termsPrivacyPolicy,
-                                onTap: () {},
+                                onTap: () => Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => const LegalPolicyPage(),
+                                  ),
+                                ),
                               ),
                               SettingsItem(
                                 icon: Icons.help_outline,
                                 title: S.of(context).helpSupport,
                                 subtitle: S.of(context).getHelpSupport,
-                                onTap: () {},
+                                onTap: () => Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => const HelpSupportPage(),
+                                  ),
+                                ),
                               ),
                               SettingsItem(
                                 icon: Icons.info_outline,
                                 title: S.of(context).about,
                                 subtitle: S.of(context).appVersion("1.0.0"),
-                                onTap: () {},
+                                onTap: () => Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => const AboutPage(),
+                                  ),
+                                ),
                               ),
                             ],
                           ),

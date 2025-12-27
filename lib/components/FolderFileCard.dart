@@ -26,6 +26,9 @@ class FolderFileCard extends StatelessWidget {
   final Map<String, dynamic>? folderData; // ✅ بيانات المجلد الكاملة
   final String? sharedBy; // ✅ معلومات من شارك المجلد/الملف
   final String? roomId; // ✅ معرف الغرفة (لتمييز المجلدات المشتركة)
+  // ✅ إضافة callback للتحقق من الحماية
+  final Future<bool> Function(String type, String? password)?
+  onVerifyProtection;
 
   const FolderFileCard({
     Key? key,
@@ -52,6 +55,7 @@ class FolderFileCard extends StatelessWidget {
     this.folderData,
     this.sharedBy,
     this.roomId,
+    this.onVerifyProtection,
   }) : super(key: key);
 
   @override
@@ -928,10 +932,10 @@ class FolderFileCard extends StatelessWidget {
                         Divider(height: 1),
                         _buildMenuItem(
                           context,
-                          icon: folderData?['isProtected'] == true
+                          icon: _isFolderProtected()
                               ? Icons.lock_open
                               : Icons.lock,
-                          title: folderData?['isProtected'] == true
+                          title: _isFolderProtected()
                               ? 'إلغاء قفل المجلد'
                               : 'قفل المجلد',
                           iconColor: Colors.orange[700],
@@ -973,6 +977,23 @@ class FolderFileCard extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  /// 🔐 التحقق من حالة حماية المجلد
+  bool _isFolderProtected() {
+    if (folderData == null) return false;
+    
+    // ✅ التحقق من isProtected في folderData مباشرة
+    final isProtected = folderData?['isProtected'] == true;
+    if (isProtected) return true;
+    
+    // ✅ التحقق من isProtected في folderData['folderData'] (إذا كانت nested)
+    final nestedFolderData = folderData?['folderData'] as Map<String, dynamic>?;
+    if (nestedFolderData != null) {
+      return nestedFolderData['isProtected'] == true;
+    }
+    
+    return false;
   }
 
   Widget _buildMenuItem(
@@ -1023,4 +1044,70 @@ class FolderFileCard extends StatelessWidget {
       onTap: onTap,
     );
   }
+}
+
+void showProtectFolderDialog(
+  BuildContext context, {
+  required Function(String type, String? password) onConfirm,
+}) {
+  final TextEditingController passwordController = TextEditingController();
+
+  showDialog(
+    context: context,
+    builder: (context) {
+      return AlertDialog(
+        title: Text('حماية المجلد'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // 🔑 حماية بكلمة سر
+            ListTile(
+              leading: Icon(Icons.lock),
+              title: Text('كلمة سر'),
+              onTap: () {
+                Navigator.pop(context);
+
+                showDialog(
+                  context: context,
+                  builder: (context) => AlertDialog(
+                    title: Text('أدخل كلمة السر'),
+                    content: TextField(
+                      controller: passwordController,
+                      obscureText: true,
+                      decoration: InputDecoration(hintText: 'كلمة السر'),
+                    ),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(context),
+                        child: Text('إلغاء'),
+                      ),
+                      ElevatedButton(
+                        onPressed: () {
+                          Navigator.pop(context);
+                          onConfirm('password', passwordController.text);
+                        },
+                        child: Text('تأكيد'),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+
+            Divider(),
+
+            // 🆔 حماية بالبصمة
+            ListTile(
+              leading: Icon(Icons.fingerprint),
+              title: Text('بصمة'),
+              onTap: () {
+                Navigator.pop(context);
+                onConfirm('biometric', null);
+              },
+            ),
+          ],
+        ),
+      );
+    },
+  );
 }

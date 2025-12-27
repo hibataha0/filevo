@@ -39,7 +39,7 @@ class _ImageEditorPageState extends State<ImageEditorPage> {
 
       // ✅ قراءة الملف في الذاكرة
       final bytes = await widget.imageFile.readAsBytes();
-      
+
       if (bytes.isEmpty) {
         setState(() {
           _errorMessage = 'الملف فارغ';
@@ -66,9 +66,7 @@ class _ImageEditorPageState extends State<ImageEditorPage> {
     if (_isLoading) {
       return Scaffold(
         appBar: AppBar(title: const Text('تحميل الصورة')),
-        body: const Center(
-          child: CircularProgressIndicator(),
-        ),
+        body: const Center(child: CircularProgressIndicator()),
       );
     }
 
@@ -125,7 +123,7 @@ class _ImageEditorPageState extends State<ImageEditorPage> {
       }
 
       final tempDir = await getTemporaryDirectory();
-      
+
       // ✅ التأكد من وجود المجلد المؤقت
       if (!await tempDir.exists()) {
         await tempDir.create(recursive: true);
@@ -133,15 +131,17 @@ class _ImageEditorPageState extends State<ImageEditorPage> {
 
       final timestamp = DateTime.now().millisecondsSinceEpoch;
       final editedFile = File('${tempDir.path}/edited_$timestamp.jpg');
-      
+
       // ✅ كتابة الملف
       await editedFile.writeAsBytes(imageBytes);
-      
+
       // ✅ التحقق من وجود الملف وحجمه
       if (await editedFile.exists()) {
         final fileSize = await editedFile.length();
         if (fileSize > 0) {
-          print('✅ Image saved successfully: ${editedFile.path}, size: $fileSize bytes');
+          print(
+            '✅ Image saved successfully: ${editedFile.path}, size: $fileSize bytes',
+          );
           return editedFile;
         } else {
           print('❌ Saved file is empty');

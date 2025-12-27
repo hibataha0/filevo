@@ -772,7 +772,11 @@ class FileService {
 
       if (response.statusCode >= 200 && response.statusCode < 300) {
         final data = jsonDecode(responseBody);
-        if (data['success'] == true) {
+        // ✅ إذا كان success موجوداً و false، أو غير موجود ولكن status code 200، نعتبره نجاح
+        // ✅ إذا كان success موجوداً و true، نعتبره نجاح
+        final isSuccess = data['success'] != false; // true إذا success غير موجود أو true
+        
+        if (isSuccess) {
           print('✅ [FileService] File content updated successfully');
           print('   - File name: ${data['file']?['name'] ?? 'N/A'}');
           print('   - Replace mode: ${data['replaceMode'] ?? 'N/A'}');

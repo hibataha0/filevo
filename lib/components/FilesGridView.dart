@@ -3,38 +3,20 @@ import 'package:filevo/responsive.dart';
 import 'package:filevo/controllers/folders/folders_controller.dart';
 import 'package:filevo/views/folders/share_folder_with_room_page.dart';
 import 'package:filevo/views/fileViewer/folder_actions_service.dart';
-import 'package:filevo/views/folders/folder_protection_dialogs.dart';
-import 'package:filevo/services/folder_protection_service.dart';
-import 'package:filevo/utils/folder_protection_helper.dart';
+import 'package:filevo/dialogs/folder_protection_dialogs.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter/material.dart';
-import 'package:filevo/generated/l10n.dart';
 
 // ✅ Helper functions للتعامل مع إجراءات المجلد
 void _showFolderInfo(BuildContext context, Map<String, dynamic> folder) async {
-  // ✅ التحقق من كلمة السر قبل عرض التفاصيل
-  final hasAccess = await FolderProtectionHelper.verifyAccessBeforeAction(
-    context: context,
-    folder: folder,
-    actionName: 'عرض التفاصيل',
-  );
-
-  if (!hasAccess) {
-    return; // ✅ المستخدم لم يتحقق أو ألغى العملية
-  }
-
   final folderId = folder['folderId'] as String?;
-  final folderName =
-      folder['title']?.toString() ?? folder['name']?.toString() ?? 'مجلد';
+  final folderName = folder['title'] as String;
   final folderColor = folder['color'] as Color? ?? Colors.blue;
 
   if (folderId == null) {
-    final scaffoldMessenger = ScaffoldMessenger.maybeOf(context);
-    if (scaffoldMessenger != null) {
-      scaffoldMessenger.showSnackBar(
-        SnackBar(content: Text(S.of(context).folderIdNotFound)),
-      );
-    }
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text('خطأ: معرف المجلد غير موجود')));
     return;
   }
 
@@ -49,9 +31,9 @@ void _showFolderInfo(BuildContext context, Map<String, dynamic> folder) async {
 
   if (folderDetails == null || folderDetails['folder'] == null) {
     if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(S.of(context).failedToFetchFolderInfo)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('فشل جلب معلومات المجلد')));
     }
     return;
   }
@@ -108,46 +90,41 @@ void _showFolderInfo(BuildContext context, Map<String, dynamic> folder) async {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildDetailItem(
-                    'folder',
-                    '📁',
-                    S.of(context).type,
-                    S.of(context).folder,
-                  ),
+                  _buildDetailItem('folder', '📁', 'النوع', 'مجلد'),
                   _buildDetailItem(
                     'size',
                     '💾',
-                    S.of(context).size,
+                    'الحجم',
                     _formatBytes(folderData['size'] ?? 0),
                   ),
                   _buildDetailItem(
                     'files',
                     '📄',
-                    S.of(context).filesCount,
+                    'عدد الملفات',
                     '${folderData['filesCount'] ?? 0}',
                   ),
                   _buildDetailItem(
                     'subfolders',
                     '📂',
-                    S.of(context).subfoldersCount,
+                    'عدد المجلدات الفرعية',
                     '${folderData['subfoldersCount'] ?? 0}',
                   ),
                   _buildDetailItem(
                     'time',
                     '🕐',
-                    S.of(context).creationDate,
+                    'تاريخ الإنشاء',
                     _formatDate(folderData['createdAt']),
                   ),
                   _buildDetailItem(
                     'edit',
                     '✏️',
-                    S.of(context).lastModified,
+                    'آخر تعديل',
                     _formatDate(folderData['updatedAt']),
                   ),
                   _buildDetailItem(
                     'description',
                     '📝',
-                    S.of(context).description,
+                    'الوصف',
                     folderData['description']?.isNotEmpty == true
                         ? folderData['description']
                         : "—",
@@ -155,10 +132,11 @@ void _showFolderInfo(BuildContext context, Map<String, dynamic> folder) async {
                   _buildDetailItem(
                     'tags',
                     '🏷️',
-                    S.of(context).tags,
+                    'الوسوم',
                     (folderData['tags'] as List?)?.join(', ') ?? "—",
                   ),
 
+                  // ✅ Shared With Section
                   if (folderData['sharedWith'] != null &&
                       (folderData['sharedWith'] as List).isNotEmpty)
                     Column(
@@ -168,7 +146,7 @@ void _showFolderInfo(BuildContext context, Map<String, dynamic> folder) async {
                         _buildDetailItem(
                           'share',
                           '👥',
-                          S.of(context).sharedWith,
+                          'تمت المشاركة مع',
                           (folderData['sharedWith'] as List)
                                   .map<String>(
                                     (u) =>
@@ -299,8 +277,7 @@ Widget _buildDetailItem(String type, String emoji, String label, String value) {
 
 // ✅ دالة لعرض تفاصيل التصنيف (Category)
 void _showCategoryDetails(BuildContext context, Map<String, dynamic> category) {
-  final categoryTitle = category['title'] as String? ?? S.of(context).category;
-
+  final categoryTitle = category['title'] as String? ?? 'تصنيف';
   final fileCount = category['fileCount'] as int? ?? 0;
   final size = category['size'] as String? ?? '0';
   final color = category['color'] as Color? ?? Colors.blue;
@@ -354,19 +331,9 @@ void _showCategoryDetails(BuildContext context, Map<String, dynamic> category) {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildDetailItem(
-                    'folder',
-                    '📁',
-                    S.of(context).type,
-                    S.of(context).category,
-                  ),
-                  _buildDetailItem(
-                    'files',
-                    '📄',
-                    S.of(context).filesCount,
-                    '$fileCount',
-                  ),
-                  _buildDetailItem('size', '💾', S.of(context).totalSize, size),
+                  _buildDetailItem('folder', '📁', 'النوع', 'تصنيف'),
+                  _buildDetailItem('files', '📄', 'عدد الملفات', '$fileCount'),
+                  _buildDetailItem('size', '💾', 'الحجم الإجمالي', size),
                 ],
               ),
             ),
@@ -377,26 +344,8 @@ void _showCategoryDetails(BuildContext context, Map<String, dynamic> category) {
   );
 }
 
-Future<void> _showRenameDialog(
-  BuildContext context,
-  Map<String, dynamic> folder, {
-  void Function()? onUpdate,
-}) async {
-  // ✅ التحقق من كلمة السر قبل التعديل
-  final hasAccess = await FolderProtectionHelper.verifyAccessBeforeAction(
-    context: context,
-    folder: folder,
-    actionName: 'تعديل',
-  );
-
-  if (!hasAccess) {
-    return; // ✅ المستخدم لم يتحقق أو ألغى العملية
-  }
-
-  final folderName =
-      folder['title']?.toString() ??
-      folder['name']?.toString() ??
-      S.of(context).folder;
+void _showRenameDialog(BuildContext context, Map<String, dynamic> folder) {
+  final folderName = folder['title'] as String;
   final folderId = folder['folderId'] as String?;
   final folderData = folder['folderData'] as Map<String, dynamic>?;
 
@@ -411,19 +360,16 @@ Future<void> _showRenameDialog(
   final scaffoldContext = context; // ✅ حفظ context الأصلي
 
   if (folderId == null) {
-    final scaffoldMessenger = ScaffoldMessenger.maybeOf(scaffoldContext);
-    if (scaffoldMessenger != null) {
-      scaffoldMessenger.showSnackBar(
-        SnackBar(content: Text(S.of(context).folderIdNotFound)),
-      );
-    }
+    ScaffoldMessenger.of(
+      scaffoldContext,
+    ).showSnackBar(SnackBar(content: Text('خطأ: معرف المجلد غير موجود')));
     return;
   }
 
   showDialog(
     context: context,
     builder: (dialogContext) => AlertDialog(
-      title: Text(S.of(context).editFileMetadata),
+      title: Text('تعديل المجلد'),
       content: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -431,8 +377,8 @@ Future<void> _showRenameDialog(
             TextField(
               controller: nameController,
               decoration: InputDecoration(
-                labelText: S.of(context).folderName,
-                hintText: S.of(context).folderName,
+                labelText: 'اسم المجلد',
+                hintText: 'اسم المجلد',
                 border: OutlineInputBorder(),
                 prefixIcon: Icon(Icons.folder),
               ),
@@ -442,8 +388,8 @@ Future<void> _showRenameDialog(
             TextField(
               controller: descriptionController,
               decoration: InputDecoration(
-                labelText: S.of(context).folderDescription,
-                hintText: S.of(context).folderDescriptionHint,
+                labelText: 'الوصف',
+                hintText: 'وصف المجلد (اختياري)',
                 border: OutlineInputBorder(),
                 prefixIcon: Icon(Icons.description),
               ),
@@ -453,8 +399,8 @@ Future<void> _showRenameDialog(
             TextField(
               controller: tagsController,
               decoration: InputDecoration(
-                labelText: S.of(context).folderTags,
-                hintText: S.of(context).folderTagsHint,
+                labelText: 'الوسوم',
+                hintText: 'وسوم مفصولة بفواصل (اختياري)',
                 border: OutlineInputBorder(),
                 prefixIcon: Icon(Icons.tag),
               ),
@@ -465,15 +411,15 @@ Future<void> _showRenameDialog(
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(dialogContext),
-          child: Text(S.of(context).cancel),
+          child: Text('إلغاء'),
         ),
         TextButton(
           onPressed: () {
             final newName = nameController.text.trim();
             if (newName.isEmpty) {
-              ScaffoldMessenger.of(dialogContext).showSnackBar(
-                SnackBar(content: Text(S.of(context).pleaseEnterFolderName)),
-              );
+              ScaffoldMessenger.of(
+                dialogContext,
+              ).showSnackBar(SnackBar(content: Text('يرجى إدخال اسم المجلد')));
               return;
             }
 
@@ -494,10 +440,9 @@ Future<void> _showRenameDialog(
               newName,
               description.isEmpty ? null : description,
               tags.isEmpty ? null : tags,
-              onUpdate: onUpdate,
             );
           },
-          child: Text(S.of(context).save),
+          child: Text('حفظ'),
         ),
       ],
     ),
@@ -510,9 +455,8 @@ void _performUpdate(
   String folderId,
   String newName,
   String? description,
-  List<String>? tags, {
-  void Function()? onUpdate,
-}) async {
+  List<String>? tags,
+) async {
   final folderController = Provider.of<FolderController>(
     scaffoldContext,
     listen: false,
@@ -531,21 +475,14 @@ void _performUpdate(
     if (success) {
       ScaffoldMessenger.of(scaffoldContext).showSnackBar(
         SnackBar(
-          content: Text(S.of(scaffoldContext).folderUpdatedSuccessfully),
+          content: Text('✅ تم تحديث المجلد بنجاح'),
           backgroundColor: Colors.green,
         ),
       );
-      // ✅ استدعاء callback لإعادة تحميل البيانات بعد التحديث الناجح
-      if (onUpdate != null) {
-        onUpdate();
-      }
     } else {
       ScaffoldMessenger.of(scaffoldContext).showSnackBar(
         SnackBar(
-          content: Text(
-            folderController.errorMessage ??
-                S.of(scaffoldContext).folderUpdateFailed,
-          ),
+          content: Text(folderController.errorMessage ?? '❌ فشل تحديث المجلد'),
           backgroundColor: Colors.red,
         ),
       );
@@ -553,34 +490,14 @@ void _performUpdate(
   }
 }
 
-Future<void> _showShareDialog(
-  BuildContext context,
-  Map<String, dynamic> folder,
-) async {
-  // ✅ التحقق من كلمة السر قبل المشاركة
-  final hasAccess = await FolderProtectionHelper.verifyAccessBeforeAction(
-    context: context,
-    folder: folder,
-    actionName: 'مشاركة',
-  );
-
-  if (!hasAccess) {
-    return; // ✅ المستخدم لم يتحقق أو ألغى العملية
-  }
-
+void _showShareDialog(BuildContext context, Map<String, dynamic> folder) async {
   final folderId = folder['folderId'] as String?;
-  final folderName =
-      folder['title']?.toString() ??
-      folder['name']?.toString() ??
-      S.of(context).folder;
+  final folderName = folder['title'] as String;
 
   if (folderId == null) {
-    final scaffoldMessenger = ScaffoldMessenger.maybeOf(context);
-    if (scaffoldMessenger != null) {
-      scaffoldMessenger.showSnackBar(
-        SnackBar(content: Text(S.of(context).folderIdNotFound)),
-      );
-    }
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text('خطأ: معرف المجلد غير موجود')));
     return;
   }
 
@@ -598,37 +515,120 @@ Future<void> _showShareDialog(
   }
 }
 
-Future<void> _showMoveFolderDialog(
+/// 🔒 إظهار dialog لتعيين/إزالة حماية المجلد
+void _showProtectFolderDialog(
   BuildContext context,
   Map<String, dynamic> folder,
   void Function()? onFileRemoved,
 ) async {
-  // ✅ التحقق من كلمة السر قبل النقل
-  final hasAccess = await FolderProtectionHelper.verifyAccessBeforeAction(
-    context: context,
-    folder: folder,
-    actionName: 'نقل',
-  );
+  final folderData = folder['folderData'] as Map<String, dynamic>? ?? {};
+  final folderId =
+      folder['folderId'] as String? ?? folderData['_id'] as String?;
+  final folderName = folder['title'] as String ?? folderData['name'] ?? 'مجلد';
+  final isProtected = folderData['isProtected'] == true;
+  final protectionType = folderData['protectionType'] as String?;
 
-  if (!hasAccess) {
-    return; // ✅ المستخدم لم يتحقق أو ألغى العملية
+  if (folderId == null) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('خطأ: معرف المجلد غير موجود')),
+    );
+    return;
   }
 
+  await showSetFolderProtectionDialog(
+    context,
+    folderId,
+    folderName,
+    isProtected,
+    protectionType,
+    () {
+      // ✅ إظهار رسالة النجاح من هنا بعد إغلاق dialog
+      if (onFileRemoved != null) {
+        onFileRemoved();
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            isProtected
+                ? '✅ تم إزالة حماية المجلد بنجاح'
+                : '✅ تم تفعيل حماية المجلد بنجاح',
+          ),
+          backgroundColor: Colors.green,
+        ),
+      );
+    },
+  );
+}
+
+/// 🔐 التحقق من الحماية قبل فتح المجلد
+Future<bool> _checkFolderProtection(
+  BuildContext context,
+  Map<String, dynamic> folder,
+) async {
+  final folderData = folder['folderData'] as Map<String, dynamic>? ?? {};
+  final folderId =
+      folder['folderId'] as String? ?? folderData['_id'] as String?;
+  final folderName = folder['title'] as String ?? folderData['name'] ?? 'مجلد';
+  final isProtected = folderData['isProtected'] == true;
+  final protectionType = folderData['protectionType'] as String?;
+
+  // إذا لم يكن المجلد محمياً، السماح بالفتح مباشرة
+  if (!isProtected || protectionType == null || protectionType == 'none') {
+    return true;
+  }
+
+  if (folderId == null) {
+    return false;
+  }
+
+  // إظهار dialog للتحقق من الحماية
+  final verifyResult = await showVerifyFolderAccessDialog(
+    context,
+    folderId,
+    folderName,
+    protectionType,
+  );
+
+  return verifyResult['success'] == true;
+}
+
+/// 🔐 التحقق من الحماية قبل تنفيذ إجراء على مجلد محمي
+/// Returns: true إذا كان المجلد غير محمي أو تم التحقق بنجاح
+Future<bool> _checkFolderProtectionForAction(
+  BuildContext context,
+  Map<String, dynamic> folder,
+) async {
+  final folderData = folder['folderData'] as Map<String, dynamic>? ?? {};
+  final isProtected = folderData['isProtected'] == true;
+  final protectionType = folderData['protectionType'] as String?;
+
+  // إذا لم يكن المجلد محمياً، السماح بالإجراء مباشرة
+  if (!isProtected || protectionType == null || protectionType == 'none') {
+    return true;
+  }
+
+  // المجلد محمي - التحقق من الحماية
+  return await _checkFolderProtection(context, folder);
+}
+
+void _showMoveFolderDialog(
+  BuildContext context,
+  Map<String, dynamic> folder,
+  void Function()? onFileRemoved,
+) async {
   // ✅ حفظ context الأصلي قبل فتح الـ modal
   final scaffoldContext = context;
 
   final folderData = folder['folderData'] as Map<String, dynamic>? ?? {};
   final folderId =
       folder['folderId'] as String? ?? folderData['_id'] as String?;
-  final folderName =
-      folder['title'] as String ?? folderData['name'] ?? S.of(context).folder;
+  final folderName = folder['title'] as String ?? folderData['name'] ?? 'مجلد';
   final currentParentId = folderData['parentId']?.toString();
-
   if (folderId == null) {
     if (scaffoldContext.mounted) {
       ScaffoldMessenger.of(
         scaffoldContext,
-      ).showSnackBar(SnackBar(content: Text(S.of(context).folderIdNotFound)));
+      ).showSnackBar(SnackBar(content: Text('خطأ: معرف المجلد غير موجود')));
     }
     return;
   }
@@ -640,8 +640,7 @@ Future<void> _showMoveFolderDialog(
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
     builder: (modalContext) => _FolderNavigationDialog(
-      title: '${S.of(context).moveFolderTitle}: $folderName',
-
+      title: 'نقل المجلد: $folderName',
       excludeFolderId: folderId,
       excludeParentId: currentParentId,
       onSelect: (targetFolderId) async {
@@ -681,7 +680,7 @@ Future<void> _moveFolder(
         children: [
           CircularProgressIndicator(color: Colors.white),
           SizedBox(width: 16),
-          Text(S.of(scaffoldContext).movingFolder),
+          Text('جاري نقل المجلد...'),
         ],
       ),
       duration: Duration(seconds: 30),
@@ -700,7 +699,7 @@ Future<void> _moveFolder(
     if (success) {
       ScaffoldMessenger.of(scaffoldContext).showSnackBar(
         SnackBar(
-          content: Text('✅ ${S.of(scaffoldContext).folderMovedSuccessfully}'),
+          content: Text('✅ تم نقل المجلد بنجاح'),
           backgroundColor: Colors.green,
         ),
       );
@@ -712,10 +711,7 @@ Future<void> _moveFolder(
     } else {
       ScaffoldMessenger.of(scaffoldContext).showSnackBar(
         SnackBar(
-          content: Text(
-            folderController.errorMessage ??
-                S.of(scaffoldContext).folderUpdateFailed,
-          ),
+          content: Text(folderController.errorMessage ?? '❌ فشل نقل المجلد'),
           backgroundColor: Colors.red,
         ),
       );
@@ -753,7 +749,7 @@ void _toggleFavorite(
             ),
           ),
           SizedBox(width: 12),
-          Text(S.of(context).updating),
+          Text('جاري التحديث...'),
         ],
       ),
       duration: Duration(seconds: 2),
@@ -816,18 +812,18 @@ void _toggleFavorite(
       SnackBar(
         content: Text(
           updatedIsStarred
-              ? S.of(context).folderAddedToFavorites
-              : S.of(context).folderRemovedFromFavorites,
+              ? '✅ تم إضافة المجلد إلى المفضلة'
+              : '✅ تم إزالة المجلد من المفضلة',
         ),
-
         backgroundColor: Colors.green,
         duration: Duration(seconds: 2),
       ),
     );
 
-    // ✅ لا نستدعي onUpdate هنا لأن البيانات تم تحديثها محلياً بالفعل
-    // ✅ هذا يمنع عمل refresh غير ضروري عند toggle favorite
-    // ✅ البيانات محدثة محلياً والـ UI سيتم تحديثه تلقائياً
+    // ✅ استدعاء callback لإعادة تحميل البيانات إذا كان موجوداً
+    if (onUpdate != null) {
+      onUpdate();
+    }
 
     // ✅ إجبار إعادة بناء الـ widget إذا كان في StatefulWidget
     // سيعمل notifyListeners() على تحديث Consumer widgets تلقائياً
@@ -836,9 +832,8 @@ void _toggleFavorite(
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
-          folderController.errorMessage ?? S.of(context).folderUpdateFailed,
+          folderController.errorMessage ?? '❌ فشل تحديث حالة المفضلة',
         ),
-
         backgroundColor: Colors.red,
         duration: Duration(seconds: 2),
       ),
@@ -846,21 +841,7 @@ void _toggleFavorite(
   }
 }
 
-Future<void> _showDeleteDialog(
-  BuildContext context,
-  Map<String, dynamic> folder,
-) async {
-  // ✅ التحقق من كلمة السر قبل الحذف
-  final hasAccess = await FolderProtectionHelper.verifyAccessBeforeAction(
-    context: context,
-    folder: folder,
-    actionName: 'حذف',
-  );
-
-  if (!hasAccess) {
-    return; // ✅ المستخدم لم يتحقق أو ألغى العملية
-  }
-
+void _showDeleteDialog(BuildContext context, Map<String, dynamic> folder) {
   final folderController = Provider.of<FolderController>(
     context,
     listen: false,
@@ -885,136 +866,6 @@ Future<void> _showDeleteDialog(
 /// ✅ تحميل مجلد خاص بالمستخدم
 void _downloadFolder(BuildContext context, Map<String, dynamic> folder) {
   FolderActionsService.downloadFolder(context, folder);
-}
-
-// ✅ Dialog لقفل/إلغاء قفل المجلد في FilesGridView
-Future<void> _showProtectFolderDialog(
-  BuildContext context,
-  Map<String, dynamic> folder,
-) async {
-  final folderId =
-      folder['folderId'] as String? ??
-      folder['_id']?.toString() ??
-      folder['id']?.toString();
-  if (folderId == null) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('❌ معرف المجلد غير متوفر'),
-        backgroundColor: Colors.red,
-      ),
-    );
-    return;
-  }
-
-  final folderName =
-      folder['title']?.toString() ?? folder['name']?.toString() ?? 'المجلد';
-  final folderData = folder['folderData'] ?? folder;
-  final isProtected = FolderProtectionService.isFolderProtected(folderData);
-
-  if (isProtected) {
-    // ✅ إذا كان المجلد محمياً، نعرض خيار إزالة الحماية
-    final passwordController = TextEditingController();
-    await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('إزالة حماية المجلد'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text('يرجى إدخال كلمة السر لإزالة الحماية:'),
-            const SizedBox(height: 16),
-            TextField(
-              controller: passwordController,
-              obscureText: true,
-              decoration: InputDecoration(
-                labelText: 'كلمة السر',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('إلغاء'),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              final password = passwordController.text;
-              if (password.isEmpty) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('⚠️ يرجى إدخال كلمة السر'),
-                    backgroundColor: Colors.orange,
-                  ),
-                );
-                return;
-              }
-
-              final removeResult =
-                  await FolderProtectionService.removeFolderProtection(
-                    folderId: folderId,
-                    password: password,
-                  );
-
-              if (!context.mounted) return;
-
-              if (removeResult['success'] == true) {
-                Navigator.pop(context, true);
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        removeResult['message'] ?? '✅ تم إزالة الحماية بنجاح',
-                      ),
-                      backgroundColor: Colors.green,
-                    ),
-                  );
-                }
-              } else {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      removeResult['message'] ?? '❌ فشل إزالة الحماية',
-                    ),
-                    backgroundColor: Colors.red,
-                  ),
-                );
-              }
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
-              foregroundColor: Colors.white,
-            ),
-            child: const Text('إزالة الحماية'),
-          ),
-        ],
-      ),
-    );
-
-    passwordController.dispose();
-  } else {
-    // ✅ إذا لم يكن محمياً، نعرض Dialog لتعيين الحماية
-    final result = await showDialog<bool>(
-      context: context,
-      builder: (context) => SetFolderProtectionDialog(
-        folderId: folderId,
-        folderName: folderName,
-        isCurrentlyProtected: false,
-      ),
-    );
-
-    if (result == true && context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('✅ تم تفعيل الحماية بنجاح'),
-          backgroundColor: Colors.green,
-        ),
-      );
-    }
-  }
 }
 
 Widget _buildInfoRow(String label, String value) {
@@ -1145,51 +996,85 @@ class FilesGridView extends StatelessWidget {
               }
 
               return GestureDetector(
-                onTap: () {
+                onTap: () async {
+                  // ✅ التحقق من الحماية قبل فتح المجلد
+                  if (type == 'folder') {
+                    final hasAccess = await _checkFolderProtection(
+                      context,
+                      item,
+                    );
+                    if (!hasAccess) {
+                      return; // المستخدم لم يتحقق من الحماية
+                    }
+                  }
                   if (onItemTap != null) {
                     onItemTap!(item);
                   }
                 },
                 child: FolderFileCard(
-                  title:
-                      item['title']?.toString() ??
-                      item['name']?.toString() ??
-                      '',
+                  title: item['title'] as String,
                   fileCount: (item['fileCount'] is int)
                       ? item['fileCount'] as int
                       : (item['fileCount'] is num)
                       ? (item['fileCount'] as num).toInt()
                       : 0,
-                  size: item['size']?.toString() ?? '0 B',
+                  size: item['size'] as String,
                   showFileCount: showFileCount,
-                  color: item['color'] as Color? ?? const Color(0xFF28336F),
+                  color: item['color'] as Color? ?? const Color(0xFF00BFA5),
                   folderData: item,
                   isStarred: isStarred,
                   sharedBy: item['sharedBy'] as String?,
                   roomId: (type == 'folder' && roomId != null) ? roomId : null,
                   onOpenTap: (type == 'folder' || type == 'room')
-                      ? () {
+                      ? () async {
+                          // ✅ التحقق من الحماية قبل فتح المجلد
+                          if (type == 'folder') {
+                            final hasAccess = await _checkFolderProtection(
+                              context,
+                              item,
+                            );
+                            if (!hasAccess) {
+                              return; // المستخدم لم يتحقق من الحماية
+                            }
+                          }
                           if (onItemTap != null) {
                             onItemTap!(item);
                           }
                         }
                       : null,
                   onInfoTap: (type == 'folder' && roomId == null)
-                      ? () {
-                          _showFolderInfo(context, item);
+                      ? () async {
+                          // ✅ التحقق من الحماية قبل عرض معلومات المجلد
+                          final hasAccess = await _checkFolderProtectionForAction(
+                            context,
+                            item,
+                          );
+                          if (hasAccess) {
+                            _showFolderInfo(context, item);
+                          }
                         }
                       : (type == 'folder' && roomId != null)
-                      ? () {
-                          _showFolderInfo(context, item);
+                      ? () async {
+                          // ✅ التحقق من الحماية قبل عرض معلومات المجلد
+                          final hasAccess = await _checkFolderProtectionForAction(
+                            context,
+                            item,
+                          );
+                          if (hasAccess) {
+                            _showFolderInfo(context, item);
+                          }
                         }
                       : null,
                   onRenameTap: (type == 'folder' && roomId == null)
-                      ? () {
-                          _showRenameDialog(
+                      ? () async {
+                          // ✅ التحقق من الحماية قبل إعادة تسمية المجلد
+                          final hasAccess = await _checkFolderProtectionForAction(
                             context,
                             item,
-                            onUpdate: onFileRemoved,
                           );
+                          if (hasAccess) {
+                            _showRenameDialog(context, item);
+                          }
                         }
                       : (type == 'room' && onRoomEditTap != null)
                       ? () {
@@ -1197,13 +1082,27 @@ class FilesGridView extends StatelessWidget {
                         }
                       : null,
                   onShareTap: (type == 'folder' && roomId == null)
-                      ? () {
-                          _showShareDialog(context, item);
+                      ? () async {
+                          // ✅ التحقق من الحماية قبل مشاركة المجلد
+                          final hasAccess = await _checkFolderProtectionForAction(
+                            context,
+                            item,
+                          );
+                          if (hasAccess) {
+                            _showShareDialog(context, item);
+                          }
                         }
                       : null,
                   onDownloadTap: (type == 'folder' && roomId == null)
-                      ? () {
-                          _downloadFolder(context, item);
+                      ? () async {
+                          // ✅ التحقق من الحماية قبل تحميل المجلد
+                          final hasAccess = await _checkFolderProtectionForAction(
+                            context,
+                            item,
+                          );
+                          if (hasAccess) {
+                            _downloadFolder(context, item);
+                          }
                         }
                       : (type == 'folder' &&
                             onDownloadFolderFromRoomTap != null &&
@@ -1213,13 +1112,20 @@ class FilesGridView extends StatelessWidget {
                         }
                       : null,
                   onMoveTap: (type == 'folder' && roomId == null)
-                      ? () {
-                          _showMoveFolderDialog(context, item, onFileRemoved);
+                      ? () async {
+                          // ✅ التحقق من الحماية قبل نقل المجلد
+                          final hasAccess = await _checkFolderProtectionForAction(
+                            context,
+                            item,
+                          );
+                          if (hasAccess) {
+                            _showMoveFolderDialog(context, item, onFileRemoved);
+                          }
                         }
                       : null,
-                  // ✅ إزالة خيار "إضافة إلى المفضلة" من المجلدات المشتركة في الروم
-                  onFavoriteTap: (type == 'folder' && roomId == null)
+                  onFavoriteTap: type == 'folder'
                       ? () {
+                          // ✅ إضافة للمفضلات لا تحتاج كلمة سر
                           _toggleFavorite(
                             context,
                             item,
@@ -1227,14 +1133,21 @@ class FilesGridView extends StatelessWidget {
                           );
                         }
                       : null,
-                  onDeleteTap: (type == 'folder' && roomId == null)
-                      ? () {
-                          _showDeleteDialog(context, item);
-                        }
-                      : null,
                   onProtectTap: (type == 'folder' && roomId == null)
                       ? () {
-                          _showProtectFolderDialog(context, item);
+                          _showProtectFolderDialog(context, item, onFileRemoved);
+                        }
+                      : null,
+                  onDeleteTap: (type == 'folder' && roomId == null)
+                      ? () async {
+                          // ✅ التحقق من الحماية قبل حذف المجلد
+                          final hasAccess = await _checkFolderProtectionForAction(
+                            context,
+                            item,
+                          );
+                          if (hasAccess) {
+                            _showDeleteDialog(context, item);
+                          }
                         }
                       : null,
                   onCommentTap:
@@ -1277,21 +1190,31 @@ class FilesGridView extends StatelessWidget {
         // ✅ للملفات أو الأنواع الأخرى (بدون Consumer)
         // ✅ للـ categories نضيف callbacks للقائمة "3 نقاط"
         return GestureDetector(
-          onTap: () {
+          onTap: () async {
+            // ✅ التحقق من الحماية قبل فتح المجلد
+            if (type == 'folder') {
+              final hasAccess = await _checkFolderProtection(
+                context,
+                item,
+              );
+              if (!hasAccess) {
+                return; // المستخدم لم يتحقق من الحماية
+              }
+            }
             if (onItemTap != null) {
               onItemTap!(item);
             }
           },
           child: FolderFileCard(
-            title: item['title']?.toString() ?? item['name']?.toString() ?? '',
+            title: item['title'] as String,
             fileCount: (item['fileCount'] is int)
                 ? item['fileCount'] as int
                 : (item['fileCount'] is num)
                 ? (item['fileCount'] as num).toInt()
                 : 0,
-            size: item['size']?.toString() ?? '0 B',
+            size: item['size'] as String,
             showFileCount: showFileCount,
-            color: item['color'] as Color? ?? const Color(0xFF28336F),
+            color: item['color'] as Color? ?? const Color(0xFF00BFA5),
             folderData:
                 (type == 'folder' || type == 'category' || type == 'room')
                 ? item
@@ -1309,7 +1232,17 @@ class FilesGridView extends StatelessWidget {
                     }
                   }
                 : (type == 'folder' || type == 'room')
-                ? () {
+                ? () async {
+                    // ✅ التحقق من الحماية قبل فتح المجلد
+                    if (type == 'folder') {
+                      final hasAccess = await _checkFolderProtection(
+                        context,
+                        item,
+                      );
+                      if (!hasAccess) {
+                        return; // المستخدم لم يتحقق من الحماية
+                      }
+                    }
                     if (onItemTap != null) {
                       onItemTap!(item);
                     }
@@ -1320,17 +1253,38 @@ class FilesGridView extends StatelessWidget {
                     _showCategoryDetails(context, item);
                   }
                 : (type == 'folder' && roomId == null)
-                ? () {
-                    _showFolderInfo(context, item);
+                ? () async {
+                    // ✅ التحقق من الحماية قبل عرض معلومات المجلد
+                    final hasAccess = await _checkFolderProtectionForAction(
+                      context,
+                      item,
+                    );
+                    if (hasAccess) {
+                      _showFolderInfo(context, item);
+                    }
                   }
                 : (type == 'folder' && roomId != null)
-                ? () {
-                    _showFolderInfo(context, item);
+                ? () async {
+                    // ✅ التحقق من الحماية قبل عرض معلومات المجلد
+                    final hasAccess = await _checkFolderProtectionForAction(
+                      context,
+                      item,
+                    );
+                    if (hasAccess) {
+                      _showFolderInfo(context, item);
+                    }
                   }
                 : null,
             onRenameTap: (type == 'folder' && roomId == null)
-                ? () {
-                    _showRenameDialog(context, item, onUpdate: onFileRemoved);
+                ? () async {
+                    // ✅ التحقق من الحماية قبل إعادة تسمية المجلد
+                    final hasAccess = await _checkFolderProtectionForAction(
+                      context,
+                      item,
+                    );
+                    if (hasAccess) {
+                      _showRenameDialog(context, item);
+                    }
                   }
                 : (type == 'room' && onRoomEditTap != null)
                 ? () {
@@ -1338,13 +1292,27 @@ class FilesGridView extends StatelessWidget {
                   }
                 : null,
             onShareTap: (type == 'folder' && roomId == null)
-                ? () {
-                    _showShareDialog(context, item);
+                ? () async {
+                    // ✅ التحقق من الحماية قبل مشاركة المجلد
+                    final hasAccess = await _checkFolderProtectionForAction(
+                      context,
+                      item,
+                    );
+                    if (hasAccess) {
+                      _showShareDialog(context, item);
+                    }
                   }
                 : null,
             onDownloadTap: (type == 'folder' && roomId == null)
-                ? () {
-                    _downloadFolder(context, item);
+                ? () async {
+                    // ✅ التحقق من الحماية قبل تحميل المجلد
+                    final hasAccess = await _checkFolderProtectionForAction(
+                      context,
+                      item,
+                    );
+                    if (hasAccess) {
+                      _downloadFolder(context, item);
+                    }
                   }
                 : (type == 'folder' &&
                       onDownloadFolderFromRoomTap != null &&
@@ -1354,24 +1322,37 @@ class FilesGridView extends StatelessWidget {
                   }
                 : null,
             onMoveTap: (type == 'folder' && roomId == null)
-                ? () {
-                    _showMoveFolderDialog(context, item, onFileRemoved);
+                ? () async {
+                    // ✅ التحقق من الحماية قبل نقل المجلد
+                    final hasAccess = await _checkFolderProtectionForAction(
+                      context,
+                      item,
+                    );
+                    if (hasAccess) {
+                      _showMoveFolderDialog(context, item, onFileRemoved);
+                    }
                   }
                 : null,
-            // ✅ إزالة خيار "إضافة إلى المفضلة" من المجلدات المشتركة في الروم
-            onFavoriteTap: (type == 'folder' && roomId == null)
+            onFavoriteTap: type == 'folder'
                 ? () {
                     _toggleFavorite(context, item, onUpdate: onFileRemoved);
                   }
                 : null,
-            onDeleteTap: (type == 'folder' && roomId == null)
-                ? () {
-                    _showDeleteDialog(context, item);
-                  }
-                : null,
             onProtectTap: (type == 'folder' && roomId == null)
                 ? () {
-                    _showProtectFolderDialog(context, item);
+                    _showProtectFolderDialog(context, item, onFileRemoved);
+                  }
+                : null,
+            onDeleteTap: (type == 'folder' && roomId == null)
+                ? () async {
+                    // ✅ التحقق من الحماية قبل حذف المجلد
+                    final hasAccess = await _checkFolderProtectionForAction(
+                      context,
+                      item,
+                    );
+                    if (hasAccess) {
+                      _showDeleteDialog(context, item);
+                    }
                   }
                 : null,
             onCommentTap:
@@ -1427,6 +1408,7 @@ class _FolderNavigationDialog extends StatefulWidget {
   });
 
   @override
+  @override
   State<_FolderNavigationDialog> createState() =>
       _FolderNavigationDialogState();
 }
@@ -1440,21 +1422,8 @@ class _FolderNavigationDialogState extends State<_FolderNavigationDialog> {
   @override
   void initState() {
     super.initState();
-    // ✅ لا نستخدم S.of(context) هنا لأن context غير جاهز بعد
-    _breadcrumb.add({'id': null, 'name': 'الجذر'}); // ✅ قيمة افتراضية
-  }
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    // ✅ الآن context جاهز، يمكننا استخدام S.of(context)
-    if (_breadcrumb.isNotEmpty && _breadcrumb.first['id'] == null) {
-      _breadcrumb[0] = {'id': null, 'name': S.of(context).root};
-    }
-    // ✅ تحميل المجلدات الجذرية فقط في المرة الأولى
-    if (_currentFolders.isEmpty && !_isLoading) {
-      _loadRootFolders();
-    }
+    _breadcrumb.add({'id': null, 'name': 'الجذر'});
+    _loadRootFolders();
   }
 
   // ✅ جلب المجلدات الجذرية
@@ -1478,7 +1447,6 @@ class _FolderNavigationDialogState extends State<_FolderNavigationDialog> {
         final folders = List<Map<String, dynamic>>.from(
           response['folders'] ?? [],
         );
-
         // ✅ تصفية المجلدات المستبعدة
         final filteredFolders = folders.where((f) {
           final fId = f['_id']?.toString();
@@ -1521,7 +1489,6 @@ class _FolderNavigationDialogState extends State<_FolderNavigationDialog> {
         context,
         listen: false,
       );
-
       // ✅ جلب جميع المجلدات الفرعية (limit كبير لضمان جلب جميع المجلدات)
       final response = await folderController.getFolderContents(
         folderId: folderId,
@@ -1570,7 +1537,6 @@ class _FolderNavigationDialogState extends State<_FolderNavigationDialog> {
       print(
         '📁 Total found: ${subfolders.length} subfolders for folder $folderId ($folderName)',
       );
-
       // ✅ تصفية المجلدات المستبعدة
       final filteredFolders = subfolders.where((f) {
         final fId = f['_id']?.toString();
@@ -1588,12 +1554,11 @@ class _FolderNavigationDialogState extends State<_FolderNavigationDialog> {
         _currentFolders = [];
         _isLoading = false;
       });
-
       // ✅ إظهار رسالة خطأ للمستخدم
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(S.of(context).errorFetchingSubfolders(e.toString())),
+            content: Text('خطأ في جلب المجلدات الفرعية: ${e.toString()}'),
             backgroundColor: Colors.red,
           ),
         );
@@ -1607,7 +1572,7 @@ class _FolderNavigationDialogState extends State<_FolderNavigationDialog> {
       // ✅ العودة للجذر
       setState(() {
         _breadcrumb = [
-          {'id': null, 'name': S.of(context).root},
+          {'id': null, 'name': 'الجذر'},
         ];
       });
       _loadRootFolders();
@@ -1618,11 +1583,10 @@ class _FolderNavigationDialogState extends State<_FolderNavigationDialog> {
         setState(() {
           _breadcrumb = _breadcrumb.sublist(0, index + 1);
         });
-
         if (folderId == null) {
           _loadRootFolders();
         } else {
-          final folderName = _breadcrumb.last['name'] ?? S.of(context).folder;
+          final folderName = _breadcrumb.last['name'] ?? 'مجلد';
           _loadSubfolders(folderId, folderName);
         }
       }
@@ -1671,7 +1635,6 @@ class _FolderNavigationDialogState extends State<_FolderNavigationDialog> {
               ],
             ),
           ),
-
           // ✅ Breadcrumb
           if (_breadcrumb.length > 1)
             Container(
@@ -1703,7 +1666,7 @@ class _FolderNavigationDialogState extends State<_FolderNavigationDialog> {
                                   SizedBox(width: 4),
                                 ],
                                 Text(
-                                  item['name'] ?? S.of(context).root,
+                                  item['name'] ?? 'الجذر',
                                   style: TextStyle(
                                     color: isLast ? Colors.purple : Colors.blue,
                                     fontWeight: isLast
@@ -1724,7 +1687,6 @@ class _FolderNavigationDialogState extends State<_FolderNavigationDialog> {
                 ],
               ),
             ),
-
           // ✅ Content
           Expanded(
             child: Column(
@@ -1733,8 +1695,8 @@ class _FolderNavigationDialogState extends State<_FolderNavigationDialog> {
                 if (_currentFolderId == null)
                   ListTile(
                     leading: Icon(Icons.home_rounded, color: Colors.blue),
-                    title: Text(S.of(context).moveToRoot),
-                    subtitle: Text(S.of(context).moveFolderToMainFolder),
+                    title: Text('نقل إلى الجذر'),
+                    subtitle: Text('نقل المجلد إلى المجلد الرئيسي'),
                     onTap: () => widget.onSelect(null),
                   ),
                 // ✅ خيار "اختيار المجلد الحالي" (إذا كنا داخل مجلد)
@@ -1742,13 +1704,9 @@ class _FolderNavigationDialogState extends State<_FolderNavigationDialog> {
                   ListTile(
                     leading: Icon(Icons.check_circle, color: Colors.green),
                     title: Text(
-                      S
-                          .of(context)
-                          .selectFolderName(
-                            _breadcrumb.last['name'] ?? S.of(context).folder,
-                          ),
+                      'اختيار "${_breadcrumb.last['name'] ?? 'مجلد'}"',
                     ),
-                    subtitle: Text(S.of(context).moveToThisFolder),
+                    subtitle: Text('نقل إلى هذا المجلد'),
                     onTap: () => widget.onSelect(_currentFolderId),
                   ),
                 // ✅ Divider بين الخيارات وقائمة المجلدات
@@ -1762,9 +1720,8 @@ class _FolderNavigationDialogState extends State<_FolderNavigationDialog> {
                       ? Center(
                           child: Text(
                             _currentFolderId == null
-                                ? S.of(context).noFoldersAvailable
-                                : S.of(context).noSubfolders,
-
+                                ? 'لا توجد مجلدات متاحة'
+                                : 'لا توجد مجلدات فرعية',
                             style: TextStyle(color: Colors.grey),
                           ),
                         )
@@ -1774,7 +1731,7 @@ class _FolderNavigationDialogState extends State<_FolderNavigationDialog> {
                             final folder = _currentFolders[index];
                             final folderId = folder['_id']?.toString();
                             final folderName =
-                                folder['name'] ?? S.of(context).unnamedFolder;
+                                folder['name'] ?? 'مجلد بدون اسم';
 
                             return InkWell(
                               onTap: () {
@@ -1797,7 +1754,7 @@ class _FolderNavigationDialogState extends State<_FolderNavigationDialog> {
                                 ),
                                 title: Text(folderName),
                                 subtitle: Text(
-                                  '${folder['filesCount'] ?? 0} ${S.of(context).file}',
+                                  '${folder['filesCount'] ?? 0} ملف',
                                 ),
                                 trailing: Row(
                                   mainAxisSize: MainAxisSize.min,

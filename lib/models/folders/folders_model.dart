@@ -13,9 +13,11 @@ class FolderModel {
   final bool isStarred;
   final String? description;
   final List<String> tags;
-  // 🔒 Folder Protection Fields
+
+  // 🔒 Folder protection
   final bool isProtected;
-  final String protectionType; // 'none', 'password', 'biometric'
+  final String protectionType; // none | password | biometric
+
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -34,8 +36,8 @@ class FolderModel {
     required this.isStarred,
     this.description,
     required this.tags,
-    this.isProtected = false,
-    this.protectionType = 'none',
+    required this.isProtected,
+    required this.protectionType,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -51,22 +53,50 @@ class FolderModel {
       isShared: json["isShared"] ?? false,
       sharedWith: json["sharedWith"] != null
           ? List<SharedUser>.from(
-              json["sharedWith"].map((x) => SharedUser.fromJson(x)))
+              json["sharedWith"].map((x) => SharedUser.fromJson(x)),
+            )
           : [],
       isDeleted: json["isDeleted"] ?? false,
-      deletedAt:
-          json["deletedAt"] != null ? DateTime.parse(json["deletedAt"]) : null,
+      deletedAt: json["deletedAt"] != null
+          ? DateTime.parse(json["deletedAt"])
+          : null,
       deleteExpiryDate: json["deleteExpiryDate"] != null
           ? DateTime.parse(json["deleteExpiryDate"])
           : null,
       isStarred: json["isStarred"] ?? false,
       description: json["description"],
       tags: json["tags"] != null ? List<String>.from(json["tags"]) : [],
+
+      // 🔒
       isProtected: json["isProtected"] ?? false,
-      protectionType: json["protectionType"] ?? 'none',
+      protectionType: json["protectionType"] ?? "none",
+
       createdAt: DateTime.parse(json["createdAt"]),
       updatedAt: DateTime.parse(json["updatedAt"]),
     );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      "_id": id,
+      "name": name,
+      "userId": userId,
+      "parentId": parentId,
+      "size": size,
+      "path": path,
+      "isShared": isShared,
+      "sharedWith": sharedWith.map((x) => x.toJson()).toList(),
+      "isDeleted": isDeleted,
+      "deletedAt": deletedAt?.toIso8601String(),
+      "deleteExpiryDate": deleteExpiryDate?.toIso8601String(),
+      "isStarred": isStarred,
+      "description": description,
+      "tags": tags,
+      "isProtected": isProtected,
+      "protectionType": protectionType,
+      "createdAt": createdAt.toIso8601String(),
+      "updatedAt": updatedAt.toIso8601String(),
+    };
   }
 }
 
@@ -87,5 +117,13 @@ class SharedUser {
       permission: json["permission"],
       sharedAt: DateTime.parse(json["sharedAt"]),
     );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      "user": user,
+      "permission": permission,
+      "sharedAt": sharedAt.toIso8601String(),
+    };
   }
 }

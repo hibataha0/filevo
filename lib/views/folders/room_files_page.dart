@@ -203,7 +203,7 @@ class _RoomFilesPageState extends State<RoomFilesPage> {
                 imageUrl: tempFile.path,
                 roomId: widget.roomId,
                 fileId: fileId,
-                isOneTimeShare: isOneTimeShare,
+                //isOneTimeShare: isOneTimeShare,
               ),
             ),
           );

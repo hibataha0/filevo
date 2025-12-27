@@ -58,7 +58,6 @@ class _CategoryPageState extends State<CategoryPage> {
     super.dispose();
   }
 
-  // ✅ تحميل تفضيل العرض من SharedPreferences
   Future<void> _loadViewPreference() async {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
@@ -66,7 +65,6 @@ class _CategoryPageState extends State<CategoryPage> {
     });
   }
 
-  // ✅ حفظ تفضيل العرض في SharedPreferences
   Future<void> _saveViewPreference(bool isGridView) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('isGridView', isGridView);
@@ -253,7 +251,6 @@ class _CategoryPageState extends State<CategoryPage> {
     );
   }
 
-  // ✅ Header الجديد
   Widget _buildHeader(int fileCount) {
     return Container(
       padding: const EdgeInsets.only(top: 50, bottom: 20, left: 20, right: 20),
@@ -279,28 +276,7 @@ class _CategoryPageState extends State<CategoryPage> {
                   horizontal: 12,
                   vertical: 6,
                 ),
-                // decoration: BoxDecoration(
-                //   color: Colors.white.withOpacity(0.2),
-                //   borderRadius: BorderRadius.circular(20),
-                // ),
-                child: Row(
-                  children: [
-                    // const Icon(
-                    //   Icons.insert_drive_file,
-                    //   color: Colors.white,
-                    //   size: 16,
-                    // ),
-                    // const SizedBox(width: 5),
-                    // Text(
-                    //   '$fileCount ملف',
-                    //   style: const TextStyle(
-                    //     color: Colors.white,
-                    //     fontSize: 14,
-                    //     fontWeight: FontWeight.w500,
-                    //   ),
-                    // ),
-                  ],
-                ),
+                child: Row(children: []),
               ),
               const SizedBox(width: 10),
               IconButton(
@@ -332,190 +308,144 @@ class _CategoryPageState extends State<CategoryPage> {
     );
   }
 
-  Widget _buildLoadingState() {
-    return Scaffold(
-      backgroundColor: const Color(0xff28336f),
-      body: _buildShimmerLoading(),
-    );
-  }
-
-  Widget _buildShimmerLoading() {
-    return SingleChildScrollView(
-      padding: EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(height: 20),
-          // Shimmer للعنوان
-          Shimmer.fromColors(
+  // ✅ Shimmer للـ Grid View
+  Widget _buildGridShimmer() {
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: GridView.builder(
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 2,
+          crossAxisSpacing: 12,
+          mainAxisSpacing: 12,
+          childAspectRatio: 0.85,
+        ),
+        itemCount: 6,
+        itemBuilder: (context, index) {
+          return Shimmer.fromColors(
             baseColor: Colors.grey[300]!,
             highlightColor: Colors.grey[100]!,
             child: Container(
-              height: 30,
-              width: 200,
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(12),
               ),
-            ),
-          ),
-          SizedBox(height: 30),
-          // Shimmer للملفات
-          _isGridView
-              ? Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: List.generate(
-                    6,
-                    (index) => SizedBox(
-                      width: (MediaQuery.of(context).size.width - 40) / 2,
-                      child: _buildFileShimmerCard(),
-                    ),
-                  ),
-                )
-              : Column(
-                  children: List.generate(
-                    6,
-                    (index) => Padding(
-                      padding: EdgeInsets.only(bottom: 12),
-                      child: _buildFileListShimmerCard(),
-                    ),
-                  ),
-                ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildFileShimmerCard() {
-    return Shimmer.fromColors(
-      baseColor: Colors.grey[300]!,
-      highlightColor: Colors.grey[100]!,
-      child: Container(
-        height: 200,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.grey.withOpacity(0.1),
-              spreadRadius: 1,
-              blurRadius: 4,
-              offset: Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(
-              flex: 3,
-              child: Container(
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
-                ),
-              ),
-            ),
-            Expanded(
-              flex: 1,
-              child: Padding(
-                padding: EdgeInsets.all(8),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Container(
-                      height: 12,
-                      width: double.infinity,
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                    ),
-                    SizedBox(height: 4),
-                    Container(
-                      height: 10,
-                      width: 80,
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildFileListShimmerCard() {
-    return Shimmer.fromColors(
-      baseColor: Colors.grey[300]!,
-      highlightColor: Colors.grey[100]!,
-      child: Container(
-        height: 80,
-        padding: EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.grey.withOpacity(0.1),
-              spreadRadius: 1,
-              blurRadius: 4,
-              offset: Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 56,
-              height: 56,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(8),
-              ),
-            ),
-            SizedBox(width: 12),
-            Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Container(
-                    height: 14,
-                    width: double.infinity,
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(4),
+                  Expanded(
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Colors.grey[300],
+                        borderRadius: const BorderRadius.vertical(
+                          top: Radius.circular(12),
+                        ),
+                      ),
                     ),
                   ),
-                  SizedBox(height: 8),
-                  Container(
-                    height: 12,
-                    width: 150,
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(4),
+                  Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          width: double.infinity,
+                          height: 12,
+                          decoration: BoxDecoration(
+                            color: Colors.grey[300],
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Container(
+                          width: 80,
+                          height: 10,
+                          decoration: BoxDecoration(
+                            color: Colors.grey[300],
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ],
               ),
             ),
-          ],
-        ),
+          );
+        },
+      ),
+    );
+  }
+
+  // ✅ Shimmer للـ List View
+  Widget _buildListShimmer() {
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: ListView.builder(
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        itemCount: 8,
+        itemBuilder: (context, index) {
+          return Shimmer.fromColors(
+            baseColor: Colors.grey[300]!,
+            highlightColor: Colors.grey[100]!,
+            child: Container(
+              margin: const EdgeInsets.only(bottom: 12),
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    width: 50,
+                    height: 50,
+                    decoration: BoxDecoration(
+                      color: Colors.grey[300],
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          width: double.infinity,
+                          height: 14,
+                          decoration: BoxDecoration(
+                            color: Colors.grey[300],
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Container(
+                          width: 100,
+                          height: 12,
+                          decoration: BoxDecoration(
+                            color: Colors.grey[300],
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
       ),
     );
   }
 
   Widget _buildErrorState(String error) {
-    return Scaffold(
-      backgroundColor: const Color(0xff28336f),
-      body: Center(
+    return Container(
+      height: MediaQuery.of(context).size.height * 0.6,
+      color: const Color(0xff28336f),
+      child: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -608,36 +538,10 @@ class _CategoryPageState extends State<CategoryPage> {
     );
   }
 
-  Widget _buildFilesShimmerLoading() {
-    return SingleChildScrollView(
-      padding: EdgeInsets.all(16),
-      child: _isGridView
-          ? Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: List.generate(
-                6,
-                (index) => SizedBox(
-                  width: (MediaQuery.of(context).size.width - 40) / 2,
-                  child: _buildFileShimmerCard(),
-                ),
-              ),
-            )
-          : Column(
-              children: List.generate(
-                6,
-                (index) => Padding(
-                  padding: EdgeInsets.only(bottom: 12),
-                  child: _buildFileListShimmerCard(),
-                ),
-              ),
-            ),
-    );
-  }
-
   Widget _buildFileContent(FileController fileController) {
+    // ✅ استخدام Shimmer بدلاً من CircularProgressIndicator
     if (fileController.isLoading) {
-      return _buildFilesShimmerLoading();
+      return _isGridView ? _buildGridShimmer() : _buildListShimmer();
     }
 
     if (fileController.errorMessage != null) {
@@ -784,8 +688,19 @@ class _CategoryPageState extends State<CategoryPage> {
   Widget build(BuildContext context) {
     final fileController = Provider.of<FileController>(context);
 
+    // ✅ عرض Shimmer أثناء تحميل التوكن
     if (_isLoadingToken) {
-      return _buildLoadingState();
+      return Scaffold(
+        backgroundColor: AppColors.lightBackground,
+        body: CustomScrollView(
+          slivers: [
+            SliverToBoxAdapter(child: _buildHeader(0)),
+            SliverToBoxAdapter(
+              child: _isGridView ? _buildGridShimmer() : _buildListShimmer(),
+            ),
+          ],
+        ),
+      );
     }
 
     if (_token == null || _token!.isEmpty) {
@@ -818,12 +733,9 @@ class _CategoryPageState extends State<CategoryPage> {
         onRefresh: () async => _loadTokenAndFiles(fromRefresh: true),
         child: CustomScrollView(
           slivers: [
-            // ✅ الهيدر كجزء من السكرول
             SliverToBoxAdapter(
               child: _buildHeader(fileController.uploadedFiles.length),
             ),
-
-            // ✅ محتوى الملفات مع تحميل
             SliverToBoxAdapter(child: _buildFileContent(fileController)),
           ],
         ),

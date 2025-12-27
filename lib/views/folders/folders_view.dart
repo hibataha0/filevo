@@ -2429,10 +2429,6 @@ class _FoldersPageState extends State<FoldersPage>
                 folderColor: folder['color'] is Color
                     ? folder['color'] as Color?
                     : null,
-                onFolderUpdated: () {
-                  // ✅ إعادة تحميل المجلدات لتحديث عدد الملفات
-                  _loadCategoriesAndFolders();
-                },
               ),
             ),
           ),

@@ -9,10 +9,11 @@ class ApiConfig {
       final host = Uri.base.host.isEmpty ? 'localhost' : Uri.base.host;
       url = 'http://$host:8000/api/v1';
     } else if (defaultTargetPlatform == TargetPlatform.android) {
-      // Android emulator يتطلب 10.0.2.2 للوصول إلى المضيف (localhost)
-      url = 'http://10.0.2.2:8000/api/v1';
+      // للوصول من الهاتف على نفس الشبكة
+      url = 'http://192.168.0.81:8000/api/v1';
     } else {
-      url = 'http://localhost:8000/api/v1';
+      // للوصول من نفس الجهاز أو شبكة محلية
+      url = 'http://192.168.0.81:8000/api/v1';
     }
 
     // طباعة الـ URL للـ debug

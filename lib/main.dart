@@ -21,7 +21,6 @@ import 'package:provider/provider.dart';
 import 'package:filevo/services/storage_service.dart'; // ✅ إضافة خدمة التخزين
 import 'package:filevo/generated/l10n.dart';
 import 'package:filevo/constants/app_colors.dart';
-import 'package:filevo/views/folders/folder_protection_dialogs.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -172,7 +171,6 @@ class _MyAppState extends State<MyApp> {
             '🎨 Building MaterialApp with theme: ${themeController.isDarkMode ? "Dark" : "Light"}',
           );
           return MaterialApp(
-            scaffoldMessengerKey: rootScaffoldMessengerKey, // ✅ إضافة GlobalKey للـ ScaffoldMessenger
             locale: _locale ?? const Locale('en'),
             localizationsDelegates: const [
               S.delegate,

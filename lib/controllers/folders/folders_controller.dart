@@ -7,26 +7,26 @@ class FolderController with ChangeNotifier {
   bool isLoading = false;
   String? errorMessage;
   bool _isDisposed = false;
-  
+
   // ✅ قائمة المجلدات المحذوفة
   List<Map<String, dynamic>> _trashFolders = [];
   List<Map<String, dynamic>> get trashFolders => _trashFolders;
-  
+
   // ✅ قائمة المجلدات المفضلة
   List<Map<String, dynamic>> _starredFolders = [];
   List<Map<String, dynamic>> get starredFolders => _starredFolders;
-  
+
   // ✅ معلومات الصفحة (pagination)
   Map<String, dynamic> _pagination = {};
   Map<String, dynamic> get pagination => _pagination;
-  
+
   // ✅ معلومات الصفحة للمجلدات المفضلة
   Map<String, dynamic> _starredPagination = {};
   Map<String, dynamic> get starredPagination => _starredPagination;
-  
+
   int _currentPage = 1;
   bool _hasMore = true;
-  
+
   // ✅ متغيرات pagination للمجلدات المفضلة
   int _starredCurrentPage = 1;
   bool _starredHasMore = true;
@@ -49,13 +49,10 @@ class FolderController with ChangeNotifier {
     _safeNotifyListeners();
   }
 
-  Future<bool> createFolder({
-    required String name,
-    String? parentId,
-  }) async {
+  Future<bool> createFolder({required String name, String? parentId}) async {
     setLoading(true);
     errorMessage = null;
-    
+
     try {
       final response = await _service.createFolder(
         name: name,
@@ -121,10 +118,7 @@ class FolderController with ChangeNotifier {
     errorMessage = null;
 
     try {
-      final response = await _service.getAllFolders(
-        page: page,
-        limit: limit,
-      );
+      final response = await _service.getAllFolders(page: page, limit: limit);
       return response;
     } catch (e) {
       errorMessage = e.toString();
@@ -135,6 +129,7 @@ class FolderController with ChangeNotifier {
   }
 
   // ✅ جلب محتويات مجلد معين
+  // ✅ لا نحتاج password هنا لأن الـ backend يستخدم session بعد التحقق
   Future<Map<String, dynamic>?> getFolderContents({
     required String folderId,
     int page = 1,
@@ -167,10 +162,7 @@ class FolderController with ChangeNotifier {
     errorMessage = null;
 
     try {
-      final response = await _service.getAllItems(
-        page: page,
-        limit: limit,
-      );
+      final response = await _service.getAllItems(page: page, limit: limit);
       return response;
     } catch (e) {
       errorMessage = e.toString();
@@ -265,7 +257,9 @@ class FolderController with ChangeNotifier {
     errorMessage = null;
 
     try {
-      final response = await _service.getSharedFolderDetailsInRoom(folderId: folderId);
+      final response = await _service.getSharedFolderDetailsInRoom(
+        folderId: folderId,
+      );
       return response;
     } catch (e) {
       errorMessage = e.toString();
@@ -383,22 +377,8 @@ class FolderController with ChangeNotifier {
     }
   }
 
-
-
-
-
-
-
-
-
-
-
-
-
   // ✅ حذف مجلد (soft delete)
-  Future<bool> deleteFolder({
-    required String folderId,
-  }) async {
+  Future<bool> deleteFolder({required String folderId}) async {
     setLoading(true);
     errorMessage = null;
 
@@ -418,9 +398,7 @@ class FolderController with ChangeNotifier {
   }
 
   // ✅ استعادة مجلد من المهملات
-  Future<bool> restoreFolder({
-    required String folderId,
-  }) async {
+  Future<bool> restoreFolder({required String folderId}) async {
     setLoading(true);
     errorMessage = null;
 
@@ -440,9 +418,7 @@ class FolderController with ChangeNotifier {
   }
 
   // ✅ حذف مجلد نهائياً
-  Future<bool> deleteFolderPermanent({
-    required String folderId,
-  }) async {
+  Future<bool> deleteFolderPermanent({required String folderId}) async {
     setLoading(true);
     errorMessage = null;
 
@@ -462,10 +438,7 @@ class FolderController with ChangeNotifier {
   }
 
   // ✅ جلب المجلدات المحذوفة (trash)
-  Future<void> getTrashFolders({
-    int page = 1,
-    bool loadMore = false,
-  }) async {
+  Future<void> getTrashFolders({int page = 1, bool loadMore = false}) async {
     if (!loadMore) {
       _currentPage = 1;
       _hasMore = true;
@@ -479,7 +452,7 @@ class FolderController with ChangeNotifier {
 
     try {
       final response = await _service.getTrashFolders();
-      
+
       if (response['folders'] != null) {
         final List<Map<String, dynamic>> newFolders =
             List<Map<String, dynamic>>.from(response['folders'] ?? []);
@@ -491,13 +464,12 @@ class FolderController with ChangeNotifier {
         }
 
         // تحديد إذا كان هناك المزيد من المجلدات
-        _hasMore = newFolders.length >= 20; // إذا كان العدد = الحد الأقصى، قد يكون هناك المزيد
-        
+        _hasMore =
+            newFolders.length >=
+            20; // إذا كان العدد = الحد الأقصى، قد يكون هناك المزيد
+
         // تحديث معلومات الصفحة
-        _pagination = {
-          'currentPage': _currentPage,
-          'hasNext': _hasMore,
-        };
+        _pagination = {'currentPage': _currentPage, 'hasNext': _hasMore};
 
         _safeNotifyListeners();
       } else {
@@ -551,10 +523,12 @@ class FolderController with ChangeNotifier {
       if (response['folder'] != null) {
         final updatedFolder = Map<String, dynamic>.from(response['folder']);
         final isStarred = updatedFolder['isStarred'] ?? false;
-        
+
         // ✅ تحديث قائمة المفضلة فوراً
-        final existingIndex = _starredFolders.indexWhere((f) => f['_id'] == folderId);
-        
+        final existingIndex = _starredFolders.indexWhere(
+          (f) => f['_id'] == folderId,
+        );
+
         if (isStarred) {
           // ✅ إذا تم إضافة للمفضلة، أضفه للقائمة إذا لم يكن موجوداً
           if (existingIndex == -1) {
@@ -569,7 +543,7 @@ class FolderController with ChangeNotifier {
             _starredFolders.removeAt(existingIndex);
           }
         }
-        
+
         _safeNotifyListeners();
         return {
           'success': true,
@@ -607,14 +581,16 @@ class FolderController with ChangeNotifier {
         page: _starredCurrentPage,
         limit: limit,
       );
-      
+
       if (response['folders'] != null) {
         final List<Map<String, dynamic>> newFolders =
             List<Map<String, dynamic>>.from(response['folders'] ?? []);
-        
+
         // تحديث معلومات الصفحة إذا كانت متوفرة
         if (response['pagination'] != null) {
-          _starredPagination = Map<String, dynamic>.from(response['pagination']);
+          _starredPagination = Map<String, dynamic>.from(
+            response['pagination'],
+          );
           final totalPages = _starredPagination['totalPages'] ?? 1;
           _starredHasMore = _starredCurrentPage < totalPages;
         } else {
@@ -705,4 +681,103 @@ class FolderController with ChangeNotifier {
     }
   }
 
+  // ============================================
+  // 🔒 Folder Protection Controller Methods
+  // ============================================
+
+  /// 🔒 تفعيل حماية مجلد (password أو biometric)
+  Future<bool> protectFolder({
+    required String folderId,
+    required String protectionType, // password | biometric
+    String? password,
+  }) async {
+    setLoading(true);
+    errorMessage = null;
+
+    try {
+      final response = await _service.protectFolder(
+        folderId: folderId,
+        protectionType: protectionType,
+        password: password,
+      );
+
+      if (response['message'] != null) {
+        return true;
+      }
+
+      errorMessage = response['message'] ?? 'فشل تفعيل حماية المجلد';
+      return false;
+    } catch (e) {
+      errorMessage = e.toString();
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  /// 🔐 التحقق من الوصول لمجلد محمي (password أو biometric)
+  Future<bool> verifyFolderAccess({
+    required String folderId,
+    String? password,
+    String? biometricToken,
+  }) async {
+    setLoading(true);
+    errorMessage = null;
+
+    try {
+      final response = await _service.verifyFolderAccess(
+        folderId: folderId,
+        password: password,
+        biometricToken: biometricToken,
+      );
+
+      print('🔐 [FolderController] verifyFolderAccess response: $response');
+
+      if (response['hasAccess'] == true) {
+        // ✅ إذا كان هناك session token، نحفظه للاستخدام في الطلبات اللاحقة
+        if (response['sessionToken'] != null) {
+          // يمكن حفظ session token هنا إذا لزم الأمر
+          print('✅ [FolderController] Session token received: ${response['sessionToken']}');
+        }
+        return true;
+      }
+
+      errorMessage = response['message'] ?? 'فشل التحقق من الوصول';
+      return false;
+    } catch (e) {
+      print('❌ [FolderController] verifyFolderAccess error: $e');
+      errorMessage = e.toString();
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  /// ❌ إزالة حماية مجلد
+  Future<bool> removeFolderProtection({
+    required String folderId,
+    String? password, // مطلوب إذا كانت الحماية password
+  }) async {
+    setLoading(true);
+    errorMessage = null;
+
+    try {
+      final response = await _service.removeFolderProtection(
+        folderId: folderId,
+        password: password,
+      );
+
+      if (response['message'] != null) {
+        return true;
+      }
+
+      errorMessage = response['message'] ?? 'فشل إزالة حماية المجلد';
+      return false;
+    } catch (e) {
+      errorMessage = e.toString();
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  }
 }

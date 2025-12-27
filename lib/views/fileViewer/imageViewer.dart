@@ -6,20 +6,17 @@ import 'package:filevo/views/folders/room_comments_page.dart';
 import 'package:filevo/services/storage_service.dart';
 import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
-import 'package:filevo/services/screen_protection_service.dart';
 
 class ImageViewer extends StatefulWidget {
   final String imageUrl;
   final String? roomId; // معرف الغرفة للتعليقات
   final String? fileId; // معرف الملف للتعليقات
-  final bool isOneTimeShare; // ✅ للملفات المشتركة لمرة واحدة
 
   const ImageViewer({
     Key? key,
     required this.imageUrl,
     this.roomId,
     this.fileId,
-    this.isOneTimeShare = false,
   }) : super(key: key);
 
   @override
@@ -36,10 +33,6 @@ class _ImageViewerState extends State<ImageViewer> {
   @override
   void initState() {
     super.initState();
-    // ✅ تفعيل الحماية من السكرين شوت والريكورد للملفات المشتركة لمرة واحدة
-    if (widget.isOneTimeShare) {
-      ScreenProtectionService.enableProtection();
-    }
     _photoViewController = PhotoViewController();
     _checkImageUrl();
     _loadImageWithToken();
@@ -72,10 +65,11 @@ class _ImageViewerState extends State<ImageViewer> {
         // ✅ إزالة أي timestamp موجود مسبقاً
         final urlWithoutParams = imageUrl.split('?').first;
         // ✅ إضافة timestamp جديد دائماً لضمان cache busting
-        imageUrl = '$urlWithoutParams?v=${DateTime.now().millisecondsSinceEpoch}';
-        
+        imageUrl =
+            '$urlWithoutParams?v=${DateTime.now().millisecondsSinceEpoch}';
+
         print('🖼️ [ImageViewer] Loading image with cache busting: $imageUrl');
-        
+
         final response = await http.get(
           Uri.parse(imageUrl),
           headers: {
@@ -95,12 +89,19 @@ class _ImageViewerState extends State<ImageViewer> {
           final fileId = widget.fileId ?? 'image';
           final timestamp = DateTime.now().millisecondsSinceEpoch;
           final fileName = widget.imageUrl.split('/').last.split('?').first;
-          final tempFile = File('${tempDir.path}/${fileId}_${timestamp}_$fileName');
-          
+          final tempFile = File(
+            '${tempDir.path}/${fileId}_${timestamp}_$fileName',
+          );
+
           // ✅ حذف الملف القديم إذا كان موجوداً
           try {
-            final oldFiles = tempDir.listSync()
-                .where((f) => f.path.contains('${fileId}_') && f.path.endsWith('_$fileName'))
+            final oldFiles = tempDir
+                .listSync()
+                .where(
+                  (f) =>
+                      f.path.contains('${fileId}_') &&
+                      f.path.endsWith('_$fileName'),
+                )
                 .toList();
             for (var oldFile in oldFiles) {
               if (oldFile is File) {
@@ -110,7 +111,7 @@ class _ImageViewerState extends State<ImageViewer> {
           } catch (e) {
             print('⚠️ [ImageViewer] Could not delete old temp files: $e');
           }
-          
+
           await tempFile.writeAsBytes(response.bodyBytes);
 
           if (!mounted) return;
@@ -277,7 +278,7 @@ class _ImageViewerState extends State<ImageViewer> {
 
     // ✅ استخدام ValueKey مع URL لضمان إعادة بناء الـ widget عند تغيير الصورة
     final imageKey = ValueKey(widget.imageUrl);
-    
+
     return Center(
       child: PhotoView(
         key: imageKey, // ✅ إضافة key لضمان إعادة بناء الـ widget عند تغيير URL
@@ -381,10 +382,6 @@ class _ImageViewerState extends State<ImageViewer> {
 
   @override
   void dispose() {
-    // ✅ إلغاء تفعيل الحماية عند إغلاق المشاهد
-    if (widget.isOneTimeShare) {
-      ScreenProtectionService.disableProtection();
-    }
     _photoViewController.dispose();
     super.dispose();
   }
