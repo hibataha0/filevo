@@ -71,8 +71,8 @@ class _ProfilePicState extends State<ProfilePic> {
         print('❌ File does not exist: $imagePath');
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('الملف غير موجود'),
+            SnackBar(
+              content: Text(S.of(context).fileNotFound),
               backgroundColor: Colors.red,
             ),
           );
@@ -119,7 +119,9 @@ class _ProfilePicState extends State<ProfilePic> {
         }
       } else {
         if (mounted) {
-          final errorMsg = profileController.errorMessage ?? S.of(context).failedToUploadProfileImage;
+          final errorMsg =
+              profileController.errorMessage ??
+              S.of(context).failedToUploadProfileImage;
           print('❌ Upload failed: $errorMsg');
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -136,7 +138,9 @@ class _ProfilePicState extends State<ProfilePic> {
         print('❌ Stack trace: $stackTrace');
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(S.of(context).errorUploadingProfileImage(e.toString())),
+            content: Text(
+              S.of(context).errorUploadingProfileImage(e.toString()),
+            ),
             backgroundColor: Colors.red,
             duration: const Duration(seconds: 5),
           ),
@@ -184,8 +188,8 @@ class _ProfilePicState extends State<ProfilePic> {
         print('❌ File does not exist: $imagePath');
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('الملف غير موجود'),
+            SnackBar(
+              content: Text(S.of(context).fileNotFound),
               backgroundColor: Colors.red,
             ),
           );
@@ -401,7 +405,7 @@ class _ProfilePicState extends State<ProfilePic> {
                       errorWidget: (context, url, error) {
                         print('❌ Error loading network image: $error');
                         print('❌ URL: $url');
-                        
+
                         // ✅ في حالة فشل تحميل الصورة، عرض أيقونة افتراضية
                         return const Icon(
                           Icons.person,

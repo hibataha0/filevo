@@ -199,27 +199,31 @@ class FileActionsService {
     Map<String, dynamic> file,
   ) async {
     // ✅ محاولة استخراج fileId من عدة مصادر
-    final fileId = file['originalData']?['_id']?.toString() ?? 
-                   file['_id']?.toString() ?? 
-                   file['originalData']?['id']?.toString() ?? 
-                   file['id']?.toString();
-    
+    final fileId =
+        file['originalData']?['_id']?.toString() ??
+        file['_id']?.toString() ??
+        file['originalData']?['id']?.toString() ??
+        file['id']?.toString();
+
     // ✅ محاولة استخراج fileName من عدة مصادر (بما في ذلك originalName)
-    final fileName = file['originalName']?.toString() ?? 
-                     file['name']?.toString() ?? 
-                     file['originalData']?['name']?.toString() ?? 
-                     file['originalData']?['originalName']?.toString() ?? 
-                     'ملف';
+    final fileName =
+        file['originalName']?.toString() ??
+        file['name']?.toString() ??
+        file['originalData']?['name']?.toString() ??
+        file['originalData']?['originalName']?.toString() ??
+        'ملف';
 
     print('🔍 [FileActionsService.shareFile] fileId: $fileId');
     print('🔍 [FileActionsService.shareFile] fileName: $fileName');
     print('🔍 [FileActionsService.shareFile] file keys: ${file.keys.toList()}');
     if (file['originalData'] != null) {
-      print('🔍 [FileActionsService.shareFile] originalData keys: ${(file['originalData'] as Map).keys.toList()}');
+      print(
+        '🔍 [FileActionsService.shareFile] originalData keys: ${(file['originalData'] as Map).keys.toList()}',
+      );
     }
 
     if (fileId == null) {
-      _showErrorSnackBar(context, 'لا يمكن تحديد الملف');
+      _showErrorSnackBar(context, S.of(context).cannotDetermineFile);
       return;
     }
 
@@ -308,7 +312,7 @@ class FileActionsService {
         );
       } else {
         final errorMsg =
-            fileController.errorMessage ?? "❌ حدث خطأ أثناء حذف الملف";
+            fileController.errorMessage ?? S.of(context).errorDeletingFile('');
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(errorMsg), backgroundColor: Colors.red),
         );
@@ -380,7 +384,7 @@ class FileActionsService {
 
     final token = await StorageService.getToken();
     if (token == null) {
-      _showErrorSnackBar(context, "❌ خطأ: لا يوجد توكن");
+      _showErrorSnackBar(context, S.of(context).noTokenError);
       return;
     }
 
@@ -422,7 +426,7 @@ class FileActionsService {
     try {
       final token = await StorageService.getToken();
       if (token == null) {
-        _showErrorSnackBar(context, "❌ خطأ: لا يوجد توكن");
+        _showErrorSnackBar(context, S.of(context).noTokenError);
         return;
       }
 
@@ -528,7 +532,7 @@ class FileActionsService {
     final fileName = file['name'] ?? file['originalData']?['name'] ?? 'file';
 
     if (fileId == null) {
-      _showErrorSnackBar(context, 'لا يمكن تحديد الملف');
+      _showErrorSnackBar(context, S.of(context).cannotDetermineFile);
       return;
     }
 

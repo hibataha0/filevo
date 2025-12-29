@@ -33,11 +33,15 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
         profileController.isLoading && profileController.userData == null;
 
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-    
+
     return Scaffold(
-      backgroundColor: isDarkMode ? const Color(0xFF121212) : const Color(0xFFF8EFFE),
+      backgroundColor: isDarkMode
+          ? const Color(0xFF121212)
+          : const Color(0xFFF8EFFE),
       appBar: AppBar(
-        backgroundColor: isDarkMode ? AppColors.darkAppBar : AppColors.lightAppBar,
+        backgroundColor: isDarkMode
+            ? AppColors.darkAppBar
+            : AppColors.lightAppBar,
         title: Text(S.of(context).profile),
       ),
       body: Padding(
@@ -110,13 +114,17 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
           child: TextFormField(
             controller: controller,
             decoration: const InputDecoration(border: OutlineInputBorder()),
-            keyboardType: isEmail ? TextInputType.emailAddress : TextInputType.text,
+            keyboardType: isEmail
+                ? TextInputType.emailAddress
+                : TextInputType.text,
             validator: (value) {
               if (value == null || value.trim().isEmpty) {
                 return S.of(context).fieldRequired;
               }
               if (isEmail) {
-                final emailRegex = RegExp(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$');
+                final emailRegex = RegExp(
+                  r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$',
+                );
                 if (!emailRegex.hasMatch(value.trim())) {
                   return S.of(context).validEmailRequired;
                 }
@@ -133,7 +141,7 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
           ElevatedButton(
             onPressed: () async {
               if (!formKey.currentState!.validate()) return;
-              
+
               final value = controller.text.trim();
               if (value.isEmpty) return;
 
@@ -143,13 +151,21 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
               if (success) {
                 Navigator.pop(ctx);
                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('✅ ${S.of(context).updatedSuccessfully}')),
+                  SnackBar(
+                    content: Text('✅ ${S.of(context).updatedSuccessfully}'),
+                  ),
                 );
               } else {
-                final profileController = Provider.of<ProfileController>(context, listen: false);
+                final profileController = Provider.of<ProfileController>(
+                  context,
+                  listen: false,
+                );
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: Text(profileController.errorMessage ?? '❌ Failed to update'),
+                    content: Text(
+                      profileController.errorMessage ??
+                          S.of(context).failedToUpdate,
+                    ),
                   ),
                 );
               }
@@ -165,8 +181,10 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
   // PASSWORD DIALOG
   // -------------------------
   void _showPasswordDialog(BuildContext context) {
-    final profileController =
-        Provider.of<ProfileController>(context, listen: false);
+    final profileController = Provider.of<ProfileController>(
+      context,
+      listen: false,
+    );
     final currentPasswordCtrl = TextEditingController();
     final newPasswordCtrl = TextEditingController();
     final confirmPasswordCtrl = TextEditingController();
@@ -254,13 +272,19 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
               if (success) {
                 Navigator.pop(ctx);
                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('✅ ${S.of(context).passwordUpdatedSuccessfully}')),
+                  SnackBar(
+                    content: Text(
+                      '✅ ${S.of(context).passwordUpdatedSuccessfully}',
+                    ),
+                  ),
                 );
               } else {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: Text(profileController.errorMessage ??
-                        '❌ Failed to update password'),
+                    content: Text(
+                      profileController.errorMessage ??
+                          S.of(context).failedToUpdatePassword,
+                    ),
                   ),
                 );
               }
@@ -317,8 +341,7 @@ class _EditableFieldCard extends StatelessWidget {
                 Expanded(
                   child: Text(
                     value,
-                    style:
-                        const TextStyle(fontSize: 16, color: Colors.black87),
+                    style: const TextStyle(fontSize: 16, color: Colors.black87),
                   ),
                 ),
                 const Icon(Icons.edit, color: Colors.black45),

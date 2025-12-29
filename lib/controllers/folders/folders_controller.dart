@@ -8,26 +8,26 @@ class FolderController with ChangeNotifier {
   String? errorMessage;
   bool _isDisposed = false;
 
-  // ✅ قائمة المجلدات المحذوفة
+  // ✅ Deleted folders list
   List<Map<String, dynamic>> _trashFolders = [];
   List<Map<String, dynamic>> get trashFolders => _trashFolders;
 
-  // ✅ قائمة المجلدات المفضلة
+  // ✅ Starred folders list
   List<Map<String, dynamic>> _starredFolders = [];
   List<Map<String, dynamic>> get starredFolders => _starredFolders;
 
-  // ✅ معلومات الصفحة (pagination)
+  // ✅ Page information (pagination)
   Map<String, dynamic> _pagination = {};
   Map<String, dynamic> get pagination => _pagination;
 
-  // ✅ معلومات الصفحة للمجلدات المفضلة
+  // ✅ Starred folders page information
   Map<String, dynamic> _starredPagination = {};
   Map<String, dynamic> get starredPagination => _starredPagination;
 
   int _currentPage = 1;
   bool _hasMore = true;
 
-  // ✅ متغيرات pagination للمجلدات المفضلة
+  // ✅ Pagination variables for starred folders
   int _starredCurrentPage = 1;
   bool _starredHasMore = true;
 
@@ -63,7 +63,7 @@ class FolderController with ChangeNotifier {
         return true;
       }
 
-      errorMessage = response['message'] ?? 'فشل إنشاء المجلد';
+      errorMessage = response['message'] ?? 'Failed to create folder';
       return false;
     } catch (e) {
       errorMessage = e.toString();
@@ -109,7 +109,7 @@ class FolderController with ChangeNotifier {
     }
   }
 
-  // ✅ جلب جميع المجلدات بدون parent
+  // ✅ Get all folders without parent
   Future<Map<String, dynamic>?> getAllFolders({
     int page = 1,
     int limit = 10,
@@ -128,8 +128,7 @@ class FolderController with ChangeNotifier {
     }
   }
 
-  // ✅ جلب محتويات مجلد معين
-  // ✅ لا نحتاج password هنا لأن الـ backend يستخدم session بعد التحقق
+  // ✅ Get contents of a specific folder
   Future<Map<String, dynamic>?> getFolderContents({
     required String folderId,
     int page = 1,
@@ -153,7 +152,7 @@ class FolderController with ChangeNotifier {
     }
   }
 
-  // ✅ جلب جميع العناصر (folders + files) بدون parent
+  // ✅ Get all items (folders + files) without parent
   Future<Map<String, dynamic>?> getAllItems({
     int page = 1,
     int limit = 20,
@@ -172,7 +171,7 @@ class FolderController with ChangeNotifier {
     }
   }
 
-  // ✅ تحديث مجلد
+  // ✅ Update folder
   Future<bool> updateFolder({
     required String folderId,
     String? name,
@@ -194,7 +193,7 @@ class FolderController with ChangeNotifier {
         return true;
       }
 
-      errorMessage = response['message'] ?? 'فشل تحديث المجلد';
+      errorMessage = response['message'] ?? 'Failed to update folder';
       return false;
     } catch (e) {
       errorMessage = e.toString();
@@ -204,10 +203,10 @@ class FolderController with ChangeNotifier {
     }
   }
 
-  // ✅ نقل مجلد من مجلد إلى آخر
+  // ✅ Move folder from one folder to another
   Future<bool> moveFolder({
     required String folderId,
-    String? targetFolderId, // null للجذر أو folderId للمجلد
+    String? targetFolderId, // null for root or folderId for folder
   }) async {
     setLoading(true);
     errorMessage = null;
@@ -222,7 +221,7 @@ class FolderController with ChangeNotifier {
         return true;
       }
 
-      errorMessage = response['message'] ?? 'فشل نقل المجلد';
+      errorMessage = response['message'] ?? 'Failed to move folder';
       return false;
     } catch (e) {
       errorMessage = e.toString();
@@ -232,7 +231,7 @@ class FolderController with ChangeNotifier {
     }
   }
 
-  // ✅ جلب تفاصيل مجلد
+  // ✅ Get folder details
   Future<Map<String, dynamic>?> getFolderDetails({
     required String folderId,
   }) async {
@@ -269,7 +268,7 @@ class FolderController with ChangeNotifier {
     }
   }
 
-  // ✅ مشاركة مجلد مع مستخدمين
+  // ✅ Share folder with users
   Future<bool> shareFolder({
     required String folderId,
     required List<String> userIds,
@@ -289,7 +288,7 @@ class FolderController with ChangeNotifier {
         return true;
       }
 
-      errorMessage = response['message'] ?? 'فشل مشاركة المجلد';
+      errorMessage = response['message'] ?? 'Failed to share folder';
       return false;
     } catch (e) {
       errorMessage = e.toString();
@@ -299,7 +298,7 @@ class FolderController with ChangeNotifier {
     }
   }
 
-  // ✅ تحديث صلاحيات مشاركة المجلد
+  // ✅ Update folder sharing permissions
   Future<bool> updateFolderPermissions({
     required String folderId,
     required List<Map<String, dynamic>> userPermissions,
@@ -317,7 +316,7 @@ class FolderController with ChangeNotifier {
         return true;
       }
 
-      errorMessage = response['message'] ?? 'فشل تحديث الصلاحيات';
+      errorMessage = response['message'] ?? 'Failed to update permissions';
       return false;
     } catch (e) {
       errorMessage = e.toString();
@@ -327,7 +326,7 @@ class FolderController with ChangeNotifier {
     }
   }
 
-  // ✅ إلغاء مشاركة المجلد
+  // ✅ Unshare folder
   Future<bool> unshareFolder({
     required String folderId,
     required List<String> userIds,
@@ -345,7 +344,7 @@ class FolderController with ChangeNotifier {
         return true;
       }
 
-      errorMessage = response['message'] ?? 'فشل إلغاء المشاركة';
+      errorMessage = response['message'] ?? 'Failed to unshare folder';
       return false;
     } catch (e) {
       errorMessage = e.toString();
@@ -355,7 +354,7 @@ class FolderController with ChangeNotifier {
     }
   }
 
-  // ✅ جلب المجلدات المشتركة معي
+  // ✅ Get folders shared with me
   Future<Map<String, dynamic>?> getFoldersSharedWithMe({
     int page = 1,
     int limit = 10,
@@ -377,7 +376,7 @@ class FolderController with ChangeNotifier {
     }
   }
 
-  // ✅ حذف مجلد (soft delete)
+  // ✅ Delete folder (soft delete)
   Future<bool> deleteFolder({required String folderId}) async {
     setLoading(true);
     errorMessage = null;
@@ -387,7 +386,7 @@ class FolderController with ChangeNotifier {
       if (response['message'] != null || response['folder'] != null) {
         return true;
       }
-      errorMessage = response['message'] ?? 'فشل حذف المجلد';
+      errorMessage = response['message'] ?? 'Failed to delete folder';
       return false;
     } catch (e) {
       errorMessage = e.toString();
@@ -397,7 +396,7 @@ class FolderController with ChangeNotifier {
     }
   }
 
-  // ✅ استعادة مجلد من المهملات
+  // ✅ Restore folder from trash
   Future<bool> restoreFolder({required String folderId}) async {
     setLoading(true);
     errorMessage = null;
@@ -407,7 +406,7 @@ class FolderController with ChangeNotifier {
       if (response['message'] != null || response['folder'] != null) {
         return true;
       }
-      errorMessage = response['message'] ?? 'فشل استعادة المجلد';
+      errorMessage = response['message'] ?? 'Failed to restore folder';
       return false;
     } catch (e) {
       errorMessage = e.toString();
@@ -417,7 +416,7 @@ class FolderController with ChangeNotifier {
     }
   }
 
-  // ✅ حذف مجلد نهائياً
+  // ✅ Permanently delete folder
   Future<bool> deleteFolderPermanent({required String folderId}) async {
     setLoading(true);
     errorMessage = null;
@@ -427,7 +426,8 @@ class FolderController with ChangeNotifier {
       if (response['message'] != null) {
         return true;
       }
-      errorMessage = response['message'] ?? 'فشل الحذف النهائي للمجلد';
+      errorMessage =
+          response['message'] ?? 'Failed to permanently delete folder';
       return false;
     } catch (e) {
       errorMessage = e.toString();
@@ -437,7 +437,7 @@ class FolderController with ChangeNotifier {
     }
   }
 
-  // ✅ جلب المجلدات المحذوفة (trash)
+  // ✅ Get deleted folders (trash)
   Future<void> getTrashFolders({int page = 1, bool loadMore = false}) async {
     if (!loadMore) {
       _currentPage = 1;
@@ -463,24 +463,23 @@ class FolderController with ChangeNotifier {
           _trashFolders = newFolders;
         }
 
-        // تحديد إذا كان هناك المزيد من المجلدات
+        // Determine if there are more folders
         _hasMore =
-            newFolders.length >=
-            20; // إذا كان العدد = الحد الأقصى، قد يكون هناك المزيد
+            newFolders.length >= 20; // If count = max limit, there may be more
 
-        // تحديث معلومات الصفحة
+        // Update page information
         _pagination = {'currentPage': _currentPage, 'hasNext': _hasMore};
 
         _safeNotifyListeners();
       } else {
-        errorMessage = response['message'] ?? 'فشل في جلب المجلدات المحذوفة';
+        errorMessage = response['message'] ?? 'Failed to fetch deleted folders';
         if (!loadMore) {
           _trashFolders = [];
           _safeNotifyListeners();
         }
       }
     } catch (e) {
-      errorMessage = 'خطأ في جلب المجلدات المحذوفة: ${e.toString()}';
+      errorMessage = 'Error fetching deleted folders: ${e.toString()}';
       if (!loadMore) {
         _trashFolders = [];
         _safeNotifyListeners();
@@ -490,7 +489,7 @@ class FolderController with ChangeNotifier {
     }
   }
 
-  // ✅ تنظيف المجلدات المنتهية الصلاحية
+  // ✅ Clean expired folders
   Future<bool> cleanExpiredFolders() async {
     setLoading(true);
     errorMessage = null;
@@ -500,7 +499,7 @@ class FolderController with ChangeNotifier {
       if (response['message'] != null) {
         return true;
       }
-      errorMessage = response['message'] ?? 'فشل تنظيف المجلدات المنتهية';
+      errorMessage = response['message'] ?? 'Failed to clean expired folders';
       return false;
     } catch (e) {
       errorMessage = e.toString();
@@ -510,12 +509,11 @@ class FolderController with ChangeNotifier {
     }
   }
 
-  // ✅ إضافة/إزالة علامة النجمة من المجلد
-  // ✅ نرجع Map يحتوي على success و isStarred
+  // ✅ Add/remove star from folder
   Future<Map<String, dynamic>> toggleStarFolder({
     required String folderId,
   }) async {
-    // ✅ لا نستخدم setLoading لأن هذا تحديث بسيط لا يحتاج refresh للصفحة كلها
+    // ✅ Don't use setLoading because this is a simple update that doesn't need page refresh
     errorMessage = null;
 
     try {
@@ -524,21 +522,21 @@ class FolderController with ChangeNotifier {
         final updatedFolder = Map<String, dynamic>.from(response['folder']);
         final isStarred = updatedFolder['isStarred'] ?? false;
 
-        // ✅ تحديث قائمة المفضلة فوراً
+        // ✅ Immediately update starred list
         final existingIndex = _starredFolders.indexWhere(
           (f) => f['_id'] == folderId,
         );
 
         if (isStarred) {
-          // ✅ إذا تم إضافة للمفضلة، أضفه للقائمة إذا لم يكن موجوداً
+          // ✅ If added to starred, add to list if not exists
           if (existingIndex == -1) {
-            _starredFolders.insert(0, updatedFolder); // ✅ إضافة في البداية
+            _starredFolders.insert(0, updatedFolder); // ✅ Add at the beginning
           } else {
-            // ✅ تحديث المجلد الموجود
+            // ✅ Update existing folder
             _starredFolders[existingIndex] = updatedFolder;
           }
         } else {
-          // ✅ إذا تم إزالته من المفضلة، احذفه من القائمة
+          // ✅ If removed from starred, delete from list
           if (existingIndex != -1) {
             _starredFolders.removeAt(existingIndex);
           }
@@ -551,7 +549,7 @@ class FolderController with ChangeNotifier {
           'folder': updatedFolder,
         };
       }
-      errorMessage = response['message'] ?? 'فشل في تحديث حالة النجمة';
+      errorMessage = response['message'] ?? 'Failed to update starred status';
       return {'success': false, 'isStarred': false, 'message': errorMessage};
     } catch (e) {
       errorMessage = e.toString();
@@ -559,7 +557,7 @@ class FolderController with ChangeNotifier {
     }
   }
 
-  // ✅ جلب المجلدات المميزة
+  // ✅ Get starred folders
   Future<void> getStarredFolders({
     int page = 1,
     int limit = 20,
@@ -586,7 +584,7 @@ class FolderController with ChangeNotifier {
         final List<Map<String, dynamic>> newFolders =
             List<Map<String, dynamic>>.from(response['folders'] ?? []);
 
-        // تحديث معلومات الصفحة إذا كانت متوفرة
+        // Update page information if available
         if (response['pagination'] != null) {
           _starredPagination = Map<String, dynamic>.from(
             response['pagination'],
@@ -594,7 +592,7 @@ class FolderController with ChangeNotifier {
           final totalPages = _starredPagination['totalPages'] ?? 1;
           _starredHasMore = _starredCurrentPage < totalPages;
         } else {
-          // إذا لم تكن pagination متوفرة، نحدد بناءً على عدد النتائج
+          // If pagination not available, determine based on result count
           _starredHasMore = newFolders.length >= limit;
           _starredPagination = {
             'currentPage': _starredCurrentPage,
@@ -610,14 +608,14 @@ class FolderController with ChangeNotifier {
 
         _safeNotifyListeners();
       } else {
-        errorMessage = response['message'] ?? 'فشل في جلب المجلدات المميزة';
+        errorMessage = response['message'] ?? 'Failed to fetch starred folders';
         if (!loadMore) {
           _starredFolders = [];
           _safeNotifyListeners();
         }
       }
     } catch (e) {
-      errorMessage = 'خطأ في جلب المجلدات المميزة: ${e.toString()}';
+      errorMessage = 'Error fetching starred folders: ${e.toString()}';
       if (!loadMore) {
         _starredFolders = [];
         _safeNotifyListeners();
@@ -627,7 +625,7 @@ class FolderController with ChangeNotifier {
     }
   }
 
-  // ✅ حساب حجم مجلد معين
+  // ✅ Calculate folder size
   Future<Map<String, dynamic>?> getFolderSize({
     required String folderId,
   }) async {
@@ -645,7 +643,7 @@ class FolderController with ChangeNotifier {
     }
   }
 
-  // ✅ حساب عدد الملفات في مجلد معين
+  // ✅ Calculate file count in a folder
   Future<Map<String, dynamic>?> getFolderFilesCount({
     required String folderId,
   }) async {
@@ -663,7 +661,7 @@ class FolderController with ChangeNotifier {
     }
   }
 
-  // ✅ حساب إحصائيات المجلد (الحجم + عدد الملفات) - الأكثر كفاءة
+  // ✅ Calculate folder statistics (size + file count) - more efficient
   Future<Map<String, dynamic>?> getFolderStats({
     required String folderId,
   }) async {
@@ -685,7 +683,7 @@ class FolderController with ChangeNotifier {
   // 🔒 Folder Protection Controller Methods
   // ============================================
 
-  /// 🔒 تفعيل حماية مجلد (password أو biometric)
+  /// 🔒 Enable folder protection (password or biometric)
   Future<bool> protectFolder({
     required String folderId,
     required String protectionType, // password | biometric
@@ -705,7 +703,8 @@ class FolderController with ChangeNotifier {
         return true;
       }
 
-      errorMessage = response['message'] ?? 'فشل تفعيل حماية المجلد';
+      errorMessage =
+          response['message'] ?? 'Failed to enable folder protection';
       return false;
     } catch (e) {
       errorMessage = e.toString();
@@ -715,7 +714,7 @@ class FolderController with ChangeNotifier {
     }
   }
 
-  /// 🔐 التحقق من الوصول لمجلد محمي (password أو biometric)
+  /// 🔐 Verify access to protected folder (password or biometric)
   Future<bool> verifyFolderAccess({
     required String folderId,
     String? password,
@@ -734,15 +733,17 @@ class FolderController with ChangeNotifier {
       print('🔐 [FolderController] verifyFolderAccess response: $response');
 
       if (response['hasAccess'] == true) {
-        // ✅ إذا كان هناك session token، نحفظه للاستخدام في الطلبات اللاحقة
+        // ✅ If there's a session token, save it for future requests
         if (response['sessionToken'] != null) {
-          // يمكن حفظ session token هنا إذا لزم الأمر
-          print('✅ [FolderController] Session token received: ${response['sessionToken']}');
+          // Can save session token here if needed
+          print(
+            '✅ [FolderController] Session token received: ${response['sessionToken']}',
+          );
         }
         return true;
       }
 
-      errorMessage = response['message'] ?? 'فشل التحقق من الوصول';
+      errorMessage = response['message'] ?? 'Failed to verify access';
       return false;
     } catch (e) {
       print('❌ [FolderController] verifyFolderAccess error: $e');
@@ -753,10 +754,10 @@ class FolderController with ChangeNotifier {
     }
   }
 
-  /// ❌ إزالة حماية مجلد
+  /// ❌ Remove folder protection
   Future<bool> removeFolderProtection({
     required String folderId,
-    String? password, // مطلوب إذا كانت الحماية password
+    String? password, // Required if protection is password
   }) async {
     setLoading(true);
     errorMessage = null;
@@ -771,7 +772,8 @@ class FolderController with ChangeNotifier {
         return true;
       }
 
-      errorMessage = response['message'] ?? 'فشل إزالة حماية المجلد';
+      errorMessage =
+          response['message'] ?? 'Failed to remove folder protection';
       return false;
     } catch (e) {
       errorMessage = e.toString();

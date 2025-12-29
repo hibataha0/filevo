@@ -752,6 +752,11 @@ class FolderService {
     int limit = 20,
   }) async {
     final token = await StorageService.getToken();
+    
+    // ✅ التحقق من وجود token قبل إرسال الطلب
+    if (token == null || token.isEmpty) {
+      throw Exception('لا يوجد token. يرجى تسجيل الدخول');
+    }
 
     final uri = Uri.parse("${ApiConfig.baseUrl}${ApiEndpoints.starredFolders}")
         .replace(

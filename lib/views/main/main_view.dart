@@ -72,7 +72,7 @@ class _MainPageState extends State<MainPage> {
   // ✅ رفع مجلد - اختيار اسم المجلد و الملفات أولاً ثم اختيار المجلد الهدف
   Future<void> _uploadFolderAndroid() async {
     if (_token == null) {
-      _showSnackBar('⚠️ سجل دخول أولاً', isError: true);
+      _showSnackBar(S.of(context).loginFirst, isError: true);
       return;
     }
 
@@ -82,13 +82,13 @@ class _MainPageState extends State<MainPage> {
       final shouldProceed = await showDialog<bool>(
         context: context,
         builder: (context) => AlertDialog(
-          title: const Text('إنشاء مجلد جديد'),
+          title: Text(S.of(context).CreateFolder),
           content: TextField(
             controller: folderNameController,
-            decoration: const InputDecoration(
-              hintText: 'أدخل اسم المجلد',
-              border: OutlineInputBorder(),
-              prefixIcon: Icon(Icons.folder),
+            decoration: InputDecoration(
+              hintText: S.of(context).folderNameHint,
+              border: const OutlineInputBorder(),
+              prefixIcon: const Icon(Icons.folder),
             ),
             autofocus: true,
             onSubmitted: (value) {
@@ -100,7 +100,7 @@ class _MainPageState extends State<MainPage> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context, false),
-              child: const Text('إلغاء'),
+              child: Text(S.of(context).cancel),
             ),
             TextButton(
               onPressed: () {
@@ -108,85 +108,67 @@ class _MainPageState extends State<MainPage> {
                   Navigator.pop(context, true);
                 }
               },
-              child: const Text('التالي'),
+              child: Text(S.of(context).next),
             ),
           ],
         ),
       );
 
-      // ✅ قراءة النص من الـ controller قبل أي dispose
       final folderName = shouldProceed == true
           ? folderNameController.text.trim()
           : '';
-
-      // ✅ انتظار قليل للتأكد من إغلاق الـ dialog تماماً
       await Future.delayed(const Duration(milliseconds: 100));
-
-      // ✅ الآن يمكن dispose بأمان
       folderNameController.dispose();
 
       if (shouldProceed != true || folderName.isEmpty) {
         if (shouldProceed == true && folderName.isEmpty) {
-          _showSnackBar('⚠️ يجب إدخال اسم المجلد', isError: true);
+          _showSnackBar(S.of(context).folderNameRequired, isError: true);
         }
         return;
       }
 
-      // ✅ 2. طلب الصلاحيات (لـ Android 10 وأقل)
       if (await _requestStoragePermissions()) {
         print('✅ Storage permissions granted');
       }
 
-      // ✅ 3. فتح file picker لاختيار ملفات متعددة
-      _showSnackBar('📁 اختر الملفات التي تريد إضافتها للمجلد...');
+      // ✅ 3. اختيار ملفات متعددة
+      _showSnackBar(S.of(context).folderUploadStart);
 
       final result = await FilePicker.platform.pickFiles(
         allowMultiple: true,
         type: FileType.any,
       );
 
-      if (result == null || result.files.isEmpty) {
-        print('❌ User cancelled file selection');
-        return;
-      }
+      if (result == null || result.files.isEmpty) return;
 
-      print('✅ Selected ${result.files.length} files');
-
-      // 🔐 Security: Check for dangerous files
+      // 🔐 Security: التحقق من الملفات الخطيرة
       final fileNames = result.files.map((f) => f.name).toList();
       final dangerousFiles = getDangerousFiles(fileNames);
-      
+
       if (dangerousFiles.isNotEmpty) {
-        // Show warning dialog
-        final shouldProceed = await showDialog<bool>(
+        final proceedSecurity = await showDialog<bool>(
           context: context,
           builder: (context) => AlertDialog(
-            title: const Text('⚠️ تحذير أمني'),
+            title: Text(S.of(context).securityWarning),
             content: Text(
-              'تم اكتشاف ملفات خطيرة:\n\n${dangerousFiles.join('\n')}\n\n'
-              'سيتم تحويل هذه الملفات إلى ملفات نصية آمنة (.txt) لمنع تنفيذها.\n\n'
-              'هل تريد المتابعة؟',
+              S.of(context).dangerousFilesDetected(dangerousFiles.join('\n')),
             ),
             actions: [
               TextButton(
                 onPressed: () => Navigator.of(context).pop(false),
-                child: const Text('إلغاء'),
+                child: Text(S.of(context).cancel),
               ),
               TextButton(
                 onPressed: () => Navigator.of(context).pop(true),
-                child: const Text('متابعة'),
+                child: Text(S.of(context).next),
               ),
             ],
           ),
         );
-        
-        if (shouldProceed != true) {
-          return;
-        }
+        if (proceedSecurity != true) return;
       }
 
-      // ✅ 4. قراءة الملفات وتحويلها إلى bytes
-      _showSnackBar('📁 جاري قراءة الملفات...');
+      _showSnackBar(S.of(context).readingFiles);
 
       List<Map<String, dynamic>> filesData = [];
       List<String> relativePaths = [];
@@ -200,31 +182,24 @@ class _MainPageState extends State<MainPage> {
           if (platformFile.path != null) {
             final file = File(platformFile.path!);
             if (await file.exists()) {
-              // 🔐 Security: Convert dangerous files to text
               if (isDangerousExtension(fileName)) {
-                _showSnackBar('🔐 جاري تحويل الملف الخطير: $fileName');
+                _showSnackBar(S.of(context).convertingDangerousFile(fileName));
                 final convertedFile = await convertDangerousFileToText(
                   originalFile: file,
                   originalFileName: fileName,
                 );
                 bytes = await convertedFile.readAsBytes();
                 safeFileName = convertToSafeTextFile(fileName);
-                print('🔐 Converted dangerous file: $fileName -> $safeFileName');
               } else {
                 bytes = await file.readAsBytes();
               }
-              print('✅ Read file: $safeFileName (${bytes.length} bytes)');
             } else {
-              print('⚠️ File does not exist: ${platformFile.path}');
               continue;
             }
           } else if (platformFile.bytes != null) {
-            // ✅ إذا كان الملف في الذاكرة (مثل اختيار من Google Drive)
             bytes = platformFile.bytes!;
-            
-            // 🔐 Security: Convert dangerous files to text
             if (isDangerousExtension(fileName)) {
-              _showSnackBar('🔐 جاري تحويل الملف الخطير: $fileName');
+              _showSnackBar(S.of(context).convertingDangerousFile(fileName));
               final tempDir = await getTemporaryDirectory();
               final tempFile = File('${tempDir.path}/temp_$fileName');
               await tempFile.writeAsBytes(bytes);
@@ -234,76 +209,48 @@ class _MainPageState extends State<MainPage> {
               );
               bytes = await convertedFile.readAsBytes();
               safeFileName = convertToSafeTextFile(fileName);
-              await tempFile.delete(); // Clean up temp file
-              print('🔐 Converted dangerous file: $fileName -> $safeFileName');
+              await tempFile.delete();
             }
-            
-            print('✅ Read file from memory: $safeFileName (${bytes.length} bytes)');
           } else {
-            print('⚠️ No file data available for: $fileName');
             continue;
           }
 
           filesData.add({'bytes': bytes, 'fileName': safeFileName});
-
-          // ✅ استخدام اسم الملف الآمن كـ relative path
           relativePaths.add(safeFileName);
         } catch (e) {
-          print('❌ Error reading file ${platformFile.name}: $e');
+          print('❌ Error reading file: $e');
         }
       }
 
       if (filesData.isEmpty) {
-        _showSnackBar('❌ لا يمكن قراءة الملفات المختارة', isError: true);
+        _showSnackBar(S.of(context).cannotReadFiles, isError: true);
         return;
       }
-
-      print('✅ Successfully collected ${filesData.length} files');
 
       // ✅ 4. اختيار المجلد الهدف
-      final selectedFolderId =
-          await showModalBottomSheet<String?>(
-            context: context,
-            isScrollControlled: true,
-            backgroundColor: Colors.transparent,
-            builder: (modalContext) => FolderSelectionDialog(
-              title: 'اختر المجلد الهدف',
-              onSelect: (folderId) {
-                // ✅ لا نحتاج لإغلاق الـ dialog هنا - FolderSelectionDialog يقوم بذلك
-              },
-            ),
-          ).then((value) {
-            // ✅ إذا ألغى المستخدم (null)، نعيد 'CANCELLED'
-            if (value == null) return 'CANCELLED';
-            return value;
-          });
+      final selectedFolderId = await showModalBottomSheet<String?>(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        builder: (modalContext) => FolderSelectionDialog(
+          title: S.of(context).selectTargetFolder,
+          onSelect: (folderId) {},
+        ),
+      ).then((value) => value ?? 'CANCELLED');
 
-      // ✅ إذا ألغى المستخدم، لا نفعل شيئاً
-      if (selectedFolderId == 'CANCELLED') {
-        return;
-      }
+      if (selectedFolderId == 'CANCELLED') return;
 
-      // ✅ 5. رفع المجلد مع الملفات
       final folderController = Provider.of<FolderController>(
         context,
         listen: false,
       );
       _showSnackBar(
-        '📁 جاري رفع المجلد "$folderName" (${filesData.length} ملف)...',
+        S.of(context).uploadingFolder(folderName, filesData.length),
       );
 
-      // ✅ استخدام selectedFolderId ('ROOT' = الجذر = null)
-      print('📁 MainView: Selected folder ID: $selectedFolderId');
       final parentFolderId = selectedFolderId == 'ROOT'
           ? null
           : selectedFolderId;
-      print('📁 MainView: Parent folder ID for upload: $parentFolderId');
-
-      print('🔄 MainView: Calling uploadFolder...');
-      print('   Folder name: $folderName');
-      print('   Parent folder ID: $parentFolderId');
-      print('   Files count: ${filesData.length}');
-      print('   Relative paths count: ${relativePaths.length}');
 
       final response = await folderController.uploadFolder(
         folderName: folderName,
@@ -312,29 +259,23 @@ class _MainPageState extends State<MainPage> {
         parentFolderId: parentFolderId,
       );
 
-      print('📥 MainView: Server response received');
-      print('📥 Response is null: ${response == null}');
-      print('📥 Response: $response');
-      print('📥 Controller error message: ${folderController.errorMessage}');
-
       if (response != null && response['folder'] != null) {
-        print('✅ MainView: Upload successful!');
         _showSnackBar(
-          '✅ تم رفع المجلد "$folderName" بنجاح! (${filesData.length} ملف)',
+          S.of(context).uploadFolderSuccess(folderName, filesData.length),
         );
       } else {
-        print('❌ MainView: Upload failed or response is null');
         final errorMsg =
             response?['message'] ??
             response?['error'] ??
             folderController.errorMessage ??
-            "فشل رفع المجلد";
-        print('❌ Error message: $errorMsg');
+            S.of(context).uploadFolderFailed;
         _showSnackBar('❌ $errorMsg', isError: true);
       }
     } catch (e) {
-      print('❌ Error in _uploadFolderAndroid: $e');
-      _showSnackBar('❌ خطأ في رفع المجلد: ${e.toString()}', isError: true);
+      _showSnackBar(
+        S.of(context).errorUploadingFolder(e.toString()),
+        isError: true,
+      );
     }
   }
 
@@ -364,7 +305,7 @@ class _MainPageState extends State<MainPage> {
 
       // ✅ إذا تم الرفض، حاول فتح الإعدادات
       if (status.isPermanentlyDenied) {
-        _showSnackBar('⚠️ يرجى منح صلاحية التخزين من الإعدادات', isError: true);
+        _showSnackBar(S.of(context).storagePermissionRequired, isError: true);
         await openAppSettings();
         return false;
       }
@@ -693,7 +634,7 @@ class _MainPageState extends State<MainPage> {
   // رفع ملف واحد أو عدة ملفات - لجميع المنصات
   Future<void> _uploadFilesOrSingle() async {
     if (_token == null) {
-      _showSnackBar('⚠️ سجل دخول أولاً', isError: true);
+      _showSnackBar(S.of(context).loginFirst, isError: true);
       return;
     }
 
@@ -705,31 +646,29 @@ class _MainPageState extends State<MainPage> {
       // 🔐 Security: Check for dangerous files
       final selectedFileNames = result.files.map((f) => f.name).toList();
       final dangerousFiles = getDangerousFiles(selectedFileNames);
-      
+
       if (dangerousFiles.isNotEmpty) {
         // Show warning dialog
         final shouldProceed = await showDialog<bool>(
           context: context,
           builder: (context) => AlertDialog(
-            title: const Text('⚠️ تحذير أمني'),
+            title: Text(S.of(context).securityWarning),
             content: Text(
-              'تم اكتشاف ملفات خطيرة:\n\n${dangerousFiles.join('\n')}\n\n'
-              'سيتم تحويل هذه الملفات إلى ملفات نصية آمنة (.txt) لمنع تنفيذها.\n\n'
-              'هل تريد المتابعة؟',
+              S.of(context).dangerousFilesDetected(dangerousFiles.join('\n')),
             ),
             actions: [
               TextButton(
                 onPressed: () => Navigator.of(context).pop(false),
-                child: const Text('إلغاء'),
+                child: Text(S.of(context).cancel),
               ),
               TextButton(
                 onPressed: () => Navigator.of(context).pop(true),
-                child: const Text('متابعة'),
+                child: Text(S.of(context).continuee),
               ),
             ],
           ),
         );
-        
+
         if (shouldProceed != true) {
           return;
         }
@@ -737,7 +676,7 @@ class _MainPageState extends State<MainPage> {
 
       // ✅ 2. قراءة الملفات فوراً وتحويلها إلى bytes (قبل اختيار المجلد)
       // ✅ هذا مهم لأن الملفات المؤقتة من FilePicker قد تُحذف أثناء اختيار المجلد
-      _showSnackBar('📁 جاري قراءة الملفات...');
+      _showSnackBar(S.of(context).readingFiles);
 
       List<File> tempFiles = [];
       List<String> fileNames = [];
@@ -756,27 +695,35 @@ class _MainPageState extends State<MainPage> {
             if (await file.exists()) {
               // 🔐 Security: Convert dangerous files to text
               if (isDangerousExtension(fileName)) {
-                _showSnackBar('🔐 جاري تحويل الملف الخطير: $fileName');
+                _showSnackBar(S.of(context).convertingDangerousFile(fileName));
                 final convertedFile = await convertDangerousFileToText(
                   originalFile: file,
                   originalFileName: fileName,
                 );
                 bytes = await convertedFile.readAsBytes();
                 safeFileName = convertToSafeTextFile(fileName);
-                print('🔐 Converted dangerous file: $fileName -> $safeFileName');
+                print(
+                  '🔐 Converted dangerous file: $fileName -> $safeFileName',
+                );
               } else {
                 bytes = await file.readAsBytes();
               }
-              print('✅ Read file from path: $safeFileName (${bytes.length} bytes)');
+              print(
+                '✅ Read file from path: $safeFileName (${bytes.length} bytes)',
+              );
             } else {
               // ✅ إذا لم يكن الملف موجوداً، حاول من bytes
               if (platformFile.bytes != null) {
                 bytes = platformFile.bytes!;
-                
+
                 // 🔐 Security: Convert dangerous files to text
                 if (isDangerousExtension(fileName)) {
-                  _showSnackBar('🔐 جاري تحويل الملف الخطير: $fileName');
-                  final tempFileForConversion = File('${tempDir.path}/temp_conv_$fileName');
+                  _showSnackBar(
+                    S.of(context).convertingDangerousFile(fileName),
+                  );
+                  final tempFileForConversion = File(
+                    '${tempDir.path}/temp_conv_$fileName',
+                  );
                   await tempFileForConversion.writeAsBytes(bytes);
                   final convertedFile = await convertDangerousFileToText(
                     originalFile: tempFileForConversion,
@@ -785,9 +732,11 @@ class _MainPageState extends State<MainPage> {
                   bytes = await convertedFile.readAsBytes();
                   safeFileName = convertToSafeTextFile(fileName);
                   await tempFileForConversion.delete(); // Clean up
-                  print('🔐 Converted dangerous file: $fileName -> $safeFileName');
+                  print(
+                    '🔐 Converted dangerous file: $fileName -> $safeFileName',
+                  );
                 }
-                
+
                 print(
                   '✅ Read file from bytes: $safeFileName (${bytes.length} bytes)',
                 );
@@ -799,11 +748,13 @@ class _MainPageState extends State<MainPage> {
           } else if (platformFile.bytes != null) {
             // ✅ إذا كان الملف في الذاكرة (مثل اختيار من Google Drive)
             bytes = platformFile.bytes!;
-            
+
             // 🔐 Security: Convert dangerous files to text
             if (isDangerousExtension(fileName)) {
-              _showSnackBar('🔐 جاري تحويل الملف الخطير: $fileName');
-              final tempFileForConversion = File('${tempDir.path}/temp_conv_$fileName');
+              _showSnackBar(S.of(context).convertingDangerousFile(fileName));
+              final tempFileForConversion = File(
+                '${tempDir.path}/temp_conv_$fileName',
+              );
               await tempFileForConversion.writeAsBytes(bytes);
               final convertedFile = await convertDangerousFileToText(
                 originalFile: tempFileForConversion,
@@ -814,8 +765,10 @@ class _MainPageState extends State<MainPage> {
               await tempFileForConversion.delete(); // Clean up
               print('🔐 Converted dangerous file: $fileName -> $safeFileName');
             }
-            
-            print('✅ Read file from memory: $safeFileName (${bytes.length} bytes)');
+
+            print(
+              '✅ Read file from memory: $safeFileName (${bytes.length} bytes)',
+            );
           } else {
             print('⚠️ No file data available for: $fileName');
             continue;
@@ -834,7 +787,7 @@ class _MainPageState extends State<MainPage> {
       }
 
       if (tempFiles.isEmpty) {
-        _showSnackBar('❌ لا يمكن قراءة الملفات المختارة', isError: true);
+        _showSnackBar(S.of(context).cannotReadFiles, isError: true);
         return;
       }
 
@@ -847,7 +800,7 @@ class _MainPageState extends State<MainPage> {
             isScrollControlled: true,
             backgroundColor: Colors.transparent,
             builder: (modalContext) => FolderSelectionDialog(
-              title: 'اختر المجلد الهدف',
+              title: S.of(context).selectTargetFolder,
               onSelect: (folderId) {
                 // ✅ لا نحتاج لإغلاق الـ dialog هنا - FolderSelectionDialog يقوم بذلك
                 // ✅ هذا callback يمكن استخدامه لأغراض أخرى إذا لزم الأمر
@@ -914,7 +867,9 @@ class _MainPageState extends State<MainPage> {
                   });
                 }
 
-                final percent = (progressValue * 100).clamp(0, 100).toStringAsFixed(0);
+                final percent = (progressValue * 100)
+                    .clamp(0, 100)
+                    .toStringAsFixed(0);
 
                 return AlertDialog(
                   title: Text(title),
@@ -945,8 +900,9 @@ class _MainPageState extends State<MainPage> {
       // ✅ 4. رفع الملفات من الملفات المؤقتة
       try {
         if (tempFiles.length == 1) {
-          bool success = await _showProgressDialog<bool>(
-                title: 'جار رفع الملف...',
+          bool success =
+              await _showProgressDialog<bool>(
+                title: S.of(context).uploadingMultipleFiles,
                 action: (onProgress) => fileController.uploadSingleFile(
                   file: tempFiles[0],
                   token: _token!,
@@ -958,19 +914,20 @@ class _MainPageState extends State<MainPage> {
           _showSnackBar(
             success
                 ? S.of(context).upload_success
-                : fileController.errorMessage ?? 'فشل رفع الملف',
+                : fileController.errorMessage ?? S.of(context).uploadFailed,
             isError: !success,
           );
         } else {
-          final response = await _showProgressDialog<Map<String, dynamic>>(
-            title: 'جار رفع الملفات...',
-            action: (onProgress) => fileController.uploadMultipleFiles(
-              files: tempFiles,
-              token: _token!,
-              parentFolderId: parentFolderId,
-              onSendProgress: onProgress,
-            ),
-          ) ??
+          final response =
+              await _showProgressDialog<Map<String, dynamic>>(
+                title: S.of(context).uploadingMultipleFiles,
+                action: (onProgress) => fileController.uploadMultipleFiles(
+                  files: tempFiles,
+                  token: _token!,
+                  parentFolderId: parentFolderId,
+                  onSendProgress: onProgress,
+                ),
+              ) ??
               {};
           if (response['files'] != null &&
               (response['files'] as List).isNotEmpty) {
@@ -980,8 +937,10 @@ class _MainPageState extends State<MainPage> {
 
             _showSnackBar(
               errorsCount > 0
-                  ? '✅ تم رفع $uploadedCount ملف، مع رفض $errorsCount بعد الفحص'
-                  : '✅ تم رفع $uploadedCount ملف بنجاح',
+                  ? S
+                        .of(context)
+                        .uploadSuccessWithErrors(uploadedCount, errorsCount)
+                  : S.of(context).uploadSuccessCount(uploadedCount),
             );
 
             if (errorsCount > 0) {
@@ -999,13 +958,14 @@ class _MainPageState extends State<MainPage> {
                   .join(', ');
 
               final errorMessage = errorNames.isNotEmpty
-                  ? 'تم رفض بعض الملفات بعد فحص الفيروسات: $errorNames'
-                  : 'تم رفض بعض الملفات بعد فحص الفيروسات';
+                  ? S
+                        .of(context)
+                        .allFilesRejectedVirus(
+                          errorNames,
+                        ) // تمرير أسماء الملفات كمتغير
+                  : S.of(context).someFilesRejectedVirus;
 
-              _showSnackBar(
-                errorMessage,
-                isError: true,
-              );
+              _showSnackBar(errorMessage, isError: true);
             }
           } else {
             final errors = (response['errors'] as List?) ?? [];
@@ -1024,18 +984,19 @@ class _MainPageState extends State<MainPage> {
                   .join(', ');
 
               final errorMessage = errorNames.isNotEmpty
-                  ? '❌ تم رفض جميع الملفات بعد فحص الفيروسات: $errorNames'
-                  : '❌ تم رفض جميع الملفات بعد فحص الفيروسات';
+                  ? S
+                        .of(context)
+                        .allFilesRejectedVirus(
+                          errorNames,
+                        ) // تمرير أسماء الملفات كمتغير
+                  : S.of(context).someFilesRejectedVirus;
 
-              _showSnackBar(
-                errorMessage,
-                isError: true,
-              );
+              _showSnackBar(errorMessage, isError: true);
             } else {
               _showSnackBar(
                 fileController.errorMessage ??
                     response['message'] ??
-                    'فشل رفع الملفات',
+                    S.of(context).uploadFailed,
                 isError: true,
               );
             }
@@ -1054,11 +1015,11 @@ class _MainPageState extends State<MainPage> {
         }
       }
     } catch (e) {
-      _showSnackBar('❌ خطأ في رفع الملفات: ${e.toString()}', isError: true);
+      _showSnackBar(S.of(context).uploadFailed, isError: true);
     }
   }
 
-  // إنشاء مجلد جديد - لجميع المنصات
+  // إنشاء مجلد جديد - لجميع المنصات مع دعم الترجمة
   Future<void> _createNewFolder() async {
     if (_token == null) return;
 
@@ -1068,20 +1029,20 @@ class _MainPageState extends State<MainPage> {
     final shouldProceed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: Text("إنشاء مجلد جديد"),
+        title: Text(S.of(context).createNewFolder),
         content: TextField(
           controller: folderNameController,
           decoration: InputDecoration(
-            hintText: "أدخل اسم المجلد",
-            border: OutlineInputBorder(),
-            prefixIcon: Icon(Icons.create_new_folder),
+            hintText: S.of(context).folderNameHint,
+            border: const OutlineInputBorder(),
+            prefixIcon: const Icon(Icons.create_new_folder),
           ),
           autofocus: true,
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext, false),
-            child: Text("إلغاء"),
+            child: Text(S.of(context).cancel),
           ),
           ElevatedButton(
             onPressed: () {
@@ -1089,7 +1050,7 @@ class _MainPageState extends State<MainPage> {
                 Navigator.pop(dialogContext, true);
               }
             },
-            child: Text("التالي"),
+            child: Text(S.of(context).next),
           ),
         ],
       ),
@@ -1108,7 +1069,7 @@ class _MainPageState extends State<MainPage> {
 
     if (shouldProceed != true || folderName.isEmpty) {
       if (shouldProceed == true && folderName.isEmpty) {
-        _showSnackBar('⚠️ يجب إدخال اسم المجلد', isError: true);
+        _showSnackBar(S.of(context).folderNameRequired, isError: true);
       }
       return;
     }
@@ -1120,13 +1081,12 @@ class _MainPageState extends State<MainPage> {
           isScrollControlled: true,
           backgroundColor: Colors.transparent,
           builder: (modalContext) => FolderSelectionDialog(
-            title: 'اختر المجلد الهدف',
+            title: S.of(context).selectTargetFolder,
             onSelect: (folderId) {
-              // ✅ لا نحتاج لإغلاق الـ dialog هنا - FolderSelectionDialog يقوم بذلك
+              // FolderSelectionDialog يقوم بالإغلاق تلقائياً
             },
           ),
         ).then((value) {
-          // ✅ إذا ألغى المستخدم (null)، نعيد 'CANCELLED'
           if (value == null) return 'CANCELLED';
           return value;
         });
@@ -1149,18 +1109,18 @@ class _MainPageState extends State<MainPage> {
       parentId: parentId,
     );
 
-    _showSnackBar(
-      success
-          ? '📁 تم إنشاء المجلد "$folderName" بنجاح'
-          : '❌ ${folderController.errorMessage ?? "فشل إنشاء المجلد"}',
-      isError: !success,
-    );
+    if (success) {
+      _showSnackBar(S.of(context).folderCreatedSuccess(folderName));
+    } else {
+      final errorMsg = folderController.errorMessage ?? "";
+      _showSnackBar(S.of(context).folderCreateFailed(errorMsg), isError: true);
+    }
   }
 
   // 🔥 خيارات الرفع - مفصولة حسب النظام
   Future<void> _showUploadOptions() async {
     if (_token == null) {
-      _showSnackBar('⚠️ سجل دخول أولاً', isError: true);
+      _showSnackBar(S.of(context).mustLoginFirst, isError: true);
       return;
     }
 
@@ -1178,7 +1138,7 @@ class _MainPageState extends State<MainPage> {
             children: [
               SizedBox(height: 16),
               Text(
-                'اختر طريقة الرفع',
+                S.of(context).uploadOptions,
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
               SizedBox(height: 16),
@@ -1197,34 +1157,34 @@ class _MainPageState extends State<MainPage> {
     );
   }
 
-  // 🔥 خيارات Android
+  // 🔥 خيارات Android المترجمة
   Widget _buildAndroidOptions() {
     return Column(
       children: [
         ListTile(
-          leading: Icon(Icons.folder, color: Colors.blue),
-          title: Text("رفع مجلد"),
-          subtitle: Text("اختر اسم المجلد ثم اختر الملفات"),
+          leading: const Icon(Icons.folder, color: Colors.blue),
+          title: Text(S.of(context).uploadFolder),
+          subtitle: Text(S.of(context).uploadFolderSubtitle),
           onTap: () {
             Navigator.pop(context);
             _uploadFolderAndroid();
           },
         ),
-        Divider(height: 1),
+        const Divider(height: 1),
         ListTile(
-          leading: Icon(Icons.file_copy, color: Colors.green),
-          title: Text("رفع ملفات متعددة"),
-          subtitle: Text("اختر عدة ملفات منفردة"),
+          leading: const Icon(Icons.file_copy, color: Colors.green),
+          title: Text(S.of(context).uploadMultipleFiles),
+          subtitle: Text(S.of(context).uploadMultipleFilesSubtitle),
           onTap: () {
             Navigator.pop(context);
             _uploadFilesOrSingle();
           },
         ),
-        Divider(height: 1),
+        const Divider(height: 1),
         ListTile(
-          leading: Icon(Icons.create_new_folder, color: Colors.orange),
-          title: Text("إنشاء مجلد جديد"),
-          subtitle: Text("إنشاء مجلد فارغ"),
+          leading: const Icon(Icons.create_new_folder, color: Colors.orange),
+          title: Text(S.of(context).createNewFolder),
+          subtitle: Text(S.of(context).createEmptyFolderSubtitle),
           onTap: () {
             Navigator.pop(context);
             _createNewFolder();
@@ -1234,24 +1194,24 @@ class _MainPageState extends State<MainPage> {
     );
   }
 
-  // 🔥 خيارات iOS
+  /// 🔥 خيارات iOS المترجمة
   Widget _buildIOSOptions() {
     return Column(
       children: [
         ListTile(
-          leading: Icon(Icons.file_copy, color: Colors.green),
-          title: Text("رفع ملفات"),
-          subtitle: Text("اختر ملف واحد أو عدة ملفات"),
+          leading: const Icon(Icons.file_copy, color: Colors.green),
+          title: Text(S.of(context).uploadFiles),
+          subtitle: Text(S.of(context).uploadFilesSubtitle),
           onTap: () {
             Navigator.pop(context);
             _uploadFilesOrSingle();
           },
         ),
-        Divider(height: 1),
+        const Divider(height: 1),
         ListTile(
-          leading: Icon(Icons.create_new_folder, color: Colors.orange),
-          title: Text("إنشاء مجلد جديد"),
-          subtitle: Text("إنشاء مجلد فارغ"),
+          leading: const Icon(Icons.create_new_folder, color: Colors.orange),
+          title: Text(S.of(context).createNewFolder),
+          subtitle: Text(S.of(context).createEmptyFolderSubtitle),
           onTap: () {
             Navigator.pop(context);
             _createNewFolder();

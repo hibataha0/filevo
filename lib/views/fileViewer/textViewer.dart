@@ -316,7 +316,7 @@ class _TextViewerPageState extends State<TextViewerPage> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('حدث خطأ أثناء قراءة الملف: $e'),
+            content: Text(S.of(context).errorReadingFile),
             backgroundColor: Colors.red,
             duration: Duration(seconds: 3),
           ),
@@ -455,15 +455,18 @@ class _TextViewerPageState extends State<TextViewerPage> {
 
         return true; // ✅ نجح التحديث
       } else {
-        print('❌ فشل تحديث محتوى الملف: ${result['message'] ?? 'Unknown error'}');
-        
+        print(
+          '❌ فشل تحديث محتوى الملف: ${result['message'] ?? 'Unknown error'}',
+        );
+
         // ✅ معالجة أنواع مختلفة من الأخطاء
-        String errorMessage = result['message'] ?? 'فشل رفع الملف إلى السيرفر';
+        String errorMessage =
+            result['message'] ?? S.of(context).failedToUploadFile;
 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('تم حفظ الملف محلياً، لكن $errorMessage'),
+              content: Text(S.of(context).fileSavedLocallyOnly(errorMessage)),
               backgroundColor: Colors.orange,
               duration: const Duration(seconds: 4),
             ),
@@ -476,27 +479,25 @@ class _TextViewerPageState extends State<TextViewerPage> {
       print('❌ Error type: ${e.runtimeType}');
 
       // ✅ معالجة أنواع مختلفة من الأخطاء
-      String errorMessage = 'فشل رفع الملف إلى السيرفر';
+      String errorMessage = S.of(context).failedToUploadFile;
 
       if (e.toString().contains('Connection reset') ||
           e.toString().contains('Connection closed')) {
-        errorMessage =
-            'انقطع الاتصال بالسيرفر. يرجى التحقق من الاتصال والمحاولة مرة أخرى.';
+        errorMessage = S.of(context).connectionReset;
       } else if (e.toString().contains('timeout') ||
           e.toString().contains('TimeoutException')) {
-        errorMessage = 'انتهت مهلة الاتصال. الملف كبير جداً أو الاتصال بطيء.';
+        errorMessage = S.of(context).timeoutError;
       } else if (e.toString().contains('SocketException')) {
-        errorMessage =
-            'لا يمكن الاتصال بالسيرفر. يرجى التحقق من الاتصال بالإنترنت.';
+        errorMessage = S.of(context).socketError;
       } else {
-        errorMessage = 'خطأ في رفع الملف: ${e.toString()}';
+        errorMessage = S.of(context).uploadError(e.toString());
       }
 
       // ✅ لا نرمي الخطأ هنا - الملف محفوظ محلياً على الأقل
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('تم حفظ الملف محلياً، لكن $errorMessage'),
+            content: Text(S.of(context).fileSavedLocallyOnly(errorMessage)),
             backgroundColor: Colors.orange,
             duration: const Duration(seconds: 4),
           ),
@@ -737,7 +738,10 @@ class _TextViewerPageState extends State<TextViewerPage> {
             // ✅ هذا يضمن أن الـ widget لا يزال mounted عند الاستدعاء
             Future.microtask(() {
               if (mounted) {
-                Navigator.of(context, rootNavigator: false).pop(_fileWasUpdated);
+                Navigator.of(
+                  context,
+                  rootNavigator: false,
+                ).pop(_fileWasUpdated);
               }
             });
             return false; // ✅ منع الإغلاق التلقائي لأننا سنغلق يدوياً
@@ -841,7 +845,9 @@ class _TextViewerPageState extends State<TextViewerPage> {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: SelectableText(
-        _textController.text.isEmpty ? 'لا يوجد محتوى' : _textController.text,
+        _textController.text.isEmpty
+            ? S.of(context).noContent
+            : _textController.text,
         style: _getTextStyle(widget.fileName),
       ),
     );
@@ -857,14 +863,14 @@ class _TextViewerPageState extends State<TextViewerPage> {
           color: Theme.of(context).appBarTheme.backgroundColor,
           child: Row(
             children: [
-              const Text(
-                'وضع التحرير',
+              Text(
+                S.of(context).editMode,
                 style: TextStyle(fontWeight: FontWeight.bold),
               ),
               const Spacer(),
               if (_hasChanges)
-                const Text(
-                  'تغييرات غير محفوظة',
+                Text(
+                  S.of(context).unsavedChanges,
                   style: TextStyle(color: Colors.orange, fontSize: 12),
                 ),
             ],
@@ -879,9 +885,9 @@ class _TextViewerPageState extends State<TextViewerPage> {
               maxLines: null,
               expands: true,
               style: _getTextStyle(widget.fileName),
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 border: InputBorder.none,
-                hintText: 'ابدأ الكتابة...',
+                hintText: S.of(context).startTyping,
               ),
               onChanged: (value) {
                 setState(() {

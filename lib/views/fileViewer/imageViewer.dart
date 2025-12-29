@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:filevo/generated/l10n.dart';
 import 'package:flutter/material.dart';
 import 'package:photo_view/photo_view.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -53,7 +54,7 @@ class _ImageViewerState extends State<ImageViewer> {
           if (!mounted) return;
           setState(() {
             _hasError = true;
-            _errorMessage = 'يجب تسجيل الدخول أولاً';
+            _errorMessage = S.of(context).mustLogin;
             _isLoadingLocal = false;
           });
           return;
@@ -124,7 +125,8 @@ class _ImageViewerState extends State<ImageViewer> {
           if (!mounted) return;
           setState(() {
             _hasError = true;
-            _errorMessage = 'فشل تحميل الصورة (${response.statusCode})';
+            _errorMessage =
+                '${S.of(context).failedToLoadImage} (${response.statusCode})';
             _isLoadingLocal = false;
           });
         }
@@ -132,7 +134,7 @@ class _ImageViewerState extends State<ImageViewer> {
         if (!mounted) return;
         setState(() {
           _hasError = true;
-          _errorMessage = 'خطأ في تحميل الصورة: ${e.toString()}';
+          _errorMessage = '${S.of(context).errorLoadingImage}: ${e.toString()}';
           _isLoadingLocal = false;
         });
       }
@@ -152,7 +154,7 @@ class _ImageViewerState extends State<ImageViewer> {
       if (!mounted) return;
       setState(() {
         _hasError = true;
-        _errorMessage = 'رابط الصورة غير صالح';
+        _errorMessage = S.of(context).invalidImageUrl;
       });
     } else if (isLocalFile) {
       // ✅ التحقق من وجود الملف المحلي
@@ -164,7 +166,7 @@ class _ImageViewerState extends State<ImageViewer> {
         if (!exists && mounted) {
           setState(() {
             _hasError = true;
-            _errorMessage = 'الملف غير موجود: $filePath';
+            _errorMessage = S.of(context).fileNotFoundd(filePath);
           });
         }
       });
@@ -209,7 +211,7 @@ class _ImageViewerState extends State<ImageViewer> {
       backgroundColor: Colors.black,
       appBar: AppBar(
         backgroundColor: Colors.black,
-        title: const Text('عرض الصورة'),
+        title: Text(S.of(context).viewImage),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () => Navigator.pop(context),
@@ -220,7 +222,7 @@ class _ImageViewerState extends State<ImageViewer> {
             IconButton(
               icon: const Icon(Icons.comment, color: Colors.white),
               onPressed: () => _openComments(context),
-              tooltip: 'التعليقات',
+              tooltip: S.of(context).comments,
             ),
           if (_hasError)
             IconButton(
@@ -322,7 +324,7 @@ class _ImageViewerState extends State<ImageViewer> {
             if (mounted) {
               setState(() {
                 _hasError = true;
-                _errorMessage = 'فشل في تحميل الصورة: $error';
+                _errorMessage = '${S.of(context).failedToLoadImage}: $error';
               });
             }
           });
@@ -345,13 +347,13 @@ class _ImageViewerState extends State<ImageViewer> {
             const Icon(Icons.error_outline, color: Colors.red, size: 64),
             const SizedBox(height: 16),
             Text(
-              _hasError ? _errorMessage : 'فشل في تحميل الصورة',
+              _hasError ? _errorMessage : S.of(context).failedToLoadImage,
               style: const TextStyle(color: Colors.white, fontSize: 18),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 8),
             Text(
-              'الرابط: ${widget.imageUrl}',
+              '${S.of(context).urlLabel} ${widget.imageUrl}',
               style: const TextStyle(color: Colors.white54, fontSize: 12),
               textAlign: TextAlign.center,
               maxLines: 3,
@@ -362,13 +364,13 @@ class _ImageViewerState extends State<ImageViewer> {
               children: [
                 ElevatedButton(
                   onPressed: _retryLoading,
-                  child: const Text('إعادة المحاولة'),
+                  child: Text(S.of(context).retry),
                 ),
                 const SizedBox(width: 10),
                 TextButton(
                   onPressed: () => Navigator.pop(context),
-                  child: const Text(
-                    'عودة',
+                  child: Text(
+                    S.of(context).back,
                     style: TextStyle(color: Colors.white54),
                   ),
                 ),

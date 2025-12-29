@@ -62,51 +62,59 @@ class _ActivityLogPageState extends State<ActivityLogPage> {
   }
 
   String _getActionName(String action) {
-    final actionMap = {
-      'file_uploaded': 'رفع ملف',
-      'file_downloaded': 'تحميل ملف',
-      'file_deleted': 'حذف ملف',
-      'file_restored': 'استعادة ملف',
-      'file_permanently_deleted': 'حذف ملف نهائياً',
-      'file_updated': 'تحديث ملف',
-      'file_moved': 'نقل ملف',
-      'file_starred': 'إضافة ملف للمفضلة',
-      'file_unstarred': 'إزالة ملف من المفضلة',
-      'file_shared': 'مشاركة ملف',
-      'file_unshared': 'إلغاء مشاركة ملف',
-      'file_accessed_onetime': 'وصول لملف لمرة واحدة',
-      'file_viewed_by_all_members': 'عرض ملف من قبل جميع الأعضاء',
-      'folder_created': 'إنشاء مجلد',
-      'folder_uploaded': 'رفع مجلد',
-      'folder_deleted': 'حذف مجلد',
-      'folder_restored': 'استعادة مجلد',
-      'folder_permanently_deleted': 'حذف مجلد نهائياً',
-      'folder_updated': 'تحديث مجلد',
-      'folder_moved': 'نقل مجلد',
-      'folder_starred': 'إضافة مجلد للمفضلة',
-      'folder_unstarred': 'إزالة مجلد من المفضلة',
-      'folder_shared': 'مشاركة مجلد',
-      'folder_unshared': 'إلغاء مشاركة مجلد',
-      'profile_updated': 'تحديث الملف الشخصي',
-      'password_changed': 'تغيير كلمة المرور',
-      'email_changed': 'تغيير البريد الإلكتروني',
-      'account_deleted': 'حذف الحساب',
-      'login': 'تسجيل الدخول',
-      'logout': 'تسجيل الخروج',
-      'password_reset_requested': 'طلب إعادة تعيين كلمة المرور',
-      'password_reset_completed': 'إعادة تعيين كلمة المرور',
+    // نستخدم ميزة انعكاس المفاتيح (Reflection) المدمجة في مكتبة intl
+    // أو نقوم بعمل خريطة (Map) تربط الـ Action بالدالة المترجمة
+    final S s = S.of(context);
+
+    final Map<String, String> actionTranslations = {
+      'file_uploaded': s.file_uploaded,
+      'file_downloaded': s.file_downloaded,
+      'file_deleted': s.file_deleted,
+      'file_restored': s.file_restored,
+      'file_permanently_deleted': s.file_permanently_deleted,
+      'file_updated': s.file_updated,
+      'file_moved': s.file_moved,
+      'file_starred': s.file_starred,
+      'file_unstarred': s.file_unstarred,
+      'file_shared': s.file_shared,
+      'file_unshared': s.file_unshared,
+      'file_accessed_onetime': s.file_accessed_onetime,
+      'file_viewed_by_all_members': s.file_viewed_by_all_members,
+      'folder_created': s.folder_created,
+      'folder_uploaded': s.folder_uploaded,
+      'folder_deleted': s.folder_deleted,
+      'folder_restored': s.folder_restored,
+      'folder_permanently_deleted': s.folder_permanently_deleted,
+      'folder_updated': s.folder_updated,
+      'folder_moved': s.folder_moved,
+      'folder_starred': s.folder_starred,
+      'folder_unstarred': s.folder_unstarred,
+      'folder_shared': s.folder_shared,
+      'folder_unshared': s.folder_unshared,
+      'profile_updated': s.profile_updated,
+      'password_changed': s.password_changed,
+      'email_changed': s.email_changed,
+      'account_deleted': s.account_deleted,
+      'login': s.login,
+      'logout': s.logout,
+      'password_reset_requested': s.password_reset_requested,
+      'password_reset_completed': s.password_reset_completed,
     };
-    return actionMap[action] ?? action;
+
+    return actionTranslations[action] ?? action;
   }
 
   String _getEntityTypeName(String entityType) {
+    final S s = S.of(context);
+
     final typeMap = {
-      'file': 'ملف',
-      'folder': 'مجلد',
-      'user': 'مستخدم',
-      'system': 'نظام',
-      'room': 'غرفة',
+      'file': s.entityFile,
+      'folder': s.entityFolder,
+      'user': s.entityUser,
+      'system': s.entitySystem,
+      'room': s.entityRoom,
     };
+
     return typeMap[entityType] ?? entityType;
   }
 
@@ -127,21 +135,24 @@ class _ActivityLogPageState extends State<ActivityLogPage> {
   String _formatDate(DateTime date) {
     final now = DateTime.now();
     final difference = now.difference(date);
+    final s = S.of(context);
 
     if (difference.inDays == 0) {
       if (difference.inHours == 0) {
         if (difference.inMinutes == 0) {
-          return 'الآن';
+          return s.now;
         }
-        return 'منذ ${difference.inMinutes} دقيقة';
+        return s.minutesAgo(difference.inMinutes);
       }
-      return 'منذ ${difference.inHours} ساعة';
+      return s.hoursAgo(difference.inHours);
     } else if (difference.inDays == 1) {
-      return 'أمس';
+      return s.yesterday;
     } else if (difference.inDays < 7) {
-      return 'منذ ${difference.inDays} أيام';
+      return s.daysAgo(difference.inDays);
     } else {
-      return DateFormat('yyyy/MM/dd HH:mm').format(date);
+      // استخدام لغة التطبيق الحالية لتنسيق التاريخ الثابت
+      final String locale = Localizations.localeOf(context).languageCode;
+      return DateFormat('yyyy/MM/dd HH:mm', locale).format(date);
     }
   }
 
@@ -166,9 +177,9 @@ class _ActivityLogPageState extends State<ActivityLogPage> {
           preferredSize: const Size.fromHeight(30),
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: const Text(
-              'يعرض آخر 100 سجل نشاط',
-              style: TextStyle(fontSize: 12, color: Colors.white70),
+            child: Text(
+              S.of(context).showingLast100Logs, // ✅ نص مترجم
+              style: const TextStyle(fontSize: 12, color: Colors.white70),
               textAlign: TextAlign.center,
             ),
           ),
@@ -180,6 +191,7 @@ class _ActivityLogPageState extends State<ActivityLogPage> {
             return const Center(child: CircularProgressIndicator());
           }
 
+          // واجهة الخطأ
           if (controller.errorMessage != null &&
               controller.activities.isEmpty) {
             return Center(
@@ -189,7 +201,8 @@ class _ActivityLogPageState extends State<ActivityLogPage> {
                   Icon(Icons.error_outline, size: 64, color: Colors.red[300]),
                   const SizedBox(height: 16),
                   Text(
-                    controller.errorMessage ?? 'حدث خطأ',
+                    controller.errorMessage?.toString() ??
+                        S.of(context).errorOccurred.toString(),
                     style: TextStyle(color: Colors.red[700]),
                     textAlign: TextAlign.center,
                   ),
@@ -203,6 +216,7 @@ class _ActivityLogPageState extends State<ActivityLogPage> {
             );
           }
 
+          // واجهة القائمة الفارغة
           if (controller.activities.isEmpty) {
             return Center(
               child: Column(
@@ -211,7 +225,7 @@ class _ActivityLogPageState extends State<ActivityLogPage> {
                   Icon(Icons.history, size: 64, color: Colors.grey[400]),
                   const SizedBox(height: 16),
                   Text(
-                    'لا توجد أنشطة',
+                    S.of(context).noActivities, // ✅ نص مترجم
                     style: TextStyle(
                       fontSize: 18,
                       color: Colors.grey[600],
@@ -220,7 +234,7 @@ class _ActivityLogPageState extends State<ActivityLogPage> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'سيتم عرض نشاطك هنا',
+                    S.of(context).activitiesWillShowHere, // ✅ نص مترجم
                     style: TextStyle(fontSize: 14, color: Colors.grey[500]),
                   ),
                 ],
@@ -273,13 +287,18 @@ class _ActivityLogPageState extends State<ActivityLogPage> {
 
   Widget _buildStatisticsCard(Map<String, dynamic> statistics) {
     final totalActivities = statistics['totalActivities'] ?? 0;
-    final period = statistics['period'] ?? '30 days';
+
+    // ✅ تحويل نص الفترة إذا كان قادماً من السيرفر كـ "30 days"
+    String period = statistics['period']?.toString() ?? "";
+    if (period.toLowerCase() == '30 days') {
+      period = S.of(context).days30;
+    }
 
     return Container(
       margin: const EdgeInsets.all(16),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).cardColor, // ✅ دعم الـ Dark Mode
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
@@ -293,11 +312,11 @@ class _ActivityLogPageState extends State<ActivityLogPage> {
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
           _buildStatItem(
-            'إجمالي النشاط',
+            S.of(context).totalActivity,
             totalActivities.toString(),
             Icons.history,
           ),
-          _buildStatItem('الفترة', period, Icons.calendar_today),
+          _buildStatItem(S.of(context).period, period, Icons.calendar_today),
         ],
       ),
     );
@@ -418,7 +437,7 @@ class _ActivityLogPageState extends State<ActivityLogPage> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).cardColor, // دعم الوضع الليلي
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.05),
@@ -442,7 +461,9 @@ class _ActivityLogPageState extends State<ActivityLogPage> {
             child: Text(S.of(context).previous),
           ),
           Text(
-            'صفحة $currentPage من $totalPages',
+            S
+                .of(context)
+                .pageOf(currentPage, totalPages), // ✅ نص ديناميكي مترجم
             style: TextStyle(
               fontSize: 14,
               color: Colors.grey[700],
@@ -474,11 +495,12 @@ class _ActivityLogPageState extends State<ActivityLogPage> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
+              // حقل اختيار الإجراء
               DropdownButtonFormField<String>(
                 value: _selectedAction,
-                decoration: const InputDecoration(
-                  labelText: 'الإجراء',
-                  border: OutlineInputBorder(),
+                decoration: InputDecoration(
+                  labelText: S.of(context).actionLabel, // ✅ نص مترجم
+                  border: const OutlineInputBorder(),
                 ),
                 items: [
                   DropdownMenuItem(
@@ -517,11 +539,13 @@ class _ActivityLogPageState extends State<ActivityLogPage> {
                 },
               ),
               const SizedBox(height: 16),
+
+              // حقل اختيار نوع العنصر
               DropdownButtonFormField<String>(
                 value: _selectedEntityType,
-                decoration: const InputDecoration(
-                  labelText: 'نوع العنصر',
-                  border: OutlineInputBorder(),
+                decoration: InputDecoration(
+                  labelText: S.of(context).entityTypeLabel, // ✅ نص مترجم
+                  border: const OutlineInputBorder(),
                 ),
                 items: [
                   DropdownMenuItem(
@@ -601,9 +625,11 @@ class _ActivityLogPageState extends State<ActivityLogPage> {
       backgroundColor: Colors.transparent,
       builder: (context) => Container(
         height: MediaQuery.of(context).size.height * 0.7,
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        decoration: BoxDecoration(
+          color: Theme.of(
+            context,
+          ).scaffoldBackgroundColor, // ✅ متوافق مع الوضع الليلي
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
         ),
         child: Column(
           children: [
@@ -668,16 +694,26 @@ class _ActivityLogPageState extends State<ActivityLogPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _buildDetailRow('النوع', _getEntityTypeName(entityType)),
+                    // ✅ النوع مترجم
                     _buildDetailRow(
-                      'التاريخ',
-                      DateFormat('yyyy/MM/dd HH:mm').format(createdAt),
+                      S.of(context).typeLabel,
+                      _getEntityTypeName(entityType),
                     ),
+
+                    // ✅ التاريخ منسق حسب اللغة
+                    _buildDetailRow(
+                      S.of(context).dateLabel,
+                      DateFormat(
+                        'yyyy/MM/dd HH:mm',
+                        Localizations.localeOf(context).languageCode,
+                      ).format(createdAt),
+                    ),
+
                     if (details.isNotEmpty) ...[
                       const SizedBox(height: 16),
-                      const Text(
-                        'التفاصيل',
-                        style: TextStyle(
+                      Text(
+                        S.of(context).detailsTitle, // ✅ "التفاصيل" مترجم
+                        style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
                         ),
@@ -688,11 +724,14 @@ class _ActivityLogPageState extends State<ActivityLogPage> {
                             _buildDetailRow(entry.key, entry.value.toString()),
                       ),
                     ],
+
                     if (metadata.isNotEmpty) ...[
                       const SizedBox(height: 16),
-                      const Text(
-                        'معلومات إضافية',
-                        style: TextStyle(
+                      Text(
+                        S
+                            .of(context)
+                            .additionalInfo, // ✅ "معلومات إضافية" مترجم
+                        style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
                         ),

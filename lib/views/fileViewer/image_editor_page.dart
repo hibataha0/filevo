@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'dart:typed_data';
+import 'package:filevo/generated/l10n.dart';
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:pro_image_editor/pro_image_editor.dart';
@@ -31,7 +32,7 @@ class _ImageEditorPageState extends State<ImageEditorPage> {
       // ✅ التحقق من وجود الملف
       if (!await widget.imageFile.exists()) {
         setState(() {
-          _errorMessage = 'الملف غير موجود';
+          _errorMessage = S.of(context).fileNotFound;
           _isLoading = false;
         });
         return;
@@ -42,7 +43,7 @@ class _ImageEditorPageState extends State<ImageEditorPage> {
 
       if (bytes.isEmpty) {
         setState(() {
-          _errorMessage = 'الملف فارغ';
+          _errorMessage = S.of(context).fileEmpty;
           _isLoading = false;
         });
         return;
@@ -55,7 +56,7 @@ class _ImageEditorPageState extends State<ImageEditorPage> {
     } catch (e) {
       print('❌ Error loading image: $e');
       setState(() {
-        _errorMessage = 'فشل تحميل الصورة: ${e.toString()}';
+        _errorMessage = S.of(context).failedToLoadImage1(e.toString());
         _isLoading = false;
       });
     }
@@ -65,14 +66,14 @@ class _ImageEditorPageState extends State<ImageEditorPage> {
   Widget build(BuildContext context) {
     if (_isLoading) {
       return Scaffold(
-        appBar: AppBar(title: const Text('تحميل الصورة')),
+        appBar: AppBar(title: Text(S.of(context).loadingImage)),
         body: const Center(child: CircularProgressIndicator()),
       );
     }
 
     if (_errorMessage != null || _imageBytes == null) {
       return Scaffold(
-        appBar: AppBar(title: const Text('خطأ')),
+        appBar: AppBar(title: Text('خطأ')),
         body: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -80,14 +81,14 @@ class _ImageEditorPageState extends State<ImageEditorPage> {
               const Icon(Icons.error, color: Colors.red, size: 48),
               const SizedBox(height: 16),
               Text(
-                _errorMessage ?? 'فشل تحميل الصورة',
+                _errorMessage ?? S.of(context).failedToLoadImage1(''),
                 style: const TextStyle(fontSize: 16),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 16),
               ElevatedButton(
                 onPressed: () => Navigator.pop(context),
-                child: const Text('إلغاء'),
+                child: Text(S.of(context).cancel),
               ),
             ],
           ),

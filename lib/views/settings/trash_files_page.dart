@@ -1,3 +1,4 @@
+import 'package:filevo/generated/l10n.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:filevo/controllers/folders/files_controller.dart';
@@ -27,12 +28,11 @@ class _TrashFilesPageState extends State<TrashFilesPage> {
     // سكرول لانهائي
     _scrollController.addListener(() {
       final controller = Provider.of<FileController>(context, listen: false);
-      
+
       if (_scrollController.position.pixels >=
-          _scrollController.position.maxScrollExtent - 200 &&
+              _scrollController.position.maxScrollExtent - 200 &&
           !_isLoadingMore &&
           controller.pagination["hasNext"] == true) {
-        
         _loadTrashFiles(loadMore: true);
       }
     });
@@ -61,7 +61,7 @@ class _TrashFilesPageState extends State<TrashFilesPage> {
 
   Future<void> _restoreFile(String fileId) async {
     final controller = Provider.of<FileController>(context, listen: false);
-    
+
     final success = await controller.restoreFiles(
       fileIds: [fileId],
       token: widget.token,
@@ -69,8 +69,8 @@ class _TrashFilesPageState extends State<TrashFilesPage> {
 
     if (success && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("تم استعادة الملف بنجاح"),
+        SnackBar(
+          content: Text(S.of(context).fileRestoredSuccess),
           backgroundColor: Colors.green,
         ),
       );
@@ -79,7 +79,7 @@ class _TrashFilesPageState extends State<TrashFilesPage> {
 
   Future<void> _permanentDeleteFile(String fileId) async {
     final controller = Provider.of<FileController>(context, listen: false);
-    
+
     final success = await controller.permanentDelete(
       fileIds: [fileId],
       token: widget.token,
@@ -87,8 +87,8 @@ class _TrashFilesPageState extends State<TrashFilesPage> {
 
     if (success && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("تم الحذف النهائي للملف بنجاح"),
+        SnackBar(
+          content: Text(S.of(context).fileDeletedPermanently),
           backgroundColor: Colors.red,
         ),
       );
@@ -97,7 +97,7 @@ class _TrashFilesPageState extends State<TrashFilesPage> {
 
   // Future<void> _emptyTrash() async {
   //   final controller = Provider.of<FileController>(context, listen: false);
-    
+
   //   final success = await controller.emptyTrash(
   //     token: widget.token,
   //   );
@@ -113,8 +113,12 @@ class _TrashFilesPageState extends State<TrashFilesPage> {
   // }
 
   void _showFileActions(BuildContext context, Map<String, dynamic> file) {
+    final s = S.of(context);
     showModalBottomSheet(
       context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
       builder: (context) => Container(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -122,15 +126,15 @@ class _TrashFilesPageState extends State<TrashFilesPage> {
           children: [
             ListTile(
               leading: const Icon(Icons.restore, color: Colors.green),
-              title: const Text("استعادة الملف"),
+              title: Text(s.restoreFile), // ✅ نص مترجم
               onTap: () {
-                // Navigator.pop(context);
-                // _restoreFile(file["_id"]);
+                Navigator.pop(context);
+                _restoreFile(file["_id"]);
               },
             ),
             ListTile(
               leading: const Icon(Icons.delete_forever, color: Colors.red),
-              title: const Text("حذف نهائي"),
+              title: Text(s.permanentDelete), // ✅ نص مترجم
               onTap: () {
                 Navigator.pop(context);
                 _showDeleteConfirmation(file);
@@ -143,22 +147,29 @@ class _TrashFilesPageState extends State<TrashFilesPage> {
   }
 
   void _showDeleteConfirmation(Map<String, dynamic> file) {
+    final s = S.of(context);
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text("تأكيد الحذف النهائي"),
-        content: Text("هل أنت متأكد من الحذف النهائي للملف '${file["name"]}'؟ لا يمكن التراجع عن هذا الإجراء."),
+        title: Text(s.confirmDeleteTitle), // ✅ نص مترجم
+        content: Text(
+          // ✅ نص مترجم مع تمرير اسم الملف ديناميكياً
+          s.confirmDeleteMessage(file["name"] ?? ""),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text("إلغاء"),
+            child: Text(s.cancel), // ✅ نص مترجم
           ),
           TextButton(
             onPressed: () {
               Navigator.pop(context);
               _permanentDeleteFile(file["_id"]);
             },
-            child: const Text("حذف نهائي", style: TextStyle(color: Colors.red)),
+            child: Text(
+              s.permanentDelete, // ✅ نص مترجم
+              style: const TextStyle(color: Colors.red),
+            ),
           ),
         ],
       ),
@@ -166,22 +177,30 @@ class _TrashFilesPageState extends State<TrashFilesPage> {
   }
 
   void _showEmptyTrashConfirmation() {
+    final s = S.of(context);
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text("إفراغ سلة المحذوفات"),
-        content: const Text("هل أنت متأكد من إفراغ سلة المحذوفات؟ سيتم حذف جميع الملفات نهائياً ولا يمكن استعادتها."),
+        title: Text(s.emptyTrashTitle), // ✅ نص مترجم
+        content: Text(s.emptyTrashMessage), // ✅ نص مترجم
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text("إلغاء"),
+            child: Text(s.cancel), // ✅ نص مترجم
           ),
           TextButton(
             onPressed: () {
-              // Navigator.pop(context);
-              // _emptyTrash();
+              // Navigator.pop(context); // إغلاق الديالوج أولاً
+              // _emptyTrash(); // استدعاء دالة الإفراغ
             },
-            child: const Text("إفراغ", style: TextStyle(color: Colors.red)),
+            child: Text(
+              s.empty, // ✅ نص مترجم
+              style: const TextStyle(
+                color: Colors.red,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
           ),
         ],
       ),
@@ -199,21 +218,21 @@ class _TrashFilesPageState extends State<TrashFilesPage> {
 
   @override
   Widget build(BuildContext context) {
+    final s = S.of(context); // ✅ مرجع الترجمة
+
     return Consumer<FileController>(
       builder: (context, fileController, child) {
         final files = fileController.trashFiles;
         final isLoading = fileController.isLoading;
         final hasFiles = files.isNotEmpty;
 
-        print('Building TrashFilesPage with ${files.length} files, isLoading: $isLoading');
-
         return Scaffold(
           backgroundColor: const Color(0xff28336f),
           appBar: AppBar(
             backgroundColor: const Color(0xff28336f),
-            title: const Text(
-              "سلة المحذوفات",
-              style: TextStyle(color: Colors.white),
+            title: Text(
+              s.trashTitle, // ✅ نص مترجم
+              style: const TextStyle(color: Colors.white),
             ),
             iconTheme: const IconThemeData(color: Colors.white),
             elevation: 0,
@@ -222,7 +241,7 @@ class _TrashFilesPageState extends State<TrashFilesPage> {
                 IconButton(
                   icon: const Icon(Icons.delete_sweep),
                   onPressed: _showEmptyTrashConfirmation,
-                  tooltip: "إفراغ السلة",
+                  tooltip: s.emptyTrash, // ✅ تلميح مترجم
                 ),
             ],
           ),
@@ -248,13 +267,13 @@ class _TrashFilesPageState extends State<TrashFilesPage> {
                       children: [
                         _buildStatItem(
                           Icons.delete,
-                          "الملفات",
+                          s.filesCount, // ✅ "الملفات" مترجم
                           "${files.length}",
                           Colors.red,
                         ),
                         _buildStatItem(
                           Icons.schedule,
-                          "سيتم حذفها تلقائياً بعد 30 يوم",
+                          s.autoDeleteNotice, // ✅ "حذف تلقائي" مترجم
                           "",
                           Colors.orange,
                         ),
@@ -267,53 +286,54 @@ class _TrashFilesPageState extends State<TrashFilesPage> {
                   child: isLoading && files.isEmpty
                       ? const Center(child: CircularProgressIndicator())
                       : !hasFiles
-                          ? const Center(
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(Icons.delete_outline, size: 80, color: Colors.grey),
-                                  SizedBox(height: 16),
-                                  Text(
-                                    "لا يوجد ملفات محذوفة",
-                                    style: TextStyle(fontSize: 18, color: Colors.grey),
-                                  ),
-                                ],
+                      ? Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Icon(
+                                Icons.delete_outline,
+                                size: 80,
+                                color: Colors.grey,
                               ),
-                            )
-                          : Padding(
-                              padding: const EdgeInsets.all(10),
-                              child: Column(
-                                children: [
-                                  Expanded(
-                                    child: GridView.builder(
-                                      controller: _scrollController,
-                                      gridDelegate:
-                                          const SliverGridDelegateWithFixedCrossAxisCount(
-                                        crossAxisCount: 2,
-                                        crossAxisSpacing: 10,
-                                        mainAxisSpacing: 10,
-                                        childAspectRatio: 0.85,
-                                      ),
-                                      itemCount: files.length + (_isLoadingMore ? 1 : 0),
-                                      itemBuilder: (context, index) {
-                                        if (index == files.length && _isLoadingMore) {
-                                          return const Center(
-                                            child: CircularProgressIndicator(),
-                                          );
-                                        }
+                              const SizedBox(height: 16),
+                              Text(
+                                s.noDeletedFiles, // ✅ "لا يوجد ملفات" مترجم
+                                style: const TextStyle(
+                                  fontSize: 18,
+                                  color: Colors.grey,
+                                ),
+                              ),
+                            ],
+                          ),
+                        )
+                      : Padding(
+                          padding: const EdgeInsets.all(10),
+                          child: GridView.builder(
+                            controller: _scrollController,
+                            gridDelegate:
+                                const SliverGridDelegateWithFixedCrossAxisCount(
+                                  crossAxisCount: 2,
+                                  crossAxisSpacing: 10,
+                                  mainAxisSpacing: 10,
+                                  childAspectRatio: 0.85,
+                                ),
+                            itemCount: files.length + (_isLoadingMore ? 1 : 0),
+                            itemBuilder: (context, index) {
+                              if (index == files.length && _isLoadingMore) {
+                                return const Center(
+                                  child: CircularProgressIndicator(),
+                                );
+                              }
 
-                                        final file = files[index];
-                                        return _buildTrashFileCard(
-                                          context,
-                                          file,
-                                          () => _showFileActions(context, file),
-                                        );
-                                      },
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
+                              final file = files[index];
+                              return _buildTrashFileCard(
+                                context,
+                                file,
+                                () => _showFileActions(context, file),
+                              );
+                            },
+                          ),
+                        ),
                 ),
               ],
             ),
@@ -323,7 +343,12 @@ class _TrashFilesPageState extends State<TrashFilesPage> {
     );
   }
 
-  Widget _buildStatItem(IconData icon, String title, String value, Color color) {
+  Widget _buildStatItem(
+    IconData icon,
+    String title,
+    String value,
+    Color color,
+  ) {
     return Column(
       children: [
         Icon(icon, color: color, size: 24),
@@ -345,67 +370,60 @@ class _TrashFilesPageState extends State<TrashFilesPage> {
     );
   }
 
-  /// كرت واحد لملف محذوف
   Widget _buildTrashFileCard(
     BuildContext context,
     Map<String, dynamic> file,
     VoidCallback onTap,
   ) {
+    final s = S.of(context); // ✅ مرجع الترجمة
+
     return GestureDetector(
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: const Color(0xFFF1F1F1),
+          color: Theme.of(
+            context,
+          ).cardColor.withOpacity(0.9), // دعم الوضع الليلي
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: Colors.black12,
+              color: Colors.black.withOpacity(0.05),
               blurRadius: 4,
               offset: const Offset(0, 2),
-            )
+            ),
           ],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // أيقونة الملف حسب النوع
-            Center(
-              child: _buildFileIcon(file),
-            ),
+            Center(child: _buildFileIcon(file)),
 
             const SizedBox(height: 10),
 
             // اسم الملف
             Text(
-              file["name"] ?? "ملف بدون اسم",
+              file["name"] ?? s.unnamedFile, // ✅ نص مترجم للملفات بدون اسم
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w600,
-              ),
+              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
             ),
 
-            const SizedBox(height: 6),
+            const SizedBox(height: 4),
 
             // حجم الملف
             if (file["size"] != null)
               Text(
                 _formatFileSize(file["size"]),
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.grey[600],
-                ),
+                style: TextStyle(fontSize: 11, color: Colors.grey[600]),
               ),
 
             // تاريخ الحذف
             Text(
-              "تم الحذف: ${_formatDate(file['deletedAt'] ?? '-')}",
-              style: TextStyle(
-                fontSize: 12,
-                color: Colors.grey[600],
-              ),
+              // ✅ نص مترجم ديناميكي يعرض التاريخ
+              s.deletedAt(_formatDate(file['deletedAt'] ?? '-')),
+              style: TextStyle(fontSize: 11, color: Colors.grey[600]),
             ),
 
             const Spacer(),
@@ -415,14 +433,22 @@ class _TrashFilesPageState extends State<TrashFilesPage> {
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
                 IconButton(
-                  icon: const Icon(Icons.restore, color: Colors.green),
+                  icon: const Icon(
+                    Icons.restore,
+                    color: Colors.green,
+                    size: 20,
+                  ),
                   onPressed: () => _restoreFile(file["_id"]),
-                  tooltip: "استعادة",
+                  tooltip: s.restore, // ✅ تلميح مترجم
                 ),
                 IconButton(
-                  icon: const Icon(Icons.delete_forever, color: Colors.red),
+                  icon: const Icon(
+                    Icons.delete_forever,
+                    color: Colors.red,
+                    size: 20,
+                  ),
                   onPressed: () => _showDeleteConfirmation(file),
-                  tooltip: "حذف نهائي",
+                  tooltip: s.permanentDelete, // ✅ تلميح مترجم
                 ),
               ],
             ),
@@ -439,7 +465,7 @@ class _TrashFilesPageState extends State<TrashFilesPage> {
     IconData icon;
     Color color;
 
-    if (mimeType?.startsWith('image/') == true || 
+    if (mimeType?.startsWith('image/') == true ||
         name?.endsWith('.jpg') == true ||
         name?.endsWith('.png') == true ||
         name?.endsWith('.jpeg') == true) {
@@ -482,11 +508,12 @@ class _TrashFilesPageState extends State<TrashFilesPage> {
   String _formatFileSize(dynamic size) {
     try {
       final bytes = int.tryParse(size.toString()) ?? 0;
-      if (bytes < 1024) return '$bytes B';
-      if (bytes < 1048576) return '${(bytes / 1024).toStringAsFixed(1)} KB';
-      return '${(bytes / 1048576).toStringAsFixed(1)} MB';
+      if (bytes < 1024) return '$bytes ${S.of(context).bytes}';
+      if (bytes < 1048576)
+        return '${(bytes / 1024).toStringAsFixed(1)} ${S.of(context).kb}';
+      return '${(bytes / 1048576).toStringAsFixed(1)} ${S.of(context).mb}';
     } catch (e) {
-      return '0 B';
+      return '0 ${S.of(context).bytes}';
     }
   }
 

@@ -64,7 +64,7 @@ class _FavoritesSectionState extends State<FavoritesSection> {
       color = Colors.grey;
     }
 
-    String displayName = file['name'] ?? 'ملف بدون اسم';
+    String displayName = file['name'] ?? S.of(context).unnamedfile;
     if (displayName.length > 15) {
       displayName = '${displayName.substring(0, 12)}...';
     }
@@ -129,9 +129,9 @@ class _FavoritesSectionState extends State<FavoritesSection> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          const Text(
-            "الملفات المفضلة",
-            style: TextStyle(
+          Text(
+            S.of(context).favoriteFiles, // ✅ نص مترجم
+            style: const TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w600,
               color: Color(0xff28336f),
@@ -141,9 +141,9 @@ class _FavoritesSectionState extends State<FavoritesSection> {
           if (starred.isNotEmpty)
             GestureDetector(
               onTap: () => _navigateToAllFavorites(context),
-              child: const Text(
-                "عرض الكل",
-                style: TextStyle(
+              child: Text(
+                S.of(context).viewAll, // ✅ نص مترجم
+                style: const TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w500,
                   color: Color(0xff28336f),
@@ -201,7 +201,7 @@ class _FavoritesSectionState extends State<FavoritesSection> {
           Icon(Icons.star_border_rounded, size: 40, color: Colors.grey[400]),
           const SizedBox(height: 8),
           Text(
-            'لا توجد ملفات مفضلة',
+            S.of(context).noFavoriteFiles, // ✅ نص مترجم
             style: TextStyle(color: Colors.grey[600], fontSize: 14),
           ),
         ],
@@ -287,11 +287,11 @@ class _FavoritesSectionState extends State<FavoritesSection> {
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
-          children: const [
+          children: [
             Icon(Icons.arrow_forward_rounded, size: 32, color: Colors.white),
             SizedBox(height: 8),
             Text(
-              'عرض\nالكل',
+              S.of(context).viewAll, // ✅ نص مترجم
               style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w500,
@@ -392,12 +392,17 @@ class _FavoritesSectionState extends State<FavoritesSection> {
       // ✅ لا حاجة لإعادة تحميل القائمة - التحديث يحدث تلقائياً في toggleStar
       _showSnack(
         isStarred
-            ? '✅ تم إضافة الملف إلى المفضلة'
-            : '✅ تم إزالة الملف من المفضلة',
+            ? S
+                  .of(context)
+                  .addedToFavorites // ✅ نص مترجم
+            : S.of(context).removedFromFavorites, // ✅ نص مترجم
         Colors.green,
       );
     } else {
-      _showSnack(result['message'] ?? 'فشل في تحديث حالة المفضلة', Colors.red);
+      _showSnack(
+        result['message'] ?? S.of(context).favoriteUpdateFailed,
+        Colors.red,
+      );
     }
   }
 
@@ -413,9 +418,16 @@ class _FavoritesSectionState extends State<FavoritesSection> {
 
   String _formatFileSize(String size) {
     final bytes = int.tryParse(size) ?? 0;
-    if (bytes < 1024) return '$bytes بايت';
-    if (bytes < 1048576) return '${(bytes / 1024).toStringAsFixed(1)} ك.ب';
-    return '${(bytes / 1048576).toStringAsFixed(1)} م.ب';
+
+    if (bytes < 1024) {
+      return '$bytes ${S.of(context).unitBytes}';
+    } else if (bytes < 1048576) {
+      return '${(bytes / 1024).toStringAsFixed(1)} ${S.of(context).unitKB}';
+    } else if (bytes < 1073741824) {
+      return '${(bytes / 1048576).toStringAsFixed(1)} ${S.of(context).unitMB}';
+    } else {
+      return '${(bytes / 1073741824).toStringAsFixed(1)} ${S.of(context).unitGB}';
+    }
   }
 
   // ✅ بناء shimmer loading لقسم المفضلة

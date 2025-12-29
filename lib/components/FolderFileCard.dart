@@ -982,17 +982,17 @@ class FolderFileCard extends StatelessWidget {
   /// 🔐 التحقق من حالة حماية المجلد
   bool _isFolderProtected() {
     if (folderData == null) return false;
-    
+
     // ✅ التحقق من isProtected في folderData مباشرة
     final isProtected = folderData?['isProtected'] == true;
     if (isProtected) return true;
-    
+
     // ✅ التحقق من isProtected في folderData['folderData'] (إذا كانت nested)
     final nestedFolderData = folderData?['folderData'] as Map<String, dynamic>?;
     if (nestedFolderData != null) {
       return nestedFolderData['isProtected'] == true;
     }
-    
+
     return false;
   }
 
@@ -1056,37 +1056,39 @@ void showProtectFolderDialog(
     context: context,
     builder: (context) {
       return AlertDialog(
-        title: Text('حماية المجلد'),
+        title: Text(S.of(context).folderProtection),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             // 🔑 حماية بكلمة سر
             ListTile(
-              leading: Icon(Icons.lock),
-              title: Text('كلمة سر'),
+              leading: const Icon(Icons.lock),
+              title: Text(S.of(context).password),
               onTap: () {
                 Navigator.pop(context);
 
                 showDialog(
                   context: context,
                   builder: (context) => AlertDialog(
-                    title: Text('أدخل كلمة السر'),
+                    title: Text(S.of(context).enterPassword),
                     content: TextField(
                       controller: passwordController,
                       obscureText: true,
-                      decoration: InputDecoration(hintText: 'كلمة السر'),
+                      decoration: InputDecoration(
+                        hintText: S.of(context).passwordHint,
+                      ),
                     ),
                     actions: [
                       TextButton(
                         onPressed: () => Navigator.pop(context),
-                        child: Text('إلغاء'),
+                        child: Text(S.of(context).cancel),
                       ),
                       ElevatedButton(
                         onPressed: () {
                           Navigator.pop(context);
                           onConfirm('password', passwordController.text);
                         },
-                        child: Text('تأكيد'),
+                        child: Text(S.of(context).confirm),
                       ),
                     ],
                   ),
@@ -1094,12 +1096,12 @@ void showProtectFolderDialog(
               },
             ),
 
-            Divider(),
+            const Divider(),
 
             // 🆔 حماية بالبصمة
             ListTile(
-              leading: Icon(Icons.fingerprint),
-              title: Text('بصمة'),
+              leading: const Icon(Icons.fingerprint),
+              title: Text(S.of(context).biometric),
               onTap: () {
                 Navigator.pop(context);
                 onConfirm('biometric', null);

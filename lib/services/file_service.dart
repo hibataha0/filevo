@@ -497,6 +497,12 @@ class FileService {
   Future<Map<String, dynamic>?> getCategoriesStats({
     required String token,
   }) async {
+    // ✅ التحقق من وجود token قبل إرسال الطلب
+    if (token.isEmpty) {
+      print('⚠️ [FileService] getCategoriesStats: Token is empty');
+      return null;
+    }
+    
     try {
       final url = "$_apiBase${ApiEndpoints.categoriesStats}";
 
@@ -512,6 +518,9 @@ class FileService {
         final data = jsonDecode(response.body);
         print('Categories stats data: $data');
         return data;
+      } else if (response.statusCode == 401) {
+        print('⚠️ [FileService] getCategoriesStats: 401 Unauthorized - Token may be invalid or expired');
+        return null;
       } else {
         // ✅ لا نطبع الخطأ في console - فقط نعيد null بهدوء
         // الـ route غير موجود بعد، سنستخدم القيم الافتراضية
@@ -911,6 +920,14 @@ class FileService {
     int page = 1,
     int limit = 20,
   }) async {
+    // ✅ التحقق من وجود token قبل إرسال الطلب
+    if (token.isEmpty) {
+      return {
+        'success': false,
+        'message': 'لا يوجد token. يرجى تسجيل الدخول',
+      };
+    }
+    
     try {
       final url = Uri.parse(
         "$_apiBase${ApiEndpoints.starredFiles}?page=$page&limit=$limit",
@@ -929,6 +946,13 @@ class FileService {
           'success': true,
           'files': data['files'] ?? [],
           'pagination': data['pagination'] ?? {},
+        };
+      } else if (response.statusCode == 401) {
+        print('⚠️ [FileService] getStarredFiles: 401 Unauthorized - Token may be invalid or expired');
+        final data = jsonDecode(response.body);
+        return {
+          'success': false,
+          'message': data['message'] ?? 'انتهت صلاحية جلسة العمل. يرجى تسجيل الدخول مرة أخرى',
         };
       } else {
         final data = jsonDecode(response.body);

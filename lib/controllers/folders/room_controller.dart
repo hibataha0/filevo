@@ -24,7 +24,7 @@ class RoomController with ChangeNotifier {
   Future<String?> _getCurrentUserId() async {
     print('🔍 [getCurrentUserId] Starting...');
 
-    // ✅ محاولة جلب الـ ID من الـ cache أولاً
+    // ✅ Try to get ID from cache first
     final cachedId = await StorageService.getUserId();
     if (cachedId != null && cachedId.isNotEmpty) {
       print(
@@ -46,23 +46,23 @@ class RoomController with ChangeNotifier {
         print('📦 [getCurrentUserId] Raw data: $rawData');
 
         if (rawData is Map<String, dynamic>) {
-          // ✅ محاولة استخراج البيانات من 'user' أولاً
+          // ✅ Try to extract data from 'user' first
           if (rawData['user'] is Map<String, dynamic>) {
             data = Map<String, dynamic>.from(rawData['user'] as Map);
             print('✅ [getCurrentUserId] Found user in rawData[\'user\']');
           }
-          // ✅ إذا كان هناك 'data' داخل rawData (مثل: {data: {_id: ...}})
+          // ✅ If there's 'data' inside rawData (e.g., {data: {_id: ...}})
           else if (rawData['data'] is Map<String, dynamic>) {
             data = Map<String, dynamic>.from(rawData['data'] as Map);
             print('✅ [getCurrentUserId] Found data in rawData[\'data\']');
           }
-          // ✅ إذا لم يكن هناك 'user' أو 'data'، استخدم rawData مباشرة
+          // ✅ If there's no 'user' or 'data', use rawData directly
           else {
             data = rawData;
             print('✅ [getCurrentUserId] Using rawData directly');
           }
         } else if (rawData != null) {
-          // ✅ إذا كان rawData ليس Map، حاول تحويله
+          // ✅ If rawData is not a Map, try to convert it
           print(
             '⚠️ [getCurrentUserId] rawData is not Map, type: ${rawData.runtimeType}',
           );
@@ -71,7 +71,7 @@ class RoomController with ChangeNotifier {
         if (data != null) {
           print('📋 [getCurrentUserId] Extracted data: $data');
 
-          // ✅ محاولة استخراج الـ ID بطرق مختلفة
+          // ✅ Try to extract ID using different methods
           final fetchedId =
               data['_id']?.toString() ??
               data['id']?.toString() ??
@@ -107,12 +107,12 @@ class RoomController with ChangeNotifier {
     return null;
   }
 
-  /// ✅ الحصول على معرف المستخدم الحالي (public method)
+  /// ✅ Get current user ID (public method)
   Future<String?> getCurrentUserId() async {
     return await _getCurrentUserId();
   }
 
-  /// ✅ إنشاء غرفة مشاركة جديدة
+  /// ✅ Create new sharing room
   Future<Map<String, dynamic>?> createRoom({
     required String name,
     String? description,
@@ -127,13 +127,13 @@ class RoomController with ChangeNotifier {
       );
 
       if (response['room'] != null) {
-        // ✅ إضافة الغرفة الجديدة للقائمة
+        // ✅ Add new room to the list
         rooms.insert(0, response['room']);
         notifyListeners();
         return response;
       }
 
-      setError(response['message'] ?? 'فشل إنشاء الغرفة');
+      setError(response['message'] ?? 'Failed to create room');
       return null;
     } catch (e) {
       setError(e.toString());
@@ -143,7 +143,7 @@ class RoomController with ChangeNotifier {
     }
   }
 
-  /// ✅ الحصول على جميع الغرف
+  /// ✅ Get all rooms
   Future<bool> getRooms() async {
     setLoading(true);
     setError(null);
@@ -157,7 +157,7 @@ class RoomController with ChangeNotifier {
         return true;
       }
 
-      setError(response['message'] ?? 'فشل تحميل الغرف');
+      setError(response['message'] ?? 'Failed to load rooms');
       return false;
     } catch (e) {
       setError(e.toString());
@@ -167,7 +167,7 @@ class RoomController with ChangeNotifier {
     }
   }
 
-  /// ✅ الحصول على تفاصيل غرفة معينة
+  /// ✅ Get details of a specific room
   Future<Map<String, dynamic>?> getRoomById(String roomId) async {
     setLoading(true);
     setError(null);
@@ -179,7 +179,7 @@ class RoomController with ChangeNotifier {
         return response;
       }
 
-      setError(response['message'] ?? 'فشل تحميل تفاصيل الغرفة');
+      setError(response['message'] ?? 'Failed to load room details');
       return null;
     } catch (e) {
       setError(e.toString());
@@ -189,10 +189,10 @@ class RoomController with ChangeNotifier {
     }
   }
 
-  /// ✅ تحديث غرفة
+  /// ✅ Update room
   /// Route: PUT /api/rooms/:id
-  /// الصلاحيات: مالك الروم (owner) أو الأعضاء برتبة editor
-  /// الوظيفة: تعديل اسم الروم و/أو وصف الروم
+  /// Permissions: Room owner or members with editor role
+  /// Function: Modify room name and/or description
   Future<bool> updateRoom({
     required String roomId,
     String? name,
@@ -209,7 +209,7 @@ class RoomController with ChangeNotifier {
       );
 
       if (response['room'] != null) {
-        // ✅ تحديث الغرفة في القائمة
+        // ✅ Update room in the list
         final index = rooms.indexWhere(
           (room) => room['_id']?.toString() == roomId.toString(),
         );
@@ -221,21 +221,23 @@ class RoomController with ChangeNotifier {
         return true;
       }
 
-      setError(response['message'] ?? 'فشل تحديث الغرفة');
+      setError(response['message'] ?? 'Failed to update room');
       return false;
     } catch (e) {
       final errorMessage = e.toString();
       print('❌ Error updating room: $errorMessage');
 
-      // ✅ تحسين رسالة الخطأ
+      // ✅ Improve error message
       if (errorMessage.contains('Only room owner') ||
           errorMessage.contains('editor role')) {
-        setError('فقط مالك الغرفة أو الأعضاء برتبة محرر يمكنهم تعديل الغرفة');
+        setError(
+          'Only room owner or members with editor role can modify the room',
+        );
       } else if (errorMessage.contains('Room not found')) {
-        setError('الغرفة غير موجودة');
+        setError('Room not found');
       } else if (errorMessage.contains('cannot be empty') ||
           errorMessage.contains('empty')) {
-        setError('اسم الغرفة لا يمكن أن يكون فارغاً');
+        setError('Room name cannot be empty');
       } else {
         setError(errorMessage.replaceFirst('Exception: ', ''));
       }
@@ -245,9 +247,9 @@ class RoomController with ChangeNotifier {
     }
   }
 
-  /// ✅ حذف غرفة
+  /// ✅ Delete room
 
-  /// ✅ إرسال دعوة للمستخدم للانضمام للغرفة
+  /// ✅ Send invitation to user to join room
   Future<Map<String, dynamic>?> sendInvitation({
     required String roomId,
     required String email,
@@ -271,7 +273,7 @@ class RoomController with ChangeNotifier {
         return response;
       }
 
-      setError(response['message'] ?? 'فشل إرسال الدعوة');
+      setError(response['message'] ?? 'Failed to send invitation');
       return null;
     } catch (e) {
       setError(e.toString());
@@ -281,7 +283,7 @@ class RoomController with ChangeNotifier {
     }
   }
 
-  /// ✅ قبول دعوة للانضمام للغرفة
+  /// ✅ Accept invitation to join room
   Future<Map<String, dynamic>?> acceptInvitation(String invitationId) async {
     setLoading(true);
     setError(null);
@@ -290,7 +292,7 @@ class RoomController with ChangeNotifier {
       final response = await _service.acceptInvitation(invitationId);
 
       if (response['room'] != null) {
-        // ✅ إضافة الغرفة الجديدة للقائمة
+        // ✅ Add new room to the list
         final roomExists = rooms.any(
           (room) => room['_id'] == response['room']['_id'],
         );
@@ -301,7 +303,7 @@ class RoomController with ChangeNotifier {
         return response;
       }
 
-      setError(response['message'] ?? 'فشل قبول الدعوة');
+      setError(response['message'] ?? 'Failed to accept invitation');
       return null;
     } catch (e) {
       setError(e.toString());
@@ -311,7 +313,7 @@ class RoomController with ChangeNotifier {
     }
   }
 
-  /// ✅ رفض دعوة للانضمام للغرفة
+  /// ✅ Reject invitation to join room
   Future<bool> rejectInvitation(String invitationId) async {
     setLoading(true);
     setError(null);
@@ -323,7 +325,7 @@ class RoomController with ChangeNotifier {
         return true;
       }
 
-      setError(response['message'] ?? 'فشل رفض الدعوة');
+      setError(response['message'] ?? 'Failed to reject invitation');
       return false;
     } catch (e) {
       setError(e.toString());
@@ -333,7 +335,7 @@ class RoomController with ChangeNotifier {
     }
   }
 
-  /// ✅ الحصول على الدعوات المعلقة
+  /// ✅ Get pending invitations
   Future<List<Map<String, dynamic>>> getPendingInvitations() async {
     setLoading(true);
     setError(null);
@@ -345,7 +347,7 @@ class RoomController with ChangeNotifier {
         return List<Map<String, dynamic>>.from(response['invitations']);
       }
 
-      setError(response['message'] ?? 'فشل تحميل الدعوات');
+      setError(response['message'] ?? 'Failed to load invitations');
       return [];
     } catch (e) {
       setError(e.toString());
@@ -355,7 +357,7 @@ class RoomController with ChangeNotifier {
     }
   }
 
-  /// ✅ تحديث دور عضو في الغرفة
+  /// ✅ Update member role in room
   Future<bool> updateMemberRole({
     required String roomId,
     required String memberId,
@@ -374,7 +376,7 @@ class RoomController with ChangeNotifier {
       );
 
       if (response['room'] != null) {
-        // ✅ تحديث الغرفة في القائمة
+        // ✅ Update room in the list
         final index = rooms.indexWhere(
           (room) => room['_id']?.toString() == roomId.toString(),
         );
@@ -385,7 +387,7 @@ class RoomController with ChangeNotifier {
         return true;
       }
 
-      setError(response['message'] ?? 'فشل تحديث دور العضو');
+      setError(response['message'] ?? 'Failed to update member role');
       return false;
     } catch (e) {
       setError(e.toString());
@@ -395,7 +397,7 @@ class RoomController with ChangeNotifier {
     }
   }
 
-  /// ✅ إزالة عضو من الغرفة
+  /// ✅ Remove member from room
   Future<bool> removeMember({
     required String roomId,
     required String memberId,
@@ -410,7 +412,7 @@ class RoomController with ChangeNotifier {
       );
 
       if (response['room'] != null) {
-        // ✅ تحديث الغرفة في القائمة
+        // ✅ Update room in the list
         final index = rooms.indexWhere(
           (room) => room['_id']?.toString() == roomId.toString(),
         );
@@ -421,7 +423,7 @@ class RoomController with ChangeNotifier {
         return true;
       }
 
-      setError(response['message'] ?? 'فشل إزالة العضو');
+      setError(response['message'] ?? 'Failed to remove member');
       return false;
     } catch (e) {
       setError(e.toString());
@@ -431,7 +433,7 @@ class RoomController with ChangeNotifier {
     }
   }
 
-  /// ✅ حذف غرفة (فقط مالك الغرفة يمكنه حذفها)
+  /// ✅ Delete room (only room owner can delete)
   Future<bool> deleteRoom(String roomId) async {
     setLoading(true);
     setError(null);
@@ -440,7 +442,7 @@ class RoomController with ChangeNotifier {
       final response = await _service.deleteRoom(roomId);
 
       if (response['message'] != null) {
-        // ✅ إزالة الغرفة من القائمة
+        // ✅ Remove room from the list
         rooms.removeWhere(
           (room) => room['_id']?.toString() == roomId.toString(),
         );
@@ -448,7 +450,7 @@ class RoomController with ChangeNotifier {
         return true;
       }
 
-      setError(response['message'] ?? 'فشل حذف الغرفة');
+      setError(response['message'] ?? 'Failed to delete room');
       return false;
     } catch (e) {
       setError(e.toString());
@@ -458,7 +460,7 @@ class RoomController with ChangeNotifier {
     }
   }
 
-  /// ✅ مغادرة غرفة (أي عضو يمكنه مغادرة الغرفة، لكن المالك لا يمكنه)
+  /// ✅ Leave room (any member can leave, but owner cannot)
   Future<bool> leaveRoom(String roomId) async {
     setLoading(true);
     setError(null);
@@ -467,7 +469,7 @@ class RoomController with ChangeNotifier {
       final response = await _service.leaveRoom(roomId);
 
       if (response['message'] != null) {
-        // ✅ إزالة الغرفة من القائمة
+        // ✅ Remove room from the list
         rooms.removeWhere(
           (room) => room['_id']?.toString() == roomId.toString(),
         );
@@ -475,7 +477,7 @@ class RoomController with ChangeNotifier {
         return true;
       }
 
-      setError(response['message'] ?? 'فشل مغادرة الغرفة');
+      setError(response['message'] ?? 'Failed to leave room');
       return false;
     } catch (e) {
       setError(e.toString());
@@ -485,7 +487,7 @@ class RoomController with ChangeNotifier {
     }
   }
 
-  /// ✅ مشاركة ملف مع الغرفة
+  /// ✅ Share file with room
   Future<bool> shareFileWithRoom({
     required String roomId,
     required String fileId,
@@ -500,20 +502,20 @@ class RoomController with ChangeNotifier {
         '📤 [shareFileWithRoom] Starting - roomId: $roomId, fileId: $fileId, isOneTime: $isOneTime',
       );
 
-      // ✅ التحقق من وجود token أولاً
+      // ✅ Check if token exists first
       final token = await StorageService.getToken();
       if (token == null || token.isEmpty) {
         print('❌ [shareFileWithRoom] Token is null or empty');
-        setError('لا يمكن تحديد هوية المستخدم. يرجى إعادة تسجيل الدخول.');
+        setError('Cannot determine user identity. Please log in again.');
         return false;
       }
       print('✅ [shareFileWithRoom] Token exists: ${token.substring(0, 20)}...');
 
-      // ✅ جلب userId - مهم جداً للمشاركة العادية
+      // ✅ Get userId - very important for regular sharing
       print('🔍 [shareFileWithRoom] Fetching userId...');
       final sharedBy = await _getCurrentUserId();
 
-      // ✅ إذا لم نحصل على userId، نرسل null (الباك إند يستخرجه من الـ token)
+      // ✅ If we don't get userId, send null (backend extracts it from token)
       if (sharedBy == null) {
         print(
           '⚠️ [shareFileWithRoom] sharedBy is null, but continuing anyway...',
@@ -531,7 +533,7 @@ class RoomController with ChangeNotifier {
 
       try {
         if (isOneTime) {
-          // ✅ استخدام endpoint المشاركة لمرة واحدة (لا يحتاج sharedBy)
+          // ✅ Use one-time sharing endpoint (doesn't need sharedBy)
           print('📤 Calling shareFileWithRoomOneTime API...');
           response = await _service.shareFileWithRoomOneTime(
             roomId: roomId,
@@ -539,21 +541,21 @@ class RoomController with ChangeNotifier {
             expiresInHours: expiresInHours,
           );
         } else {
-          // ✅ استخدام endpoint المشاركة العادية
+          // ✅ Use regular sharing endpoint
           print('📤 Calling shareFileWithRoom API...');
-          // ✅ إرسال sharedBy حتى لو كان null (الباك إند يستخرجه من token)
+          // ✅ Send sharedBy even if null (backend extracts it from token)
           response = await _service.shareFileWithRoom(
             roomId: roomId,
             fileId: fileId,
-            sharedBy: sharedBy, // يمكن أن يكون null
+            sharedBy: sharedBy, // can be null
           );
         }
 
         print('📥 API Response: $response');
 
-        // ✅ التحقق من وجود room في الـ response
+        // ✅ Check if room exists in response
         if (response['room'] != null) {
-          // ✅ تحديث الغرفة في القائمة
+          // ✅ Update room in the list
           final index = rooms.indexWhere(
             (room) => room['_id']?.toString() == roomId.toString(),
           );
@@ -561,7 +563,7 @@ class RoomController with ChangeNotifier {
             rooms[index] = response['room'] as Map<String, dynamic>;
             notifyListeners();
           } else if (index == -1) {
-            // ✅ إذا لم تكن الغرفة في القائمة، أضفها
+            // ✅ If room not in list, add it
             rooms.insert(0, response['room'] as Map<String, dynamic>);
             notifyListeners();
           }
@@ -569,52 +571,52 @@ class RoomController with ChangeNotifier {
           return true;
         }
 
-        // ✅ إذا لم يكن هناك room، لكن هناك message نجاح، نعتبره نجاح
+        // ✅ If no room but there's success message, consider it success
         final message = response['message']?.toString() ?? '';
         if (message.isNotEmpty &&
             (message.contains('✅') ||
                 message.toLowerCase().contains('success') ||
                 message.toLowerCase().contains('shared'))) {
           print('✅ File shared successfully with room (message: $message).');
-          // ✅ إعادة تحميل بيانات الروم للتأكد من التحديث
+          // ✅ Reload room data to ensure update
           try {
             await getRoomById(roomId);
           } catch (e) {
             print('⚠️ Warning: Failed to reload room details: $e');
-            // لا نعتبر هذا خطأ فادح، الملف تمت مشاركته بنجاح
+            // Don't consider this a critical error, file was shared successfully
           }
           return true;
         }
 
-        // ✅ التحقق من وجود خطأ في الـ response
+        // ✅ Check for error in response
         final error =
             response['error']?.toString() ??
             response['message']?.toString() ??
-            'فشل مشاركة الملف';
+            'Failed to share file';
 
-        // ✅ إذا كان الخطأ يتعلق بأن الملف مشارك بالفعل، نعتبره نجاح مع رسالة
+        // ✅ If error is about file already being shared, consider it success with message
         if (error.toLowerCase().contains('already shared') ||
             error.toLowerCase().contains('مشارك بالفعل')) {
           print(
             'ℹ️ [shareFileWithRoom] File already shared - treating as success',
           );
-          setError('الملف مشارك بالفعل مع هذه الغرفة');
-          // ✅ إعادة تحميل بيانات الروم للتأكد من التحديث
+          setError('File already shared with this room');
+          // ✅ Reload room data to ensure update
           try {
             await getRoomById(roomId);
           } catch (e) {
             print('⚠️ Warning: Failed to reload room details: $e');
           }
-          // ✅ نعتبر هذا نجاح (الملف مشارك بالفعل)
+          // ✅ Consider this success (file already shared)
           return true;
         }
 
-        // ✅ إذا كان الخطأ يتعلق بالمصادقة
+        // ✅ If error is about authentication
         if (error.contains('authenticated') ||
             error.contains('token') ||
             error.contains('login') ||
-            error.contains('هوية المستخدم')) {
-          setError('يرجى إعادة تسجيل الدخول');
+            error.contains('user identity')) {
+          setError('Please log in again');
         } else {
           setError(error);
         }
@@ -625,13 +627,13 @@ class RoomController with ChangeNotifier {
         print('❌ Exception in shareFileWithRoom: $e');
         final errorMessage = e.toString();
 
-        // ✅ تحسين رسالة الخطأ
+        // ✅ Improve error message
         if (errorMessage.contains('Exception:')) {
           final cleanError = errorMessage.replaceFirst('Exception: ', '');
           setError(cleanError);
         } else if (errorMessage.contains('SocketException') ||
             errorMessage.contains('Failed host lookup')) {
-          setError('لا يمكن الاتصال بالسيرفر. تأكد من أن السيرفر يعمل');
+          setError('Cannot connect to server. Make sure server is running');
         } else {
           setError(errorMessage);
         }
@@ -646,9 +648,9 @@ class RoomController with ChangeNotifier {
     }
   }
 
-  /// ✅ الوصول إلى ملف مشترك لمرة واحدة
-  /// ✅ يسجل أن المستخدم الحالي قد فتح الملف (لكل مستخدم مرة واحدة فقط)
-  /// ✅ إذا تمت إزالة الملف تلقائياً (allMembersViewed أو fileRemovedFromRoom)، يتم تحديث القائمة
+  /// ✅ Access one-time shared file
+  /// ✅ Records that current user has opened the file (only once per user)
+  /// ✅ If file is automatically removed (allMembersViewed or fileRemovedFromRoom), list is updated
   Future<Map<String, dynamic>> accessOneTimeFile({
     required String roomId,
     required String fileId,
@@ -664,9 +666,9 @@ class RoomController with ChangeNotifier {
         fileId: fileId,
       );
 
-      // ✅ التحقق من حالة انتهاء الصلاحية أولاً
+      // ✅ Check expiration status first
       if (response['expired'] == true) {
-        // ✅ إزالة الملف من القائمة المحلية إذا انتهت صلاحيته
+        // ✅ Remove file from local list if expired
         final roomIndex = rooms.indexWhere(
           (room) => room['_id']?.toString() == roomId.toString(),
         );
@@ -694,16 +696,16 @@ class RoomController with ChangeNotifier {
         return response;
       }
 
-      // ✅ التحقق من نجاح الوصول (دعم الحقول الجديدة: oneTime, hideFromThisUser)
+      // ✅ Check access success (support new fields: oneTime, hideFromThisUser)
       final isOneTime =
           response['oneTime'] == true || response['wasOneTimeShare'] == true;
-      // final fileRemovedFromRoom = response['fileRemovedFromRoom'] == true; // قد نحتاجه لاحقاً
+      // final fileRemovedFromRoom = response['fileRemovedFromRoom'] == true; // Might need later
       final hideFromThisUser = response['hideFromThisUser'] == true;
 
       if (response['message'] != null ||
           response['success'] == true ||
           isOneTime) {
-        // ✅ تحديث بيانات الملف في القائمة المحلية
+        // ✅ Update file data in local list
         final roomIndex = rooms.indexWhere(
           (room) => room['_id']?.toString() == roomId.toString(),
         );
@@ -718,10 +720,10 @@ class RoomController with ChangeNotifier {
               return fId?.toString() == fileId;
             });
 
-            // ✅ إذا كان ملف لمرة واحدة وتم تسجيل الوصول
-            // ✅ الملف يبقى في Room ولكن سيختفي عند إعادة تحميل البيانات (الباك إند يفلتره)
+            // ✅ If it's a one-time file and access was recorded
+            // ✅ File stays in Room but will disappear when data is reloaded (backend filters it)
             if (isOneTime && hideFromThisUser && fileIndex != -1) {
-              // ✅ تحديث accessCount من الاستجابة
+              // ✅ Update accessCount from response
               final currentFileEntry = Map<String, dynamic>.from(
                 roomFiles[fileIndex] as Map<String, dynamic>,
               );
@@ -730,7 +732,7 @@ class RoomController with ChangeNotifier {
                 currentFileEntry['accessCount'] = response['accessCount'];
               }
 
-              // ✅ تحديث fileId إذا كان file متوفراً في الاستجابة
+              // ✅ Update fileId if file is available in response
               if (response['file'] != null) {
                 final fileFromResponse =
                     response['file'] as Map<String, dynamic>;
@@ -744,9 +746,9 @@ class RoomController with ChangeNotifier {
                 '✅ One-time file accessed (will be hidden from user on next room reload).',
               );
             }
-            // ✅ إذا كان ملف عادي
+            // ✅ If it's a regular file
             else if (fileIndex != -1 && !isOneTime) {
-              // ✅ تحديث بيانات الملف العادي
+              // ✅ Update regular file data
               if (response['file'] != null) {
                 final currentFileEntry = Map<String, dynamic>.from(
                   roomFiles[fileIndex] as Map<String, dynamic>,
@@ -766,7 +768,7 @@ class RoomController with ChangeNotifier {
       }
 
       setError(
-        response['message'] ?? response['error'] ?? 'فشل الوصول إلى الملف',
+        response['message'] ?? response['error'] ?? 'Failed to access file',
       );
       return response;
     } catch (e) {
@@ -778,7 +780,7 @@ class RoomController with ChangeNotifier {
     }
   }
 
-  /// ✅ إزالة ملف من الغرفة
+  /// ✅ Remove file from room
   Future<bool> unshareFileFromRoom({
     required String roomId,
     required String fileId,
@@ -793,7 +795,7 @@ class RoomController with ChangeNotifier {
       );
 
       if (response['room'] != null || response['message'] != null) {
-        // ✅ تحديث الغرفة في القائمة
+        // ✅ Update room in the list
         final index = rooms.indexWhere(
           (room) => room['_id']?.toString() == roomId.toString(),
         );
@@ -805,7 +807,7 @@ class RoomController with ChangeNotifier {
         return true;
       }
 
-      setError(response['message'] ?? 'فشل إزالة الملف من الغرفة');
+      setError(response['message'] ?? 'Failed to remove file from room');
       return false;
     } catch (e) {
       setError(e.toString());
@@ -815,7 +817,7 @@ class RoomController with ChangeNotifier {
     }
   }
 
-  /// ✅ إزالة مجلد من الغرفة
+  /// ✅ Remove folder from room
   Future<bool> unshareFolderFromRoom({
     required String roomId,
     required String folderId,
@@ -830,7 +832,7 @@ class RoomController with ChangeNotifier {
       );
 
       if (response['room'] != null || response['message'] != null) {
-        // ✅ تحديث الغرفة في القائمة
+        // ✅ Update room in the list
         final index = rooms.indexWhere(
           (room) => room['_id']?.toString() == roomId.toString(),
         );
@@ -842,7 +844,7 @@ class RoomController with ChangeNotifier {
         return true;
       }
 
-      setError(response['message'] ?? 'فشل إزالة المجلد من الغرفة');
+      setError(response['message'] ?? 'Failed to remove folder from room');
       return false;
     } catch (e) {
       setError(e.toString());
@@ -852,7 +854,7 @@ class RoomController with ChangeNotifier {
     }
   }
 
-  /// ✅ مشاركة مجلد مع الغرفة
+  /// ✅ Share folder with room
   Future<bool> shareFolderWithRoom({
     required String roomId,
     required String folderId,
@@ -863,7 +865,7 @@ class RoomController with ChangeNotifier {
     try {
       final sharedBy = await _getCurrentUserId();
       if (sharedBy == null) {
-        setError('لا يمكن تحديد هوية المستخدم. يرجى إعادة تسجيل الدخول.');
+        setError('Cannot determine user identity. Please log in again.');
         return false;
       }
 
@@ -874,7 +876,7 @@ class RoomController with ChangeNotifier {
       );
 
       if (response['room'] != null) {
-        // ✅ تحديث الغرفة في القائمة
+        // ✅ Update room in the list
         final index = rooms.indexWhere(
           (room) => room['_id']?.toString() == roomId.toString(),
         );
@@ -885,7 +887,7 @@ class RoomController with ChangeNotifier {
         return true;
       }
 
-      setError(response['message'] ?? 'فشل مشاركة المجلد');
+      setError(response['message'] ?? 'Failed to share folder');
       return false;
     } catch (e) {
       setError(e.toString());
@@ -895,10 +897,10 @@ class RoomController with ChangeNotifier {
     }
   }
 
-  /// ✅ إضافة تعليق على ملف/مجلد في الغرفة
+  /// ✅ Add comment on file/folder in room
   Future<Map<String, dynamic>?> addComment({
     required String roomId,
-    required String targetType, // 'file', 'folder', أو 'room'
+    required String targetType, // 'file', 'folder', or 'room'
     String? targetId,
     required String content,
   }) async {
@@ -917,7 +919,7 @@ class RoomController with ChangeNotifier {
         return response;
       }
 
-      setError(response['message'] ?? 'فشل إضافة التعليق');
+      setError(response['message'] ?? 'Failed to add comment');
       return null;
     } catch (e) {
       setError(e.toString());
@@ -927,10 +929,10 @@ class RoomController with ChangeNotifier {
     }
   }
 
-  /// ✅ الحصول على تعليقات ملف/مجلد في الغرفة
+  /// ✅ Get comments of file/folder in room
   Future<List<Map<String, dynamic>>> listComments({
     required String roomId,
-    required String targetType, // 'file', 'folder', أو 'room'
+    required String targetType, // 'file', 'folder', or 'room'
     String? targetId,
   }) async {
     setLoading(true);
@@ -947,7 +949,7 @@ class RoomController with ChangeNotifier {
         return List<Map<String, dynamic>>.from(response['comments']);
       }
 
-      setError(response['message'] ?? 'فشل تحميل التعليقات');
+      setError(response['message'] ?? 'Failed to load comments');
       return [];
     } catch (e) {
       setError(e.toString());
@@ -957,7 +959,7 @@ class RoomController with ChangeNotifier {
     }
   }
 
-  /// ✅ حذف تعليق
+  /// ✅ Delete comment
   Future<bool> deleteComment({
     required String roomId,
     required String commentId,
@@ -975,7 +977,7 @@ class RoomController with ChangeNotifier {
         return true;
       }
 
-      setError(response['message'] ?? 'فشل حذف التعليق');
+      setError(response['message'] ?? 'Failed to delete comment');
       return false;
     } catch (e) {
       setError(e.toString());
@@ -985,7 +987,7 @@ class RoomController with ChangeNotifier {
     }
   }
 
-  /// ✅ تنظيف الدعوات القديمة
+  /// ✅ Clean up old invitations
   Future<int?> cleanupOldInvitations() async {
     setLoading(true);
     setError(null);
@@ -997,7 +999,7 @@ class RoomController with ChangeNotifier {
         return response['deletedCount'] as int;
       }
 
-      setError(response['message'] ?? 'فشل تنظيف الدعوات');
+      setError(response['message'] ?? 'Failed to clean invitations');
       return null;
     } catch (e) {
       setError(e.toString());
@@ -1007,7 +1009,7 @@ class RoomController with ChangeNotifier {
     }
   }
 
-  /// ✅ الحصول على إحصائيات الدعوات
+  /// ✅ Get invitation statistics
   Future<Map<String, dynamic>?> getInvitationStats() async {
     setLoading(true);
     setError(null);
@@ -1019,7 +1021,7 @@ class RoomController with ChangeNotifier {
         return response['stats'];
       }
 
-      setError(response['message'] ?? 'فشل تحميل الإحصائيات');
+      setError(response['message'] ?? 'Failed to load statistics');
       return null;
     } catch (e) {
       setError(e.toString());
@@ -1029,7 +1031,7 @@ class RoomController with ChangeNotifier {
     }
   }
 
-  /// ✅ حفظ ملف من الغرفة إلى حساب المستخدم
+  /// ✅ Save file from room to user account
   Future<bool> saveFileFromRoom({
     required String roomId,
     required String fileId,
@@ -1049,7 +1051,7 @@ class RoomController with ChangeNotifier {
         return true;
       }
 
-      setError(response['message'] ?? 'فشل حفظ الملف');
+      setError(response['message'] ?? 'Failed to save file');
       return false;
     } catch (e) {
       setError(e.toString());
@@ -1059,7 +1061,7 @@ class RoomController with ChangeNotifier {
     }
   }
 
-  /// ✅ حفظ مجلد من الغرفة إلى حساب المستخدم
+  /// ✅ Save folder from room to user account
   Future<bool> saveFolderFromRoom({
     required String roomId,
     required String folderId,
@@ -1079,7 +1081,7 @@ class RoomController with ChangeNotifier {
         return true;
       }
 
-      setError(response['message'] ?? 'فشل حفظ المجلد');
+      setError(response['message'] ?? 'Failed to save folder');
       return false;
     } catch (e) {
       setError(e.toString());
@@ -1089,7 +1091,7 @@ class RoomController with ChangeNotifier {
     }
   }
 
-  /// ✅ تحميل ملف مشترك في الروم
+  /// ✅ Download shared file in room
   Future<Map<String, dynamic>> downloadRoomFile({
     required String roomId,
     required String fileId,
@@ -1114,7 +1116,7 @@ class RoomController with ChangeNotifier {
     }
   }
 
-  /// ✅ تحميل مجلد مشترك في الروم
+  /// ✅ Download shared folder in room
   Future<Map<String, dynamic>> downloadRoomFolder({
     required String roomId,
     required String folderId,

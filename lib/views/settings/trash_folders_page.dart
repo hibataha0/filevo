@@ -1,3 +1,4 @@
+import 'package:filevo/generated/l10n.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:filevo/controllers/folders/folders_controller.dart';
@@ -25,12 +26,11 @@ class _TrashFoldersPageState extends State<TrashFoldersPage> {
     // سكرول لانهائي
     _scrollController.addListener(() {
       final controller = Provider.of<FolderController>(context, listen: false);
-      
+
       if (_scrollController.position.pixels >=
-          _scrollController.position.maxScrollExtent - 200 &&
+              _scrollController.position.maxScrollExtent - 200 &&
           !_isLoadingMore &&
           controller.pagination["hasNext"] == true) {
-        
         _loadTrashFolders(loadMore: true);
       }
     });
@@ -67,59 +67,72 @@ class _TrashFoldersPageState extends State<TrashFoldersPage> {
 
   Future<void> _restoreFolder(Map<String, dynamic> folder) async {
     final controller = Provider.of<FolderController>(context, listen: false);
-    
-    final success = await controller.restoreFolder(
-      folderId: folder["_id"],
-    );
+    final s = S.of(context); // ✅ مرجع الترجمة
 
-    if (success && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("✅ تم استعادة المجلد بنجاح"),
-          backgroundColor: Colors.green,
-        ),
-      );
-      // تحديث القائمة
-      _loadTrashFolders(loadMore: false);
-    } else if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(controller.errorMessage ?? "❌ فشل استعادة المجلد"),
-          backgroundColor: Colors.red,
-        ),
-      );
+    final success = await controller.restoreFolder(folderId: folder["_id"]);
+
+    if (mounted) {
+      if (success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(s.folderRestoredSuccess),
+            backgroundColor: Colors.green,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+        _loadTrashFolders(loadMore: false);
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(controller.errorMessage ?? s.folderRestoredError),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
     }
   }
 
   Future<void> _permanentDeleteFolder(Map<String, dynamic> folder) async {
     final controller = Provider.of<FolderController>(context, listen: false);
-    
+    final s = S.of(context); // ✅ مرجع الترجمة
+
     final success = await controller.deleteFolderPermanent(
       folderId: folder["_id"],
     );
 
-    if (success && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("✅ تم الحذف النهائي للمجلد بنجاح"),
-          backgroundColor: Colors.red,
-        ),
-      );
-      // تحديث القائمة
-      _loadTrashFolders(loadMore: false);
-    } else if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(controller.errorMessage ?? "❌ فشل الحذف النهائي للمجلد"),
-          backgroundColor: Colors.red,
-        ),
-      );
+    if (mounted) {
+      if (success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(s.folderPermanentDeleteSuccess),
+            backgroundColor: Colors.redAccent,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+        _loadTrashFolders(loadMore: false);
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              controller.errorMessage ?? s.folderPermanentDeleteError,
+            ),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
     }
   }
 
   void _showFolderActions(BuildContext context, Map<String, dynamic> folder) {
+    final s = S.of(context); // ✅ مرجع الترجمة
+
     showModalBottomSheet(
       context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
       builder: (context) => Container(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -127,7 +140,7 @@ class _TrashFoldersPageState extends State<TrashFoldersPage> {
           children: [
             ListTile(
               leading: const Icon(Icons.restore, color: Colors.green),
-              title: const Text("استعادة المجلد"),
+              title: Text(s.restoreFolder), // ✅ نص مترجم
               onTap: () {
                 Navigator.pop(context);
                 _restoreFolder(folder);
@@ -135,7 +148,7 @@ class _TrashFoldersPageState extends State<TrashFoldersPage> {
             ),
             ListTile(
               leading: const Icon(Icons.delete_forever, color: Colors.red),
-              title: const Text("حذف نهائي"),
+              title: Text(s.permanentDelete), // ✅ نص مترجم
               onTap: () {
                 Navigator.pop(context);
                 _showDeleteConfirmation(folder);
@@ -148,22 +161,33 @@ class _TrashFoldersPageState extends State<TrashFoldersPage> {
   }
 
   void _showDeleteConfirmation(Map<String, dynamic> folder) {
+    final s = S.of(context); // ✅ مرجع الترجمة
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text("تأكيد الحذف النهائي"),
-        content: Text("هل أنت متأكد من الحذف النهائي للمجلد '${folder["name"]}'؟ لا يمكن التراجع عن هذا الإجراء. سيتم حذف جميع الملفات والمجلدات الفرعية نهائياً."),
+        title: Text(s.confirmFolderDeleteTitle), // ✅ عنوان مترجم
+        content: Text(
+          // ✅ نص مترجم مع تمرير اسم المجلد
+          s.confirmFolderDeleteMessage(folder["name"] ?? ""),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text("إلغاء"),
+            child: Text(s.cancel), // ✅ نص مترجم
           ),
           TextButton(
             onPressed: () {
               Navigator.pop(context);
               _permanentDeleteFolder(folder);
             },
-            child: const Text("حذف نهائي", style: TextStyle(color: Colors.red)),
+            child: Text(
+              s.permanentDelete, // ✅ نص مترجم
+              style: const TextStyle(
+                color: Colors.red,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
           ),
         ],
       ),
@@ -182,6 +206,8 @@ class _TrashFoldersPageState extends State<TrashFoldersPage> {
 
   @override
   Widget build(BuildContext context) {
+    final s = S.of(context); // ✅ مرجع الترجمة
+
     return Consumer<FolderController>(
       builder: (context, folderController, child) {
         final folders = folderController.trashFolders;
@@ -192,9 +218,9 @@ class _TrashFoldersPageState extends State<TrashFoldersPage> {
           backgroundColor: const Color(0xff28336f),
           appBar: AppBar(
             backgroundColor: const Color(0xff28336f),
-            title: const Text(
-              "المجلدات المحذوفة",
-              style: TextStyle(color: Colors.white),
+            title: Text(
+              s.deletedFoldersTitle, // ✅ نص مترجم
+              style: const TextStyle(color: Colors.white),
             ),
             iconTheme: const IconThemeData(color: Colors.white),
             elevation: 0,
@@ -221,13 +247,13 @@ class _TrashFoldersPageState extends State<TrashFoldersPage> {
                       children: [
                         _buildStatItem(
                           Icons.folder_delete,
-                          "المجلدات",
+                          s.foldersCount, // ✅ "المجلدات" مترجم
                           "${folders.length}",
                           Colors.orange,
                         ),
                         _buildStatItem(
                           Icons.schedule,
-                          "سيتم حذفها تلقائياً بعد 30 يوم",
+                          s.autoDeleteNoticeFolders, // ✅ نص مترجم
                           "",
                           Colors.orange,
                         ),
@@ -240,53 +266,55 @@ class _TrashFoldersPageState extends State<TrashFoldersPage> {
                   child: isLoading && folders.isEmpty
                       ? const Center(child: CircularProgressIndicator())
                       : !hasFolders
-                          ? const Center(
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(Icons.folder_delete_outlined, size: 80, color: Colors.grey),
-                                  SizedBox(height: 16),
-                                  Text(
-                                    "لا يوجد مجلدات محذوفة",
-                                    style: TextStyle(fontSize: 18, color: Colors.grey),
-                                  ),
-                                ],
+                      ? Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Icon(
+                                Icons.folder_delete_outlined,
+                                size: 80,
+                                color: Colors.grey,
                               ),
-                            )
-                          : Padding(
-                              padding: const EdgeInsets.all(10),
-                              child: Column(
-                                children: [
-                                  Expanded(
-                                    child: GridView.builder(
-                                      controller: _scrollController,
-                                      gridDelegate:
-                                          const SliverGridDelegateWithFixedCrossAxisCount(
-                                        crossAxisCount: 2,
-                                        crossAxisSpacing: 10,
-                                        mainAxisSpacing: 10,
-                                        childAspectRatio: 0.85,
-                                      ),
-                                      itemCount: folders.length + (_isLoadingMore ? 1 : 0),
-                                      itemBuilder: (context, index) {
-                                        if (index == folders.length && _isLoadingMore) {
-                                          return const Center(
-                                            child: CircularProgressIndicator(),
-                                          );
-                                        }
+                              const SizedBox(height: 16),
+                              Text(
+                                s.noDeletedFolders, // ✅ "لا يوجد مجلدات" مترجم
+                                style: const TextStyle(
+                                  fontSize: 18,
+                                  color: Colors.grey,
+                                ),
+                              ),
+                            ],
+                          ),
+                        )
+                      : Padding(
+                          padding: const EdgeInsets.all(10),
+                          child: GridView.builder(
+                            controller: _scrollController,
+                            gridDelegate:
+                                const SliverGridDelegateWithFixedCrossAxisCount(
+                                  crossAxisCount: 2,
+                                  crossAxisSpacing: 10,
+                                  mainAxisSpacing: 10,
+                                  childAspectRatio: 0.85,
+                                ),
+                            itemCount:
+                                folders.length + (_isLoadingMore ? 1 : 0),
+                            itemBuilder: (context, index) {
+                              if (index == folders.length && _isLoadingMore) {
+                                return const Center(
+                                  child: CircularProgressIndicator(),
+                                );
+                              }
 
-                                        final folder = folders[index];
-                                        return _buildTrashFolderCard(
-                                          context,
-                                          folder,
-                                          () => _showFolderActions(context, folder),
-                                        );
-                                      },
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
+                              final folder = folders[index];
+                              return _buildTrashFolderCard(
+                                context,
+                                folder,
+                                () => _showFolderActions(context, folder),
+                              );
+                            },
+                          ),
+                        ),
                 ),
               ],
             ),
@@ -296,7 +324,12 @@ class _TrashFoldersPageState extends State<TrashFoldersPage> {
     );
   }
 
-  Widget _buildStatItem(IconData icon, String title, String value, Color color) {
+  Widget _buildStatItem(
+    IconData icon,
+    String title,
+    String value,
+    Color color,
+  ) {
     return Column(
       children: [
         Icon(icon, color: color, size: 24),
@@ -337,7 +370,7 @@ class _TrashFoldersPageState extends State<TrashFoldersPage> {
               color: Colors.black12,
               blurRadius: 4,
               offset: const Offset(0, 2),
-            )
+            ),
           ],
         ),
         child: Column(
@@ -360,24 +393,23 @@ class _TrashFoldersPageState extends State<TrashFoldersPage> {
 
             // اسم المجلد
             Text(
-              folder["name"] ?? "مجلد بدون اسم",
+              folder["name"] ?? S.of(context).unnamedFolder,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w600,
-              ),
+              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
             ),
 
             const SizedBox(height: 6),
 
             // تاريخ الحذف
             Text(
-              "تم الحذف: ${_formatDate(folder['deletedAt']?.toString())}",
-              style: TextStyle(
-                fontSize: 12,
-                color: Colors.grey[600],
-              ),
+              // ✅ استخدام المتغير المترجم وتمرير التاريخ إليه
+              S
+                  .of(context)
+                  .deletedAta(
+                    _formatDate(folder['deletedAt']?.toString() ?? '-'),
+                  ),
+              style: TextStyle(fontSize: 12, color: Colors.grey[600]),
             ),
 
             const Spacer(),
@@ -389,12 +421,12 @@ class _TrashFoldersPageState extends State<TrashFoldersPage> {
                 IconButton(
                   icon: const Icon(Icons.restore, color: Colors.green),
                   onPressed: () => _restoreFolder(folder),
-                  tooltip: "استعادة",
+                  tooltip: S.of(context).restoreFolder,
                 ),
                 IconButton(
                   icon: const Icon(Icons.delete_forever, color: Colors.red),
                   onPressed: () => _showDeleteConfirmation(folder),
-                  tooltip: "حذف نهائي",
+                  tooltip: S.of(context).permanentDelete,
                 ),
               ],
             ),
@@ -410,4 +442,3 @@ class _TrashFoldersPageState extends State<TrashFoldersPage> {
     super.dispose();
   }
 }
-

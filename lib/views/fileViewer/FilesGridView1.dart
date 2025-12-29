@@ -313,7 +313,7 @@ class _FilesGridState extends State<FilesGrid> {
   ) {
     // ✅ التحقق من أن الملف مشترك لمرة واحدة
     final isOneTimeShare = file['isOneTimeShare'] == true;
-    
+
     final List<PopupMenuEntry<String>> items = [
       _buildMenuItem(
         'open',
@@ -322,46 +322,56 @@ class _FilesGridState extends State<FilesGrid> {
         Colors.blue,
       ),
     ];
-    
+
     // ✅ إخفاء الخيارات التالية للملفات المشتركة لمرة واحدة
     if (!isOneTimeShare) {
-      items.add(_buildMenuItem(
-        'info',
-        Icons.info_outline_rounded,
-        S.of(context).viewDetails,
-        Colors.teal,
-      ));
-      items.add(_buildMenuItem(
-        'download',
-        Icons.download_rounded,
-        S.of(context).download,
-        Colors.blue,
-      ));
-      items.add(_buildMenuItem(
-        'comments',
-        Icons.comment_rounded,
-        S.of(context).comments,
-        Color(0xFFF59E0B),
-      ));
+      items.add(
+        _buildMenuItem(
+          'info',
+          Icons.info_outline_rounded,
+          S.of(context).viewDetails,
+          Colors.teal,
+        ),
+      );
+      items.add(
+        _buildMenuItem(
+          'download',
+          Icons.download_rounded,
+          S.of(context).download,
+          Colors.blue,
+        ),
+      );
+      items.add(
+        _buildMenuItem(
+          'comments',
+          Icons.comment_rounded,
+          S.of(context).comments,
+          Color(0xFFF59E0B),
+        ),
+      );
       items.add(const PopupMenuDivider());
-      items.add(_buildMenuItem(
-        'save',
-        Icons.save_rounded,
-        S.of(context).saveToMyAccount,
-        Colors.green,
-      ));
+      items.add(
+        _buildMenuItem(
+          'save',
+          Icons.save_rounded,
+          S.of(context).saveToMyAccount,
+          Colors.green,
+        ),
+      );
     }
-    
+
     items.add(const PopupMenuDivider());
     // ✅ إضافة خيار "إزالة من الغرفة" دائماً
     // ✅ التحقق من الصلاحيات يتم في _handleSharedFileMenuAction
-    items.add(_buildMenuItem(
-      'remove_from_room',
-      Icons.link_off_rounded,
-      S.of(context).removeFromRoom,
-      Colors.red,
-    ));
-    
+    items.add(
+      _buildMenuItem(
+        'remove_from_room',
+        Icons.link_off_rounded,
+        S.of(context).removeFromRoom,
+        Colors.red,
+      ),
+    );
+
     return items;
   }
 
@@ -431,12 +441,13 @@ class _FilesGridState extends State<FilesGrid> {
 
     // ✅ التحقق من أن الملف مشترك لمرة واحدة
     final isOneTimeShare = file['isOneTimeShare'] == true;
-    
+
     // ✅ منع الإجراءات التالية للملفات المشتركة لمرة واحدة
-    if (isOneTimeShare && ['info', 'download', 'comments', 'save'].contains(action)) {
+    if (isOneTimeShare &&
+        ['info', 'download', 'comments', 'save'].contains(action)) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('❌ الملفات المشتركة لمرة واحدة لا يمكن عرض تفاصيلها أو تحميلها أو التعليق عليها أو حفظها'),
+          content: Text(S.of(context).oneTimeSharedFileError),
           backgroundColor: Colors.orange,
           duration: Duration(seconds: 3),
         ),
@@ -567,9 +578,7 @@ class _FilesGridState extends State<FilesGrid> {
             } else {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: Text(
-                    '❌ فقط مالك الغرفة أو الأعضاء برتبة محرر يمكنهم إزالة الملفات',
-                  ),
+                  content: Text(S.of(context).removeFilePermissionError),
                   backgroundColor: Colors.red,
                 ),
               );
@@ -585,9 +594,7 @@ class _FilesGridState extends State<FilesGrid> {
                 } else {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content: Text(
-                        '❌ فقط مالك الغرفة أو الأعضاء برتبة محرر يمكنهم إزالة الملفات',
-                      ),
+                      content: Text(S.of(context).removeFilePermissionError),
                       backgroundColor: Colors.red,
                     ),
                   );
@@ -641,7 +648,7 @@ class _FilesGridState extends State<FilesGrid> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('❌ معرف الملف غير موجود'),
+            content: Text(S.of(context).fileIdNotFound),
             backgroundColor: Colors.red,
           ),
         );
@@ -660,7 +667,7 @@ class _FilesGridState extends State<FilesGrid> {
               children: [
                 CircularProgressIndicator(color: Colors.white),
                 SizedBox(width: 16),
-                Text('جاري حفظ الملف...'),
+                Text(S.of(context).savingFile),
               ],
             ),
             duration: Duration(seconds: 30),
@@ -683,14 +690,16 @@ class _FilesGridState extends State<FilesGrid> {
         if (success) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('✅ تم حفظ الملف في حسابك بنجاح'),
+              content: Text(S.of(context).fileSavedSuccessfully),
               backgroundColor: Colors.green,
             ),
           );
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(roomController.errorMessage ?? '❌ فشل حفظ الملف'),
+              content: Text(
+                roomController.errorMessage ?? S.of(context).failedToSaveFile,
+              ),
               backgroundColor: Colors.red,
             ),
           );
@@ -701,7 +710,8 @@ class _FilesGridState extends State<FilesGrid> {
         ScaffoldMessenger.of(context).hideCurrentSnackBar();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('❌ خطأ: ${e.toString()}'),
+            content: Text(S.of(context).errorOccurred(e.toString())),
+
             backgroundColor: Colors.red,
           ),
         );
@@ -716,7 +726,8 @@ class _FilesGridState extends State<FilesGrid> {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (modalContext) => _FolderNavigationDialog(
-        title: 'اختر مجلد لحفظ الملف',
+        title: S.of(context).chooseFolderTitle,
+
         excludeFolderId: null,
         excludeParentId: null,
         onSelect: (targetFolderId) {
@@ -735,7 +746,7 @@ class _FilesGridState extends State<FilesGrid> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('❌ معرف الملف غير موجود'),
+            content: Text(S.of(context).fileIdNotFound),
             backgroundColor: Colors.red,
           ),
         );
@@ -781,7 +792,7 @@ class _FilesGridState extends State<FilesGrid> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('❌ خطأ: ${e.toString()}'),
+            content: Text(S.of(context).errorOccurred(e.toString())),
             backgroundColor: Colors.red,
           ),
         );
@@ -797,7 +808,9 @@ class _FilesGridState extends State<FilesGrid> {
     final originalData = file['originalData'] ?? file;
     final fileId = originalData['_id']?.toString();
     final fileName =
-        file['name'] as String? ?? originalData['name'] as String? ?? 'ملف';
+        file['name'] as String? ??
+        originalData['name'] as String? ??
+        S.of(context).file;
     final currentParentId = originalData['parentFolderId']?.toString();
 
     if (fileId == null) {
@@ -816,7 +829,8 @@ class _FilesGridState extends State<FilesGrid> {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (modalContext) => _FolderNavigationDialog(
-        title: 'نقل الملف: $fileName',
+        title: S.of(context).moveFileTitle(fileName),
+
         excludeFolderId:
             null, // ✅ الملف ليس مجلداً، لذا لا نحتاج لاستبعاد أي مجلد
         excludeParentId:
@@ -984,9 +998,9 @@ class _FilesGridState extends State<FilesGrid> {
       ),
       itemBuilder: (context, index) {
         final file = widget.files[index];
-        final fileName = file['name'] ?? 'ملف بدون اسم';
+        final fileName = file['name'] ?? S.of(context).unnamedfile;
         final fileUrl = file['url'] ?? '';
-        final fileType = file['type'] ?? 'file';
+        final fileType = file['type'] ?? S.of(context).file;
         final isOneTimeShare = file['isOneTimeShare'] == true;
         final fileId = file['originalData']?['_id']?.toString();
         final isStarred = fileId != null
@@ -1084,15 +1098,16 @@ class _FilesGridState extends State<FilesGrid> {
       // ✅ الملف العادي - نعرض معاينة
       if (isImage) {
         // ✅ استخدام CachedNetworkImage مع headers للصور التي تحتاج token
-        final needsToken = fileUrl.contains('/api/') || fileUrl.contains('/download/');
+        final needsToken =
+            fileUrl.contains('/api/') || fileUrl.contains('/download/');
         return FutureBuilder<Map<String, String>?>(
           future: needsToken ? _getImageHeaders() : Future.value(null),
           builder: (context, snapshot) {
             // ✅ إضافة cache busting للصور
-            final imageUrl = fileUrl.contains('?') 
-                ? fileUrl 
+            final imageUrl = fileUrl.contains('?')
+                ? fileUrl
                 : '$fileUrl?v=${DateTime.now().millisecondsSinceEpoch}';
-            
+
             return CachedNetworkImage(
               imageUrl: imageUrl,
               fit: BoxFit.cover,
@@ -1107,7 +1122,9 @@ class _FilesGridState extends State<FilesGrid> {
                 ),
               ),
               errorWidget: (context, url, error) {
-                print('❌ Error loading image preview in FilesGrid: $error, URL: $url');
+                print(
+                  '❌ Error loading image preview in FilesGrid: $error, URL: $url',
+                );
                 return Container(
                   color: const Color(0xff28336f),
                   child: Center(
@@ -1261,7 +1278,7 @@ class _FilesGridState extends State<FilesGrid> {
                         Icon(Icons.timer, size: 16, color: Colors.white),
                         SizedBox(width: 5),
                         Text(
-                          'مرة واحدة',
+                          S.of(context).oneTime,
                           style: TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.bold,
@@ -1339,12 +1356,12 @@ class _FilesGridState extends State<FilesGrid> {
   // دالة مساعدة لتنسيق حجم الملف
   String _formatFileSize(String size) {
     try {
-      print('🚀 [FilesGridView1] size: $size');
       final bytes = int.tryParse(size) ?? 0;
-      if (bytes < 1024) return '$bytes بايت';
-      if (bytes < 1048576)
-        return '${(bytes / 1024).toStringAsFixed(1)} كيلوبايت';
-      return '${(bytes / 1048576).toStringAsFixed(1)} ميجابايت';
+      if (bytes < 1024) return '$bytes ${S.of(context).bytes}';
+      if (bytes < 1048576) {
+        return '${(bytes / 1024).toStringAsFixed(1)} ${S.of(context).kb}';
+      }
+      return '${(bytes / 1048576).toStringAsFixed(1)} ${S.of(context).mb}';
     } catch (e) {
       return size;
     }
@@ -1536,7 +1553,7 @@ class _FilesGridState extends State<FilesGrid> {
                 ),
                 const SizedBox(width: 6),
                 Text(
-                  'مشارك لمرة واحدة',
+                  S.of(context).oneTimeShare,
                   style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w600,
@@ -1658,7 +1675,7 @@ class _FilesGridState extends State<FilesGrid> {
                           const SizedBox(width: 6),
                           Flexible(
                             child: Text(
-                              'مشارك لمرة واحدة',
+                              S.of(context).oneTimeShare,
                               style: TextStyle(
                                 fontSize: fontSize,
                                 fontWeight: FontWeight.w600,
@@ -1731,7 +1748,7 @@ class _FilesGridState extends State<FilesGrid> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'فشل التحميل',
+                    S.of(context).failedToLoad,
                     style: TextStyle(fontSize: 11, color: Colors.grey[500]),
                   ),
                 ],
@@ -1751,7 +1768,7 @@ class _FilesGridState extends State<FilesGrid> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'الملف غير موجود',
+                  S.of(context).fileNotFound,
                   style: TextStyle(fontSize: 11, color: Colors.grey[500]),
                 ),
               ],
@@ -1866,7 +1883,7 @@ class _FilesGridState extends State<FilesGrid> {
               ),
               const SizedBox(height: 8),
               Text(
-                'فشل التحميل',
+                S.of(context).failedToLoad,
                 style: TextStyle(fontSize: 11, color: Colors.grey[500]),
               ),
             ],
@@ -2017,7 +2034,7 @@ class _FolderNavigationDialogState extends State<_FolderNavigationDialog> {
   @override
   void initState() {
     super.initState();
-    _breadcrumb.add({'id': null, 'name': 'الجذر'});
+    _breadcrumb.add({'id': null, 'name': S.of(context).root});
     _loadRootFolders();
   }
 
@@ -2173,7 +2190,7 @@ class _FolderNavigationDialogState extends State<_FolderNavigationDialog> {
       // ✅ العودة للجذر
       setState(() {
         _breadcrumb = [
-          {'id': null, 'name': 'الجذر'},
+          {'id': null, 'name': S.of(context).root},
         ];
       });
       _loadRootFolders();
@@ -2188,7 +2205,7 @@ class _FolderNavigationDialogState extends State<_FolderNavigationDialog> {
         if (folderId == null) {
           _loadRootFolders();
         } else {
-          final folderName = _breadcrumb.last['name'] ?? 'مجلد';
+          final folderName = _breadcrumb.last['name'] ?? S.of(context).folder;
           _loadSubfolders(folderId, folderName);
         }
       }
@@ -2269,7 +2286,7 @@ class _FolderNavigationDialogState extends State<_FolderNavigationDialog> {
                                   SizedBox(width: 4),
                                 ],
                                 Text(
-                                  item['name'] ?? 'الجذر',
+                                  item['name'] ?? S.of(context).root,
                                   style: TextStyle(
                                     color: isLast ? Colors.purple : Colors.blue,
                                     fontWeight: isLast
@@ -2335,7 +2352,8 @@ class _FolderNavigationDialogState extends State<_FolderNavigationDialog> {
                             final folder = _currentFolders[index];
                             final folderId = folder['_id']?.toString();
                             final folderName =
-                                folder['name'] ?? 'مجلد بدون اسم';
+                                folder['name'] ??
+                                S.of(context).folderWithoutName;
 
                             return InkWell(
                               onTap: () {
@@ -2358,7 +2376,7 @@ class _FolderNavigationDialogState extends State<_FolderNavigationDialog> {
                                 ),
                                 title: Text(folderName),
                                 subtitle: Text(
-                                  '${folder['filesCount'] ?? 0} ملف',
+                                  '${folder['filesCount'] ?? 0} ${S.of(context).files}',
                                 ),
                                 trailing: Row(
                                   mainAxisSize: MainAxisSize.min,

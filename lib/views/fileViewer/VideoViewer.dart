@@ -1,3 +1,4 @@
+import 'package:filevo/generated/l10n.dart';
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
 import 'package:flutter/services.dart';
@@ -7,12 +8,9 @@ import 'package:filevo/services/screen_protection_service.dart';
 class VideoViewer extends StatefulWidget {
   final String url;
   final bool isOneTimeShare; // ✅ للملفات المشتركة لمرة واحدة
-  
-  const VideoViewer({
-    Key? key,
-    required this.url,
-    this.isOneTimeShare = false,
-  }) : super(key: key);
+
+  const VideoViewer({Key? key, required this.url, this.isOneTimeShare = false})
+    : super(key: key);
 
   @override
   _VideoViewerState createState() => _VideoViewerState();
@@ -30,8 +28,8 @@ class _VideoViewerState extends State<VideoViewer> {
   bool _isFullScreen = false;
   bool _showControls = true;
   List<double> _availableSpeeds = [0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0];
-  List<String> _availableQualities = ['تلقائي', '1080p', '720p', '480p', '360p'];
-  
+  late List<String> _availableQualities;
+
   // متغيرات الترجمة
   List<SubtitleItem> _availableSubtitles = [];
   String? _selectedSubtitle;
@@ -44,6 +42,7 @@ class _VideoViewerState extends State<VideoViewer> {
     if (widget.isOneTimeShare) {
       ScreenProtectionService.enableProtection();
     }
+    _availableQualities = [S.of(context).auto, '1080p', '720p', '480p', '360p'];
     _initializeVideo();
     _setupControlsTimer();
     _loadSubtitles();
@@ -55,19 +54,16 @@ class _VideoViewerState extends State<VideoViewer> {
       _controller = VideoPlayerController.network(
         widget.url,
         // ✅ إعدادات لتحسين الأداء والسرعة
-        httpHeaders: {
-          'Connection': 'keep-alive',
-          'Accept': '*/*',
-        },
+        httpHeaders: {'Connection': 'keep-alive', 'Accept': '*/*'},
       );
-      
+
       // ✅ إعداد buffer قبل التشغيل
       await _controller.initialize();
-      
+
       // ✅ إعداد buffering أفضل
       _controller.setLooping(false);
       _controller.setVolume(1.0);
-      
+
       _chewieController = ChewieController(
         videoPlayerController: _controller,
         autoPlay: false, // ✅ عدم التشغيل التلقائي للسماح بالـ buffering أولاً
@@ -99,7 +95,7 @@ class _VideoViewerState extends State<VideoViewer> {
                 const Icon(Icons.error_outline, color: Colors.red, size: 48),
                 const SizedBox(height: 16),
                 Text(
-                  'فشل تحميل الفيديو',
+                  S.of(context).videoLoadFailed,
                   style: const TextStyle(color: Colors.white, fontSize: 16),
                 ),
                 const SizedBox(height: 8),
@@ -133,10 +129,10 @@ class _VideoViewerState extends State<VideoViewer> {
           ),
         ),
       );
-      
+
       // ✅ انتظار buffer قبل التشغيل (تحسين السرعة)
       await Future.delayed(const Duration(milliseconds: 500));
-      
+
       // ✅ بدء التشغيل بعد buffer كافي
       if (_controller.value.isInitialized && mounted) {
         await _controller.play();
@@ -157,7 +153,7 @@ class _VideoViewerState extends State<VideoViewer> {
         setState(() {
           _hasError = true;
           _isLoading = false;
-          _errorMessage = 'فشل تحميل الفيديو: $e';
+          _errorMessage = S.of(context).videoLoadError(e.toString());
         });
       }
     }
@@ -168,25 +164,37 @@ class _VideoViewerState extends State<VideoViewer> {
     // في التطبيق الحقيقي، يمكن جلب هذه القائمة من السيرفر
     setState(() {
       _availableSubtitles = [
-        SubtitleItem(id: 'none', name: 'بدون ترجمة', language: 'لا شيء'),
-        SubtitleItem(id: 'ar', name: 'العربية', language: 'العربية'),
-        SubtitleItem(id: 'en', name: 'English', language: 'الإنجليزية'),
-        SubtitleItem(id: 'fr', name: 'Français', language: 'الفرنسية'),
-        SubtitleItem(id: 'es', name: 'Español', language: 'الإسبانية'),
+        SubtitleItem(
+          id: 'none',
+          name: S.of(context).noSubtitles,
+          language: S.of(context).none,
+        ),
+        SubtitleItem(
+          id: 'ar',
+          name: S.of(context).arabic,
+          language: S.of(context).arabic,
+        ),
+        SubtitleItem(
+          id: 'en',
+          name: S.of(context).english,
+          language: S.of(context).english,
+        ),
+        // SubtitleItem(id: 'fr', name: 'Français', language: 'الفرنسية'),
+        // SubtitleItem(id: 'es', name: 'Español', language: 'الإسبانية'),
       ];
-      _selectedSubtitle = 'none';
+      _selectedSubtitle = S.of(context).none;
     });
   }
 
   // بناء قائمة الترجمات (في التطبيق الحقيقي، ستأتي من ملفات SRT/VTT)
   Subtitles _buildSubtitles() {
-    if (!_showSubtitles || _selectedSubtitle == 'none') {
-      return  Subtitles([]);
+    if (!_showSubtitles || _selectedSubtitle == S.of(context).none) {
+      return Subtitles([]);
     }
 
     // هذه أمثلة للترجمات - في التطبيق الحقيقي ستقرأ من ملف
     final subtitles = <Subtitle>[];
-    
+
     if (_selectedSubtitle == 'ar') {
       // ترجمة عربية افتراضية
       subtitles.addAll([
@@ -272,7 +280,7 @@ class _VideoViewerState extends State<VideoViewer> {
 
   void _changeQuality(String quality) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('تم تغيير الجودة إلى $quality')),
+      SnackBar(content: Text(S.of(context).qualityChanged(quality))),
     );
     _setupControlsTimer();
   }
@@ -285,18 +293,18 @@ class _VideoViewerState extends State<VideoViewer> {
       _chewieController?.subtitle = _buildSubtitles();
     });
     _setupControlsTimer();
-    
+
     if (subtitleId == 'none') {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('تم إيقاف الترجمة')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(S.of(context).subtitlesDisabled)));
     } else {
       final subtitle = _availableSubtitles.firstWhere(
         (item) => item.id == subtitleId,
         orElse: () => SubtitleItem(id: '', name: '', language: ''),
       );
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('تم تفعيل الترجمة: ${subtitle.name}')),
+        SnackBar(content: Text(S.of(context).subtitlesEnabled(subtitle.name))),
       );
     }
   }
@@ -315,7 +323,8 @@ class _VideoViewerState extends State<VideoViewer> {
   }
 
   void _seekForward() {
-    final newPosition = _controller.value.position + const Duration(seconds: 10);
+    final newPosition =
+        _controller.value.position + const Duration(seconds: 10);
     if (newPosition < _controller.value.duration) {
       _controller.seekTo(newPosition);
     }
@@ -323,7 +332,8 @@ class _VideoViewerState extends State<VideoViewer> {
   }
 
   void _seekBackward() {
-    final newPosition = _controller.value.position - const Duration(seconds: 10);
+    final newPosition =
+        _controller.value.position - const Duration(seconds: 10);
     if (newPosition > Duration.zero) {
       _controller.seekTo(newPosition);
     }
@@ -347,8 +357,8 @@ class _VideoViewerState extends State<VideoViewer> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'إعدادات الترجمة',
+            Text(
+              S.of(context).subtitlesSettings,
               style: TextStyle(
                 color: Colors.white,
                 fontSize: 18,
@@ -356,14 +366,14 @@ class _VideoViewerState extends State<VideoViewer> {
               ),
             ),
             const SizedBox(height: 20),
-            
+
             // اختيار اللغة
-            const Text(
-              'اختر لغة الترجمة:',
+            Text(
+              S.of(context).chooseSubtitleLanguage,
               style: TextStyle(color: Colors.white70),
             ),
             const SizedBox(height: 10),
-            
+
             Wrap(
               spacing: 8,
               runSpacing: 8,
@@ -386,49 +396,55 @@ class _VideoViewerState extends State<VideoViewer> {
                 );
               }).toList(),
             ),
-            
+
             const SizedBox(height: 20),
-            
+
             // إعدادات إضافية للترجمة
             if (_showSubtitles && _selectedSubtitle != 'none') ...[
-              const Text(
-                'إعدادات إضافية:',
+              Text(
+                S.of(context).additionalSettings,
                 style: TextStyle(color: Colors.white70),
               ),
               const SizedBox(height: 10),
-              
+
               ListTile(
                 leading: const Icon(Icons.text_fields, color: Colors.white),
-                title: const Text(
-                  'تكبير حجم الخط',
+                title: Text(
+                  S.of(context).increaseFontSize,
                   style: TextStyle(color: Colors.white),
                 ),
-                trailing: const Icon(Icons.arrow_forward_ios, color: Colors.white54),
+                trailing: const Icon(
+                  Icons.arrow_forward_ios,
+                  color: Colors.white54,
+                ),
                 onTap: () {
                   _showFontSizeSettings();
                 },
               ),
-              
+
               ListTile(
                 leading: const Icon(Icons.color_lens, color: Colors.white),
-                title: const Text(
-                  'لون الترجمة',
+                title: Text(
+                  S.of(context).subtitleColor,
                   style: TextStyle(color: Colors.white),
                 ),
-                trailing: const Icon(Icons.arrow_forward_ios, color: Colors.white54),
+                trailing: const Icon(
+                  Icons.arrow_forward_ios,
+                  color: Colors.white54,
+                ),
                 onTap: () {
                   _showColorSettings();
                 },
               ),
             ],
-            
+
             const SizedBox(height: 20),
-            
+
             // زر الإغلاق
             Center(
               child: ElevatedButton(
                 onPressed: () => Navigator.pop(context),
-                child: const Text('إغلاق'),
+                child: Text(S.of(context).close),
               ),
             ),
           ],
@@ -440,14 +456,14 @@ class _VideoViewerState extends State<VideoViewer> {
   void _showFontSizeSettings() {
     // يمكن إضافة إعدادات حجم الخط هنا
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('سيتم إضافة إعدادات حجم الخط قريباً')),
+      SnackBar(content: Text(S.of(context).fontSizeSettingsComingSoon)),
     );
   }
 
   void _showColorSettings() {
     // يمكن إضافة إعدادات الألوان هنا
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('سيتم إضافة إعدادات الألوان قريباً')),
+      SnackBar(content: Text(S.of(context).colorSettingsComingSoon)),
     );
   }
 
@@ -457,7 +473,7 @@ class _VideoViewerState extends State<VideoViewer> {
       appBar: _isFullScreen
           ? null
           : AppBar(
-              title: const Text('عرض الفيديو'),
+              title: Text(S.of(context).videoViewerTitle),
               backgroundColor: const Color(0xff28336f),
               actions: [
                 // زر الترجمة
@@ -491,20 +507,22 @@ class _VideoViewerState extends State<VideoViewer> {
                 PopupMenuButton<String>(
                   onSelected: _changeQuality,
                   itemBuilder: (context) => _availableQualities
-                      .map((quality) => PopupMenuItem(
-                            value: quality,
-                            child: Text(quality),
-                          ))
+                      .map(
+                        (quality) =>
+                            PopupMenuItem(value: quality, child: Text(quality)),
+                      )
                       .toList(),
                   icon: const Icon(Icons.hd, color: Colors.white),
                 ),
                 PopupMenuButton<double>(
                   onSelected: _changeSpeed,
                   itemBuilder: (context) => _availableSpeeds
-                      .map((speed) => PopupMenuItem(
-                            value: speed,
-                            child: Text("${speed}x"),
-                          ))
+                      .map(
+                        (speed) => PopupMenuItem(
+                          value: speed,
+                          child: Text("${speed}x"),
+                        ),
+                      )
                       .toList(),
                   icon: const Icon(Icons.speed, color: Colors.white),
                 ),
@@ -514,177 +532,193 @@ class _VideoViewerState extends State<VideoViewer> {
       body: _isLoading
           ? const Center(child: CircularProgressIndicator(color: Colors.white))
           : _hasError
-              ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(Icons.error_outline, color: Colors.red, size: 64),
-                      const SizedBox(height: 16),
-                      Text(_errorMessage,
-                          style: const TextStyle(color: Colors.white, fontSize: 16),
-                          textAlign: TextAlign.center),
-                      const SizedBox(height: 20),
-                      ElevatedButton(
-                        onPressed: _initializeVideo,
-                        child: const Text('إعادة المحاولة'),
-                      ),
-                    ],
+          ? Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.error_outline, color: Colors.red, size: 64),
+                  const SizedBox(height: 16),
+                  Text(
+                    _errorMessage,
+                    style: const TextStyle(color: Colors.white, fontSize: 16),
+                    textAlign: TextAlign.center,
                   ),
-                )
-              : GestureDetector(
-                  onTap: _toggleControls,
-                  child: Stack(
-                    children: [
-                      // الفيديو مع Chewie
-                      if (_chewieController != null)
-                        Chewie(controller: _chewieController!),
+                  const SizedBox(height: 20),
+                  ElevatedButton(
+                    onPressed: _initializeVideo,
+                    child: Text(S.of(context).retry),
+                  ),
+                ],
+              ),
+            )
+          : GestureDetector(
+              onTap: _toggleControls,
+              child: Stack(
+                children: [
+                  // الفيديو مع Chewie
+                  if (_chewieController != null)
+                    Chewie(controller: _chewieController!),
 
-                      // شريط التحكم العلوي
-                      if (_isFullScreen && _showControls)
-                        Positioned(
-                          top: 0,
-                          left: 0,
-                          right: 0,
-                          child: Container(
-                            height: 80,
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                begin: Alignment.topCenter,
-                                end: Alignment.bottomCenter,
-                                colors: [
-                                  Colors.black.withOpacity(0.7),
-                                  Colors.transparent,
-                                ],
-                              ),
-                            ),
-                            child: Row(
-                              children: [
-                                IconButton(
-                                  icon: const Icon(Icons.arrow_back, color: Colors.white),
-                                  onPressed: () {
-                                    if (_isFullScreen) {
-                                      _toggleFullScreen();
-                                    } else {
-                                      Navigator.pop(context);
-                                    }
-                                  },
-                                ),
-                                const Spacer(),
-                                // زر الترجمة في وضع ملء الشاشة
-                                IconButton(
-                                  icon: Stack(
-                                    children: [
-                                      const Icon(Icons.subtitles, color: Colors.white),
-                                      if (_showSubtitles && _selectedSubtitle != 'none')
-                                        Positioned(
-                                          right: 0,
-                                          top: 0,
-                                          child: Container(
-                                            padding: const EdgeInsets.all(2),
-                                            decoration: const BoxDecoration(
-                                              color: Colors.green,
-                                              shape: BoxShape.circle,
-                                            ),
-                                            child: const Text(
-                                              '●',
-                                              style: TextStyle(
-                                                color: Colors.white,
-                                                fontSize: 8,
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                    ],
-                                  ),
-                                  onPressed: _showSubtitleSettings,
-                                ),
-                                PopupMenuButton<String>(
-                                  onSelected: _changeQuality,
-                                  itemBuilder: (context) => _availableQualities
-                                      .map((quality) => PopupMenuItem(
-                                            value: quality,
-                                            child: Text(quality),
-                                          ))
-                                      .toList(),
-                                  icon: const Icon(Icons.hd, color: Colors.white),
-                                ),
-                                PopupMenuButton<double>(
-                                  onSelected: _changeSpeed,
-                                  itemBuilder: (context) => _availableSpeeds
-                                      .map((speed) => PopupMenuItem(
-                                            value: speed,
-                                            child: Text("${speed}x"),
-                                          ))
-                                      .toList(),
-                                  icon: const Icon(Icons.speed, color: Colors.white),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-
-                      // شريط التحكم السفلي
-                      if (_showControls || !_isFullScreen)
-                        Positioned(
-                          bottom: 0,
-                          left: 0,
-                          right: 0,
-                          child: _buildControls(),
-                        ),
-
-                      // أزرار التحكم المركزية
-                      if (_isFullScreen && _showControls)
-                        Positioned.fill(
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Expanded(
-                                child: GestureDetector(
-                                  onTap: _seekBackward,
-                                  child: Container(
-                                    color: Colors.transparent,
-                                    child: const Icon(
-                                      Icons.replay_10,
-                                      color: Colors.white54,
-                                      size: 40,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              Expanded(
-                                child: GestureDetector(
-                                  onTap: _togglePlayPause,
-                                  child: Container(
-                                    color: Colors.transparent,
-                                    child: Icon(
-                                      _controller.value.isPlaying
-                                          ? Icons.pause_circle_filled
-                                          : Icons.play_circle_filled,
-                                      color: Colors.white,
-                                      size: 60,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              Expanded(
-                                child: GestureDetector(
-                                  onTap: _seekForward,
-                                  child: Container(
-                                    color: Colors.transparent,
-                                    child: const Icon(
-                                      Icons.forward_10,
-                                      color: Colors.white54,
-                                      size: 40,
-                                    ),
-                                  ),
-                                ),
-                              ),
+                  // شريط التحكم العلوي
+                  if (_isFullScreen && _showControls)
+                    Positioned(
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      child: Container(
+                        height: 80,
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [
+                              Colors.black.withOpacity(0.7),
+                              Colors.transparent,
                             ],
                           ),
                         ),
-                    ],
-                  ),
-                ),
+                        child: Row(
+                          children: [
+                            IconButton(
+                              icon: const Icon(
+                                Icons.arrow_back,
+                                color: Colors.white,
+                              ),
+                              onPressed: () {
+                                if (_isFullScreen) {
+                                  _toggleFullScreen();
+                                } else {
+                                  Navigator.pop(context);
+                                }
+                              },
+                            ),
+                            const Spacer(),
+                            // زر الترجمة في وضع ملء الشاشة
+                            IconButton(
+                              icon: Stack(
+                                children: [
+                                  const Icon(
+                                    Icons.subtitles,
+                                    color: Colors.white,
+                                  ),
+                                  if (_showSubtitles &&
+                                      _selectedSubtitle != 'none')
+                                    Positioned(
+                                      right: 0,
+                                      top: 0,
+                                      child: Container(
+                                        padding: const EdgeInsets.all(2),
+                                        decoration: const BoxDecoration(
+                                          color: Colors.green,
+                                          shape: BoxShape.circle,
+                                        ),
+                                        child: const Text(
+                                          '●',
+                                          style: TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 8,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                ],
+                              ),
+                              onPressed: _showSubtitleSettings,
+                            ),
+                            PopupMenuButton<String>(
+                              onSelected: _changeQuality,
+                              itemBuilder: (context) => _availableQualities
+                                  .map(
+                                    (quality) => PopupMenuItem(
+                                      value: quality,
+                                      child: Text(quality),
+                                    ),
+                                  )
+                                  .toList(),
+                              icon: const Icon(Icons.hd, color: Colors.white),
+                            ),
+                            PopupMenuButton<double>(
+                              onSelected: _changeSpeed,
+                              itemBuilder: (context) => _availableSpeeds
+                                  .map(
+                                    (speed) => PopupMenuItem(
+                                      value: speed,
+                                      child: Text("${speed}x"),
+                                    ),
+                                  )
+                                  .toList(),
+                              icon: const Icon(
+                                Icons.speed,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+
+                  // شريط التحكم السفلي
+                  if (_showControls || !_isFullScreen)
+                    Positioned(
+                      bottom: 0,
+                      left: 0,
+                      right: 0,
+                      child: _buildControls(),
+                    ),
+
+                  // أزرار التحكم المركزية
+                  if (_isFullScreen && _showControls)
+                    Positioned.fill(
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Expanded(
+                            child: GestureDetector(
+                              onTap: _seekBackward,
+                              child: Container(
+                                color: Colors.transparent,
+                                child: const Icon(
+                                  Icons.replay_10,
+                                  color: Colors.white54,
+                                  size: 40,
+                                ),
+                              ),
+                            ),
+                          ),
+                          Expanded(
+                            child: GestureDetector(
+                              onTap: _togglePlayPause,
+                              child: Container(
+                                color: Colors.transparent,
+                                child: Icon(
+                                  _controller.value.isPlaying
+                                      ? Icons.pause_circle_filled
+                                      : Icons.play_circle_filled,
+                                  color: Colors.white,
+                                  size: 60,
+                                ),
+                              ),
+                            ),
+                          ),
+                          Expanded(
+                            child: GestureDetector(
+                              onTap: _seekForward,
+                              child: Container(
+                                color: Colors.transparent,
+                                child: const Icon(
+                                  Icons.forward_10,
+                                  color: Colors.white54,
+                                  size: 40,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                ],
+              ),
+            ),
     );
   }
 
@@ -708,9 +742,9 @@ class _VideoViewerState extends State<VideoViewer> {
               Expanded(
                 child: Slider(
                   value: position.inMilliseconds.toDouble().clamp(
-                        0,
-                        duration.inMilliseconds.toDouble(),
-                      ),
+                    0,
+                    duration.inMilliseconds.toDouble(),
+                  ),
                   max: duration.inMilliseconds.toDouble(),
                   onChanged: (value) {
                     _controller.seekTo(Duration(milliseconds: value.toInt()));
@@ -753,7 +787,10 @@ class _VideoViewerState extends State<VideoViewer> {
                   ),
                   const SizedBox(width: 8),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.white24,
                       borderRadius: BorderRadius.circular(16),
@@ -772,7 +809,11 @@ class _VideoViewerState extends State<VideoViewer> {
                   IconButton(
                     icon: Stack(
                       children: [
-                        const Icon(Icons.subtitles, color: Colors.white, size: 24),
+                        const Icon(
+                          Icons.subtitles,
+                          color: Colors.white,
+                          size: 24,
+                        ),
                         if (_showSubtitles && _selectedSubtitle != 'none')
                           Positioned(
                             right: 0,
@@ -833,9 +874,5 @@ class SubtitleItem {
   final String name;
   final String language;
 
-  SubtitleItem({
-    required this.id,
-    required this.name,
-    required this.language,
-  });
+  SubtitleItem({required this.id, required this.name, required this.language});
 }

@@ -114,7 +114,7 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
           }
           return;
         } else {
-          throw Exception('الملف المحلي غير موجود: ${file.path}');
+          throw Exception(S.of(context).localFileNotFound(file.path));
         }
       }
 
@@ -140,7 +140,7 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
         // ✅ التحقق من أن الملف PDF صالح
         final bytes = response.bodyBytes;
         if (bytes.length < 4) {
-          throw Exception('الملف صغير جداً أو تالف');
+          throw Exception(S.of(context).invalidPdfFile);
         }
 
         final signature = String.fromCharCodes(bytes.sublist(0, 4));
@@ -196,7 +196,7 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
           SnackBar(
             content: Text(S.of(context).failedToLoadPdfFile(e.toString())),
             action: SnackBarAction(
-              label: 'إعادة المحاولة',
+              label: S.of(context).retry,
               onPressed: _retryLoading,
             ),
           ),
@@ -230,7 +230,7 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
             content: Text(S.of(context).failedToOpenFile(e.toString())),
             duration: Duration(seconds: 5),
             action: SnackBarAction(
-              label: 'إعادة المحاولة',
+              label: S.of(context).retry,
               onPressed: _retryLoading,
             ),
           ),
@@ -359,7 +359,7 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
               S.of(context).failedToLoadPdfForDisplay(e.toString()),
             ),
             action: SnackBarAction(
-              label: 'إعادة المحاولة',
+              label: S.of(context).retry,
               onPressed: () {
                 _initializeWebView();
               },
@@ -644,7 +644,7 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
                   ),
                   if (pages > 0)
                     Text(
-                      'صفحة ${currentPage + 1} من $pages',
+                      S.of(context).pageOf(currentPage + 1, pages),
                       style: const TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.normal,
@@ -657,14 +657,14 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
                   IconButton(
                     icon: const Icon(Icons.refresh),
                     onPressed: _retryLoading,
-                    tooltip: 'إعادة المحاولة',
+                    tooltip: S.of(context).retry,
                   ),
                 // زر البحث
                 if (localPath != null)
                   IconButton(
                     icon: const Icon(Icons.search),
                     onPressed: _toggleSearchBar,
-                    tooltip: 'بحث في المستند',
+                    tooltip: S.of(context).searchInDocument,
                   ),
                 // ✅ زر عرض النص/PDF
                 // if (localPath != null)
@@ -685,13 +685,13 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
                     ),
                     onPressed: _toggleNavigationBar,
                     tooltip: showNavigationBar
-                        ? 'إخفاء شريط التنقل'
-                        : 'إظهار شريط التنقل',
+                        ? S.of(context).hideNavBar
+                        : S.of(context).showNavBar,
                   ),
                 IconButton(
                   icon: const Icon(Icons.fullscreen),
                   onPressed: toggleFullScreen,
-                  tooltip: 'وضعية ملء الشاشة',
+                  tooltip: S.of(context).fullScreenMode,
                 ),
               ],
             ),
@@ -803,13 +803,12 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
                 if (mounted) {
                   // ✅ عرض رسالة خطأ واضحة مع خيارات
                   final errorMessage = error.toString().toLowerCase();
-                  String userMessage = 'حدث خطأ أثناء عرض الملف';
+                  String userMessage = S.of(context).errorLoadingFile("");
 
                   if (errorMessage.contains('corrupted') ||
                       errorMessage.contains('not in pdf format') ||
                       errorMessage.contains('cannot create document')) {
-                    userMessage =
-                        'الملف PDF تالف أو مشفر. جاري المحاولة بطريقة أخرى...';
+                    userMessage = S.of(context).pdfCorruptedOrEncrypted;
 
                     // ✅ محاولة استخدام WebView مع PDF.js كـ fallback
                     print('🔄 Attempting fallback to WebView with PDF.js...');
@@ -826,7 +825,7 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
                       content: Text(userMessage),
                       duration: Duration(seconds: 5),
                       action: SnackBarAction(
-                        label: 'إعادة المحاولة',
+                        label: S.of(context).retry,
                         onPressed: _retryLoading,
                       ),
                     ),
@@ -844,11 +843,16 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
                         content: Text(
-                          'الملف PDF قد يكون تالفاً أو مشفراً. الصفحة $page: $error',
+                          S
+                              .of(context)
+                              .pdfCorruptedAtPage(
+                                (page ?? 0).toString(),
+                                error.toString(),
+                              ),
                         ),
                         duration: Duration(seconds: 5),
                         action: SnackBarAction(
-                          label: 'إعادة المحاولة',
+                          label: S.of(context).retry,
                           onPressed: _retryLoading,
                         ),
                       ),
@@ -937,7 +941,7 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
                 child: TextField(
                   controller: _searchController,
                   decoration: InputDecoration(
-                    hintText: 'ابحث في المستند...',
+                    hintText: S.of(context).searchInDocument,
                     border: const OutlineInputBorder(),
                     suffixIcon: _searchController.text.isNotEmpty
                         ? IconButton(
@@ -971,17 +975,18 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
                       ''');
                     }
                   },
-                  tooltip: 'التالي',
+                  tooltip: S.of(context).next,
                 ),
               IconButton(
                 icon: const Icon(Icons.help_outline),
                 onPressed: _showSearchHelp,
-                tooltip: 'مساعدة البحث',
+                tooltip: S.of(context).searchHelp,
               ),
+
               IconButton(
                 icon: const Icon(Icons.close),
                 onPressed: _toggleSearchBar,
-                tooltip: 'إغلاق البحث',
+                tooltip: S.of(context).closeSearch,
               ),
             ],
           ),
@@ -997,8 +1002,8 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    'اقتراحات البحث:',
+                  Text(
+                    S.of(context).searchSuggestions,
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
                       color: Colors.blue,
@@ -1027,10 +1032,10 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
               ),
             ),
           if (_isSearching && _searchSuggestions.isEmpty)
-            const Padding(
+            Padding(
               padding: EdgeInsets.only(top: 8.0),
               child: Text(
-                'جاري البحث...',
+                S.of(context).searching,
                 style: TextStyle(
                   color: Colors.orange,
                   fontWeight: FontWeight.bold,
@@ -1237,7 +1242,7 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'صفحة ${currentPage + 1} من $pages',
+                          S.of(context).pageOf(pages, currentPage + 1),
                           style: const TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 14,
@@ -1261,12 +1266,12 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
                       IconButton(
                         icon: const Icon(Icons.first_page),
                         onPressed: _goToFirstPage,
-                        tooltip: 'الصفحة الأولى',
+                        tooltip: S.of(context).firstPage,
                       ),
                       IconButton(
                         icon: const Icon(Icons.chevron_left),
                         onPressed: _goToPreviousPage,
-                        tooltip: 'الصفحة السابقة',
+                        tooltip: S.of(context).previousPage,
                       ),
                       Container(
                         width: 60,
@@ -1294,12 +1299,12 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
                       IconButton(
                         icon: const Icon(Icons.chevron_right),
                         onPressed: _goToNextPage,
-                        tooltip: 'الصفحة التالية',
+                        tooltip: S.of(context).next,
                       ),
                       IconButton(
                         icon: const Icon(Icons.last_page),
                         onPressed: _goToLastPage,
-                        tooltip: 'الصفحة الأخيرة',
+                        tooltip: S.of(context).lastPage,
                       ),
                     ],
                   ),

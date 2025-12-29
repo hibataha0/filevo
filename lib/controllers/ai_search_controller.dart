@@ -1,18 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:filevo/services/ai_search_service.dart';
 
-/// Controller للبحث الذكي
+/// Controller for smart search
 class AiSearchController with ChangeNotifier {
   final AiSearchService _service = AiSearchService();
 
   bool isLoading = false;
   String? errorMessage;
-  
-  // نتائج البحث
+
+  // Search results
   Map<String, dynamic>? searchResults;
   Map<String, dynamic>? interpretedQuery;
 
-  // إحصائيات النتائج
+  // Results statistics
   int totalResults = 0;
   int filesCount = 0;
   int roomsCount = 0;
@@ -41,13 +41,10 @@ class AiSearchController with ChangeNotifier {
     notifyListeners();
   }
 
-  /// البحث الذكي الشامل
-  Future<bool> search({
-    required String query,
-    String scope = 'all',
-  }) async {
+  /// Comprehensive smart search
+  Future<bool> search({required String query, String scope = 'all'}) async {
     if (query.trim().isEmpty) {
-      setError('نص البحث مطلوب');
+      setError('Search text is required');
       return false;
     }
 
@@ -62,9 +59,10 @@ class AiSearchController with ChangeNotifier {
 
       if (response['results'] != null) {
         searchResults = response['results'] as Map<String, dynamic>;
-        interpretedQuery = searchResults!['interpreted'] as Map<String, dynamic>?;
+        interpretedQuery =
+            searchResults!['interpreted'] as Map<String, dynamic>?;
 
-        // تحديث الإحصائيات
+        // Update statistics
         final results = searchResults!;
         filesCount = (results['files'] as List?)?.length ?? 0;
         roomsCount = (results['rooms'] as List?)?.length ?? 0;
@@ -76,7 +74,7 @@ class AiSearchController with ChangeNotifier {
         return true;
       }
 
-      setError(response['message'] ?? 'فشل البحث');
+      setError(response['message'] ?? 'Search failed');
       return false;
     } catch (e) {
       setError(e.toString());
@@ -87,13 +85,13 @@ class AiSearchController with ChangeNotifier {
     }
   }
 
-  /// البحث الذكي داخل روم محدد
+  /// Smart search within a specific room
   Future<bool> searchInRoom({
     required String roomId,
     required String query,
   }) async {
     if (query.trim().isEmpty) {
-      setError('نص البحث مطلوب');
+      setError('Search text is required');
       return false;
     }
 
@@ -108,21 +106,22 @@ class AiSearchController with ChangeNotifier {
 
       if (response['results'] != null) {
         searchResults = response['results'] as Map<String, dynamic>;
-        interpretedQuery = searchResults!['interpreted'] as Map<String, dynamic>?;
+        interpretedQuery =
+            searchResults!['interpreted'] as Map<String, dynamic>?;
 
-        // تحديث الإحصائيات
+        // Update statistics
         final results = searchResults!;
         filesCount = (results['files'] as List?)?.length ?? 0;
         foldersCount = (results['folders'] as List?)?.length ?? 0;
         commentsCount = (results['comments'] as List?)?.length ?? 0;
-        roomsCount = 0; // لا توجد رومات في البحث داخل روم
+        roomsCount = 0; // No rooms in room search
         totalResults = results['total'] ?? 0;
 
         notifyListeners();
         return true;
       }
 
-      setError(response['message'] ?? 'فشل البحث');
+      setError(response['message'] ?? 'Search failed');
       return false;
     } catch (e) {
       setError(e.toString());
@@ -133,28 +132,27 @@ class AiSearchController with ChangeNotifier {
     }
   }
 
-  /// الحصول على الملفات من النتائج
+  /// Get files from results
   List<Map<String, dynamic>> get files {
     if (searchResults == null) return [];
     return List<Map<String, dynamic>>.from(searchResults!['files'] ?? []);
   }
 
-  /// الحصول على الرومات من النتائج
+  /// Get rooms from results
   List<Map<String, dynamic>> get rooms {
     if (searchResults == null) return [];
     return List<Map<String, dynamic>>.from(searchResults!['rooms'] ?? []);
   }
 
-  /// الحصول على المجلدات من النتائج
+  /// Get folders from results
   List<Map<String, dynamic>> get folders {
     if (searchResults == null) return [];
     return List<Map<String, dynamic>>.from(searchResults!['folders'] ?? []);
   }
 
-  /// الحصول على التعليقات من النتائج
+  /// Get comments from results
   List<Map<String, dynamic>> get comments {
     if (searchResults == null) return [];
     return List<Map<String, dynamic>>.from(searchResults!['comments'] ?? []);
   }
 }
-

@@ -76,22 +76,20 @@ class _SmartSearchPageState extends State<SmartSearchPage>
     }
   }
 
-  /// بدء الاستماع للصوت
+  /// بدء الاستماع للصوت مع دعم الترجمة الكامل
   Future<void> _startListening() async {
-    // ✅ التحقق من حالة الإذن أولاً
     PermissionStatus status = await Permission.microphone.status;
 
-    // ✅ إذا كان الإذن مرفوض بشكل دائم، نفتح الإعدادات
+    // ✅ إذا كان الإذن مرفوض بشكل دائم
     if (status.isPermanentlyDenied) {
       if (mounted) {
         showDialog(
           context: context,
           builder: (context) => AlertDialog(
             title: Text(S.of(context).microphonePermissionRequired),
-            content: const Text(
-              'يجب السماح بالوصول إلى الميكروفون للبحث بالصوت.\n\n'
-              'افتح إعدادات التطبيق وسمح بالوصول إلى الميكروفون.',
-            ),
+            content: Text(
+              S.of(context).microphonePermissionContent,
+            ), // ✅ نص مترجم بالكامل
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context),
@@ -100,7 +98,7 @@ class _SmartSearchPageState extends State<SmartSearchPage>
               TextButton(
                 onPressed: () {
                   Navigator.pop(context);
-                  openAppSettings(); // ✅ فتح إعدادات التطبيق
+                  openAppSettings();
                 },
                 child: Text(S.of(context).openSettings),
               ),
@@ -111,24 +109,19 @@ class _SmartSearchPageState extends State<SmartSearchPage>
       return;
     }
 
-    // ✅ إذا لم يكن الإذن ممنوحاً، نطلب الإذن مباشرة
+    // ✅ طلب الإذن إذا لم يكن ممنوحاً
     if (!status.isGranted) {
-      // ✅ طلب إذن الميكروفون - سيظهر نافذة النظام تلقائياً
       status = await Permission.microphone.request();
-
-      // ✅ إعادة التحقق من حالة الإذن بعد الطلب
-      // ✅ ننتظر قليلاً للتأكد من تحديث الحالة
       await Future.delayed(const Duration(milliseconds: 100));
       status = await Permission.microphone.status;
 
-      // ✅ إذا رفض المستخدم الإذن
       if (!status.isGranted) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(S.of(context).permissionDenied),
               backgroundColor: Colors.orange,
-              duration: Duration(seconds: 3),
+              duration: const Duration(seconds: 3),
             ),
           );
         }
@@ -136,7 +129,7 @@ class _SmartSearchPageState extends State<SmartSearchPage>
       }
     }
 
-    // ✅ التأكد مرة أخرى من أن الإذن ممنوح قبل المتابعة
+    // ✅ التحقق النهائي قبل المتابعة
     final finalStatus = await Permission.microphone.status;
     if (!finalStatus.isGranted) {
       if (mounted) {
@@ -144,7 +137,7 @@ class _SmartSearchPageState extends State<SmartSearchPage>
           SnackBar(
             content: Text(S.of(context).mustAllowMicrophoneAccess),
             backgroundColor: Colors.orange,
-            duration: Duration(seconds: 3),
+            duration: const Duration(seconds: 3),
           ),
         );
       }
@@ -165,24 +158,22 @@ class _SmartSearchPageState extends State<SmartSearchPage>
       return;
     }
 
-    // ✅ بدء الاستماع
+    // ✅ بدء الاستماع (اللغة تبقى "ar" أو يمكنك جعلها ديناميكية بناءً على Locale)
     _speech.listen(
-      localeId: "ar", // ✅ اللغة العربية
+      localeId: Localizations.localeOf(context).languageCode == 'ar'
+          ? "ar-SA"
+          : "en-US",
       onResult: (result) {
         if (mounted) {
           setState(() {
             _searchText = result.recognizedWords;
-            // ✅ تحديث حقل البحث مباشرة
             if (_searchText.isNotEmpty) {
               _searchController.text = _searchText;
             }
           });
 
-          // ✅ إذا انتهى التعرف (final result)، نبحث تلقائياً
           if (result.finalResult && _searchText.isNotEmpty) {
-            print('✅ النص المعرّف: $_searchText');
             _stopListening();
-            // ✅ البحث تلقائياً بعد التعرف على الصوت
             _performSearch();
           }
         }
@@ -310,7 +301,7 @@ class _SmartSearchPageState extends State<SmartSearchPage>
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(result['error'] ?? 'فشل البحث'),
+              content: Text(result['error'] ?? S.of(context).searchFailed),
               backgroundColor: Colors.red,
             ),
           );
@@ -445,6 +436,134 @@ class _SmartSearchPageState extends State<SmartSearchPage>
 
   /// بناء أيقونات suffix (الميكروفون ومسح النص)
   Widget? _buildSuffixIcons() {
+    @override
+    Widget build(BuildContext context) {
+      final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
+      return Scaffold(
+        appBar: AppBar(
+          title: Text(S.of(context).smartSearch),
+          backgroundColor: isDarkMode
+              ? AppColors.darkAppBar
+              : AppColors.lightAppBar,
+          bottom: PreferredSize(
+            preferredSize: const Size.fromHeight(160),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16.0,
+                    vertical: 8.0,
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: _searchController,
+                          decoration: InputDecoration(
+                            hintText: _isListening
+                                ? S
+                                      .of(context)
+                                      .listening // ✅ نص مترجم
+                                : S.of(context).searchHint, // ✅ نص مترجم
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            filled: true,
+                            fillColor: isDarkMode
+                                ? AppColors.darkCardBackground
+                                : Colors.white,
+                            prefixIcon: const Icon(Icons.search),
+                            suffixIcon: _buildSuffixIcons(),
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 12,
+                            ),
+                          ),
+                          onChanged: (value) => setState(() {}),
+                          onSubmitted: (_) => _performSearch(),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      IconButton(
+                        icon: const Icon(Icons.search),
+                        onPressed: _performSearch,
+                        style: IconButton.styleFrom(
+                          backgroundColor: AppColors.accent,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.all(16),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                // Scope selector
+                Padding(
+                  padding: const EdgeInsets.only(
+                    left: 16.0,
+                    right: 16.0,
+                    bottom: 8.0,
+                  ),
+                  child: SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: [
+                        _buildScopeChip(
+                          'all',
+                          S.of(context).scopeAll,
+                          Icons.search,
+                        ),
+                        const SizedBox(width: 8),
+                        _buildScopeChip(
+                          'my-files',
+                          S.of(context).scopeMyFiles,
+                          Icons.folder,
+                        ),
+                        const SizedBox(width: 8),
+                        _buildScopeChip(
+                          'shared',
+                          S.of(context).scopeShared,
+                          Icons.share,
+                        ),
+                        const SizedBox(width: 8),
+                        _buildScopeChip(
+                          'rooms',
+                          S.of(context).scopeRooms,
+                          Icons.meeting_room,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        body:
+            _isSearching || (_searchResults.isNotEmpty && _searchQuery != null)
+            ? _buildSearchResults()
+            : Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.search, size: 64, color: Colors.grey),
+                    const SizedBox(height: 16),
+                    Text(
+                      S.of(context).searchInFiles, // ✅ نص مترجم
+                      style: const TextStyle(fontSize: 16, color: Colors.grey),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      S.of(context).searchExample, // ✅ نص مترجم
+                      style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                    ),
+                  ],
+                ),
+              ),
+      );
+    }
+
     final hasText = _searchController.text.isNotEmpty;
 
     // ✅ إذا كان هناك نص وليس في حالة استماع، نعرض كلا الأيقونتين
@@ -456,7 +575,7 @@ class _SmartSearchPageState extends State<SmartSearchPage>
           IconButton(
             icon: Icon(Icons.mic_none),
             onPressed: _startListening,
-            tooltip: 'البحث بالصوت',
+            tooltip: S.of(context).voiceSearch, // ✅ نص مترجم
             padding: EdgeInsets.zero,
             constraints: BoxConstraints(),
           ),
@@ -483,7 +602,7 @@ class _SmartSearchPageState extends State<SmartSearchPage>
       return IconButton(
         icon: Icon(Icons.mic, color: Colors.red),
         onPressed: _stopListening,
-        tooltip: 'إيقاف التسجيل',
+        tooltip: S.of(context).Registrationstopped, // ✅ نص مترجم
         padding: EdgeInsets.zero,
         constraints: BoxConstraints(),
       );
@@ -493,7 +612,7 @@ class _SmartSearchPageState extends State<SmartSearchPage>
     return IconButton(
       icon: Icon(Icons.mic_none),
       onPressed: _startListening,
-      tooltip: 'البحث بالصوت',
+      tooltip: S.of(context).voiceSearch, // ✅ نص مترجم
       padding: EdgeInsets.zero,
       constraints: BoxConstraints(),
     );
@@ -632,7 +751,7 @@ class _SmartSearchPageState extends State<SmartSearchPage>
       return;
     }
 
-    final fileName = file['name']?.toString() ?? 'ملف بدون اسم';
+    final fileName = file['name']?.toString() ?? S.of(context).unnamedfile;
     final name = fileName.toLowerCase();
 
     print('🔍 [SmartSearch] Step 4: Get file info');

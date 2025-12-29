@@ -2409,7 +2409,7 @@ class _EditFilePageState extends State<EditFilePage> {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Text(
-                      ' ${S.of(context).fileUploadedButDeleteFailed} ${fileController.errorMessage ?? "خطأ غير معروف"}',
+                      ' ${S.of(context).fileUploadedButDeleteFailed} ${fileController.errorMessage ?? S.of(context).unknownError}',
                     ),
                     backgroundColor: Colors.orange,
                   ),
@@ -2574,7 +2574,7 @@ class _FrameExtractionDialogState extends State<_FrameExtractionDialog> {
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
-                  '$_selectedSeconds ثانية',
+                  '$_selectedSeconds ${S.of(context).second}',
                   textAlign: TextAlign.center,
                   style: const TextStyle(
                     fontSize: 18,
@@ -2598,7 +2598,7 @@ class _FrameExtractionDialogState extends State<_FrameExtractionDialog> {
             min: 0,
             max: 300, // 5 دقائق كحد أقصى
             divisions: 60,
-            label: '$_selectedSeconds ثانية',
+            label: '$_selectedSeconds ${S.of(context).second}',
             onChanged: (value) {
               setState(() {
                 _selectedSeconds = value.toInt();

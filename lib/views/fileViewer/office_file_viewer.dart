@@ -36,16 +36,20 @@ class _OfficeFileViewerState extends State<OfficeFileViewer> {
 
     if (fileName.endsWith('.doc') || fileName.endsWith('.docx')) {
       // ✅ Microsoft Office Online Viewer للـ Word
-      viewerUrl = 'https://view.officeapps.live.com/op/embed.aspx?src=$encodedUrl';
+      viewerUrl =
+          'https://view.officeapps.live.com/op/embed.aspx?src=$encodedUrl';
     } else if (fileName.endsWith('.xls') || fileName.endsWith('.xlsx')) {
       // ✅ Microsoft Office Online Viewer للـ Excel
-      viewerUrl = 'https://view.officeapps.live.com/op/embed.aspx?src=$encodedUrl';
+      viewerUrl =
+          'https://view.officeapps.live.com/op/embed.aspx?src=$encodedUrl';
     } else if (fileName.endsWith('.ppt') || fileName.endsWith('.pptx')) {
       // ✅ Microsoft Office Online Viewer للـ PowerPoint
-      viewerUrl = 'https://view.officeapps.live.com/op/embed.aspx?src=$encodedUrl';
+      viewerUrl =
+          'https://view.officeapps.live.com/op/embed.aspx?src=$encodedUrl';
     } else {
       // ✅ Google Docs Viewer كبديل
-      viewerUrl = 'https://docs.google.com/viewer?url=$encodedUrl&embedded=true';
+      viewerUrl =
+          'https://docs.google.com/viewer?url=$encodedUrl&embedded=true';
     }
 
     _controller = WebViewController()
@@ -67,7 +71,7 @@ class _OfficeFileViewerState extends State<OfficeFileViewer> {
           onWebResourceError: (WebResourceError error) {
             setState(() {
               _isLoading = false;
-              _error = error.description ?? 'حدث خطأ أثناء تحميل الملف';
+              _error = error.description ?? S.of(context).failedToLoadFile;
             });
           },
         ),
@@ -119,12 +123,9 @@ class _OfficeFileViewerState extends State<OfficeFileViewer> {
           else if (_controller != null)
             WebViewWidget(controller: _controller!),
           if (_isLoading && _error == null)
-            Center(
-              child: CircularProgressIndicator(),
-            ),
+            Center(child: CircularProgressIndicator()),
         ],
       ),
     );
   }
 }
-

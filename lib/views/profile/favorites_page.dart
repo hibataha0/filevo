@@ -29,8 +29,9 @@ class _FavoritesPageState extends State<FavoritesPage> {
   final ScrollController _scrollController = ScrollController();
   bool _isGridView = true;
 
-  final RefreshController _refreshController =
-      RefreshController(initialRefresh: false);
+  final RefreshController _refreshController = RefreshController(
+    initialRefresh: false,
+  );
 
   @override
   void initState() {
@@ -108,7 +109,7 @@ class _FavoritesPageState extends State<FavoritesPage> {
   }
 
   String _formatFileName(String fileName) {
-    if (fileName.isEmpty) return 'ملف بدون اسم';
+    if (fileName.isEmpty) return S.of(context).unnamedfile;
     if (fileName.length > 20) {
       return '${fileName.substring(0, 17)}...';
     }
@@ -169,7 +170,7 @@ class _FavoritesPageState extends State<FavoritesPage> {
       return;
     }
 
-    final originalName = file['name'] as String? ?? 'ملف بدون اسم';
+    final originalName = file['name'] as String? ?? S.of(context).unnamedfile;
     final url = getFileUrl(filePath);
 
     if (!_isValidUrl(url)) {
@@ -316,9 +317,10 @@ class _FavoritesPageState extends State<FavoritesPage> {
   String _formatFileSize(String size) {
     try {
       final bytes = int.tryParse(size) ?? 0;
-      if (bytes < 1024) return '$bytes بايت';
-      if (bytes < 1048576) return '${(bytes / 1024).toStringAsFixed(1)} ك.ب';
-      return '${(bytes / 1048576).toStringAsFixed(1)} م.ب';
+      if (bytes < 1024) return '$bytes ${S.of(context).bytes}';
+      if (bytes < 1048576)
+        return '${(bytes / 1024).toStringAsFixed(1)}${S.of(context).kb}';
+      return '${(bytes / 1048576).toStringAsFixed(1)} ${S.of(context).mb}';
     } catch (e) {
       return size;
     }
@@ -398,7 +400,7 @@ class _FavoritesPageState extends State<FavoritesPage> {
                 : FilesGrid(
                     // ✅ القائمة تيجي من الـ controller مباشرة
                     files: starredFiles.map((f) {
-                      final fileName = f['name'] ?? 'ملف بدون اسم';
+                      final fileName = f['name'] ?? S.of(context).unnamedfile;
                       final filePath = f['path'] ?? '';
                       return {
                         'name': _formatFileName(fileName),
@@ -406,7 +408,8 @@ class _FavoritesPageState extends State<FavoritesPage> {
                         'type': _getFileType(fileName),
                         'size': f['size']?.toString() ?? '0',
                         'originalData': f,
-                        'originalName': fileName, // ✅ إضافة originalName للتحقق من نوع الملف بشكل صحيح
+                        'originalName':
+                            fileName, // ✅ إضافة originalName للتحقق من نوع الملف بشكل صحيح
                       };
                     }).toList(),
                     onFileTap: (file) =>

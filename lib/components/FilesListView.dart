@@ -7,7 +7,6 @@ import 'package:filevo/controllers/folders/room_controller.dart';
 import 'package:filevo/views/fileViewer/file_actions_service.dart';
 import 'package:filevo/views/fileViewer/file_details_page.dart';
 import 'package:filevo/views/folders/room_comments_page.dart';
-import 'package:filevo/services/storage_service.dart';
 import 'package:filevo/generated/l10n.dart';
 import 'package:filevo/views/folders/starred_folders_page_helpers.dart';
 
@@ -1379,7 +1378,10 @@ class _FilesListViewState extends State<FilesListView> {
     ).showSnackBar(SnackBar(content: Text('Folder Info: ${folder['title']}')));
   }
 
-  void _showRenameDialog(BuildContext context, Map<String, dynamic> folder) async {
+  void _showRenameDialog(
+    BuildContext context,
+    Map<String, dynamic> folder,
+  ) async {
     final folderName =
         folder['title']?.toString() ??
         folder['name']?.toString() ??
@@ -1531,13 +1533,15 @@ class _FilesListViewState extends State<FilesListView> {
     Map<String, dynamic> folder,
   ) async {
     final folderData = folder['folderData'] as Map<String, dynamic>? ?? {};
-    final folderId = folder['folderId'] as String? ?? folderData['_id'] as String?;
-    final folderName = folder['title'] as String ?? folderData['name'] ?? 'مجلد';
+    final folderId =
+        folder['folderId'] as String? ?? folderData['_id'] as String?;
+    final folderName =
+        folder['title'] as String ?? folderData['name'] ?? S.of(context).folder;
 
     if (folderId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('خطأ: معرف المجلد غير موجود')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(S.of(context).folderIdNotFound)));
       return;
     }
 
@@ -1554,7 +1558,10 @@ class _FilesListViewState extends State<FilesListView> {
     );
   }
 
-  void _toggleFavorite(BuildContext context, Map<String, dynamic> folder) async {
+  void _toggleFavorite(
+    BuildContext context,
+    Map<String, dynamic> folder,
+  ) async {
     final folderId = folder['folderId'] as String?;
     if (folderId == null) return;
 
@@ -1615,9 +1622,7 @@ class _FilesListViewState extends State<FilesListView> {
       // ✅ إظهار رسالة الخطأ
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
-            result['message'] ?? S.of(context).folderUpdateFailed,
-          ),
+          content: Text(result['message'] ?? S.of(context).folderUpdateFailed),
           backgroundColor: Colors.red,
           duration: Duration(seconds: 2),
         ),
@@ -1626,26 +1631,27 @@ class _FilesListViewState extends State<FilesListView> {
   }
 
   void _showDeleteDialog(BuildContext context, Map<String, dynamic> folder) {
-    // TODO: Implement delete dialog
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Delete Folder: ${folder['title']}')),
+      SnackBar(
+        content: Text(S.of(context).deleteFolder1(folder['title'] ?? '')),
+      ),
     );
   }
 
   void _showMoveFileDialog(BuildContext context, Map<String, dynamic> file) {
-    // TODO: Implement move file dialog
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text('Move File: ${file['title']}')));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(S.of(context).moveFile(file['title'] ?? ''))),
+    );
   }
 
   void _showCategoryDetails(
     BuildContext context,
     Map<String, dynamic> category,
   ) {
-    // TODO: Implement category details dialog
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Category Details: ${category['title']}')),
+      SnackBar(
+        content: Text(S.of(context).categoryDetails(category['title'] ?? '')),
+      ),
     );
   }
 }

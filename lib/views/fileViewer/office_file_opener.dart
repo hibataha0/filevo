@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'dart:async';
+import 'package:filevo/generated/l10n.dart';
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:http/http.dart' as http;
@@ -18,24 +19,25 @@ class OfficeFileOpener {
     String? token,
     String? fileName, // ✅ اسم الملف المخصص (اختياري)
     Function(int received, int total)? onProgress, // ✅ Progress callback
-    bool closeLoadingDialog = true, // ✅ إغلاق Loading Dialog تلقائياً (افتراضي: true)
+    bool closeLoadingDialog =
+        true, // ✅ إغلاق Loading Dialog تلقائياً (افتراضي: true)
   }) async {
     try {
       // ✅ الحصول على اسم الملف من URL أو استخدام الاسم المخصص
       final finalFileName = fileName ?? _getFileName(url);
-      
+
       // ✅ الحصول على مسار الـ cache
       final dir = await getTemporaryDirectory();
       final filePath = "${dir.path}/$finalFileName";
-      
+
       print('📥 Downloading file to cache: $filePath');
-      
+
       // ✅ التحقق من حجم الملف أولاً لتحديد طريقة التحميل
       // ✅ 100 MB = 100 * 1024 * 1024 = 104857600 bytes
       const int largeFileThreshold = 100 * 1024 * 1024; // 100 MB
-      
+
       File? file;
-      
+
       // ✅ محاولة الحصول على حجم الملف من Content-Length header مع timeout قصير
       // ✅ إذا فشل أو استغرق وقتاً طويلاً، نستخدم الطريقة العادية مباشرة
       int? fileSize;
@@ -44,7 +46,7 @@ class OfficeFileOpener {
         if (token != null) {
           headRequest.headers['Authorization'] = 'Bearer $token';
         }
-        
+
         // ✅ إضافة timeout قصير للـ HEAD request (3 ثواني فقط)
         final headResponse = await headRequest.send().timeout(
           Duration(seconds: 3),
@@ -53,33 +55,45 @@ class OfficeFileOpener {
             throw TimeoutException('HEAD request timeout');
           },
         );
-        
+
         fileSize = headResponse.contentLength;
         print('📊 File size from HEAD request: ${fileSize ?? 'unknown'} bytes');
       } catch (e) {
         // ✅ إذا فشل HEAD request، نستخدم الطريقة العادية مباشرة
-        print('⚠️ Could not get file size from HEAD request: $e - using regular download');
+        print(
+          '⚠️ Could not get file size from HEAD request: $e - using regular download',
+        );
         fileSize = null;
       }
-      
+
       // ✅ إذا كان حجم الملف >= 100 MB، استخدم LargeFileDownloader
       if (fileSize != null && fileSize >= largeFileThreshold) {
-        print('📦 Using LargeFileDownloader for file >= 100 MB (${(fileSize / (1024 * 1024)).toStringAsFixed(1)} MB)');
+        print(
+          '📦 Using LargeFileDownloader for file >= 100 MB (${(fileSize / (1024 * 1024)).toStringAsFixed(1)} MB)',
+        );
         try {
-          final downloadedPath = await LargeFileDownloader.downloadFileWithProgress(
-            url: url,
-            fileName: finalFileName,
-            token: token,
-            timeout: Duration(minutes: 30), // ✅ timeout طويل للملفات الكبيرة
-            filePath: filePath, // ✅ تمرير المسار المحدد
-            onProgress: onProgress ?? (received, total) {
-              if (total > 0) {
-                final percent = (received / total * 100).toStringAsFixed(0);
-                print("📥 Downloading: $percent% ($received / $total bytes)");
-              }
-            },
-          );
-          
+          final downloadedPath =
+              await LargeFileDownloader.downloadFileWithProgress(
+                url: url,
+                fileName: finalFileName,
+                token: token,
+                timeout: Duration(
+                  minutes: 30,
+                ), // ✅ timeout طويل للملفات الكبيرة
+                filePath: filePath, // ✅ تمرير المسار المحدد
+                onProgress:
+                    onProgress ??
+                    (received, total) {
+                      if (total > 0) {
+                        final percent = (received / total * 100)
+                            .toStringAsFixed(0);
+                        print(
+                          "📥 Downloading: $percent% ($received / $total bytes)",
+                        );
+                      }
+                    },
+              );
+
           if (downloadedPath != null) {
             file = File(downloadedPath);
           }
@@ -110,13 +124,15 @@ class OfficeFileOpener {
 
       if (file != null && file.existsSync()) {
         print('✅ File downloaded successfully: ${file.path}');
-        
+
         try {
           // ✅ استخدام open_filex لفتح الملف من الـ cache
           final result = await OpenFilex.open(file.path);
-          
-          print('📂 OpenFilex result: ${result.type}, message: ${result.message}');
-          
+
+          print(
+            '📂 OpenFilex result: ${result.type}, message: ${result.message}',
+          );
+
           if (result.type != ResultType.done) {
             // ✅ إذا فشل الفتح، خاصة إذا لم يكن هناك تطبيق، اعرض خيارات اختيار التطبيق
             if (result.type == ResultType.noAppToOpen) {
@@ -125,31 +141,30 @@ class OfficeFileOpener {
                 if (closeLoadingDialog) {
                   Navigator.of(context, rootNavigator: true).pop();
                 }
-                
+
                 try {
                   // ✅ استخدام Share.shareXFiles لإظهار خيارات "Open with" و "Share"
                   // ✅ في Android، سيعرض هذا Intent chooser مع خيارات فتح الملف
-                  await Share.shareXFiles(
-                    [XFile(file.path)],
-                    subject: finalFileName,
-                  );
+                  await Share.shareXFiles([
+                    XFile(file.path),
+                  ], subject: finalFileName);
                   print('✅ File opened via chooser');
                 } catch (e) {
                   print('❌ Error opening file with chooser: $e');
-                  _showError(context, 'فشل فتح الملف. يرجى تثبيت تطبيق مناسب (مثل Microsoft Office أو Google Slides)');
+                  _showError(context, S.of(context).installAppPrompt);
                 }
               }
             } else {
               // ✅ لأخطاء أخرى، اعرض رسالة خطأ
-              String errorMessage = 'فشل فتح الملف';
+              String errorMessage = S.of(context).failedToOpenFile("");
               if (result.type == ResultType.fileNotFound) {
-                errorMessage = 'الملف غير موجود';
+                errorMessage = S.of(context).fileNotFound;
               } else if (result.type == ResultType.permissionDenied) {
-                errorMessage = 'تم رفض الصلاحية';
+                errorMessage = S.of(context).permissionDenied;
               } else if (result.message.isNotEmpty) {
                 errorMessage = result.message;
               }
-              
+
               if (context.mounted) {
                 if (closeLoadingDialog) {
                   Navigator.of(context, rootNavigator: true).pop();
@@ -171,7 +186,7 @@ class OfficeFileOpener {
             if (closeLoadingDialog) {
               Navigator.of(context, rootNavigator: true).pop();
             }
-            _showError(context, "فشل فتح الملف: $e");
+            _showError(context, S.of(context).openFileError(e.toString()));
           }
         }
       } else {
@@ -181,7 +196,7 @@ class OfficeFileOpener {
           if (closeLoadingDialog) {
             Navigator.of(context, rootNavigator: true).pop();
           }
-          _showError(context, "فشل تحميل الملف.");
+          _showError(context, S.of(context).failedToDownloadFile);
         }
       }
     } catch (e) {
@@ -191,7 +206,7 @@ class OfficeFileOpener {
         if (closeLoadingDialog) {
           Navigator.of(context, rootNavigator: true).pop();
         }
-        _showError(context, "خطأ في فتح الملف: $e");
+        _showError(context, S.of(context).openFileError(e.toString()));
       }
     }
   }
@@ -240,10 +255,13 @@ class OfficeFileOpener {
 
       print('📡 Response status: ${response.statusCode}');
       print('📊 Content-Length: ${response.contentLength}');
-      
+
       // ✅ إذا كان الملف كبير جداً (> 200 MB) ولم نستخدم LargeFileDownloader، نحذره
-      if (response.contentLength != null && response.contentLength! > 200 * 1024 * 1024) {
-        print('⚠️ Large file detected (${(response.contentLength! / (1024 * 1024)).toStringAsFixed(1)} MB) - consider using LargeFileDownloader');
+      if (response.contentLength != null &&
+          response.contentLength! > 200 * 1024 * 1024) {
+        print(
+          '⚠️ Large file detected (${(response.contentLength! / (1024 * 1024)).toStringAsFixed(1)} MB) - consider using LargeFileDownloader',
+        );
       }
 
       if (response.statusCode == 200 || response.statusCode == 206) {
@@ -252,7 +270,7 @@ class OfficeFileOpener {
 
         // ✅ فتح الملف للكتابة
         final sink = file.openWrite();
-        
+
         try {
           // ✅ قراءة البيانات بشكل stream (للملفات الكبيرة)
           await for (var chunk in response.stream) {
@@ -263,12 +281,14 @@ class OfficeFileOpener {
             if (onProgress != null && total > 0) {
               onProgress(received, total);
             }
-            
+
             // ✅ طباعة Progress كل 10%
             if (total > 0) {
               final percent = (received / total * 100).toInt();
               if (percent % 10 == 0) {
-                print('📊 Download progress: $percent% ($received / $total bytes)');
+                print(
+                  '📊 Download progress: $percent% ($received / $total bytes)',
+                );
               }
             }
           }
@@ -294,13 +314,16 @@ class OfficeFileOpener {
       } else {
         print("❌ Download failed with status: ${response.statusCode}");
         if (context.mounted) {
-          _showError(context, "فشل تحميل الملف (خطأ ${response.statusCode})");
+          _showError(
+            context,
+            S.of(context).downloadFailedStatus(response.statusCode),
+          );
         }
       }
     } catch (e) {
       print("❌ Download error: $e");
       if (context.mounted) {
-        _showError(context, "خطأ أثناء تحميل الملف: $e");
+        _showError(context, S.of(context).downloadError(e.toString()));
       }
     }
     return null;
@@ -310,13 +333,13 @@ class OfficeFileOpener {
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
-        title: const Text("خطأ"),
+        title: Text(S.of(context).errorr),
         content: Text(message),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text("موافق"),
-          )
+            child: Text(S.of(context).ok),
+          ),
         ],
       ),
     );
@@ -328,34 +351,34 @@ class OfficeFileOpener {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Text('اختر إجراء'),
-          content: const Text('لا يوجد تطبيق مثبت لفتح هذا الملف. اختر إجراء:'),
+          title: Text(S.of(context).chooseAction),
+          content: Text(S.of(context).noAppFoundPrompt),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context, 'open'),
-              child: const Row(
+              child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Icon(Icons.open_in_new, size: 20),
                   SizedBox(width: 8),
-                  Text('فتح مع تطبيق'),
+                  Text(S.of(context).openWithApp),
                 ],
               ),
             ),
             TextButton(
-              onPressed: () => Navigator.pop(context, 'share'),
-              child: const Row(
+              onPressed: () => Navigator.pop(context, S.of(context).share),
+              child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Icon(Icons.share, size: 20),
                   SizedBox(width: 8),
-                  Text('مشاركة'),
+                  Text(S.of(context).share),
                 ],
               ),
             ),
             TextButton(
               onPressed: () => Navigator.pop(context, null),
-              child: const Text('إلغاء'),
+              child: Text(S.of(context).cancel),
             ),
           ],
         );

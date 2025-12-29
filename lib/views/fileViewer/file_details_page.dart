@@ -133,11 +133,11 @@ class _FileDetailsPageState extends State<FileDetailsPage> {
         });
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('حدث خطأ في تحميل بيانات الملف: ${e.toString()}'),
+            content: Text(S.of(context).errorLoadingFileDetails(e.toString())),
             backgroundColor: Colors.red,
-            duration: Duration(seconds: 3),
+            duration: const Duration(seconds: 3),
             action: SnackBarAction(
-              label: 'إعادة المحاولة',
+              label: S.of(context).retry, // استخدمنا intl للزر
               textColor: Colors.white,
               onPressed: _loadFileDetails,
             ),
@@ -202,7 +202,7 @@ class _FileDetailsPageState extends State<FileDetailsPage> {
       backgroundColor: Color(0xFFF8FAFD),
       appBar: AppBar(
         title: Text(
-          'تفاصيل الملف',
+          S.of(context).fileDetails,
           style: TextStyle(
             color: Colors.white,
             fontWeight: FontWeight.w700,
@@ -333,10 +333,13 @@ class _FileDetailsPageState extends State<FileDetailsPage> {
             ),
             SizedBox(height: 12),
             Text(
-              'معرف الملف: ${widget.fileId}',
-              style: TextStyle(color: Color(0xFF6B7280)),
+              S
+                  .of(context)
+                  .fileIdLabel(widget.fileId), // استخدم intl مع المتغير
+              style: const TextStyle(color: Color(0xFF6B7280)),
               textAlign: TextAlign.center,
             ),
+
             SizedBox(height: 24),
             ElevatedButton.icon(
               onPressed: _loadFileDetails,
@@ -502,7 +505,7 @@ class _FileDetailsPageState extends State<FileDetailsPage> {
                 Icon(Icons.photo_filter_rounded, color: Colors.white, size: 14),
                 SizedBox(width: 4),
                 Text(
-                  'صورة',
+                  S.of(context).image,
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: 12,
@@ -618,7 +621,7 @@ class _FileDetailsPageState extends State<FileDetailsPage> {
           Icon(Icons.videocam_rounded, color: Colors.white, size: 50),
           SizedBox(height: 8),
           Text(
-            'فيديو',
+            S.of(context).video,
             style: TextStyle(
               color: Colors.white,
               fontSize: 16,
@@ -794,7 +797,7 @@ class _FileDetailsPageState extends State<FileDetailsPage> {
               ),
               SizedBox(width: 12),
               Text(
-                'معلومات الملف',
+                S.of(context).fileInfo,
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.w700,
@@ -876,7 +879,12 @@ class _FileDetailsPageState extends State<FileDetailsPage> {
                 _buildDetailItem(
                   'share',
                   '👥',
-                  'تمت المشاركة مع (${fileData!['sharedWithCount'] ?? fileData!['sharedWith'].length})',
+                  S
+                      .of(context)
+                      .sharedWithCount(
+                        fileData!['sharedWithCount'] ??
+                            fileData!['sharedWith'].length,
+                      ),
                   fileData!['sharedWith']
                           .map<String>((u) {
                             // ✅ محاولة الحصول على name أو email من user object
@@ -948,7 +956,7 @@ class _FileDetailsPageState extends State<FileDetailsPage> {
               ),
               SizedBox(width: 12),
               Text(
-                'معلومات الملف',
+                S.of(context).fileInfo,
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.w700,
@@ -965,7 +973,7 @@ class _FileDetailsPageState extends State<FileDetailsPage> {
             _buildDetailItem(
               'folder',
               '📁',
-              'التصنيف',
+              S.of(context).category,
               fileData!['category'] ?? '—',
             ),
 
@@ -1019,7 +1027,7 @@ class _FileDetailsPageState extends State<FileDetailsPage> {
             _buildDetailItem(
               'sharedBy',
               '🔗',
-              'شاركه',
+              S.of(context).sharedBy,
               fileData!['sharedBy']['name'] ??
                   fileData!['sharedBy']['email'] ??
                   '—',

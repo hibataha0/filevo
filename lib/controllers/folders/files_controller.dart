@@ -9,8 +9,7 @@ class FileController extends ChangeNotifier {
   bool _isLoading = false;
   String? _errorMessage;
   String? _successMessage;
-    List<Map<String, dynamic>> _trashFiles = [];
-
+  List<Map<String, dynamic>> _trashFiles = [];
   List<Map<String, dynamic>> _uploadedFiles = [];
   Map<String, dynamic>? _fileDetails;
   bool _isDisposed = false;
@@ -18,8 +17,8 @@ class FileController extends ChangeNotifier {
   Map<String, dynamic> _pagination = {};
   int _currentPage = 1;
   bool _hasMore = true;
-  
-  // ✅ إحصائيات التصنيفات
+
+  // ✅ Category statistics
   Map<String, Map<String, dynamic>> _categoriesStats = {};
 
   // Getters
@@ -31,11 +30,11 @@ class FileController extends ChangeNotifier {
   Map<String, dynamic>? get fileDetails => _fileDetails;
   List<Map<String, dynamic>> get starredFiles => _starredFiles;
   Map<String, dynamic> get pagination => _pagination;
-  
-  // ✅ Getter لإحصائيات التصنيفات
+
+  // ✅ Getter for category statistics
   Map<String, Map<String, dynamic>> get categoriesStats => _categoriesStats;
-  
-  // ✅ Getter لإحصائيات تصنيف معين
+
+  // ✅ Getter for specific category statistics
   Map<String, dynamic>? getCategoryStats(String category) {
     return _categoriesStats[category.toLowerCase()];
   }
@@ -79,7 +78,7 @@ class FileController extends ChangeNotifier {
     _safeNotifyListeners();
   }
 
-  /// رفع ملف واحد
+  /// Upload single file
   Future<bool> uploadSingleFile({
     required File file,
     required String token,
@@ -100,31 +99,31 @@ class FileController extends ChangeNotifier {
       if (result['file'] != null) {
         _uploadedFiles.add(Map<String, dynamic>.from(result['file']));
         _safeNotifyListeners();
-        setSuccess(result['message'] ?? 'تم رفع الملف بنجاح');
+        setSuccess(result['message'] ?? 'File uploaded successfully');
         return true;
       } else {
         final viruses =
             (result['viruses'] as List?)?.map((e) => e.toString()).toList() ??
-                [];
+            [];
         if (result['virusDetected'] == true || viruses.isNotEmpty) {
           final virusMsg = viruses.isNotEmpty
-              ? 'تم اكتشاف فيروس في الملف (${viruses.join(", ")})'
-              : result['message'] ?? 'تم رفض الملف بسبب فحص الفيروسات';
+              ? 'Virus detected in file (${viruses.join(", ")})'
+              : result['message'] ?? 'File rejected due to virus scan';
           setError(virusMsg);
         } else {
-          setError(result['message'] ?? 'فشل في رفع الملف');
+          setError(result['message'] ?? 'Failed to upload file');
         }
         return false;
       }
     } catch (e) {
-      setError('خطأ في رفع الملف: ${e.toString()}');
+      setError('Error uploading file: ${e.toString()}');
       return false;
     } finally {
       setLoading(false);
     }
   }
 
-  /// رفع ملفات متعددة
+  /// Upload multiple files
   Future<Map<String, dynamic>> uploadMultipleFiles({
     required List<File> files,
     required String token,
@@ -147,9 +146,11 @@ class FileController extends ChangeNotifier {
           : <Map<String, dynamic>>[];
       final errorsRaw = (result['errors'] as List?) ?? [];
       final errors = errorsRaw
-          .map((e) => e is Map<String, dynamic>
-              ? Map<String, dynamic>.from(e)
-              : {'error': e.toString()})
+          .map(
+            (e) => e is Map<String, dynamic>
+                ? Map<String, dynamic>.from(e)
+                : {'error': e.toString()},
+          )
           .toList();
 
       if (uploadedList.isNotEmpty) {
@@ -162,8 +163,9 @@ class FileController extends ChangeNotifier {
 
       if (uploadedCount > 0) {
         final successText = errorsCount > 0
-            ? 'تم رفع $uploadedCount ملف، تم رفض $errorsCount ملف بعد الفحص'
-            : (result['message'] ?? 'تم رفع $uploadedCount ملف بنجاح');
+            ? '$uploadedCount file(s) uploaded, $errorsCount file(s) rejected after scan'
+            : (result['message'] ??
+                  '$uploadedCount file(s) uploaded successfully');
         setSuccess(successText);
       }
 
@@ -175,23 +177,23 @@ class FileController extends ChangeNotifier {
               .take(3)
               .join(', ');
           final errorText = errorsCount == 1
-              ? 'تم رفض ملف بعد فحص الفيروسات: $errorNames'
-              : 'تم رفض $errorsCount ملفات بعد الفحص: $errorNames';
+              ? 'File rejected after scan: $errorNames'
+              : '$errorsCount file(s) rejected after scan: $errorNames';
           setError(errorText);
         } else if (uploadedCount == 0) {
-          setError(result['message'] ?? 'فشل في رفع الملفات');
+          setError(result['message'] ?? 'Failed to upload file');
         }
       }
       return result;
     } catch (e) {
-      setError('خطأ في رفع الملفات: ${e.toString()}');
+      setError('Error uploading file: ${e.toString()}');
       return {'success': false, 'message': e.toString()};
     } finally {
       setLoading(false);
     }
   }
 
-  /// ✅ جلب جميع الملفات بدون parentFolder (مع pagination و category filter)
+  /// ✅ Get all files without parentFolder (with pagination and category filter)
   Future<Map<String, dynamic>?> getAllFiles({
     required String token,
     int page = 1,
@@ -219,10 +221,10 @@ class FileController extends ChangeNotifier {
         _hasMore = result['pagination']?['hasNext'] ?? false;
         _safeNotifyListeners();
       }
-      
+
       return result;
     } catch (e) {
-      setError('خطأ في جلب الملفات: ${e.toString()}');
+      setError('Error fetching files: ${e.toString()}');
       _uploadedFiles = [];
       _pagination = {};
       _safeNotifyListeners();
@@ -248,18 +250,17 @@ class FileController extends ChangeNotifier {
         token: token,
       );
 
-      setSuccess(result['message'] ?? 'تم إلغاء مشاركة الملف بنجاح');
+      setSuccess(result['message'] ?? 'File sharing cancelled successfully');
       return true;
     } catch (e) {
-      setError('فشل في إلغاء مشاركة الملف: ${e.toString()}');
+      setError('Failed to unshare file: ${e.toString()}');
       return false;
     } finally {
       setLoading(false);
     }
   }
 
-
-  /// جلب الملفات حسب التصنيف
+  /// Get files by category
   Future<List<Map<String, dynamic>>> getFilesByCategory({
     required String category,
     required String token,
@@ -278,7 +279,7 @@ class FileController extends ChangeNotifier {
       notifyListeners();
       return _uploadedFiles;
     } catch (e) {
-      setError('خطأ في جلب الملفات حسب التصنيف: ${e.toString()}');
+      setError('Error fetching files by category: ${e.toString()}');
       _uploadedFiles = [];
       notifyListeners();
       return [];
@@ -287,28 +288,28 @@ class FileController extends ChangeNotifier {
     }
   }
 
-  /// جلب إحصائيات التصنيفات (عدد الملفات والحجم لكل تصنيف)
+  /// Get category statistics (file count and size per category)
   Future<Map<String, dynamic>?> getCategoriesStats({
     required String token,
   }) async {
-    // ✅ لا نضبط loading لأن هذا استدعاء خلفي ولا نريد أن يؤثر على UI
+    // ✅ Don't set loading because this is a background call that shouldn't affect UI
     try {
       final result = await _fileService.getCategoriesStats(token: token);
-      
-      // ✅ حفظ إحصائيات التصنيفات في Controller
+
+      // ✅ Save category statistics in Controller
       if (result != null && result['categories'] != null) {
         final statsList = result['categories'] as List;
-        
-        // ✅ تحديث _categoriesStats
+
+        // ✅ Update _categoriesStats
         _categoriesStats.clear();
         for (var stat in statsList) {
           final categoryName = (stat['category'] as String).toLowerCase();
           dynamic filesCountValue = stat['filesCount'];
           dynamic totalSizeValue = stat['totalSize'];
-          
+
           int filesCount = 0;
           int totalSize = 0;
-          
+
           if (filesCountValue != null) {
             if (filesCountValue is int) {
               filesCount = filesCountValue;
@@ -318,7 +319,7 @@ class FileController extends ChangeNotifier {
               filesCount = int.tryParse(filesCountValue) ?? 0;
             }
           }
-          
+
           if (totalSizeValue != null) {
             if (totalSizeValue is int) {
               totalSize = totalSizeValue;
@@ -328,47 +329,47 @@ class FileController extends ChangeNotifier {
               totalSize = int.tryParse(totalSizeValue) ?? 0;
             }
           }
-          
+
           _categoriesStats[categoryName] = {
             'filesCount': filesCount,
             'totalSize': totalSize,
             'category': stat['category'] as String,
           };
         }
-        
-        // ✅ إشعار الـ listeners بالتحديث
+
+        // ✅ Notify listeners of the update
         _safeNotifyListeners();
       }
-      
+
       return result;
     } catch (e) {
-      // ✅ لا نضبط error لأن هذا استدعاء اختياري - سنستخدم القيم الافتراضية
+      // ✅ Don't set error because this is an optional call - we'll use default values
       return null;
     }
   }
 
-  /// 📊 جلب إحصائيات التصنيفات في الجذر فقط (عدد الملفات والحجم لكل تصنيف)
+  /// 📊 Get category statistics only at root (file count and size per category)
   Future<Map<String, dynamic>?> getRootCategoriesStats({
     required String token,
   }) async {
-    // ✅ لا نضبط loading لأن هذا استدعاء خلفي ولا نريد أن يؤثر على UI
+    // ✅ Don't set loading because this is a background call that shouldn't affect UI
     try {
       final result = await _fileService.getRootCategoriesStats(token: token);
-      
-      // ✅ حفظ إحصائيات التصنيفات في Controller
+
+      // ✅ Save category statistics in Controller
       if (result != null && result['categories'] != null) {
         final statsList = result['categories'] as List;
-        
-        // ✅ تحديث _categoriesStats
+
+        // ✅ Update _categoriesStats
         _categoriesStats.clear();
         for (var stat in statsList) {
           final categoryName = (stat['category'] as String).toLowerCase();
           dynamic filesCountValue = stat['filesCount'];
           dynamic totalSizeValue = stat['totalSize'];
-          
+
           int filesCount = 0;
           int totalSize = 0;
-          
+
           if (filesCountValue != null) {
             if (filesCountValue is int) {
               filesCount = filesCountValue;
@@ -378,7 +379,7 @@ class FileController extends ChangeNotifier {
               filesCount = int.tryParse(filesCountValue) ?? 0;
             }
           }
-          
+
           if (totalSizeValue != null) {
             if (totalSizeValue is int) {
               totalSize = totalSizeValue;
@@ -388,18 +389,18 @@ class FileController extends ChangeNotifier {
               totalSize = int.tryParse(totalSizeValue) ?? 0;
             }
           }
-          
+
           _categoriesStats[categoryName] = {
             'filesCount': filesCount,
             'totalSize': totalSize,
             'category': stat['category'] as String,
           };
         }
-        
-        // ✅ إشعار الـ listeners بالتحديث
+
+        // ✅ Notify listeners of the update
         _safeNotifyListeners();
       }
-      
+
       return result;
     } catch (e) {
       print('⚠️ Error fetching root categories stats: $e');
@@ -407,7 +408,7 @@ class FileController extends ChangeNotifier {
     }
   }
 
-  /// جلب تفاصيل ملف واحد
+  /// Get single file details
   Future<Map<String, dynamic>?> getFileDetails({
     required String fileId,
     required String token,
@@ -416,18 +417,21 @@ class FileController extends ChangeNotifier {
     setError(null);
     clearFileDetails();
     try {
-      final data = await _fileService.getFileDetails(fileId: fileId, token: token);
+      final data = await _fileService.getFileDetails(
+        fileId: fileId,
+        token: token,
+      );
       if (data != null) {
         _fileDetails = data;
         _safeNotifyListeners();
         print('Fetched file details: $_fileDetails');
         return _fileDetails;
       } else {
-        setError('فشل في جلب تفاصيل الملف');
+        setError('Failed to fetch file details');
         return null;
       }
     } catch (e) {
-      setError('خطأ في جلب تفاصيل الملف: ${e.toString()}');
+      setError('Error fetching file details: ${e.toString()}');
       return null;
     } finally {
       setLoading(false);
@@ -442,25 +446,31 @@ class FileController extends ChangeNotifier {
     setError(null);
     clearFileDetails();
     try {
-      final data = await _fileService.getSharedFileDetailsInRoom(fileId: fileId, token: token);
+      final data = await _fileService.getSharedFileDetailsInRoom(
+        fileId: fileId,
+        token: token,
+      );
       if (data != null) {
         _fileDetails = data;
         _safeNotifyListeners();
         return _fileDetails;
       } else {
-        setError('فشل في جلب تفاصيل الملف المشترك في الروم');
+        setError('Failed to fetch shared file details in room');
         return null;
       }
     } catch (e) {
-      setError('خطأ في جلب تفاصيل الملف المشترك في الروم: ${e.toString()}');
+      setError('Error fetching shared file details in room: ${e.toString()}');
       return null;
     } finally {
       setLoading(false);
     }
   }
 
-  /// حذف ملف
-  Future<bool> deleteFile({required String fileId, required String token}) async {
+  /// Delete file
+  Future<bool> deleteFile({
+    required String fileId,
+    required String token,
+  }) async {
     setLoading(true);
     setError(null);
     setSuccess(null);
@@ -469,21 +479,21 @@ class FileController extends ChangeNotifier {
       if (result['success'] == true) {
         _uploadedFiles.removeWhere((file) => file['_id'] == fileId);
         _safeNotifyListeners();
-        setSuccess(result['message'] ?? 'تم حذف الملف بنجاح');
+        setSuccess(result['message'] ?? 'File deleted successfully');
         return true;
       } else {
-        setError(result['message'] ?? 'فشل في حذف الملف');
+        setError(result['message'] ?? 'Failed to delete file');
         return false;
       }
     } catch (e) {
-      setError('خطأ في حذف الملف: ${e.toString()}');
+      setError('Error deleting file: ${e.toString()}');
       return false;
     } finally {
       setLoading(false);
     }
   }
 
-  /// تحديث بيانات ملف
+  /// Update file data
   Future<bool> updateFile({
     required String fileId,
     required String token,
@@ -512,22 +522,22 @@ class FileController extends ChangeNotifier {
           if (index != -1) _uploadedFiles[index] = updatedFile;
           _fileDetails = updatedFile;
         }
-        setSuccess(result['message'] ?? 'تم تحديث الملف بنجاح');
+        setSuccess(result['message'] ?? 'File updated successfully');
         _safeNotifyListeners();
         return true;
       } else {
-        setError(result['message'] ?? 'فشل في تحديث الملف');
+        setError(result['message'] ?? 'Failed to update file');
         return false;
       }
     } catch (e) {
-      setError('خطأ في تحديث الملف: ${e.toString()}');
+      setError('Error updating file: ${e.toString()}');
       return false;
     } finally {
       setLoading(false);
     }
   }
 
-  /// 📝 تحديث محتوى الملف (استبدال الملف القديم بملف جديد)
+  /// 📝 Update file content (replace old file with new file)
   Future<bool> updateFileContent({
     required String fileId,
     required File file,
@@ -552,26 +562,26 @@ class FileController extends ChangeNotifier {
           if (index != -1) _uploadedFiles[index] = updatedFile;
           _fileDetails = updatedFile;
         }
-        setSuccess(result['message'] ?? 'تم تحديث محتوى الملف بنجاح');
+        setSuccess(result['message'] ?? 'File content updated successfully');
         _safeNotifyListeners();
         return true;
       } else {
-        setError(result['message'] ?? 'فشل في تحديث محتوى الملف');
+        setError(result['message'] ?? 'Failed to update file content');
         return false;
       }
     } catch (e) {
-      setError('خطأ في تحديث محتوى الملف: ${e.toString()}');
+      setError('Error updating file content: ${e.toString()}');
       return false;
     } finally {
       setLoading(false);
     }
   }
 
-  /// 🔄 نقل ملف من مجلد إلى آخر
+  /// 🔄 Move file from one folder to another
   Future<bool> moveFile({
     required String fileId,
     required String token,
-    String? targetFolderId, // null للجذر أو folderId للمجلد
+    String? targetFolderId, // null for root or folderId for folder
   }) async {
     setLoading(true);
     setError(null);
@@ -588,136 +598,154 @@ class FileController extends ChangeNotifier {
           final movedFile = Map<String, dynamic>.from(result['file']);
           final newParentFolderId = movedFile['parentFolderId'];
           final oldParentFolderId = result['fromFolder'];
-          
-          // ✅ التحقق من الملف القديم في _uploadedFiles
-          final index = _uploadedFiles.indexWhere((f) => f['_id']?.toString() == fileId.toString());
+
+          // ✅ Check old file in _uploadedFiles
+          final index = _uploadedFiles.indexWhere(
+            (f) => f['_id']?.toString() == fileId.toString(),
+          );
           final oldFile = index != -1 ? _uploadedFiles[index] : null;
-          
-          // ✅ التحقق من الموقع القديم: إذا كان oldParentFolderId null أو كان الملف في _uploadedFiles بدون parentFolderId
-          final wasInRoot = oldParentFolderId == null || 
-                           oldParentFolderId == 'null' || 
-                           oldParentFolderId == '' ||
-                           (oldFile != null && (oldFile['parentFolderId'] == null || oldFile['parentFolderId'] == 'null' || oldFile['parentFolderId'] == ''));
-          
-          // ✅ التحقق من الموقع الجديد
-          final isNowInRoot = newParentFolderId == null || 
-                             newParentFolderId == 'null' || 
-                             newParentFolderId == '' ||
-                             newParentFolderId.toString().isEmpty;
-          
-          // ✅ إذا كان الملف في الجذر ونُقل لمجلد، يجب إزالته من _uploadedFiles
+
+          // ✅ Check old location: if oldParentFolderId is null or file was in _uploadedFiles without parentFolderId
+          final wasInRoot =
+              oldParentFolderId == null ||
+              oldParentFolderId == 'null' ||
+              oldParentFolderId == '' ||
+              (oldFile != null &&
+                  (oldFile['parentFolderId'] == null ||
+                      oldFile['parentFolderId'] == 'null' ||
+                      oldFile['parentFolderId'] == ''));
+
+          // ✅ Check new location
+          final isNowInRoot =
+              newParentFolderId == null ||
+              newParentFolderId == 'null' ||
+              newParentFolderId == '' ||
+              newParentFolderId.toString().isEmpty;
+
+          // ✅ If file was in root and moved to folder, remove from _uploadedFiles
           if (wasInRoot && !isNowInRoot) {
-            // ✅ إزالة الملف من _uploadedFiles لأنه لم يعد في الجذر
+            // ✅ Remove file from _uploadedFiles because it's no longer in root
             if (index != -1) {
               _uploadedFiles.removeAt(index);
-              print('✅ تم إزالة الملف من _uploadedFiles بعد نقله من الجذر لمجلد');
+              print(
+                '✅ File removed from _uploadedFiles after moving from root to folder',
+              );
             }
           }
-          // ✅ إذا كان الملف في مجلد ونُقل للجذر، يجب إضافته لـ _uploadedFiles
+          // ✅ If file was in folder and moved to root, add to _uploadedFiles
           else if (!wasInRoot && isNowInRoot) {
-            // ✅ إضافة الملف لـ _uploadedFiles لأنه الآن في الجذر
+            // ✅ Add file to _uploadedFiles because it's now in root
             if (index == -1) {
               _uploadedFiles.add(movedFile);
-              print('✅ تم إضافة الملف لـ _uploadedFiles بعد نقله للجذر');
+              print('✅ File added to _uploadedFiles after moving to root');
             } else {
               _uploadedFiles[index] = movedFile;
             }
           }
-          // ✅ إذا كان في مجلد ونُقل لمجلد آخر، أو في الجذر ونُقل للجذر، فقط تحديث البيانات
+          // ✅ If in folder and moved to another folder, or in root and moved to root, just update data
           else if (index != -1) {
             _uploadedFiles[index] = movedFile;
           }
-          
-          // ✅ تحديث تفاصيل الملف إذا كان هو الملف الحالي
-          if (_fileDetails != null && _fileDetails!['_id']?.toString() == fileId.toString()) {
+
+          // ✅ Update file details if it's the current file
+          if (_fileDetails != null &&
+              _fileDetails!['_id']?.toString() == fileId.toString()) {
             _fileDetails = movedFile;
           }
-          
-          // ✅ إذا كان الملف في المفضلة، قم بتحديثه هناك أيضاً
-          final starredIndex = _starredFiles.indexWhere((f) => f['_id']?.toString() == fileId.toString());
+
+          // ✅ If file is in starred, update it there too
+          final starredIndex = _starredFiles.indexWhere(
+            (f) => f['_id']?.toString() == fileId.toString(),
+          );
           if (starredIndex != -1) {
             _starredFiles[starredIndex] = movedFile;
           }
         }
-        
-        // ✅ إعادة جلب إحصائيات التصنيفات بعد نقل الملف
+
+        // ✅ Re-fetch category statistics after moving file
         try {
           await getRootCategoriesStats(token: token);
-          print('✅ تم تحديث إحصائيات التصنيفات في الجذر بعد نقل الملف');
+          print('✅ Root category statistics updated after moving file');
         } catch (e) {
-          // ✅ في حالة الخطأ، نستمر بدون إيقاف العملية
+          // ✅ In case of error, continue without stopping the operation
           print('⚠️ Error refreshing categories stats: $e');
         }
-        
-        setSuccess(result['message'] ?? 'تم نقل الملف بنجاح');
+
+        setSuccess(result['message'] ?? 'File moved successfully');
         _safeNotifyListeners();
         return true;
       } else {
-        setError(result['message'] ?? 'فشل في نقل الملف');
+        setError(result['message'] ?? 'Failed to move file');
         return false;
       }
     } catch (e) {
-      setError('خطأ في نقل الملف: ${e.toString()}');
+      setError('Error moving file: ${e.toString()}');
       return false;
     } finally {
       setLoading(false);
     }
   }
 
-  Future<Map<String, dynamic>> toggleStar({required String fileId, required String token}) async {
-    // ✅ لا نستخدم setLoading لأن هذا تحديث بسيط لا يحتاج refresh للصفحة كلها
+  Future<Map<String, dynamic>> toggleStar({
+    required String fileId,
+    required String token,
+  }) async {
+    // ✅ Don't use setLoading because this is a simple update that doesn't need full page refresh
     setError(null);
 
     try {
-      final result = await _fileService.toggleStarFile(fileId: fileId, token: token);
-      
+      final result = await _fileService.toggleStarFile(
+        fileId: fileId,
+        token: token,
+      );
+
       if (result['success'] == true && result['file'] != null) {
         final updatedFile = Map<String, dynamic>.from(result['file']);
         final isStarred = updatedFile['isStarred'] ?? false;
-        
-        // ✅ تحديث قائمة الملفات المرفوعة
-        final uploadedIndex = _uploadedFiles.indexWhere((f) => f['_id'] == fileId);
+
+        // ✅ Update uploaded files list
+        final uploadedIndex = _uploadedFiles.indexWhere(
+          (f) => f['_id'] == fileId,
+        );
         if (uploadedIndex != -1) {
           _uploadedFiles[uploadedIndex] = updatedFile;
         }
-        
-        // ✅ تحديث قائمة المفضلة فوراً
-        final existingIndex = _starredFiles.indexWhere((f) => f['_id'] == fileId);
-        
+
+        // ✅ Update starred list immediately
+        final existingIndex = _starredFiles.indexWhere(
+          (f) => f['_id'] == fileId,
+        );
+
         if (isStarred) {
-          // ✅ إذا تم إضافة للمفضلة، أضفه للقائمة إذا لم يكن موجوداً
+          // ✅ If added to starred, add to list if not exists
           if (existingIndex == -1) {
-            _starredFiles.insert(0, updatedFile); // ✅ إضافة في البداية
+            _starredFiles.insert(0, updatedFile); // ✅ Add at the beginning
           } else {
-            // ✅ تحديث الملف الموجود
+            // ✅ Update existing file
             _starredFiles[existingIndex] = updatedFile;
           }
         } else {
-          // ✅ إذا تم إزالته من المفضلة، احذفه من القائمة
+          // ✅ If removed from starred, delete from list
           if (existingIndex != -1) {
             _starredFiles.removeAt(existingIndex);
           }
         }
-        
+
         _safeNotifyListeners();
-        return {
-          'success': true,
-          'isStarred': isStarred,
-          'file': updatedFile,
-        };
+        return {'success': true, 'isStarred': isStarred, 'file': updatedFile};
       }
-      
-      final errorMsg = result['message'] ?? 'فشل في تحديث حالة النجمة';
+
+      final errorMsg = result['message'] ?? 'Failed to update starred status';
       setError(errorMsg);
       return {'success': false, 'isStarred': false, 'message': errorMsg};
     } catch (e) {
-      final errorMsg = 'خطأ في تحديث حالة النجمة: ${e.toString()}';
+      final errorMsg = 'Error updating starred status: ${e.toString()}';
       setError(errorMsg);
       return {'success': false, 'isStarred': false, 'message': errorMsg};
     }
   }
 
-  /// جلب الملفات المفضلة
+  /// Get starred files
   Future<void> getStarredFiles({
     required String token,
     int page = 1,
@@ -744,7 +772,9 @@ class FileController extends ChangeNotifier {
       if (result['success'] == true) {
         final List<Map<String, dynamic>> newFiles =
             List<Map<String, dynamic>>.from(result['files'] ?? []);
-        final pagination = Map<String, dynamic>.from(result['pagination'] ?? {});
+        final pagination = Map<String, dynamic>.from(
+          result['pagination'] ?? {},
+        );
         _pagination = pagination;
         final totalPages = pagination['totalPages'] ?? 1;
         _hasMore = _currentPage < totalPages;
@@ -757,17 +787,17 @@ class FileController extends ChangeNotifier {
 
         _safeNotifyListeners();
       } else {
-        setError(result['message'] ?? 'فشل في جلب الملفات المفضلة');
+        setError(result['message'] ?? 'Failed to fetch starred files');
       }
     } catch (e) {
-      setError('خطأ في جلب الملفات المفضلة: ${e.toString()}');
+      setError('Error fetching starred files: ${e.toString()}');
     } finally {
       setLoading(false);
     }
   }
 
-/// جلب الملفات المحذوفة
- /// جلب ملفات المهملات
+  /// Get deleted files
+  /// Get trash files
   Future<void> getTrashFiles({
     required String token,
     int page = 1,
@@ -791,13 +821,15 @@ class FileController extends ChangeNotifier {
         page: _currentPage,
         limit: limit,
       );
-      
+
       print('Fetched trash files result: $result');
-      
+
       if (result['success'] == true) {
         final List<Map<String, dynamic>> newFiles =
             List<Map<String, dynamic>>.from(result['files'] ?? []);
-        final pagination = Map<String, dynamic>.from(result['pagination'] ?? {});
+        final pagination = Map<String, dynamic>.from(
+          result['pagination'] ?? {},
+        );
         _pagination = pagination;
 
         final totalPages = pagination['totalPages'] ?? 1;
@@ -812,14 +844,14 @@ class FileController extends ChangeNotifier {
         setSuccess(result['message']);
         _safeNotifyListeners();
       } else {
-        setError(result['message'] ?? 'فشل في جلب ملفات المهملات');
+        setError(result['message'] ?? 'Failed to fetch trash files');
         if (!loadMore) {
           _trashFiles = [];
           _safeNotifyListeners();
         }
       }
     } catch (e) {
-      setError('خطأ في جلب ملفات المهملات: ${e.toString()}');
+      setError('Error fetching trash files: ${e.toString()}');
       if (!loadMore) {
         _trashFiles = [];
         _safeNotifyListeners();
@@ -829,10 +861,7 @@ class FileController extends ChangeNotifier {
     }
   }
 
-
-
-
- /// استعادة ملفات من المهملات
+  /// Restore files from trash
   Future<bool> restoreFiles({
     required List<String> fileIds,
     required String token,
@@ -840,7 +869,7 @@ class FileController extends ChangeNotifier {
     setLoading(true);
     setError(null);
     setSuccess(null);
-    
+
     try {
       final result = await FileService.restoreFiles(
         fileIds: fileIds,
@@ -849,24 +878,24 @@ class FileController extends ChangeNotifier {
       print('Restore files result: $result');
 
       if (result['success'] == true) {
-        // إزالة الملفات المستعادة من القائمة المحلية
+        // Remove restored files from local list
         _trashFiles.removeWhere((file) => fileIds.contains(file['_id']));
-        setSuccess(result['message'] ?? 'تم استعادة الملفات بنجاح');
+        setSuccess(result['message'] ?? 'Files restored successfully');
         _safeNotifyListeners();
         return true;
       } else {
-        setError(result['message'] ?? 'فشل في استعادة الملفات');
+        setError(result['message'] ?? 'Failed to restore files');
         return false;
       }
     } catch (e) {
-      setError('خطأ في استعادة الملفات: ${e.toString()}');
+      setError('Error restoring files: ${e.toString()}');
       return false;
     } finally {
       setLoading(false);
     }
   }
 
-  /// حذف نهائي لملفات
+  /// Permanent file deletion
   Future<bool> permanentDelete({
     required List<String> fileIds,
     required String token,
@@ -874,7 +903,7 @@ class FileController extends ChangeNotifier {
     setLoading(true);
     setError(null);
     setSuccess(null);
-    
+
     try {
       final result = await FileService.permanentDelete(
         fileIds: fileIds,
@@ -882,21 +911,22 @@ class FileController extends ChangeNotifier {
       );
 
       if (result['success'] == true) {
-        // إزالة الملفات المحذوفة من القائمة المحلية
+        // Remove deleted files from local list
         _trashFiles.removeWhere((file) => fileIds.contains(file['_id']));
-        setSuccess(result['message'] ?? 'تم الحذف النهائي للملفات بنجاح');
+        setSuccess(
+          result['message'] ?? 'Files permanently deleted successfully',
+        );
         _safeNotifyListeners();
         return true;
       } else {
-        setError(result['message'] ?? 'فشل في الحذف النهائي');
+        setError(result['message'] ?? 'Failed to permanently delete files');
         return false;
       }
     } catch (e) {
-      setError('خطأ في الحذف النهائي: ${e.toString()}');
+      setError('Error permanently deleting files: ${e.toString()}');
       return false;
     } finally {
       setLoading(false);
     }
   }
-
 }

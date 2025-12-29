@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:filevo/generated/l10n.dart';
 import 'package:flutter/material.dart';
 import 'package:video_editor/video_editor.dart';
 import 'package:video_player/video_player.dart';
@@ -31,7 +32,7 @@ class _VideoEditorPageState extends State<VideoEditorPage> {
     try {
       if (!await widget.videoFile.exists()) {
         setState(() {
-          _errorMessage = 'الملف غير موجود';
+          _errorMessage = S.of(context).fileNotFound;
           _isLoading = false;
         });
         return;
@@ -75,7 +76,7 @@ class _VideoEditorPageState extends State<VideoEditorPage> {
       // TODO: إضافة FFmpeg package لتنفيذ الأمر
       // في الوقت الحالي، سنعيد الملف الأصلي مع معلومات Trim
       final outputFile = widget.videoFile;
-      
+
       // ✅ يمكن استخدام VideoFFmpegVideoEditorConfig للحصول على أمر FFmpeg
       // final config = VideoFFmpegVideoEditorConfig(...);
 
@@ -147,7 +148,9 @@ class _VideoEditorPageState extends State<VideoEditorPage> {
       );
     }
 
-    if (_errorMessage != null || _controller == null || !_controller!.initialized) {
+    if (_errorMessage != null ||
+        _controller == null ||
+        !_controller!.initialized) {
       return Scaffold(
         backgroundColor: Colors.black,
         body: Center(
@@ -164,7 +167,7 @@ class _VideoEditorPageState extends State<VideoEditorPage> {
               const SizedBox(height: 16),
               ElevatedButton(
                 onPressed: () => Navigator.pop(context),
-                child: const Text('إلغاء'),
+                child: Text(S.of(context).cancel),
               ),
             ],
           ),
@@ -181,19 +184,13 @@ class _VideoEditorPageState extends State<VideoEditorPage> {
             _buildTopToolbar(),
 
             // ✅ معاينة الفيديو
-            Expanded(
-              flex: 3,
-              child: _buildVideoPreview(),
-            ),
+            Expanded(flex: 3, child: _buildVideoPreview()),
 
             // ✅ خيارات التحرير (Trim / Cover)
             _buildEditModeSelector(),
 
             // ✅ Timeline مع Trim
-            Expanded(
-              flex: 2,
-              child: _buildTimeline(),
-            ),
+            Expanded(flex: 2, child: _buildTimeline()),
           ],
         ),
       ),
@@ -247,7 +244,7 @@ class _VideoEditorPageState extends State<VideoEditorPage> {
                 onPressed: () {
                   // TODO: فتح الملفات
                 },
-                tooltip: 'الملفات',
+                tooltip: S.of(context).files,
               ),
             ],
           ),
@@ -301,9 +298,7 @@ class _VideoEditorPageState extends State<VideoEditorPage> {
       padding: const EdgeInsets.symmetric(vertical: 12),
       decoration: BoxDecoration(
         color: Colors.grey[900],
-        border: Border(
-          top: BorderSide(color: Colors.grey[800]!, width: 1),
-        ),
+        border: Border(top: BorderSide(color: Colors.grey[800]!, width: 1)),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -380,7 +375,9 @@ class _VideoEditorPageState extends State<VideoEditorPage> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  _formatDuration(_controller?.trimmedDuration ?? Duration.zero),
+                  _formatDuration(
+                    _controller?.trimmedDuration ?? Duration.zero,
+                  ),
                   style: const TextStyle(
                     color: Colors.white,
                     fontSize: 14,
@@ -389,19 +386,14 @@ class _VideoEditorPageState extends State<VideoEditorPage> {
                 ),
                 Text(
                   '${_formatDuration(_controller?.startTrim ?? Duration.zero)} / ${_formatDuration(_controller?.endTrim ?? Duration.zero)}',
-                  style: const TextStyle(
-                    color: Colors.white70,
-                    fontSize: 12,
-                  ),
+                  style: const TextStyle(color: Colors.white70, fontSize: 12),
                 ),
               ],
             ),
           ),
           const SizedBox(height: 12),
           // ✅ Timeline مخصص باستخدام VideoEditorController
-          Expanded(
-            child: _buildCustomTimeline(),
-          ),
+          Expanded(child: _buildCustomTimeline()),
           // ✅ علامات الوقت
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -411,10 +403,7 @@ class _VideoEditorPageState extends State<VideoEditorPage> {
                 9,
                 (index) => Text(
                   '${index * 3}s',
-                  style: TextStyle(
-                    color: Colors.grey[500],
-                    fontSize: 10,
-                  ),
+                  style: TextStyle(color: Colors.grey[500], fontSize: 10),
                 ),
               ),
             ),
@@ -439,13 +428,11 @@ class _VideoEditorPageState extends State<VideoEditorPage> {
                     _controller!.endTrim.inMilliseconds.toDouble(),
                   ),
                   min: 0,
-                  max: _controller!.video.value.duration.inMilliseconds.toDouble(),
+                  max: _controller!.video.value.duration.inMilliseconds
+                      .toDouble(),
                   onChanged: (values) {
                     setState(() {
-                      _controller?.updateTrim(
-                        values.start,
-                        values.end,
-                      );
+                      _controller?.updateTrim(values.start, values.end);
                     });
                   },
                   activeColor: Colors.yellow,
@@ -454,7 +441,7 @@ class _VideoEditorPageState extends State<VideoEditorPage> {
               : const SizedBox(),
           const SizedBox(height: 8),
           // ✅ معلومات الوقت
-            Row(
+          Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(

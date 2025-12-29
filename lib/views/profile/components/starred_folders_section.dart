@@ -28,9 +28,10 @@ class _StarredFoldersSectionState extends State<StarredFoldersSection> {
   }
 
   String _formatBytes(int bytes) {
-    if (bytes < 1024) return '$bytes بايت';
-    if (bytes < 1048576) return '${(bytes / 1024).toStringAsFixed(1)} ك.ب';
-    return '${(bytes / 1048576).toStringAsFixed(1)} م.ب';
+    if (bytes < 1024) return '$bytes ${S.of(context).unitBytes}';
+    if (bytes < 1048576)
+      return '${(bytes / 1024).toStringAsFixed(1)} ${S.of(context).unitKB}';
+    return '${(bytes / 1048576).toStringAsFixed(1)} ${S.of(context).unitMB}';
   }
 
   // الانتقال لصفحة المجلدات المفضلة
@@ -64,8 +65,8 @@ class _StarredFoldersSectionState extends State<StarredFoldersSection> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          const Text(
-            "المجلدات المفضلة",
+          Text(
+            S.of(context).starredFolders,
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w600,
@@ -75,8 +76,8 @@ class _StarredFoldersSectionState extends State<StarredFoldersSection> {
           if (starred.isNotEmpty)
             GestureDetector(
               onTap: () => _navigateToAllStarredFolders(context),
-              child: const Text(
-                "عرض الكل",
+              child: Text(
+                S.of(context).viewAll,
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w500,
@@ -132,7 +133,7 @@ class _StarredFoldersSectionState extends State<StarredFoldersSection> {
           Icon(Icons.star_border_rounded, size: 40, color: Colors.grey[400]),
           const SizedBox(height: 8),
           Text(
-            'لا توجد مجلدات مفضلة',
+            S.of(context).noFavoriteFolders,
             style: TextStyle(color: Colors.grey[600], fontSize: 14),
           ),
         ],
@@ -142,7 +143,7 @@ class _StarredFoldersSectionState extends State<StarredFoldersSection> {
 
   // عنصر مفضلة فردي
   Widget _buildFavoriteItem(Map<String, dynamic> folder) {
-    final name = folder['name'] as String? ?? 'بدون اسم';
+    final name = folder['name'] as String? ?? S.of(context).unnamedfile;
     final fileCount = folder['filesCount'] ?? 0;
     final size = folder['size'] as int? ?? 0;
     final folderId = folder['_id'] as String?;
@@ -211,7 +212,7 @@ class _StarredFoldersSectionState extends State<StarredFoldersSection> {
             ),
             const SizedBox(height: 4),
             Text(
-              '$fileCount ملف',
+              '$fileCount ${S.of(context).files}',
               style: TextStyle(fontSize: 9, color: Colors.grey[600]),
             ),
           ],
@@ -251,11 +252,11 @@ class _StarredFoldersSectionState extends State<StarredFoldersSection> {
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
-          children: const [
+          children: [
             Icon(Icons.arrow_forward_rounded, size: 32, color: Colors.white),
             SizedBox(height: 8),
             Text(
-              'عرض\nالكل',
+              S.of(context).viewAll,
               style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w500,
@@ -272,7 +273,7 @@ class _StarredFoldersSectionState extends State<StarredFoldersSection> {
 
   // خيارات المجلد
   void _showFolderOptions(Map<String, dynamic> folder) {
-    final name = folder['name'] as String? ?? 'بدون اسم';
+    final name = folder['name'] as String? ?? S.of(context).unnamedFolder;
     final fileCount = folder['filesCount'] ?? 0;
     final size = folder['size'] as int? ?? 0;
 
@@ -293,7 +294,9 @@ class _StarredFoldersSectionState extends State<StarredFoldersSection> {
                   color: const Color(0xff28336f),
                 ),
                 title: Text(name),
-                subtitle: Text('$fileCount ملف • ${_formatBytes(size)}'),
+                subtitle: Text(
+                  '$fileCount ${S.of(context).files} • ${_formatBytes(size)}',
+                ),
               ),
               const Divider(),
               ListTile(
@@ -381,10 +384,14 @@ class _StarredFoldersSectionState extends State<StarredFoldersSection> {
 
     if (result['success'] == true) {
       await controller.getStarredFolders(limit: 6);
-      _showSnack('تمت الإزالة من المفضلة', Colors.green);
+      _showSnack(
+        S.of(context).removedFromFavorites, // ✅ نص مترجم
+        Colors.green,
+      );
     } else {
       _showSnack(
-        controller.errorMessage ?? 'فشل في الإزالة من المفضلة',
+        controller.errorMessage ??
+            S.of(context).failedToRemoveFromFavorites, // ✅ نص مترجم
         Colors.red,
       );
     }
