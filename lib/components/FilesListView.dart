@@ -9,6 +9,7 @@ import 'package:filevo/views/fileViewer/file_details_page.dart';
 import 'package:filevo/views/folders/room_comments_page.dart';
 import 'package:filevo/generated/l10n.dart';
 import 'package:filevo/views/folders/starred_folders_page_helpers.dart';
+import 'package:filevo/views/folders/share_folder_with_room_page.dart';
 
 class FilesListView extends StatefulWidget {
   final List<Map<String, dynamic>> items;
@@ -1521,11 +1522,43 @@ class _FilesListViewState extends State<FilesListView> {
     }
   }
 
-  void _showShareDialog(BuildContext context, Map<String, dynamic> folder) {
-    // TODO: Implement share dialog
-    ScaffoldMessenger.of(
+  Future<void> _showShareDialog(BuildContext context, Map<String, dynamic> folder) async {
+    final folderId = folder['folderId'] as String?;
+    final folderName = folder['title'] as String;
+
+    if (folderId == null) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(S.of(context).folderIdNotFound)));
+      return;
+    }
+
+    // ✅ التحقق من أن المجلد محمي مباشرة من folderData بدون طلب كلمة السر
+    final folderData = folder['folderData'] as Map<String, dynamic>? ?? {};
+    final isProtected = folderData['isProtected'] == true;
+    
+    if (isProtected) {
+      // ✅ المجلد محمي - منع المشاركة مباشرة بدون طلب كلمة السر
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('❌ ممنوع مشاركة المجلد المحمي'),
+          backgroundColor: Colors.red,
+          duration: Duration(seconds: 3),
+        ),
+      );
+      return;
+    }
+
+    // ✅ فتح صفحة المشاركة
+    await Navigator.push(
       context,
-    ).showSnackBar(SnackBar(content: Text('Share Folder: ${folder['title']}')));
+      MaterialPageRoute(
+        builder: (context) => ShareFolderWithRoomPage(
+          folderId: folderId,
+          folderName: folderName,
+        ),
+      ),
+    );
   }
 
   void _showMoveFolderDialog(

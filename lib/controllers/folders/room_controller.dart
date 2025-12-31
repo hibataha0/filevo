@@ -1,6 +1,7 @@
 import 'package:filevo/services/room_service.dart';
 import 'package:filevo/services/storage_service.dart';
 import 'package:filevo/services/user_service.dart';
+import 'package:filevo/services/socket_service.dart';
 import 'package:flutter/material.dart';
 
 class RoomController with ChangeNotifier {
@@ -1006,6 +1007,58 @@ class RoomController with ChangeNotifier {
       return null;
     } finally {
       setLoading(false);
+    }
+  }
+
+  /// ✅ Join room via Socket.IO for real-time updates
+  Future<void> joinRoomSocket(String roomId) async {
+    try {
+      final socketService = SocketService.instance;
+      await socketService.connect();
+      await socketService.joinRoom(roomId);
+      print('✅ [RoomController] Joined room via Socket.IO: $roomId');
+    } catch (e) {
+      print('❌ [RoomController] Error joining room via Socket.IO: $e');
+    }
+  }
+
+  /// ✅ Leave room via Socket.IO
+  void leaveRoomSocket(String roomId) {
+    try {
+      final socketService = SocketService.instance;
+      socketService.leaveRoom(roomId);
+      print('👋 [RoomController] Left room via Socket.IO: $roomId');
+    } catch (e) {
+      print('❌ [RoomController] Error leaving room via Socket.IO: $e');
+    }
+  }
+
+  /// ✅ Listen for new comments in a room
+  void listenToNewComments(
+    String roomId,
+    Function(Map<String, dynamic>) onNewComment,
+  ) {
+    try {
+      final socketService = SocketService.instance;
+      socketService.onNewComment(roomId, (comment) {
+        print('📢 [RoomController] New comment received for room: $roomId');
+        onNewComment(comment);
+        notifyListeners();
+      });
+      print('✅ [RoomController] Listening to new comments for room: $roomId');
+    } catch (e) {
+      print('❌ [RoomController] Error listening to comments: $e');
+    }
+  }
+
+  /// ✅ Stop listening to new comments in a room
+  void stopListeningToComments(String roomId) {
+    try {
+      final socketService = SocketService.instance;
+      socketService.offNewComment(roomId);
+      print('✅ [RoomController] Stopped listening to comments for room: $roomId');
+    } catch (e) {
+      print('❌ [RoomController] Error stopping comment listener: $e');
     }
   }
 

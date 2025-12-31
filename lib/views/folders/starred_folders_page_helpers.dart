@@ -423,6 +423,24 @@ Future<void> showShareDialogHelper(
     return;
   }
 
+  // ✅ التحقق من أن المجلد محمي مباشرة من folderData بدون طلب كلمة السر
+  final folderData = folder['folderData'] as Map<String, dynamic>? ?? {};
+  final isProtected = folderData['isProtected'] == true;
+  
+  if (isProtected) {
+    // ✅ المجلد محمي - منع المشاركة مباشرة بدون طلب كلمة السر
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('❌ ممنوع مشاركة المجلد المحمي'),
+          backgroundColor: Colors.red,
+          duration: Duration(seconds: 3),
+        ),
+      );
+    }
+    return;
+  }
+
   await Navigator.push(
     context,
     MaterialPageRoute(

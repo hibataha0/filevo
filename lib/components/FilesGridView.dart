@@ -526,6 +526,22 @@ void _showShareDialog(BuildContext context, Map<String, dynamic> folder) async {
     return;
   }
 
+  // ✅ التحقق من أن المجلد محمي مباشرة من folderData بدون طلب كلمة السر
+  final folderData = folder['folderData'] as Map<String, dynamic>? ?? {};
+  final isProtected = folderData['isProtected'] == true;
+  
+  if (isProtected) {
+    // ✅ المجلد محمي - منع المشاركة مباشرة بدون طلب كلمة السر
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('❌ ممنوع مشاركة المجلد المحمي'),
+        backgroundColor: Colors.red,
+        duration: Duration(seconds: 3),
+      ),
+    );
+    return;
+  }
+
   final result = await Navigator.push(
     context,
     MaterialPageRoute(
@@ -1091,15 +1107,24 @@ class FilesGridView extends StatelessWidget {
                       : null,
                   onShareTap: (type == 'folder' && roomId == null)
                       ? () async {
-                          // ✅ التحقق من الحماية قبل مشاركة المجلد
-                          final hasAccess =
-                              await _checkFolderProtectionForAction(
-                                context,
-                                item,
-                              );
-                          if (hasAccess) {
-                            _showShareDialog(context, item);
+                          // ✅ التحقق من أن المجلد محمي - المجلدات المحمية لا يمكن مشاركتها
+                          final folderData = item['folderData'] as Map<String, dynamic>? ?? {};
+                          final isProtected = folderData['isProtected'] == true;
+                          
+                          if (isProtected) {
+                            // ✅ المجلد محمي - منع المشاركة مباشرة بدون طلب كلمة السر
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('❌ ممنوع مشاركة المجلد المحمي'),
+                                backgroundColor: Colors.red,
+                                duration: Duration(seconds: 3),
+                              ),
+                            );
+                            return;
                           }
+                          
+                          // ✅ المجلد غير محمي - فتح صفحة المشاركة
+                          _showShareDialog(context, item);
                         }
                       : null,
                   onDownloadTap: (type == 'folder' && roomId == null)
@@ -1306,14 +1331,24 @@ class FilesGridView extends StatelessWidget {
                 : null,
             onShareTap: (type == 'folder' && roomId == null)
                 ? () async {
-                    // ✅ التحقق من الحماية قبل مشاركة المجلد
-                    final hasAccess = await _checkFolderProtectionForAction(
-                      context,
-                      item,
-                    );
-                    if (hasAccess) {
-                      _showShareDialog(context, item);
+                    // ✅ التحقق من أن المجلد محمي - المجلدات المحمية لا يمكن مشاركتها
+                    final folderData = item['folderData'] as Map<String, dynamic>? ?? {};
+                    final isProtected = folderData['isProtected'] == true;
+                    
+                    if (isProtected) {
+                      // ✅ المجلد محمي - منع المشاركة مباشرة بدون طلب كلمة السر
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('❌ ممنوع مشاركة المجلد المحمي'),
+                          backgroundColor: Colors.red,
+                          duration: Duration(seconds: 3),
+                        ),
+                      );
+                      return;
                     }
+                    
+                    // ✅ المجلد غير محمي - فتح صفحة المشاركة
+                    _showShareDialog(context, item);
                   }
                 : null,
             onDownloadTap: (type == 'folder' && roomId == null)

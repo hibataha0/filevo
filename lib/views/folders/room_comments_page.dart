@@ -52,7 +52,68 @@ class _RoomCommentsPageState extends State<RoomCommentsPage> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadRoomData();
       _loadComments();
+      _setupSocketIO(); // ✅ إعداد Socket.IO للتعليقات المباشرة
     });
+  }
+
+  /// ✅ إعداد Socket.IO للاستماع للتعليقات الجديدة
+  Future<void> _setupSocketIO() async {
+    if (!mounted) return;
+
+    try {
+      final roomController = Provider.of<RoomController>(context, listen: false);
+      
+      // ✅ الاتصال والانضمام للغرفة
+      await roomController.joinRoomSocket(widget.roomId);
+      
+      // ✅ الاستماع للتعليقات الجديدة
+      roomController.listenToNewComments(widget.roomId, (newComment) {
+        if (!mounted) return;
+
+        // ✅ التحقق من أن التعليق يخص نفس الـ target
+        final commentTargetType = newComment['targetType']?.toString() ?? '';
+        final commentTargetId = newComment['targetId']?.toString() ?? '';
+        
+        // ✅ للتعليقات العامة على الروم
+        final isRoomComment = _selectedTargetType == 'room' && 
+                             (commentTargetType == 'room' || commentTargetId.isEmpty);
+        
+        // ✅ للتعليقات على ملف/مجلد
+        final isTargetComment = _selectedTargetType != 'room' &&
+                               commentTargetType == _selectedTargetType &&
+                               commentTargetId == (_selectedTargetId.isNotEmpty 
+                                   ? _selectedTargetId 
+                                   : widget.targetId);
+        
+        if (isRoomComment || isTargetComment) {
+          // ✅ التحقق من أن التعليق غير موجود بالفعل (لتجنب التكرار)
+          final commentId = newComment['_id']?.toString() ?? newComment['id']?.toString();
+          final exists = comments.any((c) => 
+            (c['_id']?.toString() ?? c['id']?.toString()) == commentId
+          );
+          
+          if (!exists) {
+            setState(() {
+              // ✅ إضافة التعليق الجديد في البداية
+              comments.insert(0, newComment);
+            });
+            
+            // ✅ إظهار إشعار بصري (اختياري)
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('💬 تعليق جديد من ${newComment['user']?['name'] ?? 'مستخدم'}'),
+                duration: Duration(seconds: 2),
+                backgroundColor: Color(0xff28336f),
+              ),
+            );
+          }
+        }
+      });
+      
+      print('✅ [RoomCommentsPage] Socket.IO setup completed for room: ${widget.roomId}');
+    } catch (e) {
+      print('❌ [RoomCommentsPage] Error setting up Socket.IO: $e');
+    }
   }
 
   // ✅ جلب بيانات الغرفة للتحقق من الصلاحيات
@@ -71,6 +132,16 @@ class _RoomCommentsPageState extends State<RoomCommentsPage> {
 
   @override
   void dispose() {
+    // ✅ إيقاف الاستماع للتعليقات ومغادرة الغرفة
+    try {
+      final roomController = Provider.of<RoomController>(context, listen: false);
+      roomController.stopListeningToComments(widget.roomId);
+      roomController.leaveRoomSocket(widget.roomId);
+      print('👋 [RoomCommentsPage] Disposed Socket.IO listeners for room: ${widget.roomId}');
+    } catch (e) {
+      print('❌ [RoomCommentsPage] Error disposing Socket.IO: $e');
+    }
+    
     _commentController.dispose();
     _refreshController.dispose();
     super.dispose();
@@ -173,8 +244,26 @@ class _RoomCommentsPageState extends State<RoomCommentsPage> {
 
     if (mounted) {
       if (result != null) {
+        // ✅ إضافة التعليق محلياً مباشرة (للمستخدم الذي أضافه)
+        // Socket.IO سيرسل التعليق لبقية المستخدمين
+        final newComment = result['comment'];
+        if (newComment != null) {
+          setState(() {
+            // ✅ التحقق من عدم وجود التعليق بالفعل (لتجنب التكرار)
+            final commentId = newComment['_id']?.toString() ?? newComment['id']?.toString();
+            final exists = comments.any((c) => 
+              (c['_id']?.toString() ?? c['id']?.toString()) == commentId
+            );
+            
+            if (!exists) {
+              comments.insert(0, newComment);
+            }
+          });
+        }
+        
         _commentController.clear();
-        _loadComments();
+        
+        // ✅ لا حاجة لإعادة تحميل التعليقات - Socket.IO سيقوم بتحديثها تلقائياً
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('✅ تم إضافة التعليق بنجاح'),

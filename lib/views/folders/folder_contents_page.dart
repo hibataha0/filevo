@@ -47,6 +47,7 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
   bool isLoading = false;
   bool _hasVerifiedAccess = false; // ✅ هل تم التحقق من الحماية
   bool _isCheckingProtection = false; // ✅ هل يتم التحقق من الحماية حالياً
+  bool _isProtected = false; // ✅ هل المجلد محمي (يتم حفظه عند تحميل الصفحة)
 
   Future<void> _loadViewPreference() async {
     final saved = await StorageService.getFolderViewIsGrid();
@@ -92,6 +93,11 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
       if (folderInfo != null) {
         final isProtected = folderInfo['isProtected'] == true;
         final protectionType = folderInfo['protectionType'] as String?;
+        
+        // ✅ حفظ حالة الحماية في state
+        setState(() {
+          _isProtected = isProtected;
+        });
         
         if (isProtected && protectionType != null && protectionType != 'none') {
           // ✅ المجلد محمي - التحقق من الحماية
@@ -758,6 +764,21 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
   }
 
   Future<void> _showShareDialog() async {
+    // ✅ التحقق من أن المجلد محمي مباشرة من state بدون طلب كلمة السر
+    if (_isProtected) {
+      // ✅ المجلد محمي - منع المشاركة مباشرة بدون طلب كلمة السر
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('❌ ممنوع مشاركة المجلد المحمي'),
+            backgroundColor: Colors.red,
+            duration: Duration(seconds: 3),
+          ),
+        );
+      }
+      return;
+    }
+
     final result = await Navigator.push(
       context,
       MaterialPageRoute(
