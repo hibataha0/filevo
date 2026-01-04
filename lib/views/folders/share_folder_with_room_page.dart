@@ -15,7 +15,8 @@ class ShareFolderWithRoomPage extends StatefulWidget {
   });
 
   @override
-  State<ShareFolderWithRoomPage> createState() => _ShareFolderWithRoomPageState();
+  State<ShareFolderWithRoomPage> createState() =>
+      _ShareFolderWithRoomPageState();
 }
 
 class _ShareFolderWithRoomPageState extends State<ShareFolderWithRoomPage> {
@@ -23,8 +24,9 @@ class _ShareFolderWithRoomPageState extends State<ShareFolderWithRoomPage> {
   bool isLoading = true;
   String? selectedRoomId;
 
-  final RefreshController _refreshController =
-      RefreshController(initialRefresh: false);
+  final RefreshController _refreshController = RefreshController(
+    initialRefresh: false,
+  );
 
   @override
   void initState() {
@@ -65,19 +67,21 @@ class _ShareFolderWithRoomPageState extends State<ShareFolderWithRoomPage> {
       if (success) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('✅ تم مشاركة المجلد مع الغرفة بنجاح'),
+            content: Text(S.of(context).folderSharedSuccess),
             backgroundColor: Colors.green,
           ),
         );
-        
+
         // ✅ تحديث قائمة الغرف لتحديث عدد المجلدات
         await roomController.getRooms();
-        
+
         Navigator.pop(context, true);
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(roomController.errorMessage ?? '❌ فشل مشاركة المجلد'),
+            content: Text(
+              roomController.errorMessage ?? S.of(context).folderSharedFailed,
+            ),
             backgroundColor: Colors.red,
           ),
         );
@@ -145,240 +149,288 @@ class _ShareFolderWithRoomPageState extends State<ShareFolderWithRoomPage> {
             child: isLoading
                 ? Center(child: CircularProgressIndicator())
                 : rooms.isEmpty
-                    ? Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(Icons.meeting_room_outlined,
-                                size: 64, color: Colors.grey),
-                            SizedBox(height: 16),
-                            Text(
-                              'لا توجد غرف متاحة',
-                              style: TextStyle(
-                                fontSize: 18,
-                                color: Colors.grey[600],
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            SizedBox(height: 8),
-                            Text(
-                              'قم بإنشاء غرفة أولاً للمشاركة',
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: Colors.grey[500],
-                              ),
-                              textAlign: TextAlign.center,
-                            ),
-                          ],
+                ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.meeting_room_outlined,
+                          size: 64,
+                          color: Colors.grey,
                         ),
-                      )
-                    : SmartRefresher(
-                        controller: _refreshController,
-                        onRefresh: () async {
-                          await _loadRooms();
-                          _refreshController.refreshCompleted();
-                        },
-                        header: const WaterDropHeader(),
-                        child: ListView.builder(
-                          padding: const EdgeInsets.all(16),
-                          itemCount: rooms.length,
-                          itemBuilder: (context, index) {
-                            final room = rooms[index];
-                            final isSelected = selectedRoomId == room['_id'];
-                            final membersCount =
-                                (room['members'] as List?)?.length ?? 0;
-                            final foldersCount =
-                                (room['folders'] as List?)?.length ?? 0;
+                        SizedBox(height: 16),
+                        Text(
+                          S.of(context).noRoomsAvailable,
+                          style: TextStyle(
+                            fontSize: 18,
+                            color: Colors.grey[600],
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        SizedBox(height: 8),
+                        Text(
+                          S.of(context).createRoomFirstToShare,
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.grey[500],
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
+                    ),
+                  )
+                : SmartRefresher(
+                    controller: _refreshController,
+                    onRefresh: () async {
+                      await _loadRooms();
+                      _refreshController.refreshCompleted();
+                    },
+                    header: const WaterDropHeader(),
+                    child: ListView.builder(
+                      padding: const EdgeInsets.all(16),
+                      itemCount: rooms.length,
+                      itemBuilder: (context, index) {
+                        final room = rooms[index];
+                        final isSelected = selectedRoomId == room['_id'];
+                        final membersCount =
+                            (room['members'] as List?)?.length ?? 0;
+                        final foldersCount =
+                            (room['folders'] as List?)?.length ?? 0;
 
-                            final isAlreadyShared = (room['folders'] as List?)
-                                    ?.any((f) {
-                                      final folderIdRef = f['folderId'];
-                                      if (folderIdRef == null) return false;
+                        final isAlreadyShared =
+                            (room['folders'] as List?)?.any((f) {
+                              final folderIdRef = f['folderId'];
+                              if (folderIdRef == null) return false;
 
-                                      if (folderIdRef is String) {
-                                        return folderIdRef == widget.folderId;
-                                      }
+                              if (folderIdRef is String) {
+                                return folderIdRef == widget.folderId;
+                              }
 
-                                      if (folderIdRef is Map<String, dynamic>) {
-                                        final folderId =
-                                            folderIdRef['_id']?.toString();
-                                        return folderId == widget.folderId ||
-                                            folderIdRef['_id'] ==
-                                                widget.folderId;
-                                      }
+                              if (folderIdRef is Map<String, dynamic>) {
+                                final folderId = folderIdRef['_id']?.toString();
+                                return folderId == widget.folderId ||
+                                    folderIdRef['_id'] == widget.folderId;
+                              }
 
-                                      return folderIdRef.toString() ==
-                                          widget.folderId;
-                                    }) ??
-                                false;
+                              return folderIdRef.toString() == widget.folderId;
+                            }) ??
+                            false;
 
-                            return Card(
-                              margin: const EdgeInsets.only(bottom: 12),
-                              elevation: isSelected ? 4 : 1,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(16),
-                                side: BorderSide(
-                                  color: isSelected
-                                      ? const Color(0xff28336f)
-                                      : Colors.transparent,
-                                  width: isSelected ? 2 : 0,
-                                ),
-                              ),
-                              child: InkWell(
-                                onTap: () {
-                                  setState(() {
-                                    selectedRoomId = room['_id'];
-                                  });
-                                },
-                                borderRadius: BorderRadius.circular(16),
-                                child: Padding(
-                                  padding: const EdgeInsets.all(16),
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
+                        return Card(
+                          margin: const EdgeInsets.only(bottom: 12),
+                          elevation: isSelected ? 4 : (isAlreadyShared ? 2 : 1),
+                          color: isAlreadyShared
+                              ? Colors.green.shade50.withOpacity(0.3)
+                              : null,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                            side: BorderSide(
+                              color: isSelected
+                                  ? const Color(0xff28336f)
+                                  : isAlreadyShared
+                                  ? Colors.green.shade300
+                                  : Colors.transparent,
+                              width: isSelected ? 2 : (isAlreadyShared ? 1 : 0),
+                            ),
+                          ),
+                          child: InkWell(
+                            onTap: isAlreadyShared
+                                ? null // ✅ منع الضغط على الرومات المشتركة
+                                : () {
+                                    setState(() {
+                                      selectedRoomId = room['_id'];
+                                    });
+                                  },
+                            borderRadius: BorderRadius.circular(16),
+                            child: Padding(
+                              padding: const EdgeInsets.all(16),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
                                     children: [
-                                      Row(
-                                        children: [
-                                          Container(
-                                            width: 50,
-                                            height: 50,
-                                            decoration: BoxDecoration(
-                                              color: Color(0xff28336f)
-                                                  .withOpacity(0.1),
-                                              borderRadius:
-                                                  BorderRadius.circular(12),
-                                            ),
-                                            child: Icon(
-                                              isAlreadyShared
-                                                  ? Icons.check_circle
-                                                  : Icons.meeting_room,
-                                              color: isAlreadyShared
-                                                  ? Colors.green
-                                                  : Color(0xff28336f),
-                                            ),
-                                          ),
-                                          SizedBox(width: 12),
-                                          Expanded(
-                                            child: Column(
-                                              crossAxisAlignment:
-                                                  CrossAxisAlignment.start,
-                                              children: [
-                                                Text(
-                                                  room['name'] ?? 'بدون اسم',
-                                                  style: TextStyle(
-                                                    fontSize: 16,
-                                                    fontWeight: FontWeight.bold,
-                                                  ),
-                                                ),
-                                                if (room['description'] !=
-                                                        null &&
-                                                    room['description']
-                                                        .toString()
-                                                        .isNotEmpty) ...[
-                                                  SizedBox(height: 4),
-                                                  Text(
-                                                    room['description'],
-                                                    style: TextStyle(
-                                                      fontSize: 12,
-                                                      color: Colors.grey[600],
-                                                    ),
-                                                    maxLines: 1,
-                                                    overflow:
-                                                        TextOverflow.ellipsis,
-                                                  ),
-                                                ],
-                                              ],
-                                            ),
-                                          ),
-                                          if (isSelected)
-                                            Icon(Icons.check_circle,
-                                                color: Color(0xff28336f)),
-                                          if (isAlreadyShared)
-                                            Container(
-                                              padding: EdgeInsets.symmetric(
-                                                  horizontal: 8, vertical: 4),
-                                              decoration: BoxDecoration(
-                                                color: Colors.green.shade50,
-                                                borderRadius:
-                                                    BorderRadius.circular(8),
-                                              ),
-                                              child: Text(
-                                                'مشترك',
-                                                style: TextStyle(
-                                                  fontSize: 10,
-                                                  color: Colors.green.shade700,
-                                                  fontWeight: FontWeight.w600,
-                                                ),
-                                              ),
-                                            ),
-                                        ],
-                                      ),
-                                      SizedBox(height: 12),
-                                      Row(
-                                        children: [
-                                          _buildStatChip(
-                                            Icons.people,
-                                            '$membersCount',
-                                            'أعضاء',
-                                          ),
-                                          SizedBox(width: 12),
-                                          _buildStatChip(
-                                            Icons.folder,
-                                            '$foldersCount',
-                                            'مجلدات',
-                                          ),
-                                        ],
-                                      ),
-                                      if (isSelected && !isAlreadyShared) ...[
-                                        SizedBox(height: 12),
-                                        SizedBox(
-                                          width: double.infinity,
-                                          child: Consumer<RoomController>(
-                                            builder: (context, roomController,
-                                                child) {
-                                              return ElevatedButton.icon(
-                                                onPressed:
-                                                    roomController.isLoading
-                                                        ? null
-                                                        : () =>
-                                                            _shareFolderWithRoom(
-                                                                room['_id']),
-                                                icon: roomController.isLoading
-                                                    ? SizedBox(
-                                                        width: 16,
-                                                        height: 16,
-                                                        child:
-                                                            CircularProgressIndicator(
-                                                          strokeWidth: 2,
-                                                          valueColor:
-                                                              AlwaysStoppedAnimation<
-                                                                      Color>(
-                                                                  Colors.white),
-                                                        ),
-                                                      )
-                                                    : Icon(Icons.share),
-                                                label: Text(S.of(context).shareWithThisRoom),
-                                                style: ElevatedButton.styleFrom(
-                                                  backgroundColor:
-                                                      Color(0xff28336f),
-                                                  foregroundColor: Colors.white,
-                                                  padding:
-                                                      EdgeInsets.symmetric(
-                                                          vertical: 12),
-                                                ),
-                                              );
-                                            },
+                                      Container(
+                                        width: 50,
+                                        height: 50,
+                                        decoration: BoxDecoration(
+                                          color: Color(
+                                            0xff28336f,
+                                          ).withOpacity(0.1),
+                                          borderRadius: BorderRadius.circular(
+                                            12,
                                           ),
                                         ),
-                                      ],
+                                        child: Icon(
+                                          isAlreadyShared
+                                              ? Icons.check_circle
+                                              : Icons.meeting_room,
+                                          color: isAlreadyShared
+                                              ? Colors.green
+                                              : Color(0xff28336f),
+                                        ),
+                                      ),
+                                      SizedBox(width: 12),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              room['name'] ??
+                                                  S.of(context).unnamed,
+                                              style: TextStyle(
+                                                fontSize: 16,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+                                            if (room['description'] != null &&
+                                                room['description']
+                                                    .toString()
+                                                    .isNotEmpty) ...[
+                                              SizedBox(height: 4),
+                                              Text(
+                                                room['description'],
+                                                style: TextStyle(
+                                                  fontSize: 12,
+                                                  color: Colors.grey[600],
+                                                ),
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
+                                              ),
+                                            ],
+                                          ],
+                                        ),
+                                      ),
+                                      if (isSelected)
+                                        Icon(
+                                          Icons.check_circle,
+                                          color: Color(0xff28336f),
+                                        ),
+                                      if (isAlreadyShared)
+                                        Container(
+                                          padding: EdgeInsets.symmetric(
+                                            horizontal: 8,
+                                            vertical: 4,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: Colors.green.shade50,
+                                            borderRadius: BorderRadius.circular(
+                                              8,
+                                            ),
+                                          ),
+                                          child: Text(
+                                            S.of(context).sharedd,
+                                            style: TextStyle(
+                                              fontSize: 10,
+                                              color: Colors.green.shade700,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                        ),
                                     ],
                                   ),
-                                ),
+                                  SizedBox(height: 12),
+                                  Row(
+                                    children: [
+                                      _buildStatChip(
+                                        Icons.people,
+                                        '$membersCount',
+                                        S.of(context).members,
+                                      ),
+                                      SizedBox(width: 12),
+                                      _buildStatChip(
+                                        Icons.folder,
+                                        '$foldersCount',
+                                        S.of(context).folders,
+                                      ),
+                                    ],
+                                  ),
+                                  // ✅ إظهار معلومات إضافية إذا كان المجلد مشارك
+                                  if (isAlreadyShared) ...[
+                                    SizedBox(height: 8),
+                                    Container(
+                                      padding: EdgeInsets.all(12),
+                                      decoration: BoxDecoration(
+                                        color: Colors.green.shade50,
+                                        borderRadius: BorderRadius.circular(8),
+                                        border: Border.all(
+                                          color: Colors.green.shade200,
+                                          width: 1,
+                                        ),
+                                      ),
+                                      child: Row(
+                                        children: [
+                                          Icon(
+                                            Icons.check_circle_outline,
+                                            size: 20,
+                                            color: Colors.green.shade700,
+                                          ),
+                                          SizedBox(width: 8),
+                                          Expanded(
+                                            child: Text(
+                                              S.of(context).fileAlreadyShared,
+                                              style: TextStyle(
+                                                fontSize: 13,
+                                                color: Colors.green.shade800,
+                                                fontWeight: FontWeight.w600,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                  // ✅ إظهار خيارات المشاركة إذا كان المجلد غير مشارك
+                                  if (isSelected && !isAlreadyShared) ...[
+                                    SizedBox(height: 12),
+                                    SizedBox(
+                                      width: double.infinity,
+                                      child: Consumer<RoomController>(
+                                        builder: (context, roomController, child) {
+                                          return ElevatedButton.icon(
+                                            onPressed: roomController.isLoading
+                                                ? null
+                                                : () => _shareFolderWithRoom(
+                                                    room['_id'],
+                                                  ),
+                                            icon: roomController.isLoading
+                                                ? SizedBox(
+                                                    width: 16,
+                                                    height: 16,
+                                                    child: CircularProgressIndicator(
+                                                      strokeWidth: 2,
+                                                      valueColor:
+                                                          AlwaysStoppedAnimation<
+                                                            Color
+                                                          >(Colors.white),
+                                                    ),
+                                                  )
+                                                : Icon(Icons.share),
+                                            label: Text(
+                                              S.of(context).shareWithThisRoom,
+                                            ),
+                                            style: ElevatedButton.styleFrom(
+                                              backgroundColor: Color(
+                                                0xff28336f,
+                                              ),
+                                              foregroundColor: Colors.white,
+                                              padding: EdgeInsets.symmetric(
+                                                vertical: 12,
+                                              ),
+                                            ),
+                                          );
+                                        },
+                                      ),
+                                    ),
+                                  ],
+                                ],
                               ),
-                            );
-                          },
-                        ),
-                      ),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
           ),
         ],
       ),
@@ -399,15 +451,8 @@ class _ShareFolderWithRoomPageState extends State<ShareFolderWithRoomPage> {
           ),
         ),
         SizedBox(width: 4),
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 12,
-            color: Colors.grey[600],
-          ),
-        ),
+        Text(label, style: TextStyle(fontSize: 12, color: Colors.grey[600])),
       ],
     );
   }
 }
-

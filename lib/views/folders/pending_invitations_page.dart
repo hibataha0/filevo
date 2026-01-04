@@ -47,25 +47,31 @@ class _PendingInvitationsPageState extends State<PendingInvitationsPage> {
 
   Future<void> _acceptInvitation(String invitationId) async {
     final roomController = Provider.of<RoomController>(context, listen: false);
+    final s = S.of(context); // مرجع الترجمة
+
     final result = await roomController.acceptInvitation(invitationId);
 
     if (mounted) {
       if (result != null) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('✅ تم قبول الدعوة بنجاح'),
+            content: Text(s.invitationAccepted), // ✅ "تم قبول الدعوة بنجاح"
             backgroundColor: Colors.green,
+            behavior: SnackBarBehavior.floating,
           ),
         );
-        _loadInvitations();
 
-        // ✅ تحديث قائمة الغرف لتحديث عدد الأعضاء
+        // تحديث البيانات
+        _loadInvitations();
         await roomController.getRooms();
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(roomController.errorMessage ?? '❌ فشل قبول الدعوة'),
+            content: Text(
+              roomController.errorMessage ?? s.invitationAcceptFailed,
+            ), // ✅ "فشل قبول الدعوة"
             backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
           ),
         );
       }
@@ -102,19 +108,26 @@ class _PendingInvitationsPageState extends State<PendingInvitationsPage> {
       final success = await roomController.rejectInvitation(invitationId);
 
       if (mounted) {
+        final s = S.of(context); // مرجع الترجمة
+
         if (success) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('✅ تم رفض الدعوة'),
+              content: Text(s.invitationRejected), // ✅ "تم رفض الدعوة"
               backgroundColor: Colors.orange,
+              behavior: SnackBarBehavior.floating,
             ),
           );
-          _loadInvitations();
+          _loadInvitations(); // تحديث القائمة فوراً
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(roomController.errorMessage ?? '❌ فشل رفض الدعوة'),
+              content: Text(
+                roomController.errorMessage ??
+                    s.invitationRejectFailed, // ✅ "فشل رفض الدعوة"
+              ),
               backgroundColor: Colors.red,
+              behavior: SnackBarBehavior.floating,
             ),
           );
         }
@@ -148,7 +161,7 @@ class _PendingInvitationsPageState extends State<PendingInvitationsPage> {
                   Icon(Icons.mail_outline, size: 64, color: Colors.grey),
                   SizedBox(height: 16),
                   Text(
-                    'لا توجد دعوات معلقة',
+                    S.of(context).noPendingInvitations,
                     style: TextStyle(
                       fontSize: 18,
                       color: Colors.grey[600],
@@ -157,7 +170,7 @@ class _PendingInvitationsPageState extends State<PendingInvitationsPage> {
                   ),
                   SizedBox(height: 8),
                   Text(
-                    'سيتم عرض الدعوات هنا عند استلامها',
+                    S.of(context).invitationsHint,
                     style: TextStyle(fontSize: 14, color: Colors.grey[500]),
                     textAlign: TextAlign.center,
                   ),
@@ -210,14 +223,16 @@ class _PendingInvitationsPageState extends State<PendingInvitationsPage> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        sender['name'] ?? sender['email'] ?? 'مستخدم',
+                        sender['name'] ??
+                            sender['email'] ??
+                            S.of(context).unknownUser,
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
                       Text(
-                        'دعاك للانضمام إلى غرفة',
+                        S.of(context).invitedYouToJoin,
                         style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                       ),
                     ],
@@ -245,7 +260,7 @@ class _PendingInvitationsPageState extends State<PendingInvitationsPage> {
                       SizedBox(width: 8),
                       Expanded(
                         child: Text(
-                          room['name'] ?? 'غرفة',
+                          room['name'] ?? S.of(context).room,
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
@@ -296,7 +311,7 @@ class _PendingInvitationsPageState extends State<PendingInvitationsPage> {
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
-                    'الدور: $role',
+                    S.of(context).roleLabel(role),
                     style: TextStyle(
                       fontSize: 12,
                       color: _getRoleColor(role),

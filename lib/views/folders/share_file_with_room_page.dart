@@ -145,10 +145,10 @@ class _ShareFileWithRoomPageState extends State<ShareFileWithRoomPage> {
           SnackBar(
             content: Text(
               isAlreadyShared
-                  ? 'ℹ️ الملف مشارك بالفعل مع هذه الغرفة'
+                  ? S.of(context).fileAlreadyShared
                   : isOneTimeShare
-                  ? '✅ تم مشاركة الملف مع الغرفة (لمرة واحدة) بنجاح'
-                  : '✅ تم مشاركة الملف مع الغرفة بنجاح',
+                  ? S.of(context).fileSharedSuccessOneTime
+                  : S.of(context).fileSharedSuccess,
             ),
             backgroundColor: isAlreadyShared ? Colors.blue : Colors.green,
             duration: Duration(seconds: 2),
@@ -161,7 +161,7 @@ class _ShareFileWithRoomPageState extends State<ShareFileWithRoomPage> {
         Navigator.pop(context, true);
       } else {
         final errorMessage =
-            roomController.errorMessage ?? '❌ فشل مشاركة الملف';
+            roomController.errorMessage ?? S.of(context).fileShareFailed;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(errorMessage),
@@ -178,7 +178,7 @@ class _ShareFileWithRoomPageState extends State<ShareFileWithRoomPage> {
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('❌ حدث خطأ: ${e.toString()}'),
+          content: Text(S.of(context).errorPrefix(e.toString())),
           backgroundColor: Colors.red,
           duration: Duration(seconds: 3),
         ),
@@ -404,7 +404,8 @@ class _ShareFileWithRoomPageState extends State<ShareFileWithRoomPage> {
                                               CrossAxisAlignment.start,
                                           children: [
                                             Text(
-                                              room['name'] ?? 'بدون اسم',
+                                              room['name'] ??
+                                                  S.of(context).unnamed,
                                               style: TextStyle(
                                                 fontSize: 16,
                                                 fontWeight: FontWeight.bold,
@@ -477,7 +478,7 @@ class _ShareFileWithRoomPageState extends State<ShareFileWithRoomPage> {
                                       _buildStatChip(
                                         Icons.people,
                                         '$membersCount',
-                                        'أعضاء',
+                                        S.of(context).members,
                                       ),
                                       SizedBox(width: 12),
                                       _buildStatChip(
@@ -510,7 +511,7 @@ class _ShareFileWithRoomPageState extends State<ShareFileWithRoomPage> {
                                           SizedBox(width: 8),
                                           Expanded(
                                             child: Text(
-                                              'هذا الملف مشارك بالفعل مع هذه الغرفة',
+                                              S.of(context).fileAlreadyShared,
                                               style: TextStyle(
                                                 fontSize: 13,
                                                 color: Colors.green.shade800,
@@ -549,7 +550,9 @@ class _ShareFileWithRoomPageState extends State<ShareFileWithRoomPage> {
                                                   )
                                                 : !canOneTimeShare
                                                 ? Text(
-                                                    '⚠️ الملفات التي تفتح خارج التطبيق (Office, ZIP, etc.) لا يمكن مشاركتها لمرة واحدة',
+                                                    S
+                                                        .of(context)
+                                                        .externalFilesWarning,
                                                     style: TextStyle(
                                                       fontSize: 11,
                                                       color: Colors.orange[700],

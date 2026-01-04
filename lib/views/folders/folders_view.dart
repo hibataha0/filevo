@@ -27,6 +27,7 @@ import 'package:filevo/views/fileViewer/office_file_opener.dart';
 import 'package:filevo/views/fileViewer/pdfViewer.dart';
 import 'package:filevo/views/fileViewer/textViewer.dart';
 import 'package:http/http.dart' as http;
+import 'package:filevo/dialogs/folder_protection_dialogs.dart';
 import 'dart:io';
 import 'dart:async';
 import 'package:path_provider/path_provider.dart';
@@ -188,17 +189,21 @@ class _FoldersPageState extends State<FoldersPage>
 
     try {
       String? categoryForBackend;
+
       if (_selectedCategory != null && _selectedCategory!.isNotEmpty) {
+        // هذه الخريطة تربط ما يراه المستخدم (المترجم) بالقيمة التي يتوقعها السيرفر
         final categoryMap = {
-          'صور': 'Images',
-          'فيديوهات': 'Videos',
-          'صوتيات': 'Audio',
-          'مستندات': 'Documents',
-          'مضغوط': 'Compressed',
-          'تطبيقات': 'Applications',
-          'رمز/كود': 'Code',
-          'أخرى': 'Others',
+          S.of(context).catImages: 'Images',
+          S.of(context).catVideos: 'Videos',
+          S.of(context).catAudio: 'Audio',
+          S.of(context).catDocuments: 'Documents',
+          S.of(context).catCompressed: 'Compressed',
+          S.of(context).catApplications: 'Applications',
+          S.of(context).catCode: 'Code',
+          S.of(context).catOthers: 'Others',
         };
+
+        // البحث عن القيمة المقابلة للنص المختار حالياً
         categoryForBackend =
             categoryMap[_selectedCategory] ?? _selectedCategory;
       }
@@ -208,11 +213,11 @@ class _FoldersPageState extends State<FoldersPage>
           _selectedDateRange != 'All' &&
           _selectedDateRange!.isNotEmpty) {
         final dateRangeMap = {
-          'أمس': 'yesterday',
-          'آخر 7 أيام': 'last7days',
-          'آخر 30 يوم': 'last30days',
-          'آخر سنة': 'lastyear',
-          'مخصص': 'custom',
+          S.of(context).yesterday: 'yesterday',
+          S.of(context).last7Days: 'last7days',
+          S.of(context).last30Days: 'last30days',
+          S.of(context).lastYear: 'lastyear',
+          S.of(context).custom: 'custom',
         };
         dateRangeForBackend =
             dateRangeMap[_selectedDateRange] ?? _selectedDateRange;
@@ -410,7 +415,7 @@ class _FoldersPageState extends State<FoldersPage>
           }
 
           return {
-            "title": folderData['name'] ?? 'بدون اسم',
+            "title": folderData['name'] ?? S.of(context).unnamedFolder,
             "fileCount": filesCount,
             "size": _formatBytes(size),
             "icon": Icons.folder,
@@ -522,10 +527,11 @@ class _FoldersPageState extends State<FoldersPage>
           final size = folderData['size'] ?? 0;
           final filesCount = folderData['filesCount'] ?? 0;
           final owner = folderData['userId'] as Map<String, dynamic>?;
-          final ownerName = owner?['name'] ?? owner?['email'] ?? 'مستخدم';
+          final ownerName =
+              owner?['name'] ?? owner?['email'] ?? S.of(context).unknownUser;
 
           return {
-            "title": folderData['name'] ?? 'بدون اسم',
+            "title": folderData['name'] ?? S.of(context).unnamedFolder,
             "fileCount": filesCount,
             "size": _formatBytes(size),
             "icon": Icons.folder_shared,
@@ -626,21 +632,19 @@ class _FoldersPageState extends State<FoldersPage>
         showDialog(
           context: context,
           builder: (context) => AlertDialog(
-            title: const Text('إذن الميكروفون مطلوب'),
-            content: const Text(
-              'يجب السماح بالوصول إلى الميكروفون للبحث بالصوت.\n\nافتح إعدادات التطبيق وسمح بالوصول إلى الميكروفون.',
-            ),
+            title: Text(S.of(context).micPermissionRequired),
+            content: Text(S.of(context).permissionDenied),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context),
-                child: const Text('إلغاء'),
+                child: Text(S.of(context).cancel),
               ),
               TextButton(
                 onPressed: () {
                   Navigator.pop(context);
                   openAppSettings();
                 },
-                child: const Text('فتح الإعدادات'),
+                child: Text(S.of(context).openSettings),
               ),
             ],
           ),
@@ -657,10 +661,8 @@ class _FoldersPageState extends State<FoldersPage>
       if (!status.isGranted) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text(
-                'تم رفض الإذن. يجب السماح بالوصول إلى الميكروفون للبحث بالصوت.',
-              ),
+            SnackBar(
+              content: Text(S.of(context).permissionDenied),
               backgroundColor: Colors.orange,
               duration: Duration(seconds: 3),
             ),
@@ -674,8 +676,8 @@ class _FoldersPageState extends State<FoldersPage>
     if (!finalStatus.isGranted) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('يجب السماح بالوصول إلى الميكروفون للبحث بالصوت.'),
+          SnackBar(
+            content: Text(S.of(context).speechServiceUnavailable),
             backgroundColor: Colors.orange,
             duration: Duration(seconds: 3),
           ),
@@ -688,8 +690,8 @@ class _FoldersPageState extends State<FoldersPage>
     if (!available) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('خدمة التعرف على الصوت غير متاحة'),
+          SnackBar(
+            content: Text(S.of(context).speechServiceUnavailable),
             backgroundColor: Colors.orange,
           ),
         );
@@ -709,7 +711,7 @@ class _FoldersPageState extends State<FoldersPage>
           });
 
           if (result.finalResult && _searchText.isNotEmpty) {
-            print('✅ النص المعرّف: $_searchText');
+            print('✅ ${S.of(context).recognizedText(_searchText)}');
             _stopListening();
           }
         }
@@ -739,7 +741,7 @@ class _FoldersPageState extends State<FoldersPage>
           IconButton(
             icon: Icon(Icons.mic_none, color: Colors.grey[500], size: 20),
             onPressed: _startListening,
-            tooltip: 'البحث بالصوت',
+            tooltip: S.of(context).voiceSearch,
             padding: EdgeInsets.all(8),
             constraints: BoxConstraints(minWidth: 40, minHeight: 40),
           ),
@@ -761,7 +763,7 @@ class _FoldersPageState extends State<FoldersPage>
       return IconButton(
         icon: Icon(Icons.mic, color: Colors.red, size: 20),
         onPressed: _stopListening,
-        tooltip: 'إيقاف التسجيل',
+        tooltip: S.of(context).stopListening,
         padding: EdgeInsets.all(8),
         constraints: BoxConstraints(minWidth: 40, minHeight: 40),
       );
@@ -770,7 +772,7 @@ class _FoldersPageState extends State<FoldersPage>
     return IconButton(
       icon: Icon(Icons.mic_none, color: Colors.grey[500], size: 20),
       onPressed: _startListening,
-      tooltip: 'البحث بالصوت',
+      tooltip: S.of(context).voiceSearch,
       padding: EdgeInsets.all(8),
       constraints: BoxConstraints(minWidth: 40, minHeight: 40),
     );
@@ -861,7 +863,7 @@ class _FoldersPageState extends State<FoldersPage>
                       ),
                       child: IconButton(
                         icon: Icon(Icons.filter_list, color: Colors.white),
-                        tooltip: 'الفلتر',
+                        tooltip: S.of(context).filter,
                         onPressed: () {
                           setState(() {
                             _showFilterOptions = !_showFilterOptions;
@@ -901,7 +903,7 @@ class _FoldersPageState extends State<FoldersPage>
                             ),
                           );
                         },
-                        tooltip: 'الدعوات المعلقة',
+                        tooltip: S.of(context).pendingInvitations,
                       ),
                     ),
                   ],
@@ -1005,7 +1007,7 @@ class _FoldersPageState extends State<FoldersPage>
                         children: [
                           Icon(Icons.folder, size: 18),
                           SizedBox(width: 6),
-                          Text('الكل'),
+                          Text(S.of(context).all),
                         ],
                       ),
                     ),
@@ -1529,7 +1531,7 @@ class _FoldersPageState extends State<FoldersPage>
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  'الغرف',
+                  S.of(context).rooms,
                   style: TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
@@ -1543,7 +1545,7 @@ class _FoldersPageState extends State<FoldersPage>
                         Icons.add_circle_outline,
                         color: Color(0xff28336f),
                       ),
-                      tooltip: 'إنشاء غرفة مشاركة',
+                      tooltip: S.of(context).createShareRoomTooltip,
                       onPressed: () => _showCreateRoomPage(),
                     ),
                     ViewToggleButtons(
@@ -1588,7 +1590,7 @@ class _FoldersPageState extends State<FoldersPage>
                           SizedBox(height: 16),
                           ElevatedButton(
                             onPressed: () => roomController.getRooms(),
-                            child: Text('إعادة المحاولة'),
+                            child: Text(S.of(context).retry),
                           ),
                         ],
                       ),
@@ -1600,28 +1602,31 @@ class _FoldersPageState extends State<FoldersPage>
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(
+                          const Icon(
                             Icons.meeting_room_outlined,
                             size: 64,
                             color: Colors.grey,
                           ),
-                          SizedBox(height: 16),
+                          const SizedBox(height: 16),
                           Text(
-                            'لا توجد غرف مشاركة',
+                            S.of(context).noShareRooms, // ✅ مترجم
                             style: TextStyle(
                               fontSize: 18,
                               color: Colors.grey[600],
                               fontWeight: FontWeight.bold,
                             ),
                           ),
-                          SizedBox(height: 8),
-                          Text(
-                            'اضغط على + لإنشاء غرفة مشاركة جديدة',
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: Colors.grey[500],
+                          const SizedBox(height: 8),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 32),
+                            child: Text(
+                              S.of(context).clickToAddRoom, // ✅ مترجم
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.grey[500],
+                              ),
+                              textAlign: TextAlign.center,
                             ),
-                            textAlign: TextAlign.center,
                           ),
                         ],
                       ),
@@ -1666,7 +1671,7 @@ class _FoldersPageState extends State<FoldersPage>
                     final totalItems = filesCount + foldersCount;
 
                     return {
-                      "title": room['name'] ?? 'بدون اسم',
+                      "title": room['name'] ?? S.of(context).unnamed,
                       "fileCount": totalItems,
                       "filesCount": filesCount,
                       "foldersCount": foldersCount,
@@ -1844,9 +1849,11 @@ class _FoldersPageState extends State<FoldersPage>
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content: Text(
-                    '❌ فقط مالك الغرفة أو الأعضاء برتبة محرر يمكنهم تعديل الغرفة',
+                    S.of(context).onlyOwnerOrEditorCanEdit, // ✅ نص مترجم
                   ),
                   backgroundColor: Colors.red,
+                  behavior: SnackBarBehavior
+                      .floating, // نصيحة: تجعل التنبيه يظهر بشكل أجمل فوق المحتوى
                 ),
               );
             }
@@ -1896,9 +1903,11 @@ class _FoldersPageState extends State<FoldersPage>
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content: Text(
-                    '❌ فقط مالك الغرفة أو الأعضاء برتبة محرر يمكنهم تعديل الغرفة',
+                    S.of(context).onlyOwnerOrEditorCanEdit, // ✅ نص مترجم
                   ),
                   backgroundColor: Colors.red,
+                  behavior: SnackBarBehavior
+                      .floating, // نصيحة: تجعل التنبيه يظهر بشكل أجمل فوق المحتوى
                 ),
               );
             }
@@ -1989,7 +1998,8 @@ class _FoldersPageState extends State<FoldersPage>
         file['id']?.toString() ??
         originalData['_id']?.toString() ??
         originalData['id']?.toString();
-    final originalName = file['originalName'] ?? file['name'] ?? 'ملف بدون اسم';
+    final originalName =
+        file['originalName'] ?? file['name'] ?? S.of(context).unnamedFile;
 
     return {
       'originalData': originalData,
@@ -2052,7 +2062,9 @@ class _FoldersPageState extends State<FoldersPage>
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: const Text('رابط الملف غير متوفر - لا يوجد path أو _id'),
+            content: Text(
+              S.of(context).fileLinkUnavailable, // ✅ نص مترجم واحترافي
+            ),
             backgroundColor: Colors.orange,
           ),
         );
@@ -2067,7 +2079,7 @@ class _FoldersPageState extends State<FoldersPage>
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: const Text('رابط غير صالح'),
+            content: Text(S.of(context).invalidFileUrl), // ✅ نص مترجم واحترافي
             backgroundColor: Colors.red,
           ),
         );
@@ -2095,7 +2107,7 @@ class _FoldersPageState extends State<FoldersPage>
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: const Text('يجب تسجيل الدخول أولاً'),
+              content: Text(S.of(context).mustLogin), // ✅ نص مترجم واحترافي
               backgroundColor: Colors.red,
             ),
           );
@@ -2127,7 +2139,8 @@ class _FoldersPageState extends State<FoldersPage>
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('الملف غير متاح (خطأ ${response.statusCode})'),
+            // ✅ تمرير كود الحالة (statusCode) للمترجم
+            content: Text(S.of(context).fileUnavailable(response.statusCode)),
             backgroundColor: Colors.red,
           ),
         );
@@ -2137,7 +2150,8 @@ class _FoldersPageState extends State<FoldersPage>
         Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('خطأ في تحميل الملف: ${e.toString()}'),
+            // ✅ تمرير نص الخطأ التقني للمترجم
+            content: Text(S.of(context).errorDownloadingFile(e.toString())),
             backgroundColor: Colors.red,
           ),
         );
@@ -2321,7 +2335,7 @@ class _FoldersPageState extends State<FoldersPage>
           Navigator.pop(context);
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('خطأ في تحميل الملف النصي: ${e.toString()}'),
+              content: Text(S.of(context).errorDownloadingFile(e.toString())),
               backgroundColor: Colors.red,
             ),
           );
@@ -2388,7 +2402,7 @@ class _FoldersPageState extends State<FoldersPage>
     return '$baseClean/$cleanPath';
   }
 
-  void _handleFolderTap(Map<String, dynamic> folder) {
+  Future<void> _handleFolderTap(Map<String, dynamic> folder) async {
     final type = folder['type'] as String?;
     if (type == 'category') {
       final categoryTitle = folder['title']?.toString() ?? '';
@@ -2414,7 +2428,35 @@ class _FoldersPageState extends State<FoldersPage>
     } else if (type == 'folder') {
       final folderId =
           folder['folderId']?.toString() ?? folder['_id']?.toString();
-      if (folderId != null && folderId.isNotEmpty) {
+      if (folderId == null || folderId.isEmpty) return;
+
+      final folderName =
+          folder['title']?.toString() ??
+          folder['name']?.toString() ??
+          S.of(context).folder;
+
+      // ✅ التحقق من أن المجلد محمي
+      final folderData = folder['folderData'] ?? folder;
+      final isProtected = folderData['isProtected'] == true;
+      final protectionType = folderData['protectionType']?.toString() ?? 'none';
+
+      // ✅ إذا كان المجلد محمي، نطلب كلمة السر أولاً
+      if (isProtected && protectionType != 'none') {
+        final result = await showVerifyFolderAccessDialog(
+          context,
+          folderId,
+          folderName,
+          protectionType,
+        );
+
+        // ✅ إذا لم يتم التحقق بنجاح، نوقف العملية
+        if (result['success'] != true) {
+          return;
+        }
+      }
+
+      // ✅ بعد التحقق (إذا كان محمياً) أو مباشرة (إذا لم يكن محمياً)، نفتح المجلد
+      if (mounted) {
         Navigator.push(
           context,
           MaterialPageRoute(
@@ -2422,10 +2464,7 @@ class _FoldersPageState extends State<FoldersPage>
               value: Provider.of<FolderController>(context, listen: false),
               child: FolderContentsPage(
                 folderId: folderId,
-                folderName:
-                    folder['title']?.toString() ??
-                    folder['name']?.toString() ??
-                    'مجلد',
+                folderName: folderName,
                 folderColor: folder['color'] is Color
                     ? folder['color'] as Color?
                     : null,
@@ -2464,7 +2503,7 @@ class _FoldersPageState extends State<FoldersPage>
               if (folderName.isEmpty) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: Text('⚠️ الرجاء إدخال اسم المجلد'),
+                    content: Text(S.of(context).enterFolderName),
                     backgroundColor: Colors.orange,
                   ),
                 );
@@ -2485,10 +2524,21 @@ class _FoldersPageState extends State<FoldersPage>
                   SnackBar(
                     content: Text(
                       success
-                          ? '📁 تم إنشاء المجلد "$folderName" بنجاح'
-                          : '❌ ${folderController.errorMessage ?? "فشل إنشاء المجلد"}',
+                          ? S
+                                .of(context)
+                                .createFolderSuccess(
+                                  folderName,
+                                ) // ✅ تمرير اسم المجلد
+                          : S
+                                .of(context)
+                                .createFolderFailure(
+                                  folderController.errorMessage ??
+                                      S.of(context).createFolderFailureDefault,
+                                ),
                     ),
                     backgroundColor: success ? Colors.green : Colors.red,
+                    behavior: SnackBarBehavior
+                        .floating, // لجعل التنبيه يظهر بشكل عصري
                   ),
                 );
                 if (success) {
@@ -2523,7 +2573,7 @@ class _FoldersPageState extends State<FoldersPage>
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('✅ تم إنشاء الغرفة بنجاح'),
+          content: Text(S.of(context).roomCreatedSuccessfully),
           backgroundColor: Colors.green,
         ),
       );
@@ -2546,7 +2596,7 @@ class _FoldersPageState extends State<FoldersPage>
     final result = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: Text('تعديل الغرفة'),
+        title: Text(S.of(context).editRoom),
         content: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -2554,7 +2604,7 @@ class _FoldersPageState extends State<FoldersPage>
               TextField(
                 controller: nameController,
                 decoration: InputDecoration(
-                  labelText: 'اسم الغرفة',
+                  labelText: S.of(context).roomName,
                   border: OutlineInputBorder(),
                   prefixIcon: Icon(Icons.meeting_room),
                 ),
@@ -2564,7 +2614,7 @@ class _FoldersPageState extends State<FoldersPage>
               TextField(
                 controller: descriptionController,
                 decoration: InputDecoration(
-                  labelText: 'الوصف (اختياري)',
+                  labelText: S.of(context).roomDescription,
                   border: OutlineInputBorder(),
                   prefixIcon: Icon(Icons.description),
                 ),
@@ -2576,7 +2626,7 @@ class _FoldersPageState extends State<FoldersPage>
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext, false),
-            child: Text('إلغاء'),
+            child: Text(S.of(context).cancel),
           ),
           ElevatedButton(
             onPressed: () {
@@ -2584,7 +2634,7 @@ class _FoldersPageState extends State<FoldersPage>
               if (newName.isEmpty) {
                 ScaffoldMessenger.of(dialogContext).showSnackBar(
                   SnackBar(
-                    content: Text('⚠️ الرجاء إدخال اسم الغرفة'),
+                    content: Text(S.of(context).pleaseEnterRoomName),
                     backgroundColor: Colors.orange,
                   ),
                 );
@@ -2592,7 +2642,7 @@ class _FoldersPageState extends State<FoldersPage>
               }
               Navigator.pop(dialogContext, true);
             },
-            child: Text('حفظ'),
+            child: Text(S.of(context).save),
           ),
         ],
       ),
@@ -2606,7 +2656,7 @@ class _FoldersPageState extends State<FoldersPage>
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('⚠️ اسم الغرفة لا يمكن أن يكون فارغاً'),
+              content: Text(S.of(context).roomNameEmptyError),
               backgroundColor: Colors.orange,
             ),
           );
@@ -2632,7 +2682,7 @@ class _FoldersPageState extends State<FoldersPage>
         if (success) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('✅ تم تحديث الغرفة بنجاح'),
+              content: Text(S.of(context).updateRoomSuccess),
               backgroundColor: Colors.green,
               duration: Duration(seconds: 2),
             ),
@@ -2641,7 +2691,7 @@ class _FoldersPageState extends State<FoldersPage>
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
-                roomController.errorMessage ?? '❌ فشل تحديث الغرفة',
+                roomController.errorMessage ?? S.of(context).updateRoomFailure,
               ),
               backgroundColor: Colors.red,
               duration: Duration(seconds: 3),
@@ -2654,11 +2704,11 @@ class _FoldersPageState extends State<FoldersPage>
 
   String _formatMemberCount(int count) {
     if (count == 0) {
-      return 'لا يوجد أعضاء';
+      return S.of(context).noMembers;
     } else if (count == 1) {
-      return 'عضو واحد';
+      return S.of(context).oneMember;
     } else {
-      return '$count أعضاء';
+      return S.of(context).membersCount(count);
     }
   }
 }

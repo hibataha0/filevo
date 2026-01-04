@@ -99,7 +99,7 @@ class _CategoryPageState extends State<CategoryPage> {
   }
 
   String _formatFileName(String fileName) {
-    if (fileName.isEmpty) return 'ملف بدون اسم';
+    if (fileName.isEmpty) return S.of(context).unnamedFile;
     String fixedName = _fixArabicText(fileName);
     return _truncateFileName(fixedName, 20);
   }
@@ -562,7 +562,8 @@ class _CategoryPageState extends State<CategoryPage> {
                           f['path'] != null && (f['path'] as String).isNotEmpty,
                     )
                     .map((f) {
-                      final fileName = f['name']?.toString() ?? 'ملف بدون اسم';
+                      final fileName =
+                          f['name']?.toString() ?? S.of(context).unnamedFile;
                       final filePath = f['path']?.toString() ?? '';
                       final formattedName = _formatFileName(fileName);
 
@@ -649,7 +650,8 @@ class _CategoryPageState extends State<CategoryPage> {
               )
             : FilesListView(
                 items: fileController.uploadedFiles.map((f) {
-                  final fileName = f['name']?.toString() ?? 'ملف بدون اسم';
+                  final fileName =
+                      f['name']?.toString() ?? S.of(context).unnamedFile;
                   final formattedName = _formatFileName(fileName);
 
                   return {
@@ -768,7 +770,7 @@ class _CategoryPageState extends State<CategoryPage> {
         .toLowerCase();
     print('Name (lowercase): $name');
     final fileName =
-        originalName ?? file['title']?.toString() ?? 'ملف بدون اسم';
+        originalName ?? file['title']?.toString() ?? S.of(context).unnamedFile;
 
     String? getFileExtension() {
       if (file['originalData'] is Map) {
@@ -1140,7 +1142,7 @@ class _CategoryPageState extends State<CategoryPage> {
               ),
               const SizedBox(height: 16),
               Text(
-                'جاري تحميل الملف...',
+                S.of(context).loadingFile, // ✅ نص مترجم
                 style: TextStyle(
                   color: Colors.grey[700],
                   fontWeight: FontWeight.bold,

@@ -7,9 +7,8 @@ import 'package:filevo/controllers/folders/room_controller.dart';
 import 'package:filevo/views/fileViewer/file_actions_service.dart';
 import 'package:filevo/views/fileViewer/file_details_page.dart';
 import 'package:filevo/views/folders/room_comments_page.dart';
+import 'package:filevo/services/storage_service.dart';
 import 'package:filevo/generated/l10n.dart';
-import 'package:filevo/views/folders/starred_folders_page_helpers.dart';
-import 'package:filevo/views/folders/share_folder_with_room_page.dart';
 
 class FilesListView extends StatefulWidget {
   final List<Map<String, dynamic>> items;
@@ -1379,312 +1378,58 @@ class _FilesListViewState extends State<FilesListView> {
     ).showSnackBar(SnackBar(content: Text('Folder Info: ${folder['title']}')));
   }
 
-  void _showRenameDialog(
-    BuildContext context,
-    Map<String, dynamic> folder,
-  ) async {
-    final folderName =
-        folder['title']?.toString() ??
-        folder['name']?.toString() ??
-        S.of(context).folder;
-    final folderId = folder['folderId'] as String?;
-    final folderData = folder['folderData'] as Map<String, dynamic>?;
-
-    final nameController = TextEditingController(text: folderName);
-    final descriptionController = TextEditingController(
-      text: folderData?['description'] as String? ?? '',
+  void _showRenameDialog(BuildContext context, Map<String, dynamic> folder) {
+    // TODO: Implement rename dialog
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Rename Folder: ${folder['title']}')),
     );
-    final tagsController = TextEditingController(
-      text: (folderData?['tags'] as List?)?.join(', ') ?? '',
-    );
-
-    final scaffoldContext = context;
-
-    if (folderId == null) {
-      ScaffoldMessenger.of(
-        scaffoldContext,
-      ).showSnackBar(SnackBar(content: Text(S.of(context).folderIdNotFound)));
-      return;
-    }
-
-    final result = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: Text(S.of(context).editFileMetadata),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: nameController,
-                decoration: InputDecoration(
-                  labelText: S.of(context).folderName,
-                  hintText: S.of(context).folderName,
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.folder),
-                ),
-                autofocus: true,
-              ),
-              SizedBox(height: 16),
-              TextField(
-                controller: descriptionController,
-                decoration: InputDecoration(
-                  labelText: S.of(context).folderDescription,
-                  hintText: S.of(context).folderDescriptionHint,
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.description),
-                ),
-                maxLines: 3,
-              ),
-              SizedBox(height: 16),
-              TextField(
-                controller: tagsController,
-                decoration: InputDecoration(
-                  labelText: S.of(context).folderTags,
-                  hintText: S.of(context).folderTagsHint,
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.tag),
-                ),
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext, false),
-            child: Text(S.of(context).cancel),
-          ),
-          TextButton(
-            onPressed: () {
-              final newName = nameController.text.trim();
-              if (newName.isEmpty) {
-                ScaffoldMessenger.of(dialogContext).showSnackBar(
-                  SnackBar(content: Text(S.of(context).pleaseEnterFolderName)),
-                );
-                return;
-              }
-              Navigator.pop(dialogContext, true);
-            },
-            child: Text(S.of(context).save),
-          ),
-        ],
-      ),
-    );
-
-    if (result == true) {
-      final folderController = Provider.of<FolderController>(
-        scaffoldContext,
-        listen: false,
-      );
-
-      final newName = nameController.text.trim();
-      final description = descriptionController.text.trim();
-      final tagsString = tagsController.text.trim();
-      final tags = tagsString.isNotEmpty
-          ? tagsString
-                .split(',')
-                .map((t) => t.trim())
-                .where((t) => t.isNotEmpty)
-                .toList()
-          : <String>[];
-
-      final success = await folderController.updateFolder(
-        folderId: folderId,
-        name: newName,
-        description: description.isEmpty ? null : description,
-        tags: tags.isEmpty ? null : tags,
-      );
-
-      if (scaffoldContext.mounted) {
-        if (success) {
-          ScaffoldMessenger.of(scaffoldContext).showSnackBar(
-            SnackBar(
-              content: Text(S.of(scaffoldContext).folderUpdatedSuccessfully),
-              backgroundColor: Colors.green,
-            ),
-          );
-          // ✅ استدعاء callback لإعادة تحميل البيانات بعد التحديث الناجح
-          if (widget.onFileRemoved != null) {
-            widget.onFileRemoved!();
-          }
-        } else {
-          ScaffoldMessenger.of(scaffoldContext).showSnackBar(
-            SnackBar(
-              content: Text(
-                folderController.errorMessage ??
-                    S.of(scaffoldContext).folderUpdateFailed,
-              ),
-              backgroundColor: Colors.red,
-            ),
-          );
-        }
-      }
-    }
   }
 
-  Future<void> _showShareDialog(BuildContext context, Map<String, dynamic> folder) async {
-    final folderId = folder['folderId'] as String?;
-    final folderName = folder['title'] as String;
-
-    if (folderId == null) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(S.of(context).folderIdNotFound)));
-      return;
-    }
-
-    // ✅ التحقق من أن المجلد محمي مباشرة من folderData بدون طلب كلمة السر
-    final folderData = folder['folderData'] as Map<String, dynamic>? ?? {};
-    final isProtected = folderData['isProtected'] == true;
-    
-    if (isProtected) {
-      // ✅ المجلد محمي - منع المشاركة مباشرة بدون طلب كلمة السر
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('❌ ممنوع مشاركة المجلد المحمي'),
-          backgroundColor: Colors.red,
-          duration: Duration(seconds: 3),
-        ),
-      );
-      return;
-    }
-
-    // ✅ فتح صفحة المشاركة
-    await Navigator.push(
+  void _showShareDialog(BuildContext context, Map<String, dynamic> folder) {
+    // TODO: Implement share dialog
+    ScaffoldMessenger.of(
       context,
-      MaterialPageRoute(
-        builder: (context) => ShareFolderWithRoomPage(
-          folderId: folderId,
-          folderName: folderName,
-        ),
-      ),
-    );
+    ).showSnackBar(SnackBar(content: Text('Share Folder: ${folder['title']}')));
   }
 
   void _showMoveFolderDialog(
     BuildContext context,
     Map<String, dynamic> folder,
-  ) async {
-    final folderData = folder['folderData'] as Map<String, dynamic>? ?? {};
-    final folderId =
-        folder['folderId'] as String? ?? folderData['_id'] as String?;
-    final folderName =
-        folder['title'] as String ?? folderData['name'] ?? S.of(context).folder;
-
-    if (folderId == null) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(S.of(context).folderIdNotFound)));
-      return;
-    }
-
-    // ✅ استخدام الدالة المساعدة من starred_folders_page_helpers
-    await showMoveFolderDialogHelper(
+  ) {
+    // TODO: Implement move folder dialog
+    ScaffoldMessenger.of(
       context,
-      folder,
-      onUpdated: () {
-        // ✅ استدعاء callback لإعادة تحميل البيانات بعد النقل الناجح
-        if (widget.onFileRemoved != null) {
-          widget.onFileRemoved!();
-        }
-      },
-    );
+    ).showSnackBar(SnackBar(content: Text('Move Folder: ${folder['title']}')));
   }
 
-  void _toggleFavorite(
-    BuildContext context,
-    Map<String, dynamic> folder,
-  ) async {
-    final folderId = folder['folderId'] as String?;
-    if (folderId == null) return;
-
-    final folderController = Provider.of<FolderController>(
-      context,
-      listen: false,
+  void _toggleFavorite(BuildContext context, Map<String, dynamic> folder) {
+    // TODO: Implement toggle favorite
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Toggle Favorite: ${folder['title']}')),
     );
-
-    final result = await folderController.toggleStarFolder(folderId: folderId);
-
-    ScaffoldMessenger.of(context).hideCurrentSnackBar();
-
-    if (result['success'] == true) {
-      // ✅ قراءة القيمة المحدثة من originalData مباشرة
-      final updatedIsStarred = result['isStarred'] as bool? ?? false;
-      final updatedFolder = result['folder'] as Map<String, dynamic>?;
-
-      // ✅ تحديث بيانات المجلد المحلية فوراً لتغيير لون النجمة
-      final folderData = folder['folderData'] as Map<String, dynamic>?;
-      if (folderData != null) {
-        folderData['isStarred'] = updatedIsStarred;
-        if (updatedFolder != null) {
-          // ✅ تحديث جميع البيانات من الـ response
-          folderData.addAll(updatedFolder);
-        }
-      }
-
-      // ✅ تحديث folder أيضاً مباشرة
-      if (updatedFolder != null) {
-        folder['folderData'] = updatedFolder;
-        // ✅ تحديث isStarred مباشرة في item أيضاً
-        folder['isStarred'] = updatedIsStarred;
-      } else {
-        folder['isStarred'] = updatedIsStarred;
-      }
-
-      // ✅ تحديث حالة النجمة في _starStates
-      setState(() {
-        _starStates[folderId] = updatedIsStarred;
-      });
-
-      // ✅ إظهار رسالة النجاح
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            updatedIsStarred
-                ? S.of(context).folderAddedToFavorites
-                : S.of(context).folderRemovedFromFavorites,
-          ),
-          backgroundColor: Colors.green,
-          duration: Duration(seconds: 2),
-        ),
-      );
-
-      // ✅ لا نستدعي onFileRemoved هنا لأن البيانات تم تحديثها محلياً بالفعل
-      // ✅ هذا يمنع عمل refresh غير ضروري عند toggle favorite
-    } else {
-      // ✅ إظهار رسالة الخطأ
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(result['message'] ?? S.of(context).folderUpdateFailed),
-          backgroundColor: Colors.red,
-          duration: Duration(seconds: 2),
-        ),
-      );
-    }
   }
 
   void _showDeleteDialog(BuildContext context, Map<String, dynamic> folder) {
+    // TODO: Implement delete dialog
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(S.of(context).deleteFolder1(folder['title'] ?? '')),
-      ),
+      SnackBar(content: Text('Delete Folder: ${folder['title']}')),
     );
   }
 
   void _showMoveFileDialog(BuildContext context, Map<String, dynamic> file) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(S.of(context).moveFile(file['title'] ?? ''))),
-    );
+    // TODO: Implement move file dialog
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text('Move File: ${file['title']}')));
   }
 
   void _showCategoryDetails(
     BuildContext context,
     Map<String, dynamic> category,
   ) {
+    // TODO: Implement category details dialog
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(S.of(context).categoryDetails(category['title'] ?? '')),
-      ),
+      SnackBar(content: Text('Category Details: ${category['title']}')),
     );
   }
 }

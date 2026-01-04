@@ -153,7 +153,7 @@ class _RoomFilesPageState extends State<RoomFilesPage> {
         final fileName =
             fileData['name']?.toString() ??
             fileData['fileId']?['name']?.toString() ??
-            'ملف';
+            S.of(context).file;
         final tempDir = await getTemporaryDirectory();
         final tempFile = File('${tempDir.path}/$fileName');
         await tempFile.writeAsBytes(response.bodyBytes);
@@ -259,7 +259,7 @@ class _RoomFilesPageState extends State<RoomFilesPage> {
         final errorBody = response.body;
         print('❌ Error response: $errorBody');
 
-        String errorMessage = 'فشل تحميل الملف';
+        String errorMessage = S.of(context).failedToDownloadFile;
         try {
           final errorJson = jsonDecode(errorBody);
           errorMessage =
@@ -267,10 +267,9 @@ class _RoomFilesPageState extends State<RoomFilesPage> {
         } catch (e) {
           // ✅ إذا لم يكن JSON، استخدم الرسالة الأصلية
           if (response.statusCode == 403) {
-            errorMessage =
-                'You have already accessed this file. One-time share only.';
+            errorMessage = S.of(context).fileAlreadyAccessed;
           } else if (response.statusCode == 404) {
-            errorMessage = 'الملف غير موجود أو انتهت صلاحيته';
+            errorMessage = S.of(context).fileNotFoundOrExpired;
           }
         }
 
@@ -446,7 +445,7 @@ class _RoomFilesPageState extends State<RoomFilesPage> {
                 errorMessage.contains('منتهي')) {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: Text('❌ انتهت صلاحية الملف'),
+                  content: Text(S.of(context).fileExpired),
                   backgroundColor: Colors.red,
                   duration: Duration(seconds: 3),
                 ),
@@ -790,7 +789,8 @@ class _RoomFilesPageState extends State<RoomFilesPage> {
         );
       }
 
-      final fileName = fileData['name']?.toString() ?? 'ملف غير معروف';
+      final fileName =
+          fileData['name']?.toString() ?? S.of(context).unknownFile;
       final fileId =
           fileData['_id']?.toString() ??
           (fileIdRef is String ? fileIdRef : fileIdRef?.toString());
@@ -1129,7 +1129,7 @@ class _RoomFilesPageState extends State<RoomFilesPage> {
         content: TextField(
           controller: folderNameController,
           decoration: InputDecoration(
-            hintText: "أدخل اسم المجلد",
+            hintText: S.of(context).folderNameHint,
             border: OutlineInputBorder(),
             prefixIcon: Icon(Icons.create_new_folder),
           ),
@@ -1191,7 +1191,9 @@ class _RoomFilesPageState extends State<RoomFilesPage> {
     if (sharedItem['sharedBy'] != null) {
       final sharedBy = sharedItem['sharedBy'];
       if (sharedBy is Map<String, dynamic>) {
-        return sharedBy['name'] ?? sharedBy['email'] ?? 'مستخدم';
+        return sharedBy['name'] ??
+            sharedBy['email'] ??
+            S.of(context).unknownUser;
       }
       if (sharedBy is String) {
         // ✅ إذا كان sharedBy هو ID، ابحث في room members
@@ -1206,7 +1208,9 @@ class _RoomFilesPageState extends State<RoomFilesPage> {
               if (userIdStr == sharedBy) {
                 final user = userId is Map ? userId : member['user'];
                 if (user is Map<String, dynamic>) {
-                  return user['name'] ?? user['email'] ?? 'مستخدم';
+                  return user['name'] ??
+                      user['email'] ??
+                      S.of(context).unknownUser;
                 }
               }
             }
@@ -1220,7 +1224,7 @@ class _RoomFilesPageState extends State<RoomFilesPage> {
     if (itemData['userId'] != null) {
       final userId = itemData['userId'];
       if (userId is Map<String, dynamic>) {
-        return userId['name'] ?? userId['email'] ?? 'مستخدم';
+        return userId['name'] ?? userId['email'] ?? S.of(context).unknownUser;
       }
     }
 
@@ -1228,7 +1232,7 @@ class _RoomFilesPageState extends State<RoomFilesPage> {
     if (itemData['owner'] != null) {
       final owner = itemData['owner'];
       if (owner is Map<String, dynamic>) {
-        return owner['name'] ?? owner['email'] ?? 'مستخدم';
+        return owner['name'] ?? owner['email'] ?? S.of(context).unknownUser;
       }
     }
 

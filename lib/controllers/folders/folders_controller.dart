@@ -133,6 +133,7 @@ class FolderController with ChangeNotifier {
     required String folderId,
     int page = 1,
     int limit = 20,
+    String? roomId, // ✅ معامل اختياري للغرفة
   }) async {
     setLoading(true);
     errorMessage = null;
@@ -142,6 +143,7 @@ class FolderController with ChangeNotifier {
         folderId: folderId,
         page: page,
         limit: limit,
+        roomId: roomId, // ✅ تمرير roomId
       );
       return response;
     } catch (e) {
@@ -267,6 +269,7 @@ class FolderController with ChangeNotifier {
       setLoading(false);
     }
   }
+
 
   // ✅ Share folder with users
   Future<bool> shareFolder({

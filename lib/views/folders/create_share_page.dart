@@ -37,7 +37,9 @@ class _CreateSharePageState extends State<CreateSharePage> {
                         height: 20,
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            Colors.white,
+                          ),
                         ),
                       )
                     : Icon(Icons.check),
@@ -57,9 +59,9 @@ class _CreateSharePageState extends State<CreateSharePage> {
               TextField(
                 controller: _nameController,
                 decoration: InputDecoration(
-                  labelText: 'اسم الغرفة *',
+                  labelText: S.of(context).roomName,
                   border: OutlineInputBorder(),
-                  hintText: 'أدخل اسم للغرفة',
+                  hintText: S.of(context).roomNameHint,
                   prefixIcon: Icon(Icons.meeting_room),
                 ),
                 textCapitalization: TextCapitalization.words,
@@ -68,9 +70,9 @@ class _CreateSharePageState extends State<CreateSharePage> {
               TextField(
                 controller: _descriptionController,
                 decoration: InputDecoration(
-                  labelText: 'وصف الغرفة (اختياري)',
+                  labelText: S.of(context).roomDescription,
                   border: OutlineInputBorder(),
-                  hintText: 'أدخل وصفاً للغرفة',
+                  hintText: S.of(context).roomDescriptionHint,
                   prefixIcon: Icon(Icons.description),
                 ),
                 maxLines: 3,
@@ -125,7 +127,10 @@ class _CreateSharePageState extends State<CreateSharePage> {
         return;
       }
 
-      final roomController = Provider.of<RoomController>(context, listen: false);
+      final roomController = Provider.of<RoomController>(
+        context,
+        listen: false,
+      );
 
       final response = await roomController.createRoom(
         name: _nameController.text.trim(),
@@ -138,7 +143,7 @@ class _CreateSharePageState extends State<CreateSharePage> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('✅ تم إنشاء الغرفة بنجاح'),
+              content: Text(S.of(context).roomCreatedSuccess),
               backgroundColor: Colors.green,
             ),
           );
@@ -149,7 +154,8 @@ class _CreateSharePageState extends State<CreateSharePage> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
-                  roomController.errorMessage ?? '❌ فشل إنشاء الغرفة'),
+                roomController.errorMessage ?? S.of(context).roomCreatedError,
+              ),
               backgroundColor: Colors.red,
             ),
           );

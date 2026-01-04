@@ -524,15 +524,40 @@ exports.getFolderDetails = asyncHandler(async (req, res, next) => {
 exports.getFolderContents = asyncHandler(async (req, res, next) => {
     const folderId = req.params.id;
     const userId = req.user._id;
+    const roomId = req.query.roomId; // ✅ معامل اختياري للغرفة
     
     // ✅ Pagination parameters
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 20;
     const skip = (page - 1) * limit;
 
-    const folder = await Folder.findOne({ _id: folderId, userId: userId });
-    if (!folder) {
-        return next(new ApiError('Folder not found', 404));
+    let folder;
+    
+    // ✅ إذا كان roomId موجوداً، تحقق من أن المجلد مشترك في الروم
+    if (roomId) {
+        const Room = require('../models/roomModel');
+        const room = await Room.findOne({
+            _id: roomId,
+            'folders.folderId': folderId,
+            'members.user': userId,
+            isActive: true
+        });
+        
+        if (!room) {
+            return next(new ApiError('Folder not found in room or you are not a member', 404));
+        }
+        
+        // ✅ جلب المجلد مباشرة (حتى لو لم يكن مملوكاً من قبل المستخدم)
+        folder = await Folder.findOne({ _id: folderId, isDeleted: false });
+        if (!folder) {
+            return next(new ApiError('Folder not found', 404));
+        }
+    } else {
+        // ✅ البحث عن المجلدات التي يملكها المستخدم فقط
+        folder = await Folder.findOne({ _id: folderId, userId: userId });
+        if (!folder) {
+            return next(new ApiError('Folder not found', 404));
+        }
     }
 
     // ✅ جلب جميع subfolders و files (بدون pagination أولاً)

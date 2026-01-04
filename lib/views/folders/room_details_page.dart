@@ -1449,7 +1449,7 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
                           desktop: 22.0,
                         ),
                       ),
-                      tooltip: 'عرض الكل',
+                      tooltip: S.of(context).viewAll,
                       onPressed: () {
                         Navigator.push(
                           context,
@@ -1489,9 +1489,7 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
                         onPressed: () {
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
-                              content: Text(
-                                '💡 للمشاركة: افتح الملف/المجلد من صفحة الملفات/المجلدات واختر "مشاركة مع غرفة"',
-                              ),
+                              content: Text(S.of(context).shareInstruction),
                               backgroundColor: Colors.blue,
                               duration: Duration(seconds: 4),
                             ),
@@ -1524,7 +1522,7 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
                   ),
                 ),
                 child: Text(
-                  'لا توجد ملفات مشتركة',
+                  S.of(context).noSharedFiles,
                   style: TextStyle(
                     color: Colors.grey[600],
                     fontSize: ResponsiveUtils.getResponsiveValue(
@@ -1549,7 +1547,7 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
     final fileData = fileIdRef is Map<String, dynamic>
         ? fileIdRef
         : <String, dynamic>{};
-    final fileName = fileData['name']?.toString() ?? 'ملف غير معروف';
+    final fileName = fileData['name']?.toString() ?? S.of(context).unknownFile;
     final fileId =
         fileData['_id']?.toString() ??
         (fileIdRef is String ? fileIdRef : fileIdRef?.toString());
@@ -1644,8 +1642,8 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
                       SizedBox(width: 12),
                       Text(
                         fileData['isStarred'] == true
-                            ? 'إزالة من المفضلة'
-                            : 'إضافة للمفضلة',
+                            ? S.of(context).removeFromFavorites
+                            : S.of(context).addToFavorites,
                       ),
                     ],
                   ),
@@ -1657,7 +1655,7 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
                       Icon(Icons.remove_circle_outline, color: Colors.red),
                       SizedBox(width: 12),
                       Text(
-                        'إزالة من الروم',
+                        S.of(context).removeFromRoom,
                         style: TextStyle(color: Colors.red),
                       ),
                     ],
@@ -1741,7 +1739,7 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
         final fileName =
             fileData['name']?.toString() ??
             fileData['fileId']?['name']?.toString() ??
-            'ملف';
+            S.of(context).file;
         final tempDir = await getTemporaryDirectory();
         final tempFile = File('${tempDir.path}/$fileName');
         await tempFile.writeAsBytes(response.bodyBytes);
@@ -1879,7 +1877,7 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
       return;
     }
 
-    final fileName = fileData['name']?.toString() ?? 'ملف';
+    final fileName = fileData['name']?.toString() ?? S.of(context).file;
     final name = fileName.toLowerCase();
     final url = _getFileUrl(filePath);
 
@@ -2187,7 +2185,7 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
                     ),
                     Flexible(
                       child: Text(
-                        'المجلدات المشتركة (${folders.length})',
+                        S.of(context).sharedFoldersTitle(folders.length),
                         style: TextStyle(
                           fontSize: titleFontSize,
                           fontWeight: FontWeight.w700,
@@ -2251,7 +2249,7 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
                           desktop: 22.0,
                         ),
                       ),
-                      tooltip: 'عرض الكل',
+                      tooltip: S.of(context).viewAll,
                       onPressed: () {
                         Navigator.push(
                           context,
@@ -2292,7 +2290,7 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
                               content: Text(
-                                '💡 للمشاركة: افتح المجلد من صفحة المجلدات واختر "مشاركة مع غرفة"',
+                                S.of(context).folderShareInstruction,
                               ),
                               backgroundColor: Colors.blue,
                               duration: Duration(seconds: 4),
@@ -2326,7 +2324,7 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
                   ),
                 ),
                 child: Text(
-                  'لا توجد مجلدات مشتركة',
+                  S.of(context).noSharedFolders,
                   style: TextStyle(
                     color: Colors.grey[600],
                     fontSize: ResponsiveUtils.getResponsiveValue(
@@ -2352,7 +2350,8 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
     final folderData = folderIdRef is Map<String, dynamic>
         ? folderIdRef
         : <String, dynamic>{};
-    final folderName = folderData['name']?.toString() ?? 'مجلد غير معروف';
+    final folderName =
+        folderData['name']?.toString() ?? S.of(context).unknownFolder;
     final folderId =
         folderData['_id']?.toString() ??
         (folderIdRef is String ? folderIdRef : folderIdRef?.toString());
@@ -2467,8 +2466,8 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
                       SizedBox(width: 12),
                       Text(
                         folderData['isStarred'] == true
-                            ? 'إزالة من المفضلة'
-                            : 'إضافة للمفضلة',
+                            ? S.of(context).removeFromFavorites
+                            : S.of(context).addToFavorites,
                       ),
                     ],
                   ),
@@ -2480,7 +2479,7 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
                       Icon(Icons.remove_circle_outline, color: Colors.red),
                       SizedBox(width: 12),
                       Text(
-                        'إزالة من الروم',
+                        S.of(context).removeFromRoom,
                         style: TextStyle(color: Colors.red),
                       ),
                     ],
@@ -2757,8 +2756,8 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
             SnackBar(
               content: Text(
                 isStarred
-                    ? '✅ تم إضافة الملف إلى المفضلة'
-                    : '✅ تم إزالة الملف من المفضلة',
+                    ? S.of(context).addedToFavorites
+                    : S.of(context).removedFromFavorites,
               ),
               backgroundColor: Colors.green,
             ),
@@ -2769,7 +2768,9 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(result['message'] ?? 'فشل في تحديث حالة المفضلة'),
+              content: Text(
+                result['message'] ?? S.of(context).failedToUpdateFavorite,
+              ),
               backgroundColor: Colors.red,
             ),
           );
@@ -2815,7 +2816,10 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
           ),
           TextButton(
             onPressed: () => Navigator.pop(dialogContext, true),
-            child: Text('إزالة', style: TextStyle(color: Colors.red)),
+            child: Text(
+              S.of(context).remove,
+              style: TextStyle(color: Colors.red),
+            ),
           ),
         ],
       ),
@@ -2837,7 +2841,7 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
         if (success) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('✅ تم إزالة الملف من الروم'),
+              content: Text(S.of(context).fileRemovedFromRoom),
               backgroundColor: Colors.green,
             ),
           );
@@ -2851,7 +2855,8 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
-                roomController.errorMessage ?? 'فشل إزالة الملف من الروم',
+                roomController.errorMessage ??
+                    S.of(context).failedToRemoveFileFromRoom,
               ),
               backgroundColor: Colors.red,
             ),
@@ -2898,7 +2903,10 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
           ),
           TextButton(
             onPressed: () => Navigator.pop(dialogContext, true),
-            child: Text('إزالة', style: TextStyle(color: Colors.red)),
+            child: Text(
+              S.of(context).remove,
+              style: TextStyle(color: Colors.red),
+            ),
           ),
         ],
       ),
@@ -2920,7 +2928,7 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
         if (success) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('✅ تم إزالة المجلد من الروم'),
+              content: Text(S.of(context).folderRemovedFromRoom),
               backgroundColor: Colors.green,
             ),
           );
@@ -2934,7 +2942,8 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
-                roomController.errorMessage ?? 'فشل إزالة المجلد من الروم',
+                roomController.errorMessage ??
+                    S.of(context).failedToRemoveFolderFromRoom,
               ),
               backgroundColor: Colors.red,
             ),
@@ -2988,8 +2997,8 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
             SnackBar(
               content: Text(
                 isStarred
-                    ? '✅ تم إضافة المجلد إلى المفضلة'
-                    : '✅ تم إزالة المجلد من المفضلة',
+                    ? S.of(context).folderAddedToFavorite
+                    : S.of(context).folderRemovedFromFavorite,
               ),
               backgroundColor: Colors.green,
             ),
@@ -3000,7 +3009,9 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(result['message'] ?? 'فشل في تحديث حالة المفضلة'),
+              content: Text(
+                result['message'] ?? S.of(context).failedToUpdateFavorite,
+              ),
               backgroundColor: Colors.red,
             ),
           );
@@ -3021,7 +3032,7 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
   /// ✅ عرض dialog لمغادرة الغرفة
   void _showLeaveRoomDialog() {
     if (roomData == null) return;
-    final roomName = roomData!['name'] ?? 'الغرفة';
+    final roomName = roomData!['name'] ?? S.of(context).room;
 
     showDialog(
       context: context,
@@ -3063,7 +3074,7 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
         if (success) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('✅ تم حذف الغرفة بنجاح'),
+              content: Text(S.of(context).roomDeletedSuccessfully),
               backgroundColor: Colors.green,
             ),
           );
@@ -3074,7 +3085,9 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(roomController.errorMessage ?? '❌ فشل حذف الغرفة'),
+              content: Text(
+                roomController.errorMessage ?? S.of(context).roomDeletionFailed,
+              ),
               backgroundColor: Colors.red,
             ),
           );
@@ -3084,7 +3097,7 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('❌ خطأ: ${e.toString()}'),
+            content: Text(S.of(context).errorPrefix(e.toString())),
             backgroundColor: Colors.red,
           ),
         );
@@ -3107,7 +3120,7 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
         if (success) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('✅ تم مغادرة الغرفة بنجاح'),
+              content: Text(S.of(context).roomLeftSuccessfully),
               backgroundColor: Colors.green,
             ),
           );
@@ -3119,7 +3132,7 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
-                roomController.errorMessage ?? '❌ فشل مغادرة الغرفة',
+                roomController.errorMessage ?? S.of(context).roomLeaveFailed,
               ),
               backgroundColor: Colors.red,
             ),
@@ -3130,7 +3143,7 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('❌ خطأ: ${e.toString()}'),
+            content: Text(S.of(context).errorPrefix(e.toString())),
             backgroundColor: Colors.red,
           ),
         );

@@ -73,7 +73,7 @@ class _SendInvitationPageState extends State<SendInvitationPage> {
         if (result != null) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('✅ تم إرسال الدعوة بنجاح'),
+              content: Text(S.of(context).invitationSentSuccess),
               backgroundColor: Colors.green,
             ),
           );
@@ -112,7 +112,7 @@ class _SendInvitationPageState extends State<SendInvitationPage> {
                     Icon(Icons.person_add, color: Colors.white, size: 48),
                     SizedBox(height: 12),
                     Text(
-                      'دعوة مستخدم جديد',
+                      S.of(context).inviteNewUser,
                       style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
@@ -121,7 +121,7 @@ class _SendInvitationPageState extends State<SendInvitationPage> {
                     ),
                     SizedBox(height: 8),
                     Text(
-                      'أدخل البريد الإلكتروني لإرسال الدعوة',
+                      S.of(context).enterEmailToInvite,
                       style: TextStyle(
                         fontSize: 14,
                         color: Colors.white.withOpacity(0.9),
@@ -138,8 +138,8 @@ class _SendInvitationPageState extends State<SendInvitationPage> {
                 controller: _emailController,
                 keyboardType: TextInputType.emailAddress,
                 decoration: InputDecoration(
-                  labelText: 'البريد الإلكتروني *',
-                  hintText: 'أدخل البريد الإلكتروني',
+                  labelText: S.of(context).emailAddress,
+                  hintText: S.of(context).enterEmail,
                   prefixIcon: Icon(Icons.email),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
@@ -157,12 +157,12 @@ class _SendInvitationPageState extends State<SendInvitationPage> {
                 },
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
-                    return 'يرجى إدخال البريد الإلكتروني';
+                    return S.of(context).enterEmail;
                   }
                   // ✅ التحقق من صحة البريد الإلكتروني
                   final emailRegex = RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$');
                   if (!emailRegex.hasMatch(value.trim())) {
-                    return 'يرجى إدخال بريد إلكتروني صحيح';
+                    return S.of(context).invalidEmail;
                   }
                   return null;
                 },
@@ -171,7 +171,7 @@ class _SendInvitationPageState extends State<SendInvitationPage> {
 
               // Role
               Text(
-                'الدور',
+                S.of(context).role,
                 style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
               ),
               SizedBox(height: 8),
@@ -232,7 +232,7 @@ class _SendInvitationPageState extends State<SendInvitationPage> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'السماح بالمشاركة',
+                            S.of(context).allowSharing,
                             style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w600,
@@ -240,7 +240,7 @@ class _SendInvitationPageState extends State<SendInvitationPage> {
                           ),
                           SizedBox(height: 4),
                           Text(
-                            'يمكن للمستخدم مشاركة ملفات ومجلدات في هذه الغرفة',
+                            S.of(context).allowSharingDescription,
                             style: TextStyle(
                               fontSize: 12,
                               color: Colors.grey[600],
@@ -258,8 +258,8 @@ class _SendInvitationPageState extends State<SendInvitationPage> {
               TextFormField(
                 controller: _messageController,
                 decoration: InputDecoration(
-                  labelText: 'رسالة (اختياري)',
-                  hintText: 'أضف رسالة ترحيبية...',
+                  labelText: S.of(context).messageLabel,
+                  hintText: S.of(context).messageHint,
                   prefixIcon: Icon(Icons.message),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
@@ -330,7 +330,7 @@ class _SendInvitationPageState extends State<SendInvitationPage> {
                               Icon(Icons.send, color: Colors.white),
                               SizedBox(width: 8),
                               Text(
-                                'إرسال الدعوة',
+                                S.of(context).sendInvitation,
                                 style: TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.bold,

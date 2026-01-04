@@ -24,6 +24,7 @@ import 'package:http/http.dart' as http;
 import 'dart:io';
 import 'package:pull_to_refresh/pull_to_refresh.dart';
 import 'package:shimmer/shimmer.dart';
+import 'package:filevo/dialogs/folder_protection_dialogs.dart';
 
 class HomeView extends StatefulWidget {
   final VoidCallback? onNavigateToFolders;
@@ -122,11 +123,22 @@ class _HomeViewState extends State<HomeView> {
               final fileName =
                   file['name']?.toString() ?? S.of(context).fileWithoutName;
               final filePath = file['path']?.toString() ?? '';
+              final fileId = file['_id']?.toString() ?? '';
               final size = file['size'];
+
+              // ✅ بناء URL - إذا كان path موجوداً استخدمه، وإلا استخدم fileId
+              String fileUrl = '';
+              if (filePath.isNotEmpty) {
+                fileUrl = _getFileUrl(filePath);
+              } else if (fileId.isNotEmpty) {
+                // ✅ استخدام viewFile endpoint للصور
+                final baseUrl = ApiConfig.baseUrl;
+                fileUrl = "$baseUrl/files/$fileId/view";
+              }
 
               return {
                 'name': fileName,
-                'url': _getFileUrl(filePath),
+                'url': fileUrl,
                 'type': _getFileType(fileName),
                 'size': _formatBytes(
                   (size != null && size is int)
@@ -219,14 +231,38 @@ class _HomeViewState extends State<HomeView> {
     }
   }
 
-  void _handleFolderTap(Map<String, dynamic> folder) {
+  Future<void> _handleFolderTap(Map<String, dynamic> folder) async {
     final folderId = folder['folderId'] ?? folder['originalData']?['_id'];
     final folderName =
         folder['title'] ??
         folder['name'] ??
         folder['originalData']?['name'] ??
         S.of(context).folder;
-    if (folderId != null) {
+
+    if (folderId == null) return;
+
+    // ✅ التحقق من أن المجلد محمي
+    final folderData = folder['originalData'] ?? folder;
+    final isProtected = folderData['isProtected'] == true;
+    final protectionType = folderData['protectionType']?.toString() ?? 'none';
+
+    // ✅ إذا كان المجلد محمي، نطلب كلمة السر أولاً
+    if (isProtected && protectionType != 'none') {
+      final result = await showVerifyFolderAccessDialog(
+        context,
+        folderId.toString(),
+        folderName,
+        protectionType,
+      );
+
+      // ✅ إذا لم يتم التحقق بنجاح، نوقف العملية
+      if (result['success'] != true) {
+        return;
+      }
+    }
+
+    // ✅ بعد التحقق (إذا كان محمياً) أو مباشرة (إذا لم يكن محمياً)، نفتح المجلد
+    if (mounted) {
       Navigator.push(
         context,
         MaterialPageRoute(
@@ -596,9 +632,7 @@ class _HomeViewState extends State<HomeView> {
               child: Container(
                 decoration: BoxDecoration(
                   color: Colors.white,
-                  borderRadius: BorderRadius.vertical(
-                    top: Radius.circular(12),
-                  ),
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
                 ),
               ),
             ),

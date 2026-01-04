@@ -278,18 +278,24 @@ class FolderService {
     required String folderId,
     int page = 1,
     int limit = 20,
+    String? roomId, // ✅ معامل اختياري للغرفة
   }) async {
     final token = await StorageService.getToken();
+
+    final queryParams = {
+      'page': page.toString(),
+      'limit': limit.toString(),
+    };
+    
+    // ✅ إضافة roomId إذا كان موجوداً
+    if (roomId != null && roomId.isNotEmpty) {
+      queryParams['roomId'] = roomId;
+    }
 
     final uri =
         Uri.parse(
           "${ApiConfig.baseUrl}${ApiEndpoints.folderContents(folderId)}",
-        ).replace(
-          queryParameters: {
-            'page': page.toString(),
-            'limit': limit.toString(),
-          },
-        );
+        ).replace(queryParameters: queryParams);
 
     final headers = <String, String>{
       'Authorization': 'Bearer $token',
@@ -502,6 +508,7 @@ class FolderService {
       );
     }
   }
+
 
   // ✅ مشاركة مجلد مع مستخدمين
   Future<Map<String, dynamic>> shareFolder({

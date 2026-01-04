@@ -2,18 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:filevo/controllers/folders/folders_controller.dart';
 import 'package:provider/provider.dart';
-
-/// ✅ التحقق من دعم البصمة
-Future<bool> _checkBiometricSupport() async {
-  try {
-    final LocalAuthentication localAuth = LocalAuthentication();
-    final bool canCheckBiometrics = await localAuth.canCheckBiometrics;
-    final bool isDeviceSupported = await localAuth.isDeviceSupported();
-    return canCheckBiometrics && isDeviceSupported;
-  } catch (e) {
-    return false;
-  }
-}
+import 'package:filevo/generated/l10n.dart';
 
 /// 🔒 Dialog لتعيين حماية المجلد
 Future<void> showSetFolderProtectionDialog(
@@ -24,7 +13,6 @@ Future<void> showSetFolderProtectionDialog(
   String? currentProtectionType,
   VoidCallback? onProtectionChanged,
 ) async {
-  String? selectedType;
   final passwordController = TextEditingController();
   final confirmPasswordController = TextEditingController();
   bool showPassword = false;
@@ -38,8 +26,8 @@ Future<void> showSetFolderProtectionDialog(
       builder: (context, setState) => AlertDialog(
         title: Text(
           isCurrentlyProtected
-              ? 'إزالة حماية المجلد'
-              : 'قفل المجلد',
+              ? S.of(context).unlockFolder
+              : S.of(context).lockFolder,
         ),
         content: SingleChildScrollView(
           child: Column(
@@ -47,11 +35,8 @@ Future<void> showSetFolderProtectionDialog(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'المجلد: $folderName',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                ),
+                S.of(context).folderLabel(folderName),
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
               ),
               SizedBox(height: 20),
               // ✅ عرض رسالة الخطأ داخل dialog
@@ -82,48 +67,20 @@ Future<void> showSetFolderProtectionDialog(
                 SizedBox(height: 10),
               ],
               if (!isCurrentlyProtected) ...[
+                // ✅ فقط كلمة السر - بدون خيار البصمة
                 Text(
-                  'اختر نوع الحماية:',
+                  S.of(context).enterPasswordToLockFolder,
                   style: TextStyle(fontWeight: FontWeight.bold),
                 ),
-                SizedBox(height: 10),
-                RadioListTile<String>(
-                  title: Text('🔒 كلمة سر'),
-                  value: 'password',
-                  groupValue: selectedType,
-                  onChanged: (value) {
-                    setState(() {
-                      selectedType = value;
-                    });
-                  },
-                ),
-                FutureBuilder<bool>(
-                  future: _checkBiometricSupport(),
-                  builder: (context, snapshot) {
-                    final isSupported = snapshot.data ?? false;
-                    if (!isSupported) {
-                      return SizedBox.shrink();
-                    }
-                    return RadioListTile<String>(
-                      title: Text('👆 بصمة'),
-                      value: 'biometric',
-                      groupValue: selectedType,
-                      onChanged: (value) {
-                        setState(() {
-                          selectedType = value;
-                        });
-                      },
-                    );
-                  },
-                ),
-                if (selectedType == 'password') ...[
+                SizedBox(height: 20),
+                ...[
                   SizedBox(height: 20),
                   TextField(
                     controller: passwordController,
                     obscureText: !showPassword,
                     decoration: InputDecoration(
-                      labelText: 'كلمة السر',
-                      hintText: 'أدخل كلمة السر (4 أحرف على الأقل)',
+                      labelText: S.of(context).passwordLabel,
+                      hintText: S.of(context).enterPasswordHint,
                       border: OutlineInputBorder(),
                       prefixIcon: Icon(Icons.lock),
                       suffixIcon: IconButton(
@@ -145,8 +102,8 @@ Future<void> showSetFolderProtectionDialog(
                     controller: confirmPasswordController,
                     obscureText: !showConfirmPassword,
                     decoration: InputDecoration(
-                      labelText: 'تأكيد كلمة السر',
-                      hintText: 'أعد إدخال كلمة السر',
+                      labelText: S.of(context).confirmPasswordLabel,
+                      hintText: S.of(context).reenterPasswordHint,
                       border: OutlineInputBorder(),
                       prefixIcon: Icon(Icons.lock_outline),
                       suffixIcon: IconButton(
@@ -166,7 +123,7 @@ Future<void> showSetFolderProtectionDialog(
                 ],
               ] else ...[
                 Text(
-                  'هل تريد إزالة الحماية من هذا المجلد؟',
+                  S.of(context).removeProtectionQuestion,
                   style: TextStyle(fontSize: 16),
                 ),
                 if (currentProtectionType == 'password') ...[
@@ -175,8 +132,8 @@ Future<void> showSetFolderProtectionDialog(
                     controller: passwordController,
                     obscureText: !showPassword,
                     decoration: InputDecoration(
-                      labelText: 'كلمة السر الحالية',
-                      hintText: 'أدخل كلمة السر لإزالة الحماية',
+                      labelText: S.of(context).currentPasswordLabel,
+                      hintText: S.of(context).enterPasswordToRemoveProtection,
                       border: OutlineInputBorder(),
                       prefixIcon: Icon(Icons.lock),
                       suffixIcon: IconButton(
@@ -201,7 +158,7 @@ Future<void> showSetFolderProtectionDialog(
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
-            child: Text('إلغاء'),
+            child: Text(S.of(context).cancel),
           ),
           ElevatedButton(
             onPressed: () async {
@@ -211,47 +168,37 @@ Future<void> showSetFolderProtectionDialog(
               });
 
               if (!isCurrentlyProtected) {
-                // تعيين حماية جديدة
-                if (selectedType == null) {
+                // تعيين حماية جديدة - فقط كلمة السر
+                if (passwordController.text.isEmpty) {
                   setState(() {
-                    errorMessage = 'يرجى اختيار نوع الحماية';
+                    errorMessage = S.of(context).pleaseEnterPassword;
                   });
                   return;
                 }
 
-                if (selectedType == 'password') {
-                  if (passwordController.text.isEmpty) {
-                    setState(() {
-                      errorMessage = 'يرجى إدخال كلمة السر';
-                    });
-                    return;
-                  }
-
-                  if (passwordController.text.length < 4) {
-                    setState(() {
-                      errorMessage = 'كلمة السر يجب أن تكون 4 أحرف على الأقل';
-                    });
-                    return;
-                  }
-
-                  if (passwordController.text !=
-                      confirmPasswordController.text) {
-                    setState(() {
-                      errorMessage = 'كلمات السر غير متطابقة';
-                    });
-                    return;
-                  }
+                if (passwordController.text.length < 4) {
+                  setState(() {
+                    errorMessage = S.of(context).passwordMin4Chars;
+                  });
+                  return;
                 }
 
-                // تفعيل الحماية
-                final folderController =
-                    Provider.of<FolderController>(context, listen: false);
+                if (passwordController.text != confirmPasswordController.text) {
+                  setState(() {
+                    errorMessage = S.of(context).passwordsDoNotMatch;
+                  });
+                  return;
+                }
+
+                // تفعيل الحماية - فقط كلمة السر
+                final folderController = Provider.of<FolderController>(
+                  context,
+                  listen: false,
+                );
                 final success = await folderController.protectFolder(
                   folderId: folderId,
-                  protectionType: selectedType!,
-                  password: selectedType == 'password'
-                      ? passwordController.text
-                      : null,
+                  protectionType: 'password',
+                  password: passwordController.text,
                 );
 
                 if (success) {
@@ -262,14 +209,17 @@ Future<void> showSetFolderProtectionDialog(
                   }
                 } else {
                   setState(() {
-                    errorMessage = folderController.errorMessage ??
-                        'فشل تفعيل حماية المجلد';
+                    errorMessage =
+                        folderController.errorMessage ??
+                        S.of(context).failedToEnableProtection;
                   });
                 }
               } else {
                 // إزالة الحماية
-                final folderController =
-                    Provider.of<FolderController>(context, listen: false);
+                final folderController = Provider.of<FolderController>(
+                  context,
+                  listen: false,
+                );
                 final success = await folderController.removeFolderProtection(
                   folderId: folderId,
                   password: currentProtectionType == 'password'
@@ -285,13 +235,18 @@ Future<void> showSetFolderProtectionDialog(
                   }
                 } else {
                   setState(() {
-                    errorMessage = folderController.errorMessage ??
-                        'فشل إزالة حماية المجلد';
+                    errorMessage =
+                        folderController.errorMessage ??
+                        S.of(context).failedToRemoveProtection;
                   });
                 }
               }
             },
-            child: Text(isCurrentlyProtected ? 'إزالة الحماية' : 'قفل المجلد'),
+            child: Text(
+              isCurrentlyProtected
+                  ? S.of(context).unlockFolder
+                  : S.of(context).lockFolder,
+            ),
           ),
         ],
       ),
@@ -323,7 +278,7 @@ Future<Map<String, dynamic>> showVerifyFolderAccessDialog(
           children: [
             Icon(Icons.lock, color: Colors.orange),
             SizedBox(width: 10),
-            Text('مجلد محمي'),
+            Text(S.of(context).protectedFolder),
           ],
         ),
         content: SingleChildScrollView(
@@ -332,11 +287,8 @@ Future<Map<String, dynamic>> showVerifyFolderAccessDialog(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'المجلد "$folderName" محمي',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                ),
+                S.of(context).folderIsProtected(folderName),
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
               ),
               SizedBox(height: 20),
               // ✅ عرض رسالة الخطأ داخل dialog
@@ -372,15 +324,13 @@ Future<Map<String, dynamic>> showVerifyFolderAccessDialog(
                   obscureText: !showPassword,
                   autofocus: true,
                   decoration: InputDecoration(
-                    labelText: 'كلمة السر',
-                    hintText: 'أدخل كلمة السر',
+                    labelText: S.of(context).passwordLabel,
+                    hintText: S.of(context).enterPassword,
                     border: OutlineInputBorder(),
                     prefixIcon: Icon(Icons.lock),
                     suffixIcon: IconButton(
                       icon: Icon(
-                        showPassword
-                            ? Icons.visibility
-                            : Icons.visibility_off,
+                        showPassword ? Icons.visibility : Icons.visibility_off,
                       ),
                       onPressed: () {
                         setState(() {
@@ -420,14 +370,10 @@ Future<Map<String, dynamic>> showVerifyFolderAccessDialog(
                 Center(
                   child: Column(
                     children: [
-                      Icon(
-                        Icons.fingerprint,
-                        size: 64,
-                        color: Colors.blue,
-                      ),
+                      Icon(Icons.fingerprint, size: 64, color: Colors.blue),
                       SizedBox(height: 20),
                       Text(
-                        'استخدم البصمة للوصول',
+                        S.of(context).useFingerprintToAccess,
                         style: TextStyle(fontSize: 16),
                       ),
                     ],
@@ -464,7 +410,7 @@ Future<Map<String, dynamic>> showVerifyFolderAccessDialog(
                 );
               },
               icon: Icon(Icons.fingerprint),
-              label: Text('التحقق بالبصمة'),
+              label: Text(S.of(context).verifyWithFingerprint),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.blue,
                 foregroundColor: Colors.white,
@@ -479,7 +425,7 @@ Future<Map<String, dynamic>> showVerifyFolderAccessDialog(
 
                 if (passwordController.text.isEmpty) {
                   setState(() {
-                    errorMessage = 'يرجى إدخال كلمة السر';
+                    errorMessage = S.of(context).pleaseEnterPassword;
                   });
                   return;
                 }
@@ -504,24 +450,21 @@ Future<Map<String, dynamic>> showVerifyFolderAccessDialog(
                   },
                 );
               },
-              child: Text('فتح'),
+              child: Text(S.of(context).open),
             ),
           TextButton(
             onPressed: () {
               successResult = false;
               Navigator.pop(dialogContext);
             },
-            child: Text('إلغاء'),
+            child: Text(S.of(context).cancel),
           ),
         ],
       ),
     ),
   );
 
-  return {
-    'success': successResult ?? false,
-    'password': verifiedPassword,
-  };
+  return {'success': successResult ?? false, 'password': verifiedPassword};
 }
 
 /// 🔐 التحقق من الوصول
@@ -535,8 +478,10 @@ Future<void> _verifyAccess(
   required Function(String) setErrorMessage,
   required Function(bool, String?) setResult, // ✅ إرجاع success و password
 }) async {
-  final folderController =
-      Provider.of<FolderController>(context, listen: false);
+  final folderController = Provider.of<FolderController>(
+    context,
+    listen: false,
+  );
 
   final success = await folderController.verifyFolderAccess(
     folderId: folderId,
@@ -550,7 +495,9 @@ Future<void> _verifyAccess(
   } else {
     // ✅ عرض رسالة الخطأ داخل dialog
     setResult(false, null);
-    setErrorMessage(folderController.errorMessage ?? 'كلمة السر غير صحيحة');
+    setErrorMessage(
+      folderController.errorMessage ?? S.of(context).incorrectPassword,
+    );
   }
 }
 
@@ -570,13 +517,13 @@ Future<void> _verifyBiometric(
     final bool isDeviceSupported = await localAuth.isDeviceSupported();
 
     if (!canCheckBiometrics || !isDeviceSupported) {
-      setErrorMessage('البصمة غير متاحة على هذا الجهاز');
+      setErrorMessage(S.of(context).fingerprintNotAvailable);
       return;
     }
 
     // التحقق من البصمة
     final bool didAuthenticate = await localAuth.authenticate(
-      localizedReason: 'يرجى التحقق من البصمة للوصول للمجلد',
+      localizedReason: S.of(context).pleaseVerifyFingerprint,
       options: const AuthenticationOptions(
         biometricOnly: true,
         stickyAuth: true,
@@ -585,13 +532,16 @@ Future<void> _verifyBiometric(
 
     if (didAuthenticate) {
       // إرسال token للباك إند (في التطبيق الحقيقي، قد تحتاج لتوقيع token)
-      final folderController =
-          Provider.of<FolderController>(context, listen: false);
+      final folderController = Provider.of<FolderController>(
+        context,
+        listen: false,
+      );
 
       final success = await folderController.verifyFolderAccess(
         folderId: folderId,
         password: null,
-        biometricToken: 'biometric_verified_${DateTime.now().millisecondsSinceEpoch}',
+        biometricToken:
+            'biometric_verified_${DateTime.now().millisecondsSinceEpoch}',
       );
 
       if (success) {
@@ -599,11 +549,13 @@ Future<void> _verifyBiometric(
         Navigator.pop(dialogContext);
       } else {
         setResult(false, null);
-        setErrorMessage(folderController.errorMessage ?? 'فشل التحقق بالبصمة');
+        setErrorMessage(
+          folderController.errorMessage ??
+              S.of(context).failedToVerifyFingerprint,
+        );
       }
     }
   } catch (e) {
-    setErrorMessage('خطأ في التحقق بالبصمة: ${e.toString()}');
+    setErrorMessage(S.of(context).fingerprintVerificationError(e.toString()));
   }
 }
-

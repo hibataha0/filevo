@@ -301,7 +301,17 @@ class _FilesGridState extends State<FilesGrid> {
         FileActionsService.unshareFile(context, fileController, file);
         break;
       case 'delete':
-        FileActionsService.deleteFile(context, fileController, file);
+        FileActionsService.deleteFile(
+          context,
+          fileController,
+          file,
+          onLocalUpdate: () {
+            // ✅ استدعاء callback لإعادة تحميل الصفحة بعد الحذف
+            if (mounted && widget.onFileRemoved != null) {
+              widget.onFileRemoved!();
+            }
+          },
+        );
         break;
     }
   }
@@ -1097,9 +1107,23 @@ class _FilesGridState extends State<FilesGrid> {
 
       // ✅ الملف العادي - نعرض معاينة
       if (isImage) {
+        // ✅ التحقق من أن fileUrl صالح قبل محاولة تحميل الصورة
+        if (fileUrl.isEmpty || !_isValidImageUrl(fileUrl)) {
+          return Container(
+            color: const Color(0xff28336f),
+            child: Center(
+              child: Icon(
+                getIcon(),
+                size: 60,
+                color: Colors.white.withOpacity(0.7),
+              ),
+            ),
+          );
+        }
+
         // ✅ استخدام CachedNetworkImage مع headers للصور التي تحتاج token
         final needsToken =
-            fileUrl.contains('/api/') || fileUrl.contains('/download/');
+            fileUrl.contains('/api/') || fileUrl.contains('/download/') || fileUrl.contains('/view');
         return FutureBuilder<Map<String, String>?>(
           future: needsToken ? _getImageHeaders() : Future.value(null),
           builder: (context, snapshot) {
@@ -1788,6 +1812,25 @@ class _FilesGridState extends State<FilesGrid> {
       return {'Authorization': 'Bearer $_cachedToken'};
     }
     return null;
+  }
+
+  // ✅ التحقق من أن URL الصورة صالح
+  bool _isValidImageUrl(String url) {
+    if (url.isEmpty) return false;
+    
+    // ✅ التحقق من أن URL يحتوي على مسار صالح (ليس فقط base URL)
+    // ✅ تجنب URLs مثل "http://192.168.0.81:8000/" أو "http://192.168.0.81:8000/?v=..."
+    try {
+      final uri = Uri.parse(url);
+      // ✅ يجب أن يكون URL صالحاً وأن يحتوي على مسار (path) غير فارغ
+      if (uri.path.isEmpty || uri.path == '/') {
+        // ✅ إذا كان المسار فارغاً أو فقط "/"، فهذا URL غير صالح للصور
+        return false;
+      }
+      return uri.isAbsolute && (uri.scheme == 'http' || uri.scheme == 'https');
+    } catch (e) {
+      return false;
+    }
   }
 
   Widget _buildNetworkImage(String url) {

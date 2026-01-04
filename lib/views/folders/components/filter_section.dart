@@ -105,8 +105,8 @@ class _FilterSectionState extends State<FilterSection> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'اختر نطاق التاريخ المخصص',
-                    style: TextStyle(
+                    S.of(context).selectCustomDateRange, // ✅ نص مترجم
+                    style: const TextStyle(
                       color: Colors.white,
                       fontSize: 14,
                       fontWeight: FontWeight.w500,
@@ -117,13 +117,16 @@ class _FilterSectionState extends State<FilterSection> {
                     children: [
                       Expanded(
                         child: _buildDatePicker(
-                          'من',
+                          S.of(context).from, // ✅ "من" مترجمة
                           widget.onStartDateChanged,
                         ),
                       ),
-                      SizedBox(width: 8),
+                      const SizedBox(width: 8),
                       Expanded(
-                        child: _buildDatePicker('إلى', widget.onEndDateChanged),
+                        child: _buildDatePicker(
+                          S.of(context).to, // ✅ "إلى" مترجمة
+                          widget.onEndDateChanged,
+                        ),
                       ),
                     ],
                   ),
@@ -214,7 +217,10 @@ class _FilterSectionState extends State<FilterSection> {
         children: [
           Icon(Icons.clear, size: 16, color: Colors.red),
           SizedBox(width: 4),
-          Text('إلغاء التصنيف', style: TextStyle(fontSize: 12)),
+          Text(
+            S.of(context).unclassify, // ✅ نص مترجم
+            style: const TextStyle(fontSize: 12),
+          ),
         ],
       ),
       onPressed: () {
@@ -254,7 +260,10 @@ class _FilterSectionState extends State<FilterSection> {
         children: [
           Icon(Icons.clear, size: 16, color: Colors.red),
           SizedBox(width: 4),
-          Text('إلغاء التاريخ', style: TextStyle(fontSize: 12)),
+          Text(
+            S.of(context).clearDate, // ✅ نص مترجم
+            style: const TextStyle(fontSize: 12),
+          ),
         ],
       ),
       onPressed: () {

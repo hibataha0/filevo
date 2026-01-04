@@ -1,3 +1,4 @@
+import 'package:filevo/generated/l10n.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:filevo/controllers/folders/folders_controller.dart';
@@ -31,16 +32,16 @@ class _ShareFolderPageState extends State<ShareFolderPage> {
   void _addUserId() {
     final userId = _userIdController.text.trim();
     if (userId.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('يرجى إدخال معرف المستخدم')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(S.of(context).pleaseEnterUserId)));
       return;
     }
 
     if (_selectedUserIds.contains(userId)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('المستخدم موجود بالفعل في القائمة')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(S.of(context).userAlreadyInList)));
       return;
     }
 
@@ -58,9 +59,9 @@ class _ShareFolderPageState extends State<ShareFolderPage> {
 
   Future<void> _shareFolder() async {
     if (_selectedUserIds.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('يرجى إضافة مستخدم واحد على الأقل')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(S.of(context).addAtLeastOneUser)));
       return;
     }
 
@@ -68,7 +69,10 @@ class _ShareFolderPageState extends State<ShareFolderPage> {
       _isLoading = true;
     });
 
-    final folderController = Provider.of<FolderController>(context, listen: false);
+    final folderController = Provider.of<FolderController>(
+      context,
+      listen: false,
+    );
     final success = await folderController.shareFolder(
       folderId: widget.folderId,
       userIds: _selectedUserIds,
@@ -83,7 +87,7 @@ class _ShareFolderPageState extends State<ShareFolderPage> {
       if (success) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('✅ تم مشاركة المجلد بنجاح'),
+            content: Text(S.of(context).folderSharedSuccessfully),
             backgroundColor: Colors.green,
           ),
         );
@@ -91,7 +95,10 @@ class _ShareFolderPageState extends State<ShareFolderPage> {
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(folderController.errorMessage ?? '❌ فشل مشاركة المجلد'),
+            content: Text(
+              folderController.errorMessage ??
+                  S.of(context).failedToShareFolder,
+            ),
             backgroundColor: Colors.red,
           ),
         );
@@ -103,7 +110,7 @@ class _ShareFolderPageState extends State<ShareFolderPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('مشاركة المجلد'),
+        title: Text(S.of(context).shareFolder),
         actions: [
           if (_isLoading)
             Padding(
@@ -118,8 +125,11 @@ class _ShareFolderPageState extends State<ShareFolderPage> {
             TextButton(
               onPressed: _shareFolder,
               child: Text(
-                'مشاركة',
-                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                S.of(context).share,
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
         ],
@@ -146,7 +156,7 @@ class _ShareFolderPageState extends State<ShareFolderPage> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'المجلد',
+                          S.of(context).folder,
                           style: TextStyle(
                             fontSize: 12,
                             color: Colors.blue[700],
@@ -174,11 +184,8 @@ class _ShareFolderPageState extends State<ShareFolderPage> {
 
             // ✅ إضافة مستخدمين
             Text(
-              'إضافة مستخدمين',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
+              S.of(context).addUsers,
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             SizedBox(height: 12),
             Row(
@@ -187,7 +194,7 @@ class _ShareFolderPageState extends State<ShareFolderPage> {
                   child: TextField(
                     controller: _userIdController,
                     decoration: InputDecoration(
-                      hintText: 'أدخل معرف المستخدم',
+                      hintText: S.of(context).pleaseEnterUserId,
                       border: OutlineInputBorder(),
                       prefixIcon: Icon(Icons.person),
                     ),
@@ -205,77 +212,90 @@ class _ShareFolderPageState extends State<ShareFolderPage> {
             ),
             SizedBox(height: 8),
             Text(
-              'أدخل معرف المستخدم (User ID) للمشاركة',
-              style: TextStyle(
-                fontSize: 12,
-                color: Colors.grey[600],
-              ),
+              S.of(context).enterUserIdToShare,
+              style: TextStyle(fontSize: 12, color: Colors.grey[600]),
             ),
             SizedBox(height: 16),
 
             // ✅ قائمة المستخدمين المختارين
             if (_selectedUserIds.isNotEmpty) ...[
               Text(
-                'المستخدمون المختارون (${_selectedUserIds.length})',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
+                S.of(context).selectedUsersCount(_selectedUserIds.length),
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
               ),
               SizedBox(height: 12),
-              ..._selectedUserIds.map((userId) => Container(
-                    margin: EdgeInsets.only(bottom: 8),
-                    padding: EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.grey[100],
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.grey[300]!),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(Icons.person, color: Colors.blue[700]),
-                        SizedBox(width: 12),
-                        Expanded(
-                          child: Text(
-                            userId,
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w500,
-                            ),
+              ..._selectedUserIds.map(
+                (userId) => Container(
+                  margin: EdgeInsets.only(bottom: 8),
+                  padding: EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.grey[100],
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.grey[300]!),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.person, color: Colors.blue[700]),
+                      SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          userId,
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
                           ),
                         ),
-                        IconButton(
-                          onPressed: () => _removeUserId(userId),
-                          icon: Icon(Icons.close, color: Colors.red),
-                          iconSize: 20,
-                        ),
-                      ],
-                    ),
-                  )),
+                      ),
+                      IconButton(
+                        onPressed: () => _removeUserId(userId),
+                        icon: Icon(Icons.close, color: Colors.red),
+                        iconSize: 20,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
               SizedBox(height: 24),
             ],
 
             // ✅ اختيار الصلاحيات
             Text(
-              'الصلاحيات',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
+              S.of(context).permissions,
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             SizedBox(height: 12),
-            _buildPermissionOption('view', 'عرض فقط', Icons.visibility, Colors.blue),
+            _buildPermissionOption(
+              'view',
+              S.of(context).viewOnly,
+              Icons.visibility,
+              Colors.blue,
+            ),
             SizedBox(height: 8),
-            _buildPermissionOption('edit', 'عرض وتعديل', Icons.edit, Colors.orange),
+            _buildPermissionOption(
+              'edit',
+              S.of(context).viewAndEdit,
+              Icons.edit,
+              Colors.orange,
+            ),
             SizedBox(height: 8),
-            _buildPermissionOption('delete', 'عرض وتعديل وحذف', Icons.delete, Colors.red),
+            _buildPermissionOption(
+              'delete',
+              S.of(context).fullAccess,
+              Icons.delete,
+              Colors.red,
+            ),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildPermissionOption(String permission, String label, IconData icon, Color color) {
+  Widget _buildPermissionOption(
+    String permission,
+    String label,
+    IconData icon,
+    Color color,
+  ) {
     final isSelected = _selectedPermission == permission;
     return InkWell(
       onTap: () {
@@ -307,21 +327,10 @@ class _ShareFolderPageState extends State<ShareFolderPage> {
                 ),
               ),
             ),
-            if (isSelected)
-              Icon(Icons.check_circle, color: color),
+            if (isSelected) Icon(Icons.check_circle, color: color),
           ],
         ),
       ),
     );
   }
 }
-
-
-
-
-
-
-
-
-
-

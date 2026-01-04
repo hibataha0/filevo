@@ -1,3 +1,4 @@
+import 'package:filevo/generated/l10n.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:filevo/controllers/folders/folders_controller.dart';
@@ -127,7 +128,7 @@ Future<void> showFolderInfoHelper(
   if (folderId == null) {
     ScaffoldMessenger.of(
       context,
-    ).showSnackBar(SnackBar(content: Text('خطأ: معرف المجلد غير موجود')));
+    ).showSnackBar(SnackBar(content: Text(S.of(context).folderIdNotFound)));
     return;
   }
 
@@ -141,9 +142,9 @@ Future<void> showFolderInfoHelper(
 
   if (folderDetails == null || folderDetails['folder'] == null) {
     if (context.mounted) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('فشل جلب معلومات المجلد')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(S.of(context).failedToFetchFolderInfo)),
+      );
     }
     return;
   }
@@ -197,41 +198,46 @@ Future<void> showFolderInfoHelper(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildDetailItemHelper('folder', '📁', 'النوع', 'مجلد'),
+                  _buildDetailItemHelper(
+                    'folder',
+                    '📁',
+                    S.of(context).type,
+                    S.of(context).folder,
+                  ),
                   _buildDetailItemHelper(
                     'size',
                     '💾',
-                    'الحجم',
+                    S.of(context).size,
                     _formatBytesHelper(folderData['size'] ?? 0),
                   ),
                   _buildDetailItemHelper(
                     'files',
                     '📄',
-                    'عدد الملفات',
+                    S.of(context).filesCount,
                     '${folderData['filesCount'] ?? 0}',
                   ),
                   _buildDetailItemHelper(
                     'subfolders',
                     '📂',
-                    'عدد المجلدات الفرعية',
+                    S.of(context).subfoldersCount,
                     '${folderData['subfoldersCount'] ?? 0}',
                   ),
                   _buildDetailItemHelper(
                     'time',
                     '🕐',
-                    'تاريخ الإنشاء',
+                    S.of(context).createdAt,
                     _formatDateHelper(folderData['createdAt']),
                   ),
                   _buildDetailItemHelper(
                     'edit',
                     '✏️',
-                    'آخر تعديل',
+                    S.of(context).detailUpdatedAt,
                     _formatDateHelper(folderData['updatedAt']),
                   ),
                   _buildDetailItemHelper(
                     'description',
                     '📝',
-                    'الوصف',
+                    S.of(context).description,
                     folderData['description']?.isNotEmpty == true
                         ? folderData['description']
                         : "—",
@@ -239,7 +245,7 @@ Future<void> showFolderInfoHelper(
                   _buildDetailItemHelper(
                     'tags',
                     '🏷️',
-                    'الوسوم',
+                    S.of(context).tags,
                     (folderData['tags'] as List?)?.join(', ') ?? "—",
                   ),
                   if (folderData['sharedWith'] != null &&
@@ -251,7 +257,7 @@ Future<void> showFolderInfoHelper(
                         _buildDetailItemHelper(
                           'share',
                           '👥',
-                          'تمت المشاركة مع',
+                          S.of(context).sharedWith,
                           (folderData['sharedWith'] as List)
                                   .map<String>(
                                     (u) =>
@@ -295,14 +301,14 @@ Future<void> showRenameDialogHelper(
   if (folderId == null) {
     ScaffoldMessenger.of(
       context,
-    ).showSnackBar(SnackBar(content: Text('خطأ: معرف المجلد غير موجود')));
+    ).showSnackBar(SnackBar(content: Text(S.of(context).folderIdNotFound)));
     return;
   }
 
   final result = await showDialog<bool>(
     context: context,
     builder: (dialogContext) => AlertDialog(
-      title: Text('تعديل المجلد'),
+      title: Text(S.of(context).editFolderTitle),
       content: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -310,8 +316,8 @@ Future<void> showRenameDialogHelper(
             TextField(
               controller: nameController,
               decoration: InputDecoration(
-                labelText: 'اسم المجلد',
-                hintText: 'اسم المجلد',
+                labelText: S.of(context).folderName,
+                hintText: S.of(context).folderName,
                 border: OutlineInputBorder(),
                 prefixIcon: Icon(Icons.folder),
               ),
@@ -321,8 +327,8 @@ Future<void> showRenameDialogHelper(
             TextField(
               controller: descriptionController,
               decoration: InputDecoration(
-                labelText: 'الوصف',
-                hintText: 'وصف المجلد (اختياري)',
+                labelText: S.of(context).description,
+                hintText: S.of(context).descriptionHint,
                 border: OutlineInputBorder(),
                 prefixIcon: Icon(Icons.description),
               ),
@@ -332,8 +338,8 @@ Future<void> showRenameDialogHelper(
             TextField(
               controller: tagsController,
               decoration: InputDecoration(
-                labelText: 'الوسوم',
-                hintText: 'وسوم مفصولة بفواصل (اختياري)',
+                labelText: S.of(context).tags,
+                hintText: S.of(context).tagsHint,
                 border: OutlineInputBorder(),
                 prefixIcon: Icon(Icons.tag),
               ),
@@ -344,20 +350,20 @@ Future<void> showRenameDialogHelper(
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(dialogContext, false),
-          child: Text('إلغاء'),
+          child: Text(S.of(context).cancel),
         ),
         TextButton(
           onPressed: () {
             final newName = nameController.text.trim();
             if (newName.isEmpty) {
-              ScaffoldMessenger.of(
-                dialogContext,
-              ).showSnackBar(SnackBar(content: Text('يرجى إدخال اسم المجلد')));
+              ScaffoldMessenger.of(dialogContext).showSnackBar(
+                SnackBar(content: Text(S.of(context).pleaseEnterFolderName)),
+              );
               return;
             }
             Navigator.pop(dialogContext, true);
           },
-          child: Text('حفظ'),
+          child: Text(S.of(context).save),
         ),
       ],
     ),
@@ -390,7 +396,7 @@ Future<void> showRenameDialogHelper(
       if (success) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('✅ تم تحديث المجلد بنجاح'),
+            content: Text(S.of(context).folderUpdateSuccess),
             backgroundColor: Colors.green,
           ),
         );
@@ -399,7 +405,7 @@ Future<void> showRenameDialogHelper(
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              folderController.errorMessage ?? '❌ فشل تحديث المجلد',
+              folderController.errorMessage ?? S.of(context).folderUpdateFailed,
             ),
             backgroundColor: Colors.red,
           ),
@@ -419,25 +425,7 @@ Future<void> showShareDialogHelper(
   if (folderId == null) {
     ScaffoldMessenger.of(
       context,
-    ).showSnackBar(SnackBar(content: Text('خطأ: معرف المجلد غير موجود')));
-    return;
-  }
-
-  // ✅ التحقق من أن المجلد محمي مباشرة من folderData بدون طلب كلمة السر
-  final folderData = folder['folderData'] as Map<String, dynamic>? ?? {};
-  final isProtected = folderData['isProtected'] == true;
-  
-  if (isProtected) {
-    // ✅ المجلد محمي - منع المشاركة مباشرة بدون طلب كلمة السر
-    if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('❌ ممنوع مشاركة المجلد المحمي'),
-          backgroundColor: Colors.red,
-          duration: Duration(seconds: 3),
-        ),
-      );
-    }
+    ).showSnackBar(SnackBar(content: Text(S.of(context).folderIdNotFound)));
     return;
   }
 
@@ -483,13 +471,14 @@ Future<void> showMoveFolderDialogHelper(
   final folderData = folder['folderData'] as Map<String, dynamic>? ?? {};
   final folderId =
       folder['folderId'] as String? ?? folderData['_id'] as String?;
-  final folderName = folder['title'] as String ?? folderData['name'] ?? 'مجلد';
+  final folderName =
+      folder['title'] as String ?? folderData['name'] ?? S.of(context).folder;
   final currentParentId = folderData['parentId']?.toString();
 
   if (folderId == null) {
     ScaffoldMessenger.of(
       context,
-    ).showSnackBar(SnackBar(content: Text('خطأ: معرف المجلد غير موجود')));
+    ).showSnackBar(SnackBar(content: Text(S.of(context).folderIdNotFound)));
     return;
   }
 
@@ -506,7 +495,7 @@ Future<void> showMoveFolderDialogHelper(
   if (foldersResponse == null || foldersResponse['folders'] == null) {
     ScaffoldMessenger.of(
       context,
-    ).showSnackBar(SnackBar(content: Text('فشل جلب قائمة المجلدات')));
+    ).showSnackBar(SnackBar(content: Text(S.of(context).failedToFetchFolders)));
     return;
   }
 
@@ -551,7 +540,7 @@ Future<void> showMoveFolderDialogHelper(
                 SizedBox(width: 16),
                 Expanded(
                   child: Text(
-                    'نقل المجلد: $folderName',
+                    '${S.of(context).moveFolder} : $folderName',
                     style: TextStyle(
                       color: Colors.white,
                       fontSize: 18,
@@ -574,8 +563,8 @@ Future<void> showMoveFolderDialogHelper(
                 // ✅ خيار "الجذر"
                 ListTile(
                   leading: Icon(Icons.home_rounded, color: Colors.blue),
-                  title: Text('الجذر'),
-                  subtitle: Text('نقل المجلد للجذر (بدون مجلد أب)'),
+                  title: Text(S.of(context).root),
+                  subtitle: Text(S.of(context).moveToRoot),
                   onTap: () {
                     Navigator.pop(context);
                     _moveFolderHelper(
@@ -594,7 +583,7 @@ Future<void> showMoveFolderDialogHelper(
                   child: availableFolders.isEmpty
                       ? Center(
                           child: Text(
-                            'لا توجد مجلدات متاحة',
+                            S.of(context).noFoldersAvailable,
                             style: TextStyle(color: Colors.grey),
                           ),
                         )
@@ -603,7 +592,8 @@ Future<void> showMoveFolderDialogHelper(
                           itemBuilder: (context, index) {
                             final f = availableFolders[index];
                             final fId = f['_id']?.toString();
-                            final fName = f['name'] ?? 'مجلد بدون اسم';
+                            final fName =
+                                f['name'] ?? S.of(context).unnamedFolder;
 
                             return ListTile(
                               leading: Icon(
@@ -611,7 +601,9 @@ Future<void> showMoveFolderDialogHelper(
                                 color: Colors.orange,
                               ),
                               title: Text(fName),
-                              subtitle: Text('${f['filesCount'] ?? 0} ملف'),
+                              subtitle: Text(
+                                '${f['filesCount'] ?? 0}${S.of(context).files}}',
+                              ),
                               onTap: () {
                                 Navigator.pop(context);
                                 _moveFolderHelper(
@@ -665,8 +657,8 @@ Future<void> _moveFolderHelper(
           Expanded(
             child: Text(
               targetFolderId == null
-                  ? 'جاري نقل المجلد للجذر...'
-                  : 'جاري نقل المجلد...',
+                  ? S.of(context).movingToRoot
+                  : S.of(context).movingFolder,
               style: TextStyle(fontSize: 14),
             ),
           ),
@@ -692,8 +684,8 @@ Future<void> _moveFolderHelper(
         SnackBar(
           content: Text(
             e.toString().contains('timeout') || e.toString().contains('مهلة')
-                ? 'انتهت مهلة الطلب. قد يكون المجلد كبيراً جداً. يرجى المحاولة مرة أخرى.'
-                : 'حدث خطأ أثناء نقل المجلد: ${e.toString()}',
+                ? S.of(context).transferTimeout
+                : S.of(context).transferError(e.toString()),
           ),
           backgroundColor: Colors.orange,
           duration: Duration(seconds: 5),
@@ -709,7 +701,7 @@ Future<void> _moveFolderHelper(
     if (success) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('✅ تم نقل المجلد بنجاح'),
+          content: Text(S.of(context).folderMoveSuccess),
           backgroundColor: Colors.green,
         ),
       );
@@ -720,7 +712,9 @@ Future<void> _moveFolderHelper(
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(folderController.errorMessage ?? '❌ فشل نقل المجلد'),
+          content: Text(
+            folderController.errorMessage ?? S.of(context).folderMoveFailed,
+          ),
           backgroundColor: Colors.red,
         ),
       );

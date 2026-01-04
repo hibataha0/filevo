@@ -7,6 +7,7 @@ import 'package:filevo/controllers/folders/room_controller.dart';
 import 'package:filevo/utils/room_permissions.dart';
 import 'package:pull_to_refresh/pull_to_refresh.dart';
 import 'package:shimmer/shimmer.dart';
+import 'package:intl/intl.dart';
 
 class RoomCommentsPage extends StatefulWidget {
   final String roomId;
@@ -32,8 +33,9 @@ class _RoomCommentsPageState extends State<RoomCommentsPage> {
   String _selectedTargetId =
       ''; // ✅ إذا كان فارغاً، يعني تعليقات عامة على الروم
   Map<String, dynamic>? roomData; // ✅ بيانات الغرفة للتحقق من الصلاحيات
-  final RefreshController _refreshController =
-      RefreshController(initialRefresh: false);
+  final RefreshController _refreshController = RefreshController(
+    initialRefresh: false,
+  );
 
   @override
   void initState() {
@@ -52,68 +54,7 @@ class _RoomCommentsPageState extends State<RoomCommentsPage> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadRoomData();
       _loadComments();
-      _setupSocketIO(); // ✅ إعداد Socket.IO للتعليقات المباشرة
     });
-  }
-
-  /// ✅ إعداد Socket.IO للاستماع للتعليقات الجديدة
-  Future<void> _setupSocketIO() async {
-    if (!mounted) return;
-
-    try {
-      final roomController = Provider.of<RoomController>(context, listen: false);
-      
-      // ✅ الاتصال والانضمام للغرفة
-      await roomController.joinRoomSocket(widget.roomId);
-      
-      // ✅ الاستماع للتعليقات الجديدة
-      roomController.listenToNewComments(widget.roomId, (newComment) {
-        if (!mounted) return;
-
-        // ✅ التحقق من أن التعليق يخص نفس الـ target
-        final commentTargetType = newComment['targetType']?.toString() ?? '';
-        final commentTargetId = newComment['targetId']?.toString() ?? '';
-        
-        // ✅ للتعليقات العامة على الروم
-        final isRoomComment = _selectedTargetType == 'room' && 
-                             (commentTargetType == 'room' || commentTargetId.isEmpty);
-        
-        // ✅ للتعليقات على ملف/مجلد
-        final isTargetComment = _selectedTargetType != 'room' &&
-                               commentTargetType == _selectedTargetType &&
-                               commentTargetId == (_selectedTargetId.isNotEmpty 
-                                   ? _selectedTargetId 
-                                   : widget.targetId);
-        
-        if (isRoomComment || isTargetComment) {
-          // ✅ التحقق من أن التعليق غير موجود بالفعل (لتجنب التكرار)
-          final commentId = newComment['_id']?.toString() ?? newComment['id']?.toString();
-          final exists = comments.any((c) => 
-            (c['_id']?.toString() ?? c['id']?.toString()) == commentId
-          );
-          
-          if (!exists) {
-            setState(() {
-              // ✅ إضافة التعليق الجديد في البداية
-              comments.insert(0, newComment);
-            });
-            
-            // ✅ إظهار إشعار بصري (اختياري)
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('💬 تعليق جديد من ${newComment['user']?['name'] ?? 'مستخدم'}'),
-                duration: Duration(seconds: 2),
-                backgroundColor: Color(0xff28336f),
-              ),
-            );
-          }
-        }
-      });
-      
-      print('✅ [RoomCommentsPage] Socket.IO setup completed for room: ${widget.roomId}');
-    } catch (e) {
-      print('❌ [RoomCommentsPage] Error setting up Socket.IO: $e');
-    }
   }
 
   // ✅ جلب بيانات الغرفة للتحقق من الصلاحيات
@@ -132,16 +73,6 @@ class _RoomCommentsPageState extends State<RoomCommentsPage> {
 
   @override
   void dispose() {
-    // ✅ إيقاف الاستماع للتعليقات ومغادرة الغرفة
-    try {
-      final roomController = Provider.of<RoomController>(context, listen: false);
-      roomController.stopListeningToComments(widget.roomId);
-      roomController.leaveRoomSocket(widget.roomId);
-      print('👋 [RoomCommentsPage] Disposed Socket.IO listeners for room: ${widget.roomId}');
-    } catch (e) {
-      print('❌ [RoomCommentsPage] Error disposing Socket.IO: $e');
-    }
-    
     _commentController.dispose();
     _refreshController.dispose();
     super.dispose();
@@ -177,8 +108,12 @@ class _RoomCommentsPageState extends State<RoomCommentsPage> {
       // ✅ Debug: طباعة بيانات التعليقات للتحقق من وجود profileImg
       if (result.isNotEmpty) {
         print('📝 [RoomCommentsPage] Comments loaded: ${result.length}');
-        print('📝 [RoomCommentsPage] First comment user keys: ${result[0]['user']?.keys.toList()}');
-        print('📝 [RoomCommentsPage] First comment user profileImg: ${result[0]['user']?['profileImg']}');
+        print(
+          '📝 [RoomCommentsPage] First comment user keys: ${result[0]['user']?.keys.toList()}',
+        );
+        print(
+          '📝 [RoomCommentsPage] First comment user profileImg: ${result[0]['user']?['profileImg']}',
+        );
       }
       setState(() {
         comments = result;
@@ -198,9 +133,7 @@ class _RoomCommentsPageState extends State<RoomCommentsPage> {
       if (!canAdd) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(
-              '❌ ليس لديك صلاحية لإضافة تعليقات. فقط المالك والمحرر والمعلق يمكنهم إضافة تعليقات',
-            ),
+            content: Text(S.of(context).noPermissionAddComment),
             backgroundColor: Colors.red,
           ),
         );
@@ -211,7 +144,7 @@ class _RoomCommentsPageState extends State<RoomCommentsPage> {
     if (_commentController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('يرجى إدخال تعليق'),
+          content: Text(S.of(context).pleaseEnterComment),
           backgroundColor: Colors.red,
         ),
       );
@@ -244,36 +177,20 @@ class _RoomCommentsPageState extends State<RoomCommentsPage> {
 
     if (mounted) {
       if (result != null) {
-        // ✅ إضافة التعليق محلياً مباشرة (للمستخدم الذي أضافه)
-        // Socket.IO سيرسل التعليق لبقية المستخدمين
-        final newComment = result['comment'];
-        if (newComment != null) {
-          setState(() {
-            // ✅ التحقق من عدم وجود التعليق بالفعل (لتجنب التكرار)
-            final commentId = newComment['_id']?.toString() ?? newComment['id']?.toString();
-            final exists = comments.any((c) => 
-              (c['_id']?.toString() ?? c['id']?.toString()) == commentId
-            );
-            
-            if (!exists) {
-              comments.insert(0, newComment);
-            }
-          });
-        }
-        
         _commentController.clear();
-        
-        // ✅ لا حاجة لإعادة تحميل التعليقات - Socket.IO سيقوم بتحديثها تلقائياً
+        _loadComments();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('✅ تم إضافة التعليق بنجاح'),
+            content: Text(S.of(context).addCommentSuccess),
             backgroundColor: Colors.green,
           ),
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(roomController.errorMessage ?? '❌ فشل إضافة التعليق'),
+            content: Text(
+              roomController.errorMessage ?? S.of(context).addCommentFailure,
+            ),
             backgroundColor: Colors.red,
           ),
         );
@@ -294,7 +211,10 @@ class _RoomCommentsPageState extends State<RoomCommentsPage> {
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: Text(S.of(context).delete, style: TextStyle(color: Colors.red)),
+            child: Text(
+              S.of(context).delete,
+              style: TextStyle(color: Colors.red),
+            ),
           ),
         ],
       ),
@@ -314,7 +234,7 @@ class _RoomCommentsPageState extends State<RoomCommentsPage> {
         if (success) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('✅ تم حذف التعليق بنجاح'),
+              content: Text(S.of(context).deleteCommentSuccess),
               backgroundColor: Colors.green,
             ),
           );
@@ -322,7 +242,10 @@ class _RoomCommentsPageState extends State<RoomCommentsPage> {
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(roomController.errorMessage ?? '❌ فشل حذف التعليق'),
+              content: Text(
+                roomController.errorMessage ??
+                    S.of(context).deleteCommentFailure,
+              ),
               backgroundColor: Colors.red,
             ),
           );
@@ -358,7 +281,7 @@ class _RoomCommentsPageState extends State<RoomCommentsPage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'اختر ملف أو مجلد',
+                    S.of(context).selectFileOrFolder,
                     style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
                   ),
                   SizedBox(height: 8),
@@ -368,7 +291,7 @@ class _RoomCommentsPageState extends State<RoomCommentsPage> {
                         child: DropdownButtonFormField<String>(
                           value: _selectedTargetType,
                           decoration: InputDecoration(
-                            labelText: 'النوع',
+                            labelText: S.of(context).type,
                             border: OutlineInputBorder(),
                             contentPadding: EdgeInsets.symmetric(
                               horizontal: 12,
@@ -376,7 +299,10 @@ class _RoomCommentsPageState extends State<RoomCommentsPage> {
                             ),
                           ),
                           items: [
-                            DropdownMenuItem(value: 'file', child: Text(S.of(context).file)),
+                            DropdownMenuItem(
+                              value: 'file',
+                              child: Text(S.of(context).file),
+                            ),
                             DropdownMenuItem(
                               value: 'folder',
                               child: Text(S.of(context).folder),
@@ -405,7 +331,7 @@ class _RoomCommentsPageState extends State<RoomCommentsPage> {
                         Expanded(
                           child: TextField(
                             decoration: InputDecoration(
-                              labelText: 'معرف الملف/المجلد',
+                              labelText: S.of(context).fileOrFolderId,
                               border: OutlineInputBorder(),
                               contentPadding: EdgeInsets.symmetric(
                                 horizontal: 12,
@@ -448,7 +374,7 @@ class _RoomCommentsPageState extends State<RoomCommentsPage> {
                         ),
                         SizedBox(height: 16),
                         Text(
-                          'اختر ملف أو مجلد لعرض التعليقات',
+                          S.of(context).pleaseSelectFileOrFolder,
                           style: TextStyle(
                             fontSize: 16,
                             color: Colors.grey[600],
@@ -469,7 +395,7 @@ class _RoomCommentsPageState extends State<RoomCommentsPage> {
                         ),
                         SizedBox(height: 16),
                         Text(
-                          'لا توجد تعليقات',
+                          S.of(context).noCommentsYet,
                           style: TextStyle(
                             fontSize: 18,
                             color: Colors.grey[600],
@@ -478,7 +404,7 @@ class _RoomCommentsPageState extends State<RoomCommentsPage> {
                         ),
                         SizedBox(height: 8),
                         Text(
-                          'كن أول من يعلق',
+                          S.of(context).beTheFirstToComment,
                           style: TextStyle(
                             fontSize: 14,
                             color: Colors.grey[500],
@@ -536,7 +462,7 @@ class _RoomCommentsPageState extends State<RoomCommentsPage> {
                           child: TextField(
                             controller: _commentController,
                             decoration: InputDecoration(
-                              hintText: 'اكتب تعليقاً...',
+                              hintText: S.of(context).writeComment,
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(24),
                               ),
@@ -586,13 +512,15 @@ class _RoomCommentsPageState extends State<RoomCommentsPage> {
     } else {
       user = {};
     }
-    
+
     final content = comment['content'] ?? '';
     final createdAt = comment['createdAt'];
 
     // ✅ Debug: طباعة بيانات المستخدم
     print('👤 [RoomCommentsPage] Comment user keys: ${user.keys.toList()}');
-    print('👤 [RoomCommentsPage] Comment user profileImg: ${user['profileImg']}');
+    print(
+      '👤 [RoomCommentsPage] Comment user profileImg: ${user['profileImg']}',
+    );
 
     // ✅ استخراج commentUserId للتحقق من الصلاحيات
     String? commentUserId = user['_id']?.toString() ?? user['id']?.toString();
@@ -616,14 +544,16 @@ class _RoomCommentsPageState extends State<RoomCommentsPage> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        user['name'] ?? user['email'] ?? 'مستخدم',
+                        user['name'] ??
+                            user['email'] ??
+                            S.of(context).unknownUser,
                         style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
                       Text(
-                        _formatDate(createdAt),
+                        _formatDate(createdAt, context),
                         style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                       ),
                     ],
@@ -660,21 +590,38 @@ class _RoomCommentsPageState extends State<RoomCommentsPage> {
     );
   }
 
-  String _formatDate(dynamic date) {
+  String _formatDate(dynamic date, BuildContext context) {
     if (date == null) return '—';
     try {
-      final dateTime = date is String ? DateTime.parse(date) : date as DateTime;
+      final dateTime = date is String
+          ? DateTime.parse(date).toLocal()
+          : (date as DateTime).toLocal();
       final now = DateTime.now();
       final difference = now.difference(dateTime);
+      final s = S.of(context);
 
-      if (difference.inDays > 0) {
-        return 'منذ ${difference.inDays} يوم';
-      } else if (difference.inHours > 0) {
-        return 'منذ ${difference.inHours} ساعة';
-      } else if (difference.inMinutes > 0) {
-        return 'منذ ${difference.inMinutes} دقيقة';
-      } else {
-        return 'الآن';
+      // إذا مر أكثر من 7 أيام، نعرض التاريخ الكامل
+      if (difference.inDays > 7) {
+        return DateFormat(
+          s.fullDateFormat,
+          Localizations.localeOf(context).languageCode,
+        ).format(dateTime);
+      }
+      // إذا مر من يوم إلى 7 أيام
+      else if (difference.inDays > 0) {
+        return s.daysAgo(difference.inDays);
+      }
+      // إذا مر أقل من يوم (ساعات)
+      else if (difference.inHours > 0) {
+        return s.hoursAgo(difference.inHours);
+      }
+      // إذا مر أقل من ساعة (دقائق)
+      else if (difference.inMinutes > 0) {
+        return s.minutesAgo(difference.inMinutes);
+      }
+      // أقل من دقيقة
+      else {
+        return s.now;
       }
     } catch (e) {
       return '—';
@@ -683,26 +630,33 @@ class _RoomCommentsPageState extends State<RoomCommentsPage> {
 
   // ✅ بناء URL كامل للصورة من اسم الملف (للـ backward compatibility)
   String? _buildProfileImageUrl(String? profileImg) {
-    if (profileImg == null || profileImg.toString().isEmpty || profileImg.toString() == 'null') {
+    if (profileImg == null ||
+        profileImg.toString().isEmpty ||
+        profileImg.toString() == 'null') {
       return null;
     }
 
     final profileImgStr = profileImg.toString();
 
     // ✅ إذا كان URL كامل، استخدمه مباشرة
-    if (profileImgStr.startsWith('http://') || profileImgStr.startsWith('https://')) {
+    if (profileImgStr.startsWith('http://') ||
+        profileImgStr.startsWith('https://')) {
       return profileImgStr;
     }
 
     // ✅ بناء URL من base URL + path
-    String cleanPath = profileImgStr.replaceAll(r'\', '/').replaceAll('//', '/');
+    String cleanPath = profileImgStr
+        .replaceAll(r'\', '/')
+        .replaceAll('//', '/');
     while (cleanPath.startsWith('/')) {
       cleanPath = cleanPath.substring(1);
     }
 
     // ✅ إزالة /api/v1 من base URL للحصول على base فقط
     final base = ApiConfig.baseUrl.replaceAll('/api/v1', '');
-    final baseClean = base.endsWith('/') ? base.substring(0, base.length - 1) : base;
+    final baseClean = base.endsWith('/')
+        ? base.substring(0, base.length - 1)
+        : base;
 
     // ✅ بناء URL كامل (الـ backend يخدم الملفات من uploads/)
     final imageUrl = '$baseClean/uploads/$cleanPath';
@@ -721,7 +675,9 @@ class _RoomCommentsPageState extends State<RoomCommentsPage> {
     final profileImgUrl = user['profileImgUrl'];
     final profileImg = user['profileImg'];
     final name = user['name'] ?? user['email'] ?? 'م';
-    final firstLetter = name.isNotEmpty ? name.substring(0, 1).toUpperCase() : 'م';
+    final firstLetter = name.isNotEmpty
+        ? name.substring(0, 1).toUpperCase()
+        : 'م';
 
     // ✅ Debug: طباعة البيانات للتحقق
     print('🖼️ [RoomCommentsPage] User data: ${user.keys.toList()}');
@@ -730,11 +686,13 @@ class _RoomCommentsPageState extends State<RoomCommentsPage> {
     print('🖼️ [RoomCommentsPage] name: $name');
 
     // ✅ استخدام profileImgUrl إذا كان موجوداً، وإلا بناء URL من profileImg
-    final imageUrl = profileImgUrl?.toString() ?? _buildProfileImageUrl(profileImg?.toString());
+    final imageUrl =
+        profileImgUrl?.toString() ??
+        _buildProfileImageUrl(profileImg?.toString());
 
     if (imageUrl != null && imageUrl.isNotEmpty) {
       print('🖼️ [RoomCommentsPage] Loading profile image from: $imageUrl');
-      
+
       return CircleAvatar(
         radius: 20,
         child: ClipOval(
@@ -749,7 +707,9 @@ class _RoomCommentsPageState extends State<RoomCommentsPage> {
               child: CircularProgressIndicator(strokeWidth: 2),
             ),
             errorWidget: (context, url, error) {
-              print('❌ [RoomCommentsPage] Failed to load profile image: $error');
+              print(
+                '❌ [RoomCommentsPage] Failed to load profile image: $error',
+              );
               return CircleAvatar(
                 radius: 20,
                 backgroundColor: Color(0xff28336f).withOpacity(0.1),

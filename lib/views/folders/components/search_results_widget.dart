@@ -1,3 +1,4 @@
+import 'package:filevo/generated/l10n.dart';
 import 'package:flutter/material.dart';
 import 'package:filevo/components/FilesGridView.dart';
 import 'package:filevo/components/FilesListView.dart';
@@ -158,7 +159,11 @@ class SearchResultsWidget extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    'نتائج البحث: $totalResults نتيجة',
+                    S
+                        .of(context)
+                        .searchResults(
+                          totalResults,
+                        ), // ✅ صياغة لغوية ذكية حسب الرقم
                     style: TextStyle(
                       fontSize: ResponsiveUtils.getResponsiveValue(
                         context,
@@ -193,7 +198,7 @@ class SearchResultsWidget extends StatelessWidget {
                       Icon(Icons.search_off, size: 64, color: Colors.grey[400]),
                       SizedBox(height: 16),
                       Text(
-                        'لا توجد نتائج للبحث',
+                        S.of(context).noSearchResults, // ✅ نص مترجم
                         style: TextStyle(fontSize: 18, color: Colors.grey[600]),
                       ),
                     ],
@@ -203,7 +208,8 @@ class SearchResultsWidget extends StatelessWidget {
                 // ✅ عرض المجلدات أولاً
                 if (searchFolders.isNotEmpty) ...[
                   Text(
-                    'المجلدات (${searchFolders.length})',
+                    // ✅ استدعاء النص المترجم مع تمرير العدد
+                    S.of(context).foldersWithCount(searchFolders.length),
                     style: TextStyle(
                       fontSize: ResponsiveUtils.getResponsiveValue(
                         context,
@@ -234,7 +240,8 @@ class SearchResultsWidget extends StatelessWidget {
                 // ✅ عرض الملفات
                 if (searchFiles.isNotEmpty) ...[
                   Text(
-                    'الملفات (${searchFiles.length})',
+                    // ✅ استدعاء النص المترجم مع تمرير عدد الملفات
+                    S.of(context).filesWithCount(searchFiles.length),
                     style: TextStyle(
                       fontSize: ResponsiveUtils.getResponsiveValue(
                         context,
@@ -257,7 +264,7 @@ class SearchResultsWidget extends StatelessWidget {
                     FilesListView(
                       items: searchFiles.map((f) {
                         return {
-                          'title': f['name'] ?? 'ملف بدون اسم',
+                          'title': f['name'] ?? S.of(context).unnamedFile,
                           'size': f['size'] ?? '0 B',
                           'path': f['path'],
                           'createdAt': f['createdAt'],
@@ -282,15 +289,4 @@ class SearchResultsWidget extends StatelessWidget {
     );
   }
 }
-
-
-
-
-
-
-
-
-
-
-
 

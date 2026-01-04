@@ -11,6 +11,7 @@ import 'package:filevo/utils/room_permissions.dart';
 import 'package:filevo/views/fileViewer/folder_actions_service.dart';
 import 'package:pull_to_refresh/pull_to_refresh.dart';
 import 'package:shimmer/shimmer.dart';
+import 'package:filevo/dialogs/folder_protection_dialogs.dart';
 
 class RoomFoldersPage extends StatefulWidget {
   final String roomId;
@@ -26,8 +27,9 @@ class _RoomFoldersPageState extends State<RoomFoldersPage> {
   bool isLoading = true;
   Map<String, Map<String, dynamic>> _folderDetailsCache =
       {}; // ✅ Cache لتفاصيل المجلدات
-  final RefreshController _refreshController =
-      RefreshController(initialRefresh: false);
+  final RefreshController _refreshController = RefreshController(
+    initialRefresh: false,
+  );
 
   @override
   void initState() {
@@ -131,7 +133,7 @@ class _RoomFoldersPageState extends State<RoomFoldersPage> {
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          'المجلدات المشتركة',
+          S.of(context).roomFolders,
           style: TextStyle(
             fontSize: ResponsiveUtils.getResponsiveValue(
               context,
@@ -164,16 +166,16 @@ class _RoomFoldersPageState extends State<RoomFoldersPage> {
       body: isLoading
           ? _buildShimmerLoading()
           : roomData == null
-              ? Center(child: Text(S.of(context).failedToLoadRoomData))
-              : SmartRefresher(
-                  controller: _refreshController,
-                  onRefresh: () async {
-                    await _loadRoomData();
-                    _refreshController.refreshCompleted();
-                  },
-                  header: const WaterDropHeader(),
-                  child: _buildFoldersList(),
-                ),
+          ? Center(child: Text(S.of(context).failedToLoadRoomData))
+          : SmartRefresher(
+              controller: _refreshController,
+              onRefresh: () async {
+                await _loadRoomData();
+                _refreshController.refreshCompleted();
+              },
+              header: const WaterDropHeader(),
+              child: _buildFoldersList(),
+            ),
     );
   }
 
@@ -204,7 +206,7 @@ class _RoomFoldersPageState extends State<RoomFoldersPage> {
               ),
             ),
             Text(
-              'لا توجد مجلدات مشتركة',
+              S.of(context).noSharedFolders,
               style: TextStyle(
                 fontSize: ResponsiveUtils.getResponsiveValue(
                   context,
@@ -225,7 +227,7 @@ class _RoomFoldersPageState extends State<RoomFoldersPage> {
               ),
             ),
             Text(
-              'قم بمشاركة مجلدات مع هذه الغرفة',
+              S.of(context).shareFoldersWithRoom,
               style: TextStyle(
                 fontSize: ResponsiveUtils.getResponsiveValue(
                   context,
@@ -247,7 +249,8 @@ class _RoomFoldersPageState extends State<RoomFoldersPage> {
       final folderData = folderIdRef is Map<String, dynamic>
           ? folderIdRef
           : <String, dynamic>{};
-      final folderName = folderData['name']?.toString() ?? 'مجلد غير معروف';
+      final folderName =
+          folderData['name']?.toString() ?? S.of(context).unknownFolder;
       final folderId =
           folderData['_id']?.toString() ??
           (folderIdRef is String ? folderIdRef : folderIdRef?.toString());
@@ -305,34 +308,59 @@ class _RoomFoldersPageState extends State<RoomFoldersPage> {
         items: displayFolders,
         showFileCount: true,
         roomId: widget.roomId, // ✅ تمرير roomId لتمييز المجلدات المشتركة
-        onItemTap: (item) {
+        onItemTap: (item) async {
           final itemData = item['itemData'] as Map<String, dynamic>?;
-          if (itemData != null) {
-            final folderId = itemData['folderId'] as String?;
-            final folderName = itemData['folderName'] as String?;
+          if (itemData == null) return;
 
-            if (folderId != null && folderId.isNotEmpty && folderName != null) {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => ChangeNotifierProvider.value(
-                    value: Provider.of<FolderController>(
-                      context,
-                      listen: false,
-                    ),
-                    child: FolderContentsPage(
-                      folderId: folderId,
-                      folderName: folderName,
-                      folderColor: Color(0xFF8B5CF6),
-                    ),
+          final folderId = itemData['folderId'] as String?;
+          final folderName = itemData['folderName'] as String?;
+
+          if (folderId == null || folderId.isEmpty || folderName == null) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text(S.of(context).folderIdNotAvailable)),
+            );
+            return;
+          }
+
+          // ✅ التحقق من أن المجلد محمي
+          final folderData = itemData['folderData'] ?? itemData;
+          final isProtected = folderData['isProtected'] == true;
+          final protectionType = folderData['protectionType']?.toString() ?? 'none';
+
+          // ✅ إذا كان المجلد محمي، نطلب كلمة السر أولاً
+          if (isProtected && protectionType != 'none') {
+            final result = await showVerifyFolderAccessDialog(
+              context,
+              folderId,
+              folderName,
+              protectionType,
+            );
+
+            // ✅ إذا لم يتم التحقق بنجاح، نوقف العملية
+            if (result['success'] != true) {
+              return;
+            }
+          }
+
+          // ✅ بعد التحقق (إذا كان محمياً) أو مباشرة (إذا لم يكن محمياً)، نفتح المجلد
+          if (mounted) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => ChangeNotifierProvider.value(
+                  value: Provider.of<FolderController>(
+                    context,
+                    listen: false,
+                  ),
+                  child: FolderContentsPage(
+                    folderId: folderId,
+                    folderName: folderName,
+                    folderColor: Color(0xFF8B5CF6),
+                    roomId: widget.roomId, // ✅ تمرير roomId للمجلدات المشتركة
                   ),
                 ),
-              );
-            } else {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text(S.of(context).folderIdNotAvailable)),
-              );
-            }
+              ),
+            );
           }
         },
         onFolderCommentTap: (item) {
@@ -367,7 +395,8 @@ class _RoomFoldersPageState extends State<RoomFoldersPage> {
           final itemData = item['itemData'] as Map<String, dynamic>?;
           if (itemData != null) {
             final folderId = itemData['folderId'] as String?;
-            final folderName = itemData['folderName'] as String? ?? 'المجلد';
+            final folderName =
+                itemData['folderName'] as String? ?? S.of(context).folder;
 
             if (folderId != null && folderId.isNotEmpty) {
               // ✅ التحقق من الصلاحيات قبل عرض dialog
@@ -380,9 +409,7 @@ class _RoomFoldersPageState extends State<RoomFoldersPage> {
                 } else {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content: Text(
-                        '❌ فقط مالك الغرفة أو الأعضاء برتبة محرر يمكنهم إزالة المجلدات',
-                      ),
+                      content: Text(S.of(context).removeFolderPermissionError),
                       backgroundColor: Colors.red,
                     ),
                   );
@@ -400,7 +427,7 @@ class _RoomFoldersPageState extends State<RoomFoldersPage> {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
                         content: Text(
-                          '❌ فقط مالك الغرفة أو الأعضاء برتبة محرر يمكنهم إزالة المجلدات',
+                          S.of(context).removeFolderPermissionError,
                         ),
                         backgroundColor: Colors.red,
                       ),
@@ -420,7 +447,8 @@ class _RoomFoldersPageState extends State<RoomFoldersPage> {
           final itemData = item['itemData'] as Map<String, dynamic>?;
           if (itemData != null) {
             final folderId = itemData['folderId'] as String?;
-            final folderName = itemData['folderName'] as String? ?? 'المجلد';
+            final folderName =
+                itemData['folderName'] as String? ?? S.of(context).folder;
 
             if (folderId != null && folderId.isNotEmpty) {
               final roomController = Provider.of<RoomController>(
@@ -482,9 +510,7 @@ class _RoomFoldersPageState extends State<RoomFoldersPage> {
       if (!canRemove) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(
-              '❌ فقط مالك الغرفة أو الأعضاء برتبة محرر يمكنهم إزالة المجلدات',
-            ),
+            content: Text(S.of(context).removeFolderPermissionError),
             backgroundColor: Colors.red,
           ),
         );
@@ -496,7 +522,9 @@ class _RoomFoldersPageState extends State<RoomFoldersPage> {
       context: context,
       builder: (dialogContext) => AlertDialog(
         title: Text(S.of(context).removeFolderFromRoom),
-        content: Text(S.of(context).confirmRemoveFolderFromRoomWithName(folderName)),
+        content: Text(
+          S.of(context).confirmRemoveFolderFromRoomWithName(folderName),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
@@ -507,7 +535,10 @@ class _RoomFoldersPageState extends State<RoomFoldersPage> {
               Navigator.pop(dialogContext);
               _removeFolderFromRoom(folderId);
             },
-            child: Text(S.of(context).remove, style: TextStyle(color: Colors.red)),
+            child: Text(
+              S.of(context).remove,
+              style: TextStyle(color: Colors.red),
+            ),
           ),
         ],
       ),
@@ -546,19 +577,28 @@ class _RoomFoldersPageState extends State<RoomFoldersPage> {
       );
 
       if (mounted) {
+        final s = S.of(context); // مرجع الترجمة
         ScaffoldMessenger.of(context).hideCurrentSnackBar();
+
         if (success) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('✅ تم حفظ المجلد "$folderName" في حسابك بنجاح'),
+              content: Text(
+                s.saveFolderSuccess(folderName),
+              ), // ✅ تمرير اسم المجلد للترجمة
               backgroundColor: Colors.green,
+              behavior: SnackBarBehavior.floating,
             ),
           );
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(roomController.errorMessage ?? '❌ فشل حفظ المجلد'),
+              content: Text(
+                roomController.errorMessage ??
+                    s.saveFolderFailure, // ✅ رسالة الفشل المترجمة
+              ),
               backgroundColor: Colors.red,
+              behavior: SnackBarBehavior.floating,
             ),
           );
         }
@@ -568,7 +608,7 @@ class _RoomFoldersPageState extends State<RoomFoldersPage> {
         ScaffoldMessenger.of(context).hideCurrentSnackBar();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('❌ خطأ: ${e.toString()}'),
+            content: Text(S.of(context).errorPrefix(e.toString())),
             backgroundColor: Colors.red,
           ),
         );
@@ -603,7 +643,7 @@ class _RoomFoldersPageState extends State<RoomFoldersPage> {
                   SizedBox(width: 16),
                   Expanded(
                     child: Text(
-                      'اختر مجلد لحفظ المجلد',
+                      S.of(context).selectDestinationFolder,
                       style: TextStyle(
                         color: Colors.white,
                         fontSize: 20,
@@ -621,7 +661,7 @@ class _RoomFoldersPageState extends State<RoomFoldersPage> {
             Expanded(
               child: Center(
                 child: Text(
-                  'سيتم حفظ المجلد في الجذر',
+                  S.of(context).willBeSavedInRoot,
                   style: TextStyle(color: Colors.grey),
                 ),
               ),
@@ -657,7 +697,7 @@ class _RoomFoldersPageState extends State<RoomFoldersPage> {
         if (success) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('✅ تم إزالة المجلد من الغرفة بنجاح'),
+              content: Text(S.of(context).removeFolderFromRoomSuccess),
               backgroundColor: Colors.green,
             ),
           );
@@ -667,7 +707,8 @@ class _RoomFoldersPageState extends State<RoomFoldersPage> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
-                roomController.errorMessage ?? '❌ فشل إزالة المجلد من الغرفة',
+                roomController.errorMessage ??
+                    S.of(context).removeFolderFromRoomFailure,
               ),
               backgroundColor: Colors.red,
             ),
@@ -678,7 +719,7 @@ class _RoomFoldersPageState extends State<RoomFoldersPage> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('❌ خطأ: ${e.toString()}'),
+            content: Text(S.of(context).errorPrefix(e.toString())),
             backgroundColor: Colors.red,
           ),
         );
@@ -695,7 +736,9 @@ class _RoomFoldersPageState extends State<RoomFoldersPage> {
     if (sharedItem['sharedBy'] != null) {
       final sharedBy = sharedItem['sharedBy'];
       if (sharedBy is Map<String, dynamic>) {
-        return sharedBy['name'] ?? sharedBy['email'] ?? 'مستخدم';
+        return sharedBy['name'] ??
+            sharedBy['email'] ??
+            S.of(context).unknownUser;
       }
       if (sharedBy is String) {
         // ✅ إذا كان sharedBy هو ID، ابحث في room members
@@ -710,7 +753,9 @@ class _RoomFoldersPageState extends State<RoomFoldersPage> {
               if (userIdStr == sharedBy) {
                 final user = userId is Map ? userId : member['user'];
                 if (user is Map<String, dynamic>) {
-                  return user['name'] ?? user['email'] ?? 'مستخدم';
+                  return user['name'] ??
+                      user['email'] ??
+                      S.of(context).unknownUser;
                 }
               }
             }
@@ -724,7 +769,7 @@ class _RoomFoldersPageState extends State<RoomFoldersPage> {
     if (itemData['userId'] != null) {
       final userId = itemData['userId'];
       if (userId is Map<String, dynamic>) {
-        return userId['name'] ?? userId['email'] ?? 'مستخدم';
+        return userId['name'] ?? userId['email'] ?? S.of(context).unknownUser;
       }
     }
 
@@ -732,7 +777,7 @@ class _RoomFoldersPageState extends State<RoomFoldersPage> {
     if (itemData['owner'] != null) {
       final owner = itemData['owner'];
       if (owner is Map<String, dynamic>) {
-        return owner['name'] ?? owner['email'] ?? 'مستخدم';
+        return owner['name'] ?? owner['email'] ?? S.of(context).unknownUser;
       }
     }
 
