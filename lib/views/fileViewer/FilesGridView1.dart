@@ -7,6 +7,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:video_thumbnail/video_thumbnail.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
+import 'package:http/http.dart' as http;
 import 'package:filevo/controllers/folders/files_controller.dart';
 import 'package:filevo/controllers/folders/folders_controller.dart';
 import 'package:filevo/controllers/folders/room_controller.dart';
@@ -171,8 +172,49 @@ class _FilesGridState extends State<FilesGrid> {
 
     try {
       final tempDir = await getTemporaryDirectory();
+      
+      // ✅ تحميل الفيديو مؤقتاً إذا كان URL من السيرفر
+      String localVideoPath;
+      bool isDownloaded = false;
+      
+      if (videoUrl.contains('/api/')) {
+        // ✅ URL من السيرفر - نحتاج لتحميله أولاً
+        final token = await StorageService.getToken();
+        if (token == null) {
+          _thumbnailCache[videoUrl] = null;
+          return null;
+        }
+        
+        try {
+          final response = await http.get(
+            Uri.parse(videoUrl),
+            headers: {'Authorization': 'Bearer $token'},
+          ).timeout(const Duration(seconds: 30));
+          
+          if (response.statusCode == 200) {
+            final fileName = videoUrl.split('/').last.split('?').first;
+            final timestamp = DateTime.now().millisecondsSinceEpoch;
+            localVideoPath = '${tempDir.path}/video_thumb_${timestamp}_$fileName';
+            await File(localVideoPath).writeAsBytes(response.bodyBytes);
+            isDownloaded = true;
+          } else {
+            print('❌ Error downloading video for thumbnail: ${response.statusCode}');
+            _thumbnailCache[videoUrl] = null;
+            return null;
+          }
+        } catch (e) {
+          print('❌ Error downloading video for thumbnail: $e');
+          _thumbnailCache[videoUrl] = null;
+          return null;
+        }
+      } else {
+        // ✅ مسار محلي - يمكن استخدامه مباشرة
+        localVideoPath = videoUrl;
+      }
+      
+      // ✅ إنشاء thumbnail من المسار المحلي
       final thumbnailPath = await VideoThumbnail.thumbnailFile(
-        video: videoUrl,
+        video: localVideoPath,
         thumbnailPath: tempDir.path,
         imageFormat: ImageFormat.PNG,
         maxHeight: 200,
@@ -180,14 +222,25 @@ class _FilesGridState extends State<FilesGrid> {
         timeMs: 1000, // ✅ أخذ thumbnail من الثانية الأولى
       );
 
+      // ✅ حذف الملف المؤقت إذا كان محمولاً
+      if (isDownloaded) {
+        try {
+          await File(localVideoPath).delete();
+        } catch (e) {
+          // تجاهل خطأ الحذف
+        }
+      }
+
       // ✅ حفظ في cache
       if (thumbnailPath != null) {
         _thumbnailCache[videoUrl] = thumbnailPath;
+      } else {
+        _thumbnailCache[videoUrl] = null;
       }
 
       return thumbnailPath;
     } catch (e) {
-      print('Error generating thumbnail: $e');
+      print('❌ Error generating thumbnail: $e');
       _thumbnailCache[videoUrl] =
           null; // ✅ حفظ null في cache لتجنب إعادة المحاولة
       return null;
@@ -996,9 +1049,9 @@ class _FilesGridState extends State<FilesGrid> {
       itemCount: widget.files.length,
       shrinkWrap: true, // ✅ للسماح بالاستخدام داخل ScrollView
       physics: const NeverScrollableScrollPhysics(), // ✅ منع التمرير المزدوج
-      // ✅ إعدادات cache للـ GridView لمنع إعادة التحميل عند Scroll
-      cacheExtent: 500, // ✅ الاحتفاظ بـ 500 بكسل من الصور المحملة خارج الشاشة
-      addAutomaticKeepAlives: true, // ✅ الاحتفاظ بالـ widgets محملة
+      // ✅ تقليل cacheExtent لتأجيل تحميل الصور حتى تكون قريبة من الشاشة
+      cacheExtent: 200, // ✅ تقليل من 500 إلى 200 - تحميل الصور فقط عندما تكون قريبة من الشاشة
+      addAutomaticKeepAlives: false, // ✅ تعطيل KeepAlive لتوفير الذاكرة - الصور ستُحمّل عند الحاجة
       addRepaintBoundaries: true, // ✅ تحسين الأداء
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 2,
@@ -1127,28 +1180,43 @@ class _FilesGridState extends State<FilesGrid> {
         return FutureBuilder<Map<String, String>?>(
           future: needsToken ? _getImageHeaders() : Future.value(null),
           builder: (context, snapshot) {
-            // ✅ إضافة cache busting للصور
-            final imageUrl = fileUrl.contains('?')
-                ? fileUrl
-                : '$fileUrl?v=${DateTime.now().millisecondsSinceEpoch}';
+            // ✅ استخدام URL بدون cache busting تلقائي - يتم الاعتماد على cache
+            // ✅ فقط إذا كان URL يحتوي على `?v=` بالفعل، نستخدمه كما هو
+            // ✅ هذا يمنع تحميل جميع الصور تلقائياً عند التحميل الأولي
+            String imageUrl = fileUrl;
+            
+            // ✅ استخدام URL كما هو - CachedNetworkImage يتعامل مع التشفير تلقائياً
+            // ✅ إذا كان URL مشفراً جزئياً، Uri.parse سيتعامل معه بشكل صحيح
 
+            // ✅ CachedNetworkImage سيحمّل الصورة تلقائياً، لكن مع cacheExtent صغير في GridView
+            // ✅ سيتم تحميل الصور فقط عندما تكون قريبة من الشاشة (lazy loading)
             return CachedNetworkImage(
               imageUrl: imageUrl,
               fit: BoxFit.cover,
               httpHeaders: snapshot.data,
+              // ✅ استخدام memCacheWidth و memCacheHeight لتحسين الأداء وتقليل استهلاك الذاكرة
+              memCacheWidth: 400, // ✅ تقليل حجم الصورة في الذاكرة
+              memCacheHeight: 400,
+              // ✅ عدم تحميل الصورة حتى تظهر على الشاشة (lazy loading)
+              fadeInDuration: const Duration(milliseconds: 200),
+              // ✅ استخدام placeholder بسيط بدون تحميل - فقط icon بدون CircularProgressIndicator
               placeholder: (context, url) => Container(
                 color: const Color(0xff28336f),
-                child: const Center(
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: Colors.white,
+                child: Center(
+                  child: Icon(
+                    getIcon(),
+                    size: 40,
+                    color: Colors.white.withOpacity(0.5),
                   ),
                 ),
               ),
               errorWidget: (context, url, error) {
-                print(
-                  '❌ Error loading image preview in FilesGrid: $error, URL: $url',
-                );
+                // ✅ لا نطبع error في console إلا إذا كان خطأ حقيقي (ليس 401 منتهي الصلاحية)
+                if (error != null && !error.toString().contains('401')) {
+                  print(
+                    '❌ Error loading image preview in FilesGrid: $error, URL: $url',
+                  );
+                }
                 return Container(
                   color: const Color(0xff28336f),
                   child: Center(
@@ -1428,13 +1496,64 @@ class _FilesGridState extends State<FilesGrid> {
   // }
   Future<String?> _generateVideoThumbnail(String videoUrl) async {
     try {
-      return await VideoThumbnail.thumbnailFile(
-        video: videoUrl,
+      final tempDir = await getTemporaryDirectory();
+      
+      // ✅ تحميل الفيديو مؤقتاً إذا كان URL من السيرفر
+      String localVideoPath;
+      bool isDownloaded = false;
+      
+      if (videoUrl.contains('/api/')) {
+        // ✅ URL من السيرفر - نحتاج لتحميله أولاً
+        final token = await StorageService.getToken();
+        if (token == null) return null;
+        
+        try {
+          final response = await http.get(
+            Uri.parse(videoUrl),
+            headers: {'Authorization': 'Bearer $token'},
+          ).timeout(const Duration(seconds: 30));
+          
+          if (response.statusCode == 200) {
+            final fileName = videoUrl.split('/').last.split('?').first;
+            final timestamp = DateTime.now().millisecondsSinceEpoch;
+            localVideoPath = '${tempDir.path}/video_thumb_${timestamp}_$fileName';
+            await File(localVideoPath).writeAsBytes(response.bodyBytes);
+            isDownloaded = true;
+          } else {
+            print('❌ Error downloading video for thumbnail: ${response.statusCode}');
+            return null;
+          }
+        } catch (e) {
+          print('❌ Error downloading video for thumbnail: $e');
+          return null;
+        }
+      } else {
+        // ✅ مسار محلي - يمكن استخدامه مباشرة
+        localVideoPath = videoUrl;
+      }
+      
+      // ✅ إنشاء thumbnail من المسار المحلي
+      final thumbnailPath = await VideoThumbnail.thumbnailFile(
+        video: localVideoPath,
+        thumbnailPath: tempDir.path,
         imageFormat: ImageFormat.JPEG,
         maxHeight: 300,
         quality: 75,
+        timeMs: 1000,
       );
+      
+      // ✅ حذف الملف المؤقت إذا كان محمولاً
+      if (isDownloaded) {
+        try {
+          await File(localVideoPath).delete();
+        } catch (e) {
+          // تجاهل خطأ الحذف
+        }
+      }
+      
+      return thumbnailPath;
     } catch (e) {
+      print('❌ Error generating video thumbnail: $e');
       return null;
     }
   }
@@ -1876,6 +1995,9 @@ class _FilesGridState extends State<FilesGrid> {
     String url,
     Map<String, String>? httpHeaders,
   ) {
+    // ✅ استخدام URL كما هو - CachedNetworkImage يتعامل مع التشفير تلقائياً
+    // ✅ إذا كان URL مشفراً جزئياً، Uri.parse سيتعامل معه بشكل صحيح
+    
     // ✅ استخدام ValueKey دائماً بناءً على URL الكامل لضمان إعادة بناء الـ widget عند تغيير URL
     // ✅ هذا مهم جداً: بدون ValueKey، Flutter لا يعيد بناء الـ widget حتى لو تغير URL
     // ✅ ValueKey مع URL الكامل (مع timestamp) يضمن أن كل تحديث يتم إعادة بناء الـ widget
@@ -2073,12 +2195,27 @@ class _FolderNavigationDialogState extends State<_FolderNavigationDialog> {
   List<Map<String, String?>> _breadcrumb = []; // [{id: null, name: 'الجذر'}]
   bool _isLoading = false;
   String? _currentFolderId;
+  bool _initializedBreadcrumb = false;
 
   @override
   void initState() {
     super.initState();
-    _breadcrumb.add({'id': null, 'name': S.of(context).root});
-    _loadRootFolders();
+    // ✅ تأخير تحميل المجلدات حتى يكون الـ context جاهزاً
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _loadRootFolders();
+      }
+    });
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // ✅ هنا مسموح نستخدم S.of(context) لأنه بعد initState وتم تهيئة Localizations
+    if (!_initializedBreadcrumb) {
+      _breadcrumb.add({'id': null, 'name': S.of(context).root});
+      _initializedBreadcrumb = true;
+    }
   }
 
   // ✅ جلب المجلدات الجذرية

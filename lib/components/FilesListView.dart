@@ -449,7 +449,7 @@ class _FilesListViewState extends State<FilesListView> {
         Flexible(
           child: Text(
             type == 'room' || type == 'folder'
-                ? '$_getCountText(context, fileCount) • $size'
+                ? '${_getCountText(context, fileCount)} • $size'
                 : size,
             style: subtitleStyle,
             maxLines: 1,
@@ -939,7 +939,23 @@ class _FilesListViewState extends State<FilesListView> {
         break;
 
       case 'edit':
-        FileActionsService.editFile(context, fileData);
+        FileActionsService.editFile(context, fileData).then((updated) {
+          // ✅ إذا تم تحديث الملف، استدعي callback لإعادة تحميل البيانات
+          print('🔄 [FilesListView] Edit file result: $updated');
+          print('🔄 [FilesListView] onFileRemoved is null: ${widget.onFileRemoved == null}');
+          if (updated == true) {
+            print('✅ [FilesListView] File updated, calling onFileRemoved callback');
+            if (widget.onFileRemoved != null) {
+              widget.onFileRemoved!();
+            } else {
+              print('⚠️ [FilesListView] onFileRemoved is null, cannot refresh');
+            }
+          } else {
+            print('❌ [FilesListView] File not updated, skipping refresh');
+          }
+        }).catchError((error) {
+          print('❌ [FilesListView] Error in editFile: $error');
+        });
         break;
 
       case 'share':
@@ -968,7 +984,17 @@ class _FilesListViewState extends State<FilesListView> {
           context,
           listen: false,
         );
-        FileActionsService.deleteFile(context, fileController, fileData);
+        FileActionsService.deleteFile(
+          context,
+          fileController,
+          fileData,
+          onLocalUpdate: () {
+            // ✅ استدعاء onFileRemoved إذا كان موجوداً لإعادة تحميل الصفحة
+            if (widget.onFileRemoved != null) {
+              widget.onFileRemoved!();
+            }
+          },
+        );
         break;
     }
   }

@@ -53,93 +53,127 @@ class StorageCardState extends State<StorageCard> {
     });
 
     try {
-      final token = await StorageService.getToken();
-      if (token == null) {
-        if (!mounted) return;
-        setState(() {
-          _isLoading = false;
-        });
-        return;
-      }
-
-      final statsData = await _fileService.getCategoriesStats(token: token);
+      // ✅ جلب معلومات المساحة التخزينية من API الجديد
+      final storageResult = await _fileService.getStorageInfo();
       
       if (!mounted) return;
       
-      if (statsData != null && statsData['categories'] != null) {
-        final categories = statsData['categories'] as List;
-        final totals = statsData['totals'] as Map<String, dynamic>?;
+      if (storageResult['success'] == true && storageResult['storage'] != null) {
+        final storage = storageResult['storage'] as Map<String, dynamic>;
         
-        // حساب الحجم الكلي المستخدم
-        _usedSize = totals?['totalSize'] as int? ?? 0;
+        // ✅ استخدام البيانات من getStorageInfo
+        _totalStorage = storage['limit'] as int? ?? (10 * 1024 * 1024 * 1024); // 10 GB افتراضي
+        _usedSize = storage['used'] as int? ?? 0;
         
-        // حساب الحجم الكلي (يمكن جعله من إعدادات المستخدم أو افتراضي)
-        // إذا كان هناك totalStorage في البيانات، استخدمه
-        if (totals != null && totals['totalStorage'] != null) {
-          _totalStorage = totals['totalStorage'] as int;
-        }
-        
-        // حساب النسب المئوية لكل تصنيف
-        final Map<String, double> percentages = {};
-        final Map<String, int> categorySizes = {};
-        
-        // جمع أحجام التصنيفات
-        // ✅ تحويل أسماء التصنيفات من الـ backend إلى التنسيق المتوقع
-        final Map<String, String> categoryMapping = {
-          'images': 'images',
-          'videos': 'videos',
-          'audio': 'audio',
-          'documents': 'documents',
-          'compressed': 'compressed',
-          'applications': 'applications',
-          'code': 'code',
-          'others': 'other', // ✅ تحويل "Others" إلى "other"
-        };
-        
-        for (var category in categories) {
-          final categoryNameRaw = category['category'] as String;
-          final categoryNameLower = categoryNameRaw.toLowerCase();
-          // ✅ استخدام الـ mapping أو الاسم مباشرة
-          final categoryName = categoryMapping[categoryNameLower] ?? categoryNameLower;
-          final totalSize = category['totalSize'] as int? ?? 0;
-          categorySizes[categoryName] = totalSize;
-        }
-        
-        // ✅ حساب النسب المئوية بناءً على الحجم الكلي (totalStorage)
-        // هذا يضمن أن المساحة المتبقية تظهر بشكل صحيح
-        if (_totalStorage > 0) {
-          for (var entry in categorySizes.entries) {
-            // النسبة من الحجم الكلي
-            percentages[entry.key] = entry.value / _totalStorage;
+        // ✅ جلب إحصائيات التصنيفات أيضاً للشارت
+        final token = await StorageService.getToken();
+        if (token != null) {
+          final statsData = await _fileService.getCategoriesStats(token: token);
+          
+          if (!mounted) return;
+          
+          if (statsData != null && statsData['categories'] != null) {
+            final categories = statsData['categories'] as List;
+            
+            // حساب النسب المئوية لكل تصنيف
+            final Map<String, double> percentages = {};
+            final Map<String, int> categorySizes = {};
+            
+            // جمع أحجام التصنيفات
+            // ✅ تحويل أسماء التصنيفات من الـ backend إلى التنسيق المتوقع
+            final Map<String, String> categoryMapping = {
+              'images': 'images',
+              'videos': 'videos',
+              'audio': 'audio',
+              'documents': 'documents',
+              'compressed': 'compressed',
+              'applications': 'applications',
+              'code': 'code',
+              'others': 'other', // ✅ تحويل "Others" إلى "other"
+            };
+            
+            for (var category in categories) {
+              final categoryNameRaw = category['category'] as String;
+              final categoryNameLower = categoryNameRaw.toLowerCase();
+              // ✅ استخدام الـ mapping أو الاسم مباشرة
+              final categoryName = categoryMapping[categoryNameLower] ?? categoryNameLower;
+              final totalSize = category['totalSize'] as int? ?? 0;
+              categorySizes[categoryName] = totalSize;
+            }
+            
+            // ✅ حساب النسب المئوية بناءً على الحجم الكلي (totalStorage)
+            // هذا يضمن أن المساحة المتبقية تظهر بشكل صحيح
+            if (_totalStorage > 0) {
+              for (var entry in categorySizes.entries) {
+                // النسبة من الحجم الكلي
+                percentages[entry.key] = entry.value / _totalStorage;
+              }
+            }
+            
+            // ✅ التأكد من وجود جميع التصنيفات حتى لو كانت 0
+            final defaultCategories = ['images', 'videos', 'audio', 'compressed', 'applications', 'documents', 'code', 'other'];
+            for (var cat in defaultCategories) {
+              if (!percentages.containsKey(cat)) {
+                percentages[cat] = 0.0;
+              }
+            }
+            
+            if (!mounted) return;
+            setState(() {
+              _categoryPercentages = percentages;
+              _isLoading = false;
+            });
+            return;
+          } else {
+            // ✅ إذا لم تكن هناك بيانات تصنيفات، استخدم قيم افتراضية فارغة
+            if (!mounted) return;
+            setState(() {
+              _categoryPercentages = {
+                'images': 0.0,
+                'videos': 0.0,
+                'audio': 0.0,
+                'compressed': 0.0,
+                'applications': 0.0,
+                'documents': 0.0,
+                'code': 0.0,
+                'other': 0.0,
+              };
+              _isLoading = false;
+            });
+            return;
           }
         }
         
-        // ✅ التأكد من وجود جميع التصنيفات حتى لو كانت 0
-        final defaultCategories = ['images', 'videos', 'audio', 'compressed', 'applications', 'documents', 'code', 'other'];
-        for (var cat in defaultCategories) {
-          if (!percentages.containsKey(cat)) {
-            percentages[cat] = 0.0;
-          }
-        }
-        
-        if (!mounted) return;
-        setState(() {
-          _categoryPercentages = percentages;
-          _isLoading = false;
-        });
-      } else {
-        // إذا لم تكن هناك بيانات، استخدم القيم الافتراضية
+        // ✅ إذا لم يتم جلب token، استخدم قيم افتراضية
         if (!mounted) return;
         setState(() {
           _categoryPercentages = {
-            'images': 0.06,
-            'videos': 0.15,
-            'audio': 0.10,
-            'compressed': 0.08,
-            'applications': 0.12,
-            'documents': 0.18,
-            'code': 0.07,
-            'other': 0.05,
+            'images': 0.0,
+            'videos': 0.0,
+            'audio': 0.0,
+            'compressed': 0.0,
+            'applications': 0.0,
+            'documents': 0.0,
+            'code': 0.0,
+            'other': 0.0,
+          };
+          _isLoading = false;
+        });
+      } else {
+        // ✅ إذا فشل جلب معلومات المساحة، استخدم القيم الافتراضية
+        if (!mounted) return;
+        setState(() {
+          _totalStorage = 10 * 1024 * 1024 * 1024; // 10 GB افتراضي
+          _usedSize = 0;
+          _categoryPercentages = {
+            'images': 0.0,
+            'videos': 0.0,
+            'audio': 0.0,
+            'compressed': 0.0,
+            'applications': 0.0,
+            'documents': 0.0,
+            'code': 0.0,
+            'other': 0.0,
           };
           _isLoading = false;
         });

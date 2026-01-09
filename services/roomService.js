@@ -68,11 +68,16 @@ exports.viewRoomFile = asyncHandler(async (req, res, next) => {
   const fs = require("fs");
   const path = require("path");
 
-  // Find room with file populated
-  const room = await Room.findById(roomId).populate("files.fileId");
+  // ✅ Find room with files and folders populated
+  const room = await Room.findById(roomId)
+    .populate("files.fileId")
+    .populate("folders.folderId");
   if (!room) {
     return next(new ApiError("Room not found", 404));
   }
+  
+  console.log(`📂 [viewRoomFile] Room: ${roomId}, File: ${fileId}, User: ${userId}`);
+  console.log(`📂 [viewRoomFile] Room files count: ${room.files.length}, folders count: ${room.folders.length}`);
 
   // Check if user is a member
   const isMember = room.members.some(
@@ -82,19 +87,105 @@ exports.viewRoomFile = asyncHandler(async (req, res, next) => {
     return next(new ApiError("You must be a room member to view files", 403));
   }
 
-  // Find file entry
-  const fileEntry = room.files.find(
+  // ✅ Find file entry - may be directly shared or inside a shared folder
+  let fileEntry = room.files.find(
     (f) =>
       f.fileId &&
       (f.fileId._id ? f.fileId._id.toString() : f.fileId.toString()) === fileId
   );
+  
+  // ✅ If file not directly shared, check if it's inside a shared folder
+  let file = null;
   if (!fileEntry) {
-    return next(new ApiError("File not shared in this room", 404));
-  }
-
-  const file = fileEntry.fileId;
-  if (!file) {
-    return next(new ApiError("File not found", 404));
+    const File = require("../models/fileModel");
+    const Folder = require("../models/folderModel");
+    
+    // ✅ Find the file
+    file = await File.findById(fileId);
+    if (!file) {
+      return next(new ApiError("File not found", 404));
+    }
+    
+    // ✅ Check if file is inside a shared folder
+    if (file.parentFolderId) {
+      console.log(`🔍 [viewRoomFile] File has parentFolderId: ${file.parentFolderId}`);
+      console.log(`🔍 [viewRoomFile] Room has ${room.folders.length} shared folders`);
+      
+      // ✅ Log all shared folders for debugging
+      room.folders.forEach((f, index) => {
+        const fId = f.folderId 
+          ? (typeof f.folderId === "object" && f.folderId._id
+              ? f.folderId._id.toString()
+              : (typeof f.folderId === "object" && f.folderId.toString
+                  ? f.folderId.toString()
+                  : String(f.folderId)))
+          : null;
+        console.log(`   Folder ${index}: ${fId}`);
+      });
+      
+      // ✅ Get the folder hierarchy to find if any parent folder is shared
+      const checkFolderInRoom = async (folderId) => {
+        console.log(`🔍 [checkFolderInRoom] Checking folderId: ${folderId}`);
+        
+        // ✅ Check if this folder is shared in the room
+        const folderEntry = room.folders.find((f) => {
+          if (!f.folderId) return false;
+          const fId = typeof f.folderId === "object" && f.folderId._id
+            ? f.folderId._id.toString()
+            : (typeof f.folderId === "object" && f.folderId.toString
+              ? f.folderId.toString()
+              : String(f.folderId));
+          const matches = fId === folderId.toString();
+          if (matches) {
+            console.log(`✅ [checkFolderInRoom] Found matching folder: ${fId}`);
+          }
+          return matches;
+        });
+        
+        if (folderEntry) {
+          console.log(`✅ [checkFolderInRoom] Folder ${folderId} is shared in room`);
+          return true; // ✅ Folder is shared in room
+        }
+        
+        // ✅ Check parent folder recursively
+        const folder = await Folder.findById(folderId);
+        if (folder) {
+          // ✅ التحقق من parentId أو parentFolderId
+          const parentId = folder.parentId || folder.parentFolderId;
+          if (parentId) {
+            console.log(`🔍 [checkFolderInRoom] Folder ${folderId} has parentId: ${parentId}, checking recursively...`);
+            return await checkFolderInRoom(parentId);
+          } else {
+            console.log(`❌ [checkFolderInRoom] Folder ${folderId} found but has no parent (parentId: ${folder.parentId}, parentFolderId: ${folder.parentFolderId})`);
+          }
+        } else {
+          console.log(`❌ [checkFolderInRoom] Folder ${folderId} not found in database`);
+        }
+        
+        return false;
+      };
+      
+      const isInSharedFolder = await checkFolderInRoom(file.parentFolderId);
+      console.log(`🔍 [viewRoomFile] isInSharedFolder result: ${isInSharedFolder}`);
+      
+      if (!isInSharedFolder) {
+        console.log(`❌ [viewRoomFile] File is not in a shared folder, returning 404`);
+        return next(new ApiError("File not shared in this room", 404));
+      }
+      
+      // ✅ File is inside a shared folder - allow access
+      console.log("✅ [viewRoomFile] File is inside a shared folder, allowing access");
+    } else {
+      // ✅ File has no parent folder and is not directly shared
+      console.log(`❌ [viewRoomFile] File has no parentFolderId and is not directly shared`);
+      return next(new ApiError("File not shared in this room", 404));
+    }
+  } else {
+    // ✅ File is directly shared
+    file = fileEntry.fileId;
+    if (!file) {
+      return next(new ApiError("File not found", 404));
+    }
   }
 
   // Check if file exists on disk
@@ -103,22 +194,28 @@ exports.viewRoomFile = asyncHandler(async (req, res, next) => {
     return next(new ApiError("File not found on server", 404));
   }
 
-  // Check if user is file owner or the one who shared it
+  // ✅ Check if user is file owner or the one who shared it
   const fileUserId =
     file.userId &&
     (file.userId._id ? file.userId._id.toString() : file.userId.toString());
-  const sharedByUserId =
-    fileEntry.sharedBy &&
-    (fileEntry.sharedBy._id
-      ? fileEntry.sharedBy._id.toString()
-      : fileEntry.sharedBy.toString());
-
+  
   const isFileOwner = fileUserId === userId.toString();
-  const isSharedBy = sharedByUserId === userId.toString();
+  
+  // ✅ If fileEntry exists (directly shared), check sharedBy
+  let isSharedBy = false;
+  if (fileEntry) {
+    const sharedByUserId =
+      fileEntry.sharedBy &&
+      (fileEntry.sharedBy._id
+        ? fileEntry.sharedBy._id.toString()
+        : fileEntry.sharedBy.toString());
+    isSharedBy = sharedByUserId === userId.toString();
+  }
 
-  // If it's a one-time share, check if user already accessed it
-  // BUT: allow file owner and sharer to access unlimited times
-  if (fileEntry.isOneTimeShare && !isFileOwner && !isSharedBy) {
+  // ✅ If it's a one-time share, check if user already accessed it
+  // ✅ BUT: allow file owner and sharer to access unlimited times
+  // ✅ Only check if fileEntry exists (directly shared files)
+  if (fileEntry && fileEntry.isOneTimeShare && !isFileOwner && !isSharedBy) {
     const userAccessed =
       fileEntry.accessedBy &&
       fileEntry.accessedBy.some((a) => {
@@ -147,13 +244,17 @@ exports.viewRoomFile = asyncHandler(async (req, res, next) => {
       accessedAt: new Date(),
     });
 
-    // Check if all members have viewed the file
-    // Count only non-owner/non-sharer members
+    // ✅ Check if all members have viewed the file
+    // ✅ Count only non-owner/non-sharer members
+    const sharedByUserIdForCount = fileEntry.sharedBy &&
+      (fileEntry.sharedBy._id
+        ? fileEntry.sharedBy._id.toString()
+        : fileEntry.sharedBy.toString());
     const membersToCount = room.members.filter((m) => {
       const memberId =
         (m.user && (m.user._id ? m.user._id.toString() : m.user.toString())) ||
         m.user;
-      return memberId !== fileUserId && memberId !== sharedByUserId;
+      return memberId !== fileUserId && memberId !== sharedByUserIdForCount;
     });
 
     if (fileEntry.accessedBy.length >= membersToCount.length) {
@@ -185,7 +286,7 @@ exports.viewRoomFile = asyncHandler(async (req, res, next) => {
 
     await room.save();
 
-    // Log activity
+    // ✅ Log activity for one-time share
     await logActivity(
       userId,
       "file_viewed_onetime",
@@ -198,14 +299,40 @@ exports.viewRoomFile = asyncHandler(async (req, res, next) => {
         isOneTimeShare: true,
       }
     );
+  } else {
+    // ✅ Log activity for regular file view (inside shared folder)
+    logActivity(
+      userId,
+      "file_viewed_from_room",
+      "file",
+      file._id,
+      file.name,
+      {
+        roomId: room._id,
+        roomName: room.name,
+        isInSharedFolder: !fileEntry,
+      },
+      {
+        ipAddress: req.ip,
+        userAgent: req.get("User-Agent"),
+      }
+    ).catch((error) => {
+      console.error("Error logging file view activity:", error);
+    });
   }
 
-  // Send file
-  res.download(filePath, file.name, (err) => {
+  console.log(`✅ [viewRoomFile] Sending file: ${file.name} (${filePath})`);
+
+  // ✅ Set appropriate headers for viewing (inline, not download)
+  res.setHeader("Content-Type", file.type || "application/octet-stream");
+  res.setHeader("Content-Disposition", `inline; filename="${file.name}"`);
+
+  // ✅ Send file for viewing
+  res.sendFile(path.resolve(filePath), (err) => {
     if (err) {
-      console.error("Error sending file:", err);
+      console.error("Error viewing file:", err);
       if (!res.headersSent) {
-        return next(new ApiError("Error downloading file", 500));
+        return next(new ApiError("Error viewing file", 500));
       }
     }
   });

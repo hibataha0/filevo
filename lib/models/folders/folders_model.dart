@@ -4,6 +4,7 @@ class FolderModel {
   final String userId;
   final String? parentId;
   final int size;
+  final int filesCount; // ✅ عدد الملفات الكلي (recursive)
   final String path;
   final bool isShared;
   final List<SharedUser> sharedWith;
@@ -27,6 +28,7 @@ class FolderModel {
     required this.userId,
     this.parentId,
     required this.size,
+    required this.filesCount,
     required this.path,
     required this.isShared,
     required this.sharedWith,
@@ -43,12 +45,39 @@ class FolderModel {
   });
 
   factory FolderModel.fromJson(Map<String, dynamic> json) {
+    // ✅ تحويل size إلى int بشكل آمن
+    int size = 0;
+    final sizeValue = json["size"];
+    if (sizeValue != null) {
+      if (sizeValue is int) {
+        size = sizeValue;
+      } else if (sizeValue is num) {
+        size = sizeValue.toInt();
+      } else if (sizeValue is String) {
+        size = int.tryParse(sizeValue) ?? 0;
+      }
+    }
+
+    // ✅ تحويل filesCount إلى int بشكل آمن
+    int filesCount = 0;
+    final filesCountValue = json["filesCount"];
+    if (filesCountValue != null) {
+      if (filesCountValue is int) {
+        filesCount = filesCountValue;
+      } else if (filesCountValue is num) {
+        filesCount = filesCountValue.toInt();
+      } else if (filesCountValue is String) {
+        filesCount = int.tryParse(filesCountValue) ?? 0;
+      }
+    }
+
     return FolderModel(
       id: json["_id"],
       name: json["name"],
       userId: json["userId"],
       parentId: json["parentId"],
-      size: json["size"] ?? 0,
+      size: size,
+      filesCount: filesCount,
       path: json["path"],
       isShared: json["isShared"] ?? false,
       sharedWith: json["sharedWith"] != null
@@ -83,6 +112,7 @@ class FolderModel {
       "userId": userId,
       "parentId": parentId,
       "size": size,
+      "filesCount": filesCount,
       "path": path,
       "isShared": isShared,
       "sharedWith": sharedWith.map((x) => x.toJson()).toList(),

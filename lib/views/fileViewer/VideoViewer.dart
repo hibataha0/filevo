@@ -4,6 +4,10 @@ import 'package:video_player/video_player.dart';
 import 'package:flutter/services.dart';
 import 'package:chewie/chewie.dart';
 import 'package:filevo/services/screen_protection_service.dart';
+import 'package:filevo/services/storage_service.dart';
+import 'package:http/http.dart' as http;
+import 'package:path_provider/path_provider.dart';
+import 'dart:io';
 
 class VideoViewer extends StatefulWidget {
   final String url;
@@ -35,6 +39,27 @@ class _VideoViewerState extends State<VideoViewer> {
   String? _selectedSubtitle;
   bool _showSubtitles = false;
 
+  bool _hasInitialized = false;
+  bool _isDownloading = false;
+
+  void _showLoadingDialog() {
+    if (!mounted || _isDownloading) return;
+    _isDownloading = true;
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(
+        child: CircularProgressIndicator(),
+      ),
+    );
+  }
+
+  void _hideLoadingDialog() {
+    if (!mounted || !_isDownloading) return;
+    _isDownloading = false;
+    Navigator.pop(context);
+  }
+
   @override
   void initState() {
     super.initState();
@@ -42,20 +67,108 @@ class _VideoViewerState extends State<VideoViewer> {
     if (widget.isOneTimeShare) {
       ScreenProtectionService.enableProtection();
     }
-    _availableQualities = [S.of(context).auto, '1080p', '720p', '480p', '360p'];
-    _initializeVideo();
-    _setupControlsTimer();
-    _loadSubtitles();
+    // ✅ لا نستخدم S.of(context) في initState، سننقله إلى didChangeDependencies
+    _availableQualities = ['Auto', '1080p', '720p', '480p', '360p']; // ✅ قيمة افتراضية
+    // ✅ لا نستدعي _initializeVideo() أو _loadSubtitles() هنا لأنها تستخدم S.of(context)
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // ✅ تحديث _availableQualities مع الترجمة الصحيحة
+    // ✅ فقط إذا كانت القيمة الافتراضية لا تزال موجودة
+    try {
+      if (mounted && _availableQualities.isNotEmpty && _availableQualities[0] == 'Auto') {
+        _availableQualities = [S.of(context).auto, '1080p', '720p', '480p', '360p'];
+      }
+    } catch (e) {
+      // ✅ في حالة الخطأ، نستخدم القيمة الافتراضية
+      _availableQualities = ['Auto', '1080p', '720p', '480p', '360p'];
+    }
+    
+    // ✅ تهيئة الفيديو والترجمات بعد didChangeDependencies (مرة واحدة فقط)
+    if (!_hasInitialized) {
+      _hasInitialized = true;
+      _initializeVideo();
+      _setupControlsTimer();
+      _loadSubtitles();
+    }
   }
 
   Future<void> _initializeVideo() async {
     try {
+      String videoPath = widget.url;
+      
+      // ✅ إذا كان URL من السيرفر (يحتاج token)، حمله مؤقتاً
+      if (widget.url.contains('/api/') && !widget.url.startsWith('file://') && !File(widget.url).existsSync()) {
+        print('🎥 [VideoViewer] URL يحتاج token، جارٍ التحميل المؤقت...');
+        final token = await StorageService.getToken();
+        if (token == null) {
+          if (mounted) {
+            setState(() {
+              _hasError = true;
+              _isLoading = false;
+              _errorMessage = 'يجب تسجيل الدخول أولاً';
+            });
+          }
+          return;
+        }
+        
+        try {
+          _showLoadingDialog();
+          final response = await http.get(
+            Uri.parse(widget.url),
+            headers: {'Authorization': 'Bearer $token'},
+          ).timeout(const Duration(minutes: 5));
+          
+          if (mounted) _hideLoadingDialog();
+          
+          if (response.statusCode == 200) {
+            final tempDir = await getTemporaryDirectory();
+            final fileName = widget.url.split('/').last.split('?').first;
+            final timestamp = DateTime.now().millisecondsSinceEpoch;
+            final tempFile = File('${tempDir.path}/video_$timestamp$fileName');
+            await tempFile.writeAsBytes(response.bodyBytes);
+            videoPath = tempFile.path;
+            print('🎥 [VideoViewer] الفيديو تم تحميله إلى: $videoPath');
+          } else {
+            if (mounted) {
+              setState(() {
+                _hasError = true;
+                _isLoading = false;
+                _errorMessage = 'فشل تحميل الفيديو: ${response.statusCode}';
+              });
+            }
+            return;
+          }
+        } catch (e) {
+          if (mounted) {
+            _hideLoadingDialog();
+            setState(() {
+              _hasError = true;
+              _isLoading = false;
+              try {
+                _errorMessage = S.of(context).videoLoadError(e.toString());
+              } catch (e2) {
+                _errorMessage = 'فشل تحميل الفيديو: ${e.toString()}';
+              }
+            });
+          }
+          return;
+        }
+      }
+      
       // ✅ تحسين تحميل الفيديو بإضافة buffering options
-      _controller = VideoPlayerController.network(
-        widget.url,
-        // ✅ إعدادات لتحسين الأداء والسرعة
-        httpHeaders: {'Connection': 'keep-alive', 'Accept': '*/*'},
-      );
+      if (videoPath.startsWith('http://') || videoPath.startsWith('https://')) {
+        _controller = VideoPlayerController.network(
+          videoPath,
+          // ✅ إعدادات لتحسين الأداء والسرعة
+          httpHeaders: {'Connection': 'keep-alive', 'Accept': '*/*'},
+        );
+      } else {
+        // ✅ مسار محلي
+        _controller = VideoPlayerController.file(File(videoPath));
+      }
 
       // ✅ إعداد buffer قبل التشغيل
       await _controller.initialize();
@@ -88,6 +201,12 @@ class _VideoViewerState extends State<VideoViewer> {
         autoInitialize: true,
         // ✅ تحسين buffer للفيديو
         errorBuilder: (context, errorMessage) {
+          String errorText;
+          try {
+            errorText = S.of(context).videoLoadFailed;
+          } catch (e) {
+            errorText = 'فشل تحميل الفيديو';
+          }
           return Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -95,7 +214,7 @@ class _VideoViewerState extends State<VideoViewer> {
                 const Icon(Icons.error_outline, color: Colors.red, size: 48),
                 const SizedBox(height: 16),
                 Text(
-                  S.of(context).videoLoadFailed,
+                  errorText,
                   style: const TextStyle(color: Colors.white, fontSize: 16),
                 ),
                 const SizedBox(height: 8),
@@ -153,7 +272,11 @@ class _VideoViewerState extends State<VideoViewer> {
         setState(() {
           _hasError = true;
           _isLoading = false;
-          _errorMessage = S.of(context).videoLoadError(e.toString());
+          try {
+            _errorMessage = S.of(context).videoLoadError(e.toString());
+          } catch (e2) {
+            _errorMessage = 'فشل تحميل الفيديو: ${e.toString()}';
+          }
         });
       }
     }
@@ -161,35 +284,57 @@ class _VideoViewerState extends State<VideoViewer> {
 
   // تحميل الترجمات المتاحة
   void _loadSubtitles() {
-    // في التطبيق الحقيقي، يمكن جلب هذه القائمة من السيرفر
-    setState(() {
-      _availableSubtitles = [
-        SubtitleItem(
-          id: 'none',
-          name: S.of(context).noSubtitles,
-          language: S.of(context).none,
-        ),
-        SubtitleItem(
-          id: 'ar',
-          name: S.of(context).arabic,
-          language: S.of(context).arabic,
-        ),
-        SubtitleItem(
-          id: 'en',
-          name: S.of(context).english,
-          language: S.of(context).english,
-        ),
-        // SubtitleItem(id: 'fr', name: 'Français', language: 'الفرنسية'),
-        // SubtitleItem(id: 'es', name: 'Español', language: 'الإسبانية'),
-      ];
-      _selectedSubtitle = S.of(context).none;
-    });
+    if (!mounted) return;
+    try {
+      // في التطبيق الحقيقي، يمكن جلب هذه القائمة من السيرفر
+      setState(() {
+        _availableSubtitles = [
+          SubtitleItem(
+            id: 'none',
+            name: S.of(context).noSubtitles,
+            language: S.of(context).none,
+          ),
+          SubtitleItem(
+            id: 'ar',
+            name: S.of(context).arabic,
+            language: S.of(context).arabic,
+          ),
+          SubtitleItem(
+            id: 'en',
+            name: S.of(context).english,
+            language: S.of(context).english,
+          ),
+          // SubtitleItem(id: 'fr', name: 'Français', language: 'الفرنسية'),
+          // SubtitleItem(id: 'es', name: 'Español', language: 'الإسبانية'),
+        ];
+        _selectedSubtitle = S.of(context).none;
+      });
+    } catch (e) {
+      // ✅ في حالة الخطأ، نستخدم قيم افتراضية
+      if (mounted) {
+        setState(() {
+          _availableSubtitles = [
+            SubtitleItem(id: 'none', name: 'بدون ترجمة', language: 'بدون'),
+            SubtitleItem(id: 'ar', name: 'العربية', language: 'العربية'),
+            SubtitleItem(id: 'en', name: 'English', language: 'English'),
+          ];
+          _selectedSubtitle = 'none';
+        });
+      }
+    }
   }
 
   // بناء قائمة الترجمات (في التطبيق الحقيقي، ستأتي من ملفات SRT/VTT)
   Subtitles _buildSubtitles() {
-    if (!_showSubtitles || _selectedSubtitle == S.of(context).none) {
-      return Subtitles([]);
+    try {
+      final noneText = S.of(context).none;
+      if (!_showSubtitles || _selectedSubtitle == noneText || _selectedSubtitle == 'none') {
+        return Subtitles([]);
+      }
+    } catch (e) {
+      if (!_showSubtitles || _selectedSubtitle == 'none') {
+        return Subtitles([]);
+      }
     }
 
     // هذه أمثلة للترجمات - في التطبيق الحقيقي ستقرأ من ملف

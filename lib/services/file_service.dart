@@ -114,6 +114,33 @@ class FileService {
 
       final statusCode = response.statusCode ?? 0;
 
+      // ✅ التحقق من خطأ المساحة التخزينية أولاً
+      if (statusCode == 403) {
+        Map<String, dynamic> errorData = {};
+        try {
+          errorData = jsonDecode(responseBody);
+        } catch (_) {
+          errorData = {};
+        }
+        
+        final message = errorData['message']?.toString() ?? '';
+        if (message.toLowerCase().contains('storage') || 
+            message.toLowerCase().contains('limit')) {
+          final storageMessage = message.isNotEmpty 
+              ? message
+              : 'تم الوصول للحد الأقصى من المساحة التخزينية (10 GB). يرجى حذف بعض الملفات أو شراء مساحة إضافية';
+          print('❌ [FileService] Storage limit exceeded: $storageMessage');
+          print('═══════════════════════════════════════════════════════');
+          return {
+            "success": false,
+            "message": storageMessage,
+            "error": errorData,
+            "storageLimitExceeded": true,
+            "statusCode": 403,
+          };
+        }
+      }
+
       if (statusCode >= 200 && statusCode < 300) {
         final data = jsonDecode(responseBody);
         final fileData = data['file'];
@@ -162,6 +189,25 @@ class FileService {
           errorData = {};
         }
 
+        // ✅ التحقق من خطأ المساحة التخزينية (403)
+        final statusCode = response.statusCode ?? 0;
+        final isStorageError = statusCode == 403 && 
+            (errorData['message']?.toString().toLowerCase() ?? '').contains('storage');
+
+        if (isStorageError) {
+          final storageMessage = errorData['message'] ?? 
+              'تم الوصول للحد الأقصى من المساحة التخزينية. يرجى حذف بعض الملفات أو شراء مساحة إضافية';
+          print('❌ [FileService] Storage limit exceeded: $storageMessage');
+          print('═══════════════════════════════════════════════════════');
+          return {
+            "success": false,
+            "message": storageMessage,
+            "error": errorData,
+            "storageLimitExceeded": true,
+            "statusCode": statusCode,
+          };
+        }
+
         final viruses = (errorData['viruses'] as List?)?.cast<String>() ?? [];
         final virusDetected = viruses.isNotEmpty ||
             (errorData['message']?.toString().toLowerCase() ?? '')
@@ -178,6 +224,7 @@ class FileService {
           "error": errorData,
           "virusDetected": virusDetected,
           "viruses": viruses,
+          "statusCode": statusCode,
         };
       }
     } catch (e) {
@@ -271,6 +318,35 @@ class FileService {
       // ✅ التحقق من status code
       final statusCode = response.statusCode ?? 0;
 
+      // ✅ التحقق من خطأ المساحة التخزينية أولاً
+      if (statusCode == 403) {
+        Map<String, dynamic> errorData = {};
+        try {
+          errorData = jsonDecode(responseBody);
+        } catch (_) {
+          errorData = {};
+        }
+        
+        final message = errorData['message']?.toString() ?? '';
+        if (message.toLowerCase().contains('storage') || 
+            message.toLowerCase().contains('limit')) {
+          final storageMessage = message.isNotEmpty 
+              ? message
+              : 'تم الوصول للحد الأقصى من المساحة التخزينية (10 GB). يرجى حذف بعض الملفات أو شراء مساحة إضافية';
+          print('❌ [FileService] Storage limit exceeded: $storageMessage');
+          print('═══════════════════════════════════════════════════════');
+          return {
+            "success": false,
+            "message": storageMessage,
+            "error": errorData,
+            "storageLimitExceeded": true,
+            "statusCode": 403,
+            "files": [],
+            "errors": [],
+          };
+        }
+      }
+
       if (statusCode >= 200 && statusCode < 300) {
         final data = jsonDecode(responseBody);
         final uploadedFiles = data['files'] as List? ?? [];
@@ -328,6 +404,27 @@ class FileService {
           errorData = {};
         }
 
+        // ✅ التحقق من خطأ المساحة التخزينية (403)
+        final statusCode = response.statusCode ?? 0;
+        final isStorageError = statusCode == 403 && 
+            (errorData['message']?.toString().toLowerCase() ?? '').contains('storage');
+
+        if (isStorageError) {
+          final storageMessage = errorData['message'] ?? 
+              'تم الوصول للحد الأقصى من المساحة التخزينية. يرجى حذف بعض الملفات أو شراء مساحة إضافية';
+          print('❌ [FileService] Storage limit exceeded: $storageMessage');
+          print('═══════════════════════════════════════════════════════');
+          return {
+            "success": false,
+            "message": storageMessage,
+            "error": errorData,
+            "storageLimitExceeded": true,
+            "statusCode": statusCode,
+            "errors": [],
+            "files": [],
+          };
+        }
+
         final errors = (errorData['errors'] as List?) ?? [];
         final viruses = (errorData['viruses'] as List?) ?? [];
         final virusDetected = viruses.isNotEmpty ||
@@ -348,6 +445,7 @@ class FileService {
           "errors": errors,
           "virusDetected": virusDetected,
           "viruses": viruses,
+          "statusCode": statusCode,
         };
       }
     } catch (e) {
@@ -442,11 +540,22 @@ class FileService {
           'count': data['count'] ?? 0,
         };
       } else {
-        final data = jsonDecode(response.body);
-        return {
-          'success': false,
-          'error': data['message'] ?? 'فشل في جلب الملفات الحديثة',
-        };
+        // ✅ معالجة آمنة للأخطاء - قد يكون response نصاً وليس JSON
+        try {
+          final data = jsonDecode(response.body);
+          return {
+            'success': false,
+            'error': data['message'] ?? 'فشل في جلب الملفات الحديثة',
+          };
+        } catch (e) {
+          // ✅ إذا كان response نصاً عادياً وليس JSON
+          return {
+            'success': false,
+            'error': response.body.isNotEmpty 
+                ? response.body 
+                : 'فشل في جلب الملفات الحديثة',
+          };
+        }
       }
     } catch (e) {
       return {
@@ -694,21 +803,48 @@ class FileService {
       print("Update file response status: ${response.statusCode}");
       print("Update file response body: ${response.body}");
 
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        print('data massage: ${data['message']}');
-        return {
-          'success': true,
-          'message': data['message'] ?? 'تم تحديث الملف بنجاح',
-
-          'file': data['file'],
-        };
-      } else {
-        final data = jsonDecode(response.body);
+      // ✅ معالجة خطأ 429 (Too Many Requests)
+      if (response.statusCode == 429) {
         return {
           'success': false,
-          'message': data['message'] ?? 'فشل في تحديث الملف',
+          'message': 'Too many requests from this IP, please try again later.',
         };
+      }
+
+      if (response.statusCode == 200) {
+        try {
+          final data = jsonDecode(response.body);
+          print('data massage: ${data['message']}');
+          return {
+            'success': true,
+            'message': data['message'] ?? 'تم تحديث الملف بنجاح',
+            'file': data['file'],
+          };
+        } catch (e) {
+          // ✅ إذا كان response body ليس JSON صالح
+          print('❌ [FileService] Error parsing JSON response: $e');
+          return {
+            'success': false,
+            'message': 'خطأ في قراءة استجابة السيرفر: ${response.body}',
+          };
+        }
+      } else {
+        try {
+          final data = jsonDecode(response.body);
+          return {
+            'success': false,
+            'message': data['message'] ?? 'فشل في تحديث الملف',
+          };
+        } catch (e) {
+          // ✅ إذا كان response body ليس JSON صالح
+          print('❌ [FileService] Error parsing JSON error response: $e');
+          return {
+            'success': false,
+            'message': response.body.isNotEmpty 
+                ? response.body 
+                : 'فشل في تحديث الملف (${response.statusCode})',
+          };
+        }
       }
     } catch (e) {
       print("Update file error: $e");
@@ -779,39 +915,73 @@ class FileService {
       print('📥 [FileService] Response status: ${response.statusCode}');
       print('📥 [FileService] Response body: $responseBody');
 
+      // ✅ معالجة خطأ 429 (Too Many Requests)
+      if (response.statusCode == 429) {
+        print('❌ [FileService] Too many requests (429)');
+        print('═══════════════════════════════════════════════════════');
+        return {
+          'success': false,
+          'message': 'Too many requests from this IP, please try again later.',
+        };
+      }
+
       if (response.statusCode >= 200 && response.statusCode < 300) {
-        final data = jsonDecode(responseBody);
-        // ✅ إذا كان success موجوداً و false، أو غير موجود ولكن status code 200، نعتبره نجاح
-        // ✅ إذا كان success موجوداً و true، نعتبره نجاح
-        final isSuccess = data['success'] != false; // true إذا success غير موجود أو true
-        
-        if (isSuccess) {
-          print('✅ [FileService] File content updated successfully');
-          print('   - File name: ${data['file']?['name'] ?? 'N/A'}');
-          print('   - Replace mode: ${data['replaceMode'] ?? 'N/A'}');
+        try {
+          final data = jsonDecode(responseBody);
+          // ✅ إذا كان success موجوداً و false، أو غير موجود ولكن status code 200، نعتبره نجاح
+          // ✅ إذا كان success موجوداً و true، نعتبره نجاح
+          final isSuccess = data['success'] != false; // true إذا success غير موجود أو true
+          
+          if (isSuccess) {
+            print('✅ [FileService] File content updated successfully');
+            print('   - File name: ${data['file']?['name'] ?? 'N/A'}');
+            print('   - Replace mode: ${data['replaceMode'] ?? 'N/A'}');
+            print('═══════════════════════════════════════════════════════');
+            return {
+              'success': true,
+              'message': data['message'] ?? 'تم تحديث محتوى الملف بنجاح',
+              'file': data['file'],
+              'replaceMode': data['replaceMode'],
+            };
+          } else {
+            print('❌ [FileService] Update failed: ${data['message']}');
+            print('═══════════════════════════════════════════════════════');
+            return {
+              'success': false,
+              'message': data['message'] ?? 'فشل في تحديث محتوى الملف',
+            };
+          }
+        } catch (e) {
+          // ✅ إذا كان response body ليس JSON صالح
+          print('❌ [FileService] Error parsing JSON response: $e');
+          print('   Response body: $responseBody');
           print('═══════════════════════════════════════════════════════');
           return {
-            'success': true,
-            'message': data['message'] ?? 'تم تحديث محتوى الملف بنجاح',
-            'file': data['file'],
-            'replaceMode': data['replaceMode'],
+            'success': false,
+            'message': 'خطأ في قراءة استجابة السيرفر: ${responseBody.isNotEmpty ? responseBody : "استجابة فارغة"}',
           };
-        } else {
-          print('❌ [FileService] Update failed: ${data['message']}');
+        }
+      } else {
+        try {
+          final data = jsonDecode(responseBody);
+          print('❌ [FileService] Update failed: ${data['message'] ?? 'Unknown error'}');
           print('═══════════════════════════════════════════════════════');
           return {
             'success': false,
             'message': data['message'] ?? 'فشل في تحديث محتوى الملف',
           };
+        } catch (e) {
+          // ✅ إذا كان response body ليس JSON صالح
+          print('❌ [FileService] Error parsing JSON error response: $e');
+          print('   Response body: $responseBody');
+          print('═══════════════════════════════════════════════════════');
+          return {
+            'success': false,
+            'message': responseBody.isNotEmpty 
+                ? responseBody 
+                : 'فشل في تحديث محتوى الملف (${response.statusCode})',
+          };
         }
-      } else {
-        final data = jsonDecode(responseBody);
-        print('❌ [FileService] Update failed: ${data['message'] ?? 'Unknown error'}');
-        print('═══════════════════════════════════════════════════════');
-        return {
-          'success': false,
-          'message': data['message'] ?? 'فشل في تحديث محتوى الملف',
-        };
       }
     } catch (e) {
       print('❌ [FileService] Update file content error: $e');
@@ -1175,6 +1345,40 @@ class FileService {
     }
   }
 
+  /// ✅ عرض ملف خاص بالمستخدم (للعرض في المتصفح)
+  /// Returns: Map with 'success', 'url', and 'fileName' or 'error'
+  /// Note: This endpoint returns the file directly for viewing, not JSON
+  Future<Map<String, dynamic>> viewFile({
+    required String fileId,
+    required String token,
+  }) async {
+    try {
+      if (token.isEmpty) {
+        return {
+          'success': false,
+          'error': 'لا يمكن تحديد هوية المستخدم. يرجى إعادة تسجيل الدخول.',
+        };
+      }
+
+      // ✅ استخدام endpoint لعرض الملف
+      final url = "$_apiBase${ApiEndpoints.viewFile(fileId)}";
+      print("🌐 [viewFile] GET $url");
+
+      // ✅ إرجاع URL للاستخدام في المتصفح
+      return {
+        'success': true,
+        'url': url,
+        'token': token,
+      };
+    } catch (e) {
+      print("❌ [viewFile] Error: $e");
+      return {
+        'success': false,
+        'error': 'خطأ في عرض الملف: ${e.toString()}',
+      };
+    }
+  }
+
   /// ✅ تحميل ملف خاص بالمستخدم
   /// Returns: Map with 'success' and 'filePath' or 'error'
   Future<Map<String, dynamic>> downloadFile({
@@ -1527,6 +1731,70 @@ class FileService {
     } catch (e) {
       print('❌ Error in fallback copy: $e');
       return false;
+    }
+  }
+
+  /// ✅ جلب معلومات المساحة التخزينية
+  Future<Map<String, dynamic>> getStorageInfo() async {
+    try {
+      final token = await StorageService.getToken();
+      if (token == null || token.isEmpty) {
+        return {
+          'success': false,
+          'error': 'لا يوجد token. يرجى تسجيل الدخول',
+        };
+      }
+
+      final uri = Uri.parse("$_apiBase${ApiEndpoints.storageInfo}");
+
+      final response = await http.get(
+        uri,
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
+
+      print('📊 [FileService] Get storage info response: ${response.statusCode}');
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final storageData = data['storage'] ?? {};
+        
+        return {
+          'success': true,
+          'storage': {
+            'limit': storageData['limit'] ?? 0,
+            'limitFormatted': storageData['limitFormatted'] ?? '0 Bytes',
+            'used': storageData['used'] ?? 0,
+            'usedFormatted': storageData['usedFormatted'] ?? '0 Bytes',
+            'available': storageData['available'] ?? 0,
+            'availableFormatted': storageData['availableFormatted'] ?? '0 Bytes',
+            'percentage': storageData['percentage'] ?? 0.0,
+            'isFull': storageData['isFull'] ?? false,
+            'canUpload': storageData['canUpload'] ?? true,
+          },
+        };
+      } else {
+        try {
+          final errorData = jsonDecode(response.body);
+          return {
+            'success': false,
+            'error': errorData['message'] ?? 'فشل في جلب معلومات المساحة',
+          };
+        } catch (e) {
+          return {
+            'success': false,
+            'error': 'فشل في جلب معلومات المساحة',
+          };
+        }
+      }
+    } catch (e) {
+      print('❌ [FileService] Get storage info error: $e');
+      return {
+        'success': false,
+        'error': 'خطأ في جلب معلومات المساحة: ${e.toString()}',
+      };
     }
   }
 }

@@ -87,6 +87,7 @@ class ApiEndpoints {
       "/files/$fileId/permanent";
   static const String emptyTrash = '/files/trash/empty';
   static const String recentFiles = '/files/recent'; // ✅ الملفات الحديثة
+  static const String storageInfo = '/files/storage'; // ✅ معلومات المساحة التخزينية
 
   // User endpoints
   static const String getMe = '/users/getMe';

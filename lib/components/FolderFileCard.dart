@@ -62,8 +62,21 @@ class FolderFileCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final w = constraints.maxWidth;
-        final h = constraints.maxHeight;
+        // ✅ التأكد من أن constraints صحيحة
+        final w = constraints.maxWidth.isFinite && constraints.maxWidth > 0
+            ? constraints.maxWidth
+            : constraints.maxWidth.isInfinite
+            ? MediaQuery.of(context).size.width / 3
+            : 100.0;
+        final h = constraints.maxHeight.isFinite && constraints.maxHeight > 0
+            ? constraints.maxHeight
+            : constraints.maxHeight.isInfinite
+            ? MediaQuery.of(context).size.height / 3
+            : 100.0;
+
+        // ✅ التأكد من أن w و h ليسا null أو سالبين
+        final safeW = w > 0 ? w : 100.0;
+        final safeH = h > 0 ? h : 100.0;
 
         // ✅ التحقق إذا كان هذا غرفة
         final isRoom = folderData != null && folderData!['type'] == 'room';
@@ -71,10 +84,10 @@ class FolderFileCard extends StatelessWidget {
         return GestureDetector(
           onTap: onTap,
           child: Container(
-            padding: EdgeInsets.all(w * 0.08),
+            padding: EdgeInsets.all(safeW * 0.08),
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(w * 0.08),
+              borderRadius: BorderRadius.circular(safeW * 0.08),
               boxShadow: [
                 BoxShadow(
                   color: Colors.grey.withOpacity(0.2),
@@ -85,8 +98,8 @@ class FolderFileCard extends StatelessWidget {
               ],
             ),
             child: isRoom
-                ? _buildRoomCard(context, w, h)
-                : _buildNormalCard(context, w, h),
+                ? _buildRoomCard(context, safeW, safeH)
+                : _buildNormalCard(context, safeW, safeH),
           ),
         );
       },
@@ -981,11 +994,15 @@ class FolderFileCard extends StatelessWidget {
 
   /// 🔐 التحقق من حالة حماية المجلد
   bool _isFolderProtected() {
-    if (folderData == null) return false;
+    if (folderData == null) {
+      return false;
+    }
 
     // ✅ التحقق من isProtected في folderData مباشرة
     final isProtected = folderData?['isProtected'] == true;
-    if (isProtected) return true;
+    if (isProtected) {
+      return true;
+    }
 
     // ✅ التحقق من isProtected في folderData['folderData'] (إذا كانت nested)
     final nestedFolderData = folderData?['folderData'] as Map<String, dynamic>?;

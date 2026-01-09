@@ -102,6 +102,14 @@ class FileController extends ChangeNotifier {
         setSuccess(result['message'] ?? 'File uploaded successfully');
         return true;
       } else {
+        // ✅ التحقق من خطأ المساحة التخزينية
+        if (result['storageLimitExceeded'] == true) {
+          final storageMsg = result['message'] ?? 
+              'تم الوصول للحد الأقصى من المساحة التخزينية (10 GB). يرجى حذف بعض الملفات أو شراء مساحة إضافية';
+          setError(storageMsg);
+          return false;
+        }
+
         final viruses =
             (result['viruses'] as List?)?.map((e) => e.toString()).toList() ??
             [];
@@ -181,13 +189,42 @@ class FileController extends ChangeNotifier {
               : '$errorsCount file(s) rejected after scan: $errorNames';
           setError(errorText);
         } else if (uploadedCount == 0) {
-          setError(result['message'] ?? 'Failed to upload file');
+          // ✅ التحقق من خطأ المساحة التخزينية
+          if (result['storageLimitExceeded'] == true) {
+            final storageMsg = result['message'] ?? 
+                'تم الوصول للحد الأقصى من المساحة التخزينية (10 GB). يرجى حذف بعض الملفات أو شراء مساحة إضافية';
+            setError(storageMsg);
+          } else {
+            setError(result['message'] ?? 'Failed to upload file');
+          }
         }
       }
       return result;
     } catch (e) {
       setError('Error uploading file: ${e.toString()}');
       return {'success': false, 'message': e.toString()};
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  /// ✅ جلب معلومات المساحة التخزينية
+  Future<Map<String, dynamic>?> getStorageInfo() async {
+    setLoading(true);
+    setError(null);
+    setSuccess(null);
+    try {
+      final result = await _fileService.getStorageInfo();
+      
+      if (result['success'] == true) {
+        return result['storage'] as Map<String, dynamic>?;
+      } else {
+        setError(result['error'] ?? 'Failed to get storage info');
+        return null;
+      }
+    } catch (e) {
+      setError('Error getting storage info: ${e.toString()}');
+      return null;
     } finally {
       setLoading(false);
     }

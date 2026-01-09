@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 import 'package:filevo/components/FilesListView.dart';
 import 'package:filevo/generated/l10n.dart';
@@ -100,7 +101,87 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
       );
 
       if (!mounted) return;
-
+      
+      // ✅ التحقق من خطأ 403 (مجلد محمي)
+      if (result == null && folderController.errorMessage != null) {
+        final errorMessage = folderController.errorMessage!.toLowerCase();
+        if (errorMessage.contains('403') || 
+            errorMessage.contains('protected') || 
+            errorMessage.contains('verify access') ||
+            errorMessage.contains('access denied')) {
+          print('🔐 [FolderContentsPage] Protected folder detected (403), requesting password...');
+          
+          // ✅ جلب معلومات المجلد للتحقق من نوع الحماية
+          try {
+            final folderDetails = await folderController.getFolderDetails(
+              folderId: widget.folderId,
+            );
+            
+            String protectionType = 'password'; // ✅ افتراضي: password
+            bool isProtected = true; // ✅ إذا حصل 403، المجلد محمي بالتأكيد
+            
+            if (folderDetails != null && folderDetails['folder'] != null) {
+              final folderData = folderDetails['folder'] as Map<String, dynamic>;
+              isProtected = folderData['isProtected'] == true;
+              protectionType = folderData['protectionType']?.toString() ?? 'password';
+              
+              print('🔐 [FolderContentsPage] Folder protection info:');
+              print('   - isProtected: $isProtected');
+              print('   - protectionType: $protectionType');
+            } else {
+              print('⚠️ [FolderContentsPage] Could not get folder details, using default: password');
+            }
+            
+            // ✅ طلب كلمة السر (حتى لو لم نتمكن من جلب نوع الحماية)
+            final verifyResult = await showVerifyFolderAccessDialog(
+              context,
+              widget.folderId,
+              widget.folderName,
+              protectionType,
+            );
+            
+            // ✅ إذا تم التحقق بنجاح، إعادة المحاولة
+            if (verifyResult['success'] == true && mounted) {
+              print('✅ [FolderContentsPage] Password verified, retrying...');
+              // ✅ إعادة تحميل المحتويات بعد التحقق
+              await _loadFolderContents(resetPage: true);
+              return;
+            } else {
+              print('❌ [FolderContentsPage] Password verification failed');
+              // ✅ العودة للصفحة السابقة
+              if (mounted) {
+                Navigator.pop(context);
+              }
+              return;
+            }
+          } catch (verifyError) {
+            print('❌ [FolderContentsPage] Error verifying folder access: $verifyError');
+            // ✅ حتى في حالة الخطأ، حاول طلب كلمة السر (افتراضي: password)
+            try {
+              final verifyResult = await showVerifyFolderAccessDialog(
+                context,
+                widget.folderId,
+                widget.folderName,
+                'password', // ✅ افتراضي: password
+              );
+              
+              if (verifyResult['success'] == true && mounted) {
+                print('✅ [FolderContentsPage] Password verified (fallback), retrying...');
+                await _loadFolderContents(resetPage: true);
+                return;
+              }
+            } catch (e) {
+              print('❌ [FolderContentsPage] Error in fallback verification: $e');
+            }
+            
+            if (mounted) {
+              Navigator.pop(context);
+            }
+            return;
+          }
+        }
+      }
+      
       List<Map<String, dynamic>> newContents = [];
 
       if (result != null) {
@@ -174,10 +255,73 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
         }
       }
     } catch (e) {
+      // ✅ التحقق من خطأ 403 (مجلد محمي)
+      final errorString = e.toString();
+      if (errorString.contains('403') || 
+          errorString.contains('protected') || 
+          errorString.contains('verify access')) {
+        print('🔐 [FolderContentsPage] Protected folder detected (403), requesting password...');
+        
+        // ✅ جلب معلومات المجلد للتحقق من نوع الحماية
+        try {
+          final folderController = Provider.of<FolderController>(
+            context,
+            listen: false,
+          );
+          final folderDetails = await folderController.getFolderDetails(
+            folderId: widget.folderId,
+          );
+          
+          if (folderDetails != null && folderDetails['folder'] != null) {
+            final folderData = folderDetails['folder'] as Map<String, dynamic>;
+            final isProtected = folderData['isProtected'] == true;
+            final protectionType = folderData['protectionType']?.toString() ?? 'none';
+            
+            if (isProtected && protectionType != 'none') {
+              // ✅ طلب كلمة السر
+              final result = await showVerifyFolderAccessDialog(
+                context,
+                widget.folderId,
+                widget.folderName,
+                protectionType,
+              );
+              
+              // ✅ إذا تم التحقق بنجاح، إعادة المحاولة
+              if (result['success'] == true && mounted) {
+                print('✅ [FolderContentsPage] Password verified, retrying...');
+                // ✅ إعادة تحميل المحتويات بعد التحقق
+                await _loadFolderContents(resetPage: true);
+                return;
+              } else {
+                print('❌ [FolderContentsPage] Password verification failed');
+                // ✅ العودة للصفحة السابقة
+                if (mounted) {
+                  Navigator.pop(context);
+                }
+                return;
+              }
+            }
+          }
+        } catch (verifyError) {
+          print('❌ [FolderContentsPage] Error verifying folder access: $verifyError');
+        }
+      }
+      
       if (mounted) {
         setState(() {
           isLoading = false;
         });
+        // ✅ عرض رسالة خطأ للمستخدم
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              errorString.contains('403') || errorString.contains('protected')
+                  ? 'المجلد محمي. يرجى التحقق من كلمة السر أولاً'
+                  : 'خطأ في تحميل محتويات المجلد: ${e.toString()}'
+            ),
+            backgroundColor: Colors.red,
+          ),
+        );
       }
     }
   }
@@ -210,6 +354,7 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
       }
 
       // ✅ بعد التحقق (إذا كان محمياً) أو مباشرة (إذا لم يكن محمياً)، نفتح المجلد
+      // ✅ تمرير roomId إذا كان المجلد الأب مشترك في الروم
       if (mounted) {
         Navigator.push(
           context,
@@ -218,6 +363,7 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
               folderId: folderId,
               folderName: folderName,
               folderColor: widget.folderColor,
+              roomId: widget.roomId, // ✅ تمرير roomId للمجلدات الفرعية
             ),
           ),
         );
@@ -240,39 +386,579 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
     return '$baseClean/$cleanPath';
   }
 
-  Future<void> _handleFileTap(Map<String, dynamic> file) async {
-    final filePath = file['path'] as String?;
-    final fileId = file['_id']?.toString() ?? '';
-    String finalPath = filePath ?? '';
-
-    if (finalPath.isEmpty && fileId.isNotEmpty) {
-      final token = await StorageService.getToken();
-      if (token != null) {
-        finalPath = 'download:$fileId';
-      }
-    }
-
-    if (finalPath.isEmpty) {
+  // ✅ فتح ملف من الروم باستخدام endpoint الروم
+  Future<void> _openRoomFile(String fileId, Map<String, dynamic> file) async {
+    print('📥 [openRoomFile] Starting - fileId: $fileId, roomId: ${widget.roomId}');
+    print('📥 [openRoomFile] File data: $file');
+    
+    if (widget.roomId == null || widget.roomId!.isEmpty) {
+      print('❌ [openRoomFile] RoomId is null or empty');
       _showSnackBar(S.of(context).fileLinkUnavailable, Colors.orange);
       return;
     }
+    
+    if (fileId.isEmpty) {
+      print('❌ [openRoomFile] FileId is empty');
+      _showSnackBar(S.of(context).fileIdNotAvailable, Colors.red);
+      return;
+    }
 
-    final originalName = file['name'] as String?;
+    _showLoadingDialog();
+
+    try {
+      final token = await StorageService.getToken();
+      if (token == null || token.isEmpty) {
+        if (mounted) {
+          Navigator.pop(context);
+          _showSnackBar(S.of(context).mustLogin, Colors.red);
+        }
+        return;
+      }
+
+      // ✅ استخدام endpoint الروم لعرض الملف
+      final url =
+          "${ApiConfig.baseUrl}${ApiEndpoints.viewRoomFile(widget.roomId!, fileId)}";
+      print('🌐 [openRoomFile] GET $url');
+
+      final response = await http.get(
+        Uri.parse(url),
+        headers: {'Authorization': 'Bearer $token'},
+      );
+
+      if (mounted) Navigator.pop(context);
+      
+      print('📥 [openRoomFile] Response Status: ${response.statusCode}');
+      print('📥 [openRoomFile] Response Headers: ${response.headers}');
+
+      if (response.statusCode == 200) {
+        // ✅ حفظ الملف مؤقتاً وفتحه
+        // ✅ استخراج fileName من البيانات - قد يكون في name أو originalData
+        final originalData = file['originalData'] as Map<String, dynamic>? ?? file;
+        final fileName = (file['name']?.toString() ?? 
+                         file['originalName']?.toString() ??
+                         originalData['name']?.toString() ?? 
+                         S.of(context).unnamedFile);
+        final name = fileName.toLowerCase();
+        print('📥 [openRoomFile] File name: $fileName');
+        print('📥 [openRoomFile] File data keys: ${file.keys.toList()}');
+        print('📥 [openRoomFile] OriginalData keys: ${originalData.keys.toList()}');
+        
+        final tempDir = await getTemporaryDirectory();
+        final tempFile = File('${tempDir.path}/$fileName');
+        await tempFile.writeAsBytes(response.bodyBytes);
+        print('📥 [openRoomFile] File saved to: ${tempFile.path}');
+        
+        // ✅ فتح الملف من المسار المؤقت
+        await _openFileFromPath(tempFile.path, fileName, name);
+
+        // ✅ فتح الملف حسب نوعه
+        if (name.endsWith('.pdf')) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => PdfViewerPage(
+                pdfUrl: tempFile.path,
+                fileName: fileName,
+              ),
+            ),
+          );
+        } else if (name.endsWith('.mp4') ||
+            name.endsWith('.mov') ||
+            name.endsWith('.mkv') ||
+            name.endsWith('.avi') ||
+            name.endsWith('.wmv')) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => VideoViewer(url: tempFile.path),
+            ),
+          );
+        } else if (name.endsWith('.jpg') ||
+            name.endsWith('.jpeg') ||
+            name.endsWith('.png') ||
+            name.endsWith('.gif') ||
+            name.endsWith('.bmp') ||
+            name.endsWith('.webp')) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => ImageViewer(
+                imageUrl: tempFile.path,
+                fileId: fileId,
+                roomId: widget.roomId,
+              ),
+            ),
+          );
+        } else if (TextViewerPage.isTextFile(fileName)) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => TextViewerPage(
+                filePath: tempFile.path,
+                fileName: fileName,
+              ),
+            ),
+          );
+        } else if (name.endsWith('.mp3') ||
+            name.endsWith('.wav') ||
+            name.endsWith('.aac') ||
+            name.endsWith('.ogg') ||
+            name.endsWith('.m4a') ||
+            name.endsWith('.wma') ||
+            name.endsWith('.flac')) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) =>
+                  AudioPlayerPage(audioUrl: tempFile.path, fileName: fileName),
+            ),
+          );
+        } else {
+          _showLoadingDialog();
+          await OfficeFileOpener.openAnyFile(
+            url: tempFile.path,
+            context: context,
+            token: token,
+            fileName: fileName,
+            closeLoadingDialog: true,
+          );
+        }
+      } else if (response.statusCode == 429) {
+        // ✅ معالجة خطأ Rate Limiting
+        print('⚠️ [openRoomFile] Rate limit exceeded (429)');
+        
+        // ✅ محاولة استخدام endpoint العادي كبديل
+        print('⚠️ [openRoomFile] Trying regular endpoint instead...');
+        
+        final originalData = file['originalData'] as Map<String, dynamic>? ?? file;
+        final fileName = (file['name']?.toString() ?? 
+                         file['originalName']?.toString() ??
+                         originalData['name']?.toString() ?? 
+                         S.of(context).unnamedFile);
+        final name = fileName.toLowerCase();
+        final filePath = (file['path'] as String?) ?? (originalData['path'] as String?);
+        final fileType = _getFileType(fileName);
+        
+        String url;
+        if (filePath != null && filePath.isNotEmpty) {
+          url = getFileUrl(filePath);
+        } else if (fileId.isNotEmpty) {
+          if (fileType == 'image' || fileType == 'video') {
+            url = "${ApiConfig.baseUrl}${ApiEndpoints.viewFile(fileId)}";
+          } else {
+            url = "${ApiConfig.baseUrl}${ApiEndpoints.downloadFile(fileId)}";
+          }
+        } else {
+          _showSnackBar(
+            'تم تجاوز الحد المسموح من الطلبات. يرجى المحاولة لاحقاً.',
+            Colors.orange,
+          );
+          return;
+        }
+        
+        print('📂 [openRoomFile] Using regular endpoint: $url');
+        try {
+          await _openFileFromUrl(url, fileName, name, fileId);
+        } catch (e) {
+          print('❌ [openRoomFile] Error opening file from regular endpoint: $e');
+          _showSnackBar(
+            'تم تجاوز الحد المسموح من الطلبات. يرجى المحاولة لاحقاً.',
+            Colors.orange,
+          );
+        }
+      } else if (response.statusCode == 404) {
+        // ✅ الملف غير موجود في الروم مباشرة أو داخل مجلد مشترك
+        // ✅ الباك إند يجب أن يتحقق من أن الملف داخل مجلد مشترك
+        print('❌ [openRoomFile] File not found in room (404)');
+        
+        try {
+          final errorJson = jsonDecode(response.body);
+          final errorMessage = errorJson['message'] ?? 
+                             'الملف غير موجود في هذه الغرفة أو داخل مجلد مشترك';
+          _showSnackBar(errorMessage, Colors.red);
+        } catch (e) {
+          _showSnackBar(
+            'الملف غير موجود في هذه الغرفة أو داخل مجلد مشترك',
+            Colors.red,
+          );
+        }
+      } else {
+        // ✅ معالجة الأخطاء الأخرى
+        print('❌ [openRoomFile] Error response: ${response.statusCode}');
+        print('❌ [openRoomFile] Error body: ${response.body}');
+        
+        String errorMessage = S.of(context).failedToDownloadFile;
+        try {
+          final errorJson = jsonDecode(response.body);
+          errorMessage =
+              errorJson['message'] ?? errorJson['error'] ?? errorMessage;
+        } catch (e) {
+          // ✅ إذا لم يكن JSON، استخدم الرسالة الأصلية
+          if (response.statusCode == 403) {
+            errorMessage = 'Access denied or file already accessed';
+          }
+        }
+        _showSnackBar(errorMessage, Colors.red);
+      }
+    } catch (e, stackTrace) {
+      print('❌ [openRoomFile] Exception: $e');
+      print('❌ [openRoomFile] Stack trace: $stackTrace');
+      if (mounted) {
+        Navigator.pop(context);
+        _showSnackBar(
+          S.of(context).errorDownloadingFile1,
+          Colors.red,
+        );
+      }
+    }
+  }
+
+  // ✅ دالة مساعدة لفتح الملف من URL
+  Future<void> _openFileFromUrl(String url, String fileName, String name, String fileId) async {
+    print('🌐 [openFileFromUrl] Starting - URL: $url, fileName: $fileName, fileId: $fileId');
+    _showLoadingDialog();
+
+    try {
+      final token = await StorageService.getToken();
+      if (token == null) {
+        Navigator.pop(context);
+        _showSnackBar(S.of(context).mustLogin, Colors.red);
+        return;
+      }
+
+      final client = http.Client();
+      print('🌐 [openFileFromUrl] Sending GET request to: $url');
+      final response = await client.get(
+        Uri.parse(url),
+        headers: {'Authorization': 'Bearer $token', 'Range': 'bytes=0-511'},
+      );
+      if (!mounted) return;
+      Navigator.pop(context);
+
+      print('📥 [openFileFromUrl] Response Status: ${response.statusCode}');
+      print('📥 [openFileFromUrl] Response Headers: ${response.headers}');
+
+      if (response.statusCode == 200 || response.statusCode == 206) {
+        print('✅ [openFileFromUrl] Success - Opening file: $fileName');
+        final bytes = response.bodyBytes;
+        bool isValidPdf(List<int> bytes) {
+          if (bytes.length < 4) return false;
+          final signature = String.fromCharCodes(bytes.sublist(0, 4));
+          return signature == '%PDF';
+        }
+
+        final isPdf = isValidPdf(bytes);
+
+        if (name.endsWith('.pdf') && !isPdf) {
+          _showSnackBar(S.of(context).invalidPdfFile, Colors.red);
+          return;
+        }
+
+        if (name.endsWith('.pdf')) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => PdfViewerPage(pdfUrl: url, fileName: fileName),
+            ),
+          );
+        } else if (name.endsWith('.mp4') ||
+            name.endsWith('.mov') ||
+            name.endsWith('.mkv') ||
+            name.endsWith('.avi') ||
+            name.endsWith('.wmv')) {
+          print('🎥 [openFileFromUrl] Opening video file');
+          // ✅ تحميل الفيديو مؤقتاً لأن VideoPlayerController.network لا يدعم headers مخصصة
+          _showLoadingDialog();
+          try {
+            final fullResponse = await http.get(
+              Uri.parse(url),
+              headers: {'Authorization': 'Bearer $token'},
+            );
+            if (mounted) Navigator.pop(context);
+            if (fullResponse.statusCode == 200) {
+              final tempDir = await getTemporaryDirectory();
+              final tempFile = File('${tempDir.path}/$fileName');
+              await tempFile.writeAsBytes(fullResponse.bodyBytes);
+              print('🎥 [openFileFromUrl] Video saved to: ${tempFile.path}');
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => VideoViewer(url: tempFile.path),
+                ),
+              );
+            } else {
+              _showSnackBar('فشل تحميل الفيديو: ${fullResponse.statusCode}', Colors.red);
+            }
+          } catch (e) {
+            if (mounted) {
+              Navigator.pop(context);
+              _showSnackBar('خطأ في تحميل الفيديو: $e', Colors.red);
+            }
+          }
+        } else if (name.endsWith('.jpg') ||
+            name.endsWith('.jpeg') ||
+            name.endsWith('.png') ||
+            name.endsWith('.gif') ||
+            name.endsWith('.bmp') ||
+            name.endsWith('.webp')) {
+          print('🖼️ [openFileFromUrl] Opening image file');
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => ImageViewer(imageUrl: url, fileId: fileId),
+            ),
+          );
+        } else if (TextViewerPage.isTextFile(fileName)) {
+          print('📝 [openFileFromUrl] Opening text file');
+          _showLoadingDialog();
+          try {
+            final fullResponse = await http.get(
+              Uri.parse(url),
+              headers: {'Authorization': 'Bearer $token'},
+            );
+            if (mounted) Navigator.pop(context);
+            if (fullResponse.statusCode == 200) {
+              final tempDir = await getTemporaryDirectory();
+              final tempFile = File('${tempDir.path}/$fileName');
+              await tempFile.writeAsBytes(fullResponse.bodyBytes);
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => TextViewerPage(
+                    filePath: tempFile.path,
+                    fileName: fileName,
+                  ),
+                ),
+              );
+            }
+          } catch (e) {
+            if (mounted) Navigator.pop(context);
+          }
+        } else if (name.endsWith('.mp3') ||
+            name.endsWith('.wav') ||
+            name.endsWith('.aac') ||
+            name.endsWith('.ogg') ||
+            name.endsWith('.m4a') ||
+            name.endsWith('.wma') ||
+            name.endsWith('.flac')) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) =>
+                  AudioPlayerPage(audioUrl: url, fileName: fileName),
+            ),
+          );
+        } else {
+          _showLoadingDialog();
+          await OfficeFileOpener.openAnyFile(
+            url: url,
+            context: context,
+            token: token,
+            fileName: fileName,
+            closeLoadingDialog: true,
+          );
+        }
+      } else {
+        print('❌ [openFileFromUrl] Error response: ${response.statusCode}');
+        print('❌ [openFileFromUrl] Error body: ${response.body}');
+        
+        String errorMessage = S.of(context).failedToDownloadFile;
+        try {
+          final errorJson = jsonDecode(response.body);
+          errorMessage = errorJson['message'] ?? 
+                        errorJson['error'] ?? 
+                        errorMessage;
+          print('❌ [openFileFromUrl] Error message: $errorMessage');
+        } catch (e) {
+          print('❌ [openFileFromUrl] Could not parse error JSON: $e');
+          if (response.statusCode == 403) {
+            errorMessage = 'ليس لديك صلاحية للوصول إلى هذا الملف';
+          } else if (response.statusCode == 404) {
+            errorMessage = 'الملف غير موجود';
+          } else if (response.statusCode == 401) {
+            errorMessage = 'يرجى إعادة تسجيل الدخول';
+          } else {
+            errorMessage = S.of(context).fileUnavailableWithCode(response.statusCode.toString());
+          }
+        }
+        
+        _showSnackBar(errorMessage, Colors.red);
+      }
+    } catch (e, stackTrace) {
+      print('❌ [openFileFromUrl] Exception: $e');
+      print('❌ [openFileFromUrl] Stack trace: $stackTrace');
+      if (mounted) {
+        Navigator.pop(context);
+        _showSnackBar(S.of(context).errorDownloadingFile1, Colors.red);
+      }
+    }
+  }
+
+  // ✅ دالة مساعدة لفتح الملف من المسار المحلي
+  Future<void> _openFileFromPath(String filePath, String fileName, String name) async {
+    try {
+      final file = File(filePath);
+      if (!await file.exists()) {
+        _showSnackBar('File not found', Colors.red);
+        return;
+      }
+
+      if (name.endsWith('.pdf')) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => PdfViewerPage(pdfUrl: filePath, fileName: fileName),
+          ),
+        );
+      } else if (name.endsWith('.mp4') ||
+          name.endsWith('.mov') ||
+          name.endsWith('.mkv') ||
+          name.endsWith('.avi') ||
+          name.endsWith('.wmv')) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => VideoViewer(url: filePath)),
+        );
+      } else if (name.endsWith('.jpg') ||
+          name.endsWith('.jpeg') ||
+          name.endsWith('.png') ||
+          name.endsWith('.gif') ||
+          name.endsWith('.bmp') ||
+          name.endsWith('.webp')) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => ImageViewer(imageUrl: filePath, fileId: null),
+          ),
+        );
+      } else if (TextViewerPage.isTextFile(fileName)) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => TextViewerPage(
+              filePath: filePath,
+              fileName: fileName,
+            ),
+          ),
+        );
+      } else if (name.endsWith('.mp3') ||
+          name.endsWith('.wav') ||
+          name.endsWith('.aac') ||
+          name.endsWith('.ogg') ||
+          name.endsWith('.m4a') ||
+          name.endsWith('.wma') ||
+          name.endsWith('.flac')) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => AudioPlayerPage(audioUrl: filePath, fileName: fileName),
+          ),
+        );
+      } else {
+        final token = await StorageService.getToken();
+        if (token == null) {
+          _showSnackBar(S.of(context).mustLogin, Colors.red);
+          return;
+        }
+        _showLoadingDialog();
+        await OfficeFileOpener.openAnyFile(
+          url: filePath,
+          context: context,
+          token: token,
+          fileName: fileName,
+          closeLoadingDialog: true,
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        _showSnackBar('Error opening file: $e', Colors.red);
+      }
+    }
+  }
+
+  Future<void> _handleFileTap(Map<String, dynamic> file) async {
+    print('📂 [handleFileTap] Opening file: ${file['name']}');
+    print('📂 [handleFileTap] File data keys: ${file.keys.toList()}');
+    print('📂 [handleFileTap] File path: ${file['path']}');
+    print('📂 [handleFileTap] File _id: ${file['_id']}');
+    print('📂 [handleFileTap] File originalData: ${file['originalData']}');
+    
+    // ✅ استخراج البيانات من originalData إذا كانت موجودة
+    final originalData = file['originalData'] as Map<String, dynamic>? ?? file;
+    
+    // ✅ استخراج fileId - قد يكون في _id مباشرة أو في originalData
+    String fileId = _extractId(file['_id']);
+    if (fileId.isEmpty) {
+      fileId = _extractId(originalData['_id']);
+    }
+    
+    final filePath = (file['path'] as String?) ?? 
+                     (originalData['path'] as String?);
+    final originalName = (file['name'] as String?) ?? 
+                         (originalData['name'] as String?);
     final name = originalName?.toLowerCase() ?? '';
     final fileName = originalName ?? S.of(context).unnamedFile;
+    
+    print('📂 [handleFileTap] After extraction - fileId: $fileId, path: $filePath');
+    print('📂 [handleFileTap] originalData keys: ${originalData.keys.toList()}');
+    print('📂 [handleFileTap] originalData _id: ${originalData['_id']}');
+    
+    // ✅ إذا كان المجلد مشترك في الروم، استخدم endpoint الروم
+    if (widget.roomId != null && widget.roomId!.isNotEmpty && fileId.isNotEmpty) {
+      print('📂 [handleFileTap] Using room endpoint for file: $fileId');
+      print('📂 [handleFileTap] RoomId: ${widget.roomId}');
+      print('📂 [handleFileTap] FileId: $fileId');
+      // ✅ استخدام endpoint الروم لعرض الملف
+      // ✅ تمرير originalData أيضاً لضمان وجود جميع البيانات
+      await _openRoomFile(fileId, originalData);
+      return;
+    }
+
+    // ✅ إذا لم يكن هناك path و fileId موجود، استخدم endpoint
+    String? filePathToUse = filePath;
+    
+    // ✅ إذا لم يكن path موجوداً، حاول استخراجه من fileId (إذا كان object)
+    if ((filePathToUse == null || filePathToUse.isEmpty) && file['fileId'] != null) {
+      final fileIdData = file['fileId'];
+      if (fileIdData is Map<String, dynamic>) {
+        filePathToUse = fileIdData['path']?.toString();
+        print('📂 [handleFileTap] Extracted path from fileId: $filePathToUse');
+      }
+    }
 
     String url;
-    if (finalPath.startsWith('download:')) {
-      final fileIdForDownload = finalPath.replaceFirst('download:', '');
+    
+    // ✅ إذا كان هناك path، استخدمه
+    if (filePathToUse != null && filePathToUse.isNotEmpty) {
+      print('📂 [handleFileTap] Using path: $filePathToUse');
+      url = getFileUrl(filePathToUse);
+      print('📂 [handleFileTap] Generated URL from path: $url');
+    } else if (fileId.isNotEmpty) {
+      // ✅ إذا لم يكن path موجوداً، استخدم endpoint حسب نوع الملف
+      print('📂 [handleFileTap] No path found, using endpoint for fileId: $fileId');
       final token = await StorageService.getToken();
       if (token == null) {
         _showSnackBar(S.of(context).mustLogin, Colors.red);
         return;
       }
-      url =
-          "${ApiConfig.baseUrl.replaceAll('/api/v1', '')}${ApiEndpoints.downloadFile(fileIdForDownload)}";
+      
+      // ✅ استخدام viewFile endpoint للصور والفيديو، downloadFile للملفات الأخرى
+      final fileType = _getFileType(fileName);
+      print('📂 [handleFileTap] File type: $fileType');
+      if (fileType == 'image' || fileType == 'video') {
+        // ✅ للصور والفيديو، استخدام viewFile endpoint
+        url = "${ApiConfig.baseUrl}${ApiEndpoints.viewFile(fileId)}";
+        print('📂 [handleFileTap] Using viewFile endpoint: $url');
+      } else {
+        // ✅ للملفات الأخرى (PDF, etc.)، استخدام downloadFile endpoint
+        // ✅ downloadFile يحتاج إلى المسار الكامل مع /api/v1
+        url = "${ApiConfig.baseUrl}${ApiEndpoints.downloadFile(fileId)}";
+        print('📂 [handleFileTap] Using downloadFile endpoint: $url');
+      }
     } else {
-      url = getFileUrl(finalPath);
+      print('❌ [handleFileTap] No path and no fileId available');
+      _showSnackBar(S.of(context).fileLinkUnavailable, Colors.orange);
+      return;
     }
 
     _showLoadingDialog();
@@ -421,29 +1107,52 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
     );
   }
 
+  // ✅ دالة مساعدة لاستخراج _id من البيانات
+  String _extractId(dynamic idValue) {
+    if (idValue == null) return '';
+    if (idValue is String && idValue.isNotEmpty) {
+      return idValue;
+    } else if (idValue is Map && idValue['\$oid'] != null) {
+      return idValue['\$oid'].toString();
+    } else {
+      final idStr = idValue.toString();
+      return idStr.isNotEmpty ? idStr : '';
+    }
+  }
+
   List<Map<String, dynamic>> _convertFilesToListFormat(
     List<Map<String, dynamic>> files,
   ) {
     return files.map((file) {
       final fileName = file['name']?.toString() ?? S.of(context).unnamedFile;
       final filePath = file['path']?.toString() ?? '';
-      final fileId = file['_id']?.toString() ?? '';
+      final fileId = _extractId(file['_id']);
+
+      // ✅ الحصول على نوع الملف أولاً
+      String fileType = _getFileType(fileName);
 
       String fileUrl = '';
       if (filePath.isNotEmpty) {
         fileUrl = getFileUrl(filePath);
       } else if (fileId.isNotEmpty) {
-        fileUrl =
-            "${ApiConfig.baseUrl.replaceAll('/api/v1', '')}${ApiEndpoints.downloadFile(fileId)}";
+        // ✅ استخدام viewFile endpoint للصور والفيديو، downloadFile للملفات الأخرى
+        if (fileType == 'image' || fileType == 'video') {
+          // ✅ للصور والفيديو، استخدام /view endpoint
+          fileUrl = "${ApiConfig.baseUrl}${ApiEndpoints.viewFile(fileId)}";
+        } else {
+          // ✅ للملفات الأخرى (PDF, etc.)، استخدام /download endpoint
+          fileUrl = "${ApiConfig.baseUrl}${ApiEndpoints.downloadFile(fileId)}";
+        }
       }
-
-      String fileType = _getFileType(fileName);
 
       return {
         'title': fileName,
+        'name': fileName,
         'url': fileUrl,
         'type': fileType,
         'size': _formatBytes(file['size'] ?? 0),
+        'path': filePath,
+        '_id': fileId, // ✅ إضافة _id مباشرة في البيانات
         'originalData': file,
         'itemData': file,
       };
@@ -456,17 +1165,24 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
     return files.map((file) {
       final fileName = file['name']?.toString() ?? S.of(context).unnamedFile;
       final filePath = file['path']?.toString() ?? '';
-      final fileId = file['_id']?.toString() ?? '';
+      final fileId = _extractId(file['_id']);
+
+      // ✅ الحصول على نوع الملف أولاً
+      String fileType = _getFileType(fileName);
 
       String fileUrl = '';
       if (filePath.isNotEmpty) {
         fileUrl = getFileUrl(filePath);
       } else if (fileId.isNotEmpty) {
-        fileUrl =
-            "${ApiConfig.baseUrl.replaceAll('/api/v1', '')}${ApiEndpoints.downloadFile(fileId)}";
+        // ✅ استخدام viewFile endpoint للصور والفيديو، downloadFile للملفات الأخرى
+        if (fileType == 'image' || fileType == 'video') {
+          // ✅ للصور والفيديو، استخدام /view endpoint
+          fileUrl = "${ApiConfig.baseUrl}${ApiEndpoints.viewFile(fileId)}";
+        } else {
+          // ✅ للملفات الأخرى (PDF, etc.)، استخدام /download endpoint
+          fileUrl = "${ApiConfig.baseUrl}${ApiEndpoints.downloadFile(fileId)}";
+        }
       }
-
-      String fileType = _getFileType(fileName);
 
       return {
         'title': fileName,
@@ -475,6 +1191,7 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
         'type': fileType,
         'size': _formatBytes(file['size'] ?? 0),
         'path': filePath,
+        '_id': fileId, // ✅ إضافة _id مباشرة في البيانات
         'originalData': file,
         'itemData': file,
         'originalName': fileName,
@@ -693,7 +1410,6 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
       return "${dateTime.day}/${dateTime.month}/${dateTime.year}";
     } catch (e) {
       return S.of(context).unknown;
-      ;
     }
   }
 
@@ -1069,6 +1785,20 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
     final filesCount = folder['filesCount'] ?? 0;
     final folderColor = widget.folderColor ?? Colors.blue;
 
+    // ✅ استخراج الحجم وتنسيقه
+    int size = 0;
+    final sizeValue = folder['size'];
+    if (sizeValue != null) {
+      if (sizeValue is int) {
+        size = sizeValue;
+      } else if (sizeValue is num) {
+        size = sizeValue.toInt();
+      } else if (sizeValue is String) {
+        size = int.tryParse(sizeValue) ?? 0;
+      }
+    }
+    final formattedSize = _formatBytes(size);
+
     return Card(
       elevation: 1,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -1119,7 +1849,9 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
                 overflow: TextOverflow.ellipsis,
               ),
               Spacer(),
+              // ✅ عرض عدد الملفات والحجم
               Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Container(
                     padding: EdgeInsets.symmetric(horizontal: 8, vertical: 2),
@@ -1132,11 +1864,9 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
                       style: TextStyle(fontSize: 12, color: Colors.grey[700]),
                     ),
                   ),
-                  Spacer(),
-                  Icon(
-                    Icons.arrow_forward_ios,
-                    size: 14,
-                    color: Colors.grey[400],
+                  Text(
+                    formattedSize, // ✅ عرض الحجم
+                    style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                   ),
                 ],
               ),

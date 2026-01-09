@@ -1,13 +1,51 @@
-import 'package:filevo/generated/l10n.dart';
 import 'package:flutter/material.dart';
 import 'package:filevo/responsive.dart';
 import 'package:filevo/views/home/components/StorageChartPainter.dart';
+import 'package:provider/provider.dart';
+import 'package:filevo/controllers/profile/profile_controller.dart';
 
-class StorageCard extends StatelessWidget {
+class StorageCard extends StatefulWidget {
   const StorageCard({super.key});
 
   @override
+  State<StorageCard> createState() => _StorageCardState();
+}
+
+class _StorageCardState extends State<StorageCard> {
+  @override
+  void initState() {
+    super.initState();
+    // ✅ جلب معلومات المساحة عند تحميل الـ widget
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final profileController = context.read<ProfileController>();
+      if (profileController.storageInfo == null) {
+        profileController.getStorageInfo();
+      }
+    });
+  }
+
+  // ✅ دالة لتحويل البايت إلى GB
+  String _formatBytes(int bytes) {
+    if (bytes < 1024) return '$bytes B';
+    if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(2)} KB';
+    if (bytes < 1024 * 1024 * 1024) return '${(bytes / (1024 * 1024)).toStringAsFixed(2)} MB';
+    return '${(bytes / (1024 * 1024 * 1024)).toStringAsFixed(2)} GB';
+  }
+
+  @override
   Widget build(BuildContext context) {
+    // ✅ جلب معلومات المساحة من ProfileController
+    final profileController = context.watch<ProfileController>();
+    final storageInfo = profileController.storageInfo;
+    
+    // ✅ القيم الافتراضية
+    final int totalStorage = storageInfo?['limit'] as int? ?? (10 * 1024 * 1024 * 1024); // 10 GB
+    final int usedStorage = storageInfo?['used'] as int? ?? 0;
+    final double percentage = storageInfo?['percentage'] as double? ?? 0.0;
+    
+    final String usedFormatted = storageInfo?['usedFormatted'] as String? ?? _formatBytes(usedStorage);
+    final int availableStorage = totalStorage - usedStorage;
+    final String availableFormatted = _formatBytes(availableStorage);
     // قياسات ري̆سبونسف
     final margin = ResponsiveUtils.getResponsiveValue(
       context,
@@ -107,7 +145,7 @@ class StorageCard extends StatelessWidget {
               width: chartSize,
               height: chartSize,
               child: CustomPaint(
-                painter: StorageChartPainter(),
+                painter: StorageChartPainter(usedPercent: percentage / 100.0),
                 child: Center(
                   child: Container(
                     width: innerCircleSize,
@@ -121,19 +159,19 @@ class StorageCard extends StatelessWidget {
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Text(
-                            S.of(context).storageUsed,
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: textSizeLabel,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                          Text(
-                            S.of(context).storageUsedValue,
+                            '${percentage.toStringAsFixed(1)}%',
                             style: TextStyle(
                               color: Colors.white,
                               fontSize: textSizeValue,
                               fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          Text(
+                            usedFormatted,
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: textSizeLabel * 0.8,
+                              fontWeight: FontWeight.w500,
                             ),
                           ),
                         ],
@@ -165,7 +203,7 @@ class StorageCard extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          S.of(context).freeInternal,
+                          'المتاح',
                           style: TextStyle(
                             color: Colors.white.withOpacity(0.8),
                             fontSize: textSizeLabel,
@@ -173,7 +211,7 @@ class StorageCard extends StatelessWidget {
                           ),
                         ),
                         Text(
-                          S.of(context).freeInternalValue,
+                          availableFormatted,
                           style: TextStyle(
                             color: Colors.white,
                             fontSize: textSizeValue,
@@ -200,7 +238,7 @@ class StorageCard extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          S.of(context).storageUsed,
+                          'المستخدم',
                           style: TextStyle(
                             color: Colors.white.withOpacity(0.8),
                             fontSize: textSizeLabel,
@@ -208,7 +246,7 @@ class StorageCard extends StatelessWidget {
                           ),
                         ),
                         Text(
-                          S.of(context).usedStorageValue,
+                          usedFormatted,
                           style: TextStyle(
                             color: Colors.white,
                             fontSize: textSizeValue,

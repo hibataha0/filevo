@@ -740,6 +740,35 @@ class RoomService {
     }
   }
 
+  /// ✅ عرض ملف مشترك في الروم (للعرض في المتصفح)
+  /// Returns: Map with 'success', 'url', and 'fileName' or 'error'
+  /// Note: This endpoint returns the file directly for viewing, not JSON
+  Future<Map<String, dynamic>> viewRoomFile({
+    required String roomId,
+    required String fileId,
+  }) async {
+    try {
+      final token = await StorageService.getToken();
+      if (token == null || token.isEmpty) {
+        return {
+          'success': false,
+          'error': 'لا يمكن تحديد هوية المستخدم. يرجى إعادة تسجيل الدخول.',
+        };
+      }
+
+      // ✅ استخدام endpoint الروم لعرض الملف
+      final url =
+          "${ApiConfig.baseUrl}${ApiEndpoints.viewRoomFile(roomId, fileId)}";
+      print("🌐 [viewRoomFile] GET $url");
+
+      // ✅ إرجاع URL للاستخدام في المتصفح
+      return {'success': true, 'url': url, 'token': token};
+    } catch (e) {
+      print("❌ [viewRoomFile] Error: $e");
+      return {'success': false, 'error': 'خطأ في عرض الملف: ${e.toString()}'};
+    }
+  }
+
   /// ✅ تحميل ملف مشترك في الروم
   /// Returns: Map with 'success' and 'filePath' or 'error'
   Future<Map<String, dynamic>> downloadRoomFile({
@@ -873,7 +902,7 @@ class RoomService {
 
       // ✅ التأكد من أن اسم الملف يحتوي على امتداد صحيح
       String finalFileName = fileName ?? 'file_$fileId';
-      
+
       // ✅ دالة للتحقق من وجود امتداد صحيح
       bool hasValidExtension(String name) {
         if (!name.contains('.')) return false;
@@ -882,48 +911,103 @@ class RoomService {
         final extension = parts.last.toLowerCase();
         // ✅ قائمة بالامتدادات المعروفة
         const validExtensions = [
-          'jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg',
-          'mp4', 'mov', 'avi', 'mkv', 'wmv', 'webm', 'm4v', '3gp', 'flv',
-          'mp3', 'wav', 'aac', 'ogg', 'm4a', 'wma', 'flac',
-          'pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx',
-          'zip', 'rar', '7z', 'tar', 'gz',
-          'txt', 'json', 'xml', 'csv',
+          'jpg',
+          'jpeg',
+          'png',
+          'gif',
+          'webp',
+          'bmp',
+          'svg',
+          'mp4',
+          'mov',
+          'avi',
+          'mkv',
+          'wmv',
+          'webm',
+          'm4v',
+          '3gp',
+          'flv',
+          'mp3',
+          'wav',
+          'aac',
+          'ogg',
+          'm4a',
+          'wma',
+          'flac',
+          'pdf',
+          'doc',
+          'docx',
+          'xls',
+          'xlsx',
+          'ppt',
+          'pptx',
+          'zip',
+          'rar',
+          '7z',
+          'tar',
+          'gz',
+          'txt',
+          'json',
+          'xml',
+          'csv',
         ];
         return validExtensions.contains(extension) && extension.length >= 2;
       }
-      
+
       // ✅ إذا لم يكن الاسم يحتوي على امتداد صحيح، نحاول استخراجه من content-type
       if (!hasValidExtension(finalFileName)) {
         try {
-          print('⚠️ File name "$finalFileName" does not have valid extension, trying to get from content-type...');
+          print(
+            '⚠️ File name "$finalFileName" does not have valid extension, trying to get from content-type...',
+          );
           // ✅ عمل HEAD request للحصول على content-type
           final headResponse = await dio.head(url);
-          final contentType = headResponse.headers.value('content-type')?.toLowerCase() ?? '';
+          final contentType =
+              headResponse.headers.value('content-type')?.toLowerCase() ?? '';
           print('📄 Content-Type: $contentType');
-          
+
           String? extension;
           if (contentType.contains('image')) {
-            if (contentType.contains('jpeg')) extension = 'jpg';
-            else if (contentType.contains('png')) extension = 'png';
-            else if (contentType.contains('gif')) extension = 'gif';
-            else if (contentType.contains('webp')) extension = 'webp';
-            else if (contentType.contains('bmp')) extension = 'bmp';
-            else if (contentType.contains('svg')) extension = 'svg';
-            else extension = 'jpg'; // افتراضي للصور
+            if (contentType.contains('jpeg'))
+              extension = 'jpg';
+            else if (contentType.contains('png'))
+              extension = 'png';
+            else if (contentType.contains('gif'))
+              extension = 'gif';
+            else if (contentType.contains('webp'))
+              extension = 'webp';
+            else if (contentType.contains('bmp'))
+              extension = 'bmp';
+            else if (contentType.contains('svg'))
+              extension = 'svg';
+            else
+              extension = 'jpg'; // افتراضي للصور
           } else if (contentType.contains('video')) {
-            if (contentType.contains('mp4')) extension = 'mp4';
-            else if (contentType.contains('quicktime')) extension = 'mov';
-            else if (contentType.contains('avi')) extension = 'avi';
-            else if (contentType.contains('webm')) extension = 'webm';
-            else if (contentType.contains('x-matroska')) extension = 'mkv';
-            else extension = 'mp4'; // افتراضي للفيديو
+            if (contentType.contains('mp4'))
+              extension = 'mp4';
+            else if (contentType.contains('quicktime'))
+              extension = 'mov';
+            else if (contentType.contains('avi'))
+              extension = 'avi';
+            else if (contentType.contains('webm'))
+              extension = 'webm';
+            else if (contentType.contains('x-matroska'))
+              extension = 'mkv';
+            else
+              extension = 'mp4'; // افتراضي للفيديو
           } else if (contentType.contains('audio')) {
-            if (contentType.contains('mpeg')) extension = 'mp3';
-            else if (contentType.contains('wav')) extension = 'wav';
-            else if (contentType.contains('aac')) extension = 'aac';
-            else if (contentType.contains('ogg')) extension = 'ogg';
-            else if (contentType.contains('x-m4a')) extension = 'm4a';
-            else extension = 'mp3'; // افتراضي للصوت
+            if (contentType.contains('mpeg'))
+              extension = 'mp3';
+            else if (contentType.contains('wav'))
+              extension = 'wav';
+            else if (contentType.contains('aac'))
+              extension = 'aac';
+            else if (contentType.contains('ogg'))
+              extension = 'ogg';
+            else if (contentType.contains('x-m4a'))
+              extension = 'm4a';
+            else
+              extension = 'mp3'; // افتراضي للصوت
           } else if (contentType.contains('pdf')) {
             extension = 'pdf';
           } else if (contentType.contains('zip')) {
@@ -940,7 +1024,9 @@ class RoomService {
                 final lastPart = parts.last.toLowerCase();
                 if (lastPart.length >= 2 && lastPart.length <= 5) {
                   extension = lastPart;
-                  print('✅ Guessed extension from original filename: $extension');
+                  print(
+                    '✅ Guessed extension from original filename: $extension',
+                  );
                 }
               }
             }
@@ -949,24 +1035,35 @@ class RoomService {
               extension = 'bin';
             }
           }
-          
+
           if (extension != null) {
             // ✅ إزالة أي امتداد موجود مسبقاً وإضافة الامتداد الصحيح
             if (finalFileName.contains('.')) {
-              final nameWithoutExt = finalFileName.substring(0, finalFileName.lastIndexOf('.'));
+              final nameWithoutExt = finalFileName.substring(
+                0,
+                finalFileName.lastIndexOf('.'),
+              );
               finalFileName = '$nameWithoutExt.$extension';
             } else {
               finalFileName = '$finalFileName.$extension';
             }
-            print('✅ Added extension from content-type: $extension -> Final name: $finalFileName');
+            print(
+              '✅ Added extension from content-type: $extension -> Final name: $finalFileName',
+            );
           } else {
-            print('⚠️ Could not determine extension from content-type: $contentType');
+            print(
+              '⚠️ Could not determine extension from content-type: $contentType',
+            );
           }
         } catch (e) {
           print('⚠️ Could not get content-type, using filename as is: $e');
           // ✅ محاولة أخيرة: إذا كان الاسم يحتوي على نقطة لكن الامتداد غير صحيح، نضيف 'bin'
-          if (finalFileName.contains('.') && !hasValidExtension(finalFileName)) {
-            final nameWithoutExt = finalFileName.substring(0, finalFileName.lastIndexOf('.'));
+          if (finalFileName.contains('.') &&
+              !hasValidExtension(finalFileName)) {
+            final nameWithoutExt = finalFileName.substring(
+              0,
+              finalFileName.lastIndexOf('.'),
+            );
             finalFileName = '$nameWithoutExt.bin';
             print('⚠️ Added .bin extension as fallback');
           }
@@ -974,7 +1071,7 @@ class RoomService {
       } else {
         print('✅ File name already has valid extension: $finalFileName');
       }
-      
+
       final filePath = '$downloadPath/$finalFileName';
 
       // ✅ تحميل الملف

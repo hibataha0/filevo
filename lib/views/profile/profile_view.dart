@@ -47,7 +47,11 @@ class _ProfilePageState extends State<ProfilePage> {
         if (controller.userData == null || controller.userName == null) {
           controller.getLoggedUserData();
         }
-        // ✅ تحديث بيانات التخزين أيضاً
+        // ✅ تحديث معلومات المساحة التخزينية في ProfileController
+        if (controller.storageInfo == null) {
+          controller.getStorageInfo();
+        }
+        // ✅ تحديث بيانات التخزين في StorageCard
         _storageCardKey.currentState?.refresh();
       }
     });
@@ -118,6 +122,8 @@ class _ProfilePageState extends State<ProfilePage> {
                         parent: AlwaysScrollableScrollPhysics(),
                       ),
                       onRefresh: () async {
+                        final controller = context.read<ProfileController>();
+                        controller.getStorageInfo();
                         _storageCardKey.currentState?.refresh();
                         await Future.delayed(const Duration(milliseconds: 500));
                         _refreshController.refreshCompleted();

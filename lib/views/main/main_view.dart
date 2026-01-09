@@ -911,12 +911,28 @@ class _MainPageState extends State<MainPage> {
                 ),
               ) ??
               false;
-          _showSnackBar(
-            success
-                ? S.of(context).upload_success
-                : fileController.errorMessage ?? S.of(context).uploadFailed,
-            isError: !success,
-          );
+          // ✅ التحقق من خطأ المساحة التخزينية
+          if (!success && fileController.errorMessage != null) {
+            final errorMsg = fileController.errorMessage!;
+            if (errorMsg.toLowerCase().contains('storage') || 
+                errorMsg.toLowerCase().contains('مساحة')) {
+              _showSnackBar(errorMsg, isError: true);
+            } else {
+              _showSnackBar(
+                success
+                    ? S.of(context).upload_success
+                    : fileController.errorMessage ?? S.of(context).uploadFailed,
+                isError: !success,
+              );
+            }
+          } else {
+            _showSnackBar(
+              success
+                  ? S.of(context).upload_success
+                  : fileController.errorMessage ?? S.of(context).uploadFailed,
+              isError: !success,
+            );
+          }
         } else {
           final response =
               await _showProgressDialog<Map<String, dynamic>>(
@@ -993,12 +1009,19 @@ class _MainPageState extends State<MainPage> {
 
               _showSnackBar(errorMessage, isError: true);
             } else {
-              _showSnackBar(
-                fileController.errorMessage ??
-                    response['message'] ??
-                    S.of(context).uploadFailed,
-                isError: true,
-              );
+              // ✅ التحقق من خطأ المساحة التخزينية
+              if (response['storageLimitExceeded'] == true) {
+                final storageMsg = response['message'] ?? 
+                    'تم الوصول للحد الأقصى من المساحة التخزينية (10 GB). يرجى حذف بعض الملفات أو شراء مساحة إضافية';
+                _showSnackBar(storageMsg, isError: true);
+              } else {
+                _showSnackBar(
+                  fileController.errorMessage ??
+                      response['message'] ??
+                      S.of(context).uploadFailed,
+                  isError: true,
+                );
+              }
             }
           }
         }

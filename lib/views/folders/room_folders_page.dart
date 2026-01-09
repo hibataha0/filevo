@@ -144,24 +144,24 @@ class _RoomFoldersPageState extends State<RoomFoldersPage> {
           ),
         ),
         backgroundColor: Color(0xff28336f),
-        actions: [
-          IconButton(
-            icon: Icon(Icons.refresh),
-            iconSize: ResponsiveUtils.getResponsiveValue(
-              context,
-              mobile: 24.0,
-              tablet: 26.0,
-              desktop: 28.0,
-            ),
-            onPressed: () {
-              setState(() {
-                isLoading = true;
-                _folderDetailsCache.clear(); // ✅ مسح الـ cache عند التحديث
-              });
-              _loadRoomData();
-            },
-          ),
-        ],
+        // actions: [
+        //   IconButton(
+        //     icon: Icon(Icons.refresh),
+        //     iconSize: ResponsiveUtils.getResponsiveValue(
+        //       context,
+        //       mobile: 24.0,
+        //       tablet: 26.0,
+        //       desktop: 28.0,
+        //     ),
+        //     onPressed: () {
+        //       setState(() {
+        //         isLoading = true;
+        //         _folderDetailsCache.clear(); // ✅ مسح الـ cache عند التحديث
+        //       });
+        //       _loadRoomData();
+        //     },
+        //   ),
+        // ],
       ),
       body: isLoading
           ? _buildShimmerLoading()
@@ -325,7 +325,8 @@ class _RoomFoldersPageState extends State<RoomFoldersPage> {
           // ✅ التحقق من أن المجلد محمي
           final folderData = itemData['folderData'] ?? itemData;
           final isProtected = folderData['isProtected'] == true;
-          final protectionType = folderData['protectionType']?.toString() ?? 'none';
+          final protectionType =
+              folderData['protectionType']?.toString() ?? 'none';
 
           // ✅ إذا كان المجلد محمي، نطلب كلمة السر أولاً
           if (isProtected && protectionType != 'none') {
@@ -348,10 +349,7 @@ class _RoomFoldersPageState extends State<RoomFoldersPage> {
               context,
               MaterialPageRoute(
                 builder: (context) => ChangeNotifierProvider.value(
-                  value: Provider.of<FolderController>(
-                    context,
-                    listen: false,
-                  ),
+                  value: Provider.of<FolderController>(context, listen: false),
                   child: FolderContentsPage(
                     folderId: folderId,
                     folderName: folderName,

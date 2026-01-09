@@ -260,15 +260,15 @@ class _RoomCommentsPageState extends State<RoomCommentsPage> {
       appBar: AppBar(
         title: Text(S.of(context).comments),
         backgroundColor: Color(0xff28336f),
-        actions: [
-          IconButton(
-            icon: Icon(Icons.refresh),
-            onPressed: () {
-              setState(() => isLoading = true);
-              _loadComments();
-            },
-          ),
-        ],
+        // actions: [
+        //   IconButton(
+        //     icon: Icon(Icons.refresh),
+        //     onPressed: () {
+        //       setState(() => isLoading = true);
+        //       _loadComments();
+        //     },
+        //   ),
+        // ],
       ),
       body: Column(
         children: [

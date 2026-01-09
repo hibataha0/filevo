@@ -258,11 +258,22 @@ class FolderService {
         final data = jsonDecode(response.body);
         return {'success': true, 'folders': data['folders'] ?? []};
       } else {
-        final data = jsonDecode(response.body);
-        return {
-          'success': false,
-          'error': data['message'] ?? 'فشل في جلب المجلدات الحديثة',
-        };
+        // ✅ معالجة آمنة للأخطاء - قد يكون response نصاً وليس JSON
+        try {
+          final data = jsonDecode(response.body);
+          return {
+            'success': false,
+            'error': data['message'] ?? 'فشل في جلب المجلدات الحديثة',
+          };
+        } catch (e) {
+          // ✅ إذا كان response نصاً عادياً وليس JSON
+          return {
+            'success': false,
+            'error': response.body.isNotEmpty 
+                ? response.body 
+                : 'فشل في جلب المجلدات الحديثة',
+          };
+        }
       }
     } catch (e) {
       return {
@@ -1129,11 +1140,21 @@ class FolderService {
       print('🔐 [FolderService] verifyFolderAccess response: $data');
       return data;
     } else {
-      final errorData = jsonDecode(response.body);
-      print('❌ [FolderService] verifyFolderAccess error: ${errorData['message']}');
-      throw Exception(
-        errorData['message'] ?? 'Failed to verify folder access',
-      );
+      // ✅ معالجة آمنة للأخطاء - قد يكون response نصاً وليس JSON
+      try {
+        final errorData = jsonDecode(response.body);
+        print('❌ [FolderService] verifyFolderAccess error: ${errorData['message']}');
+        throw Exception(
+          errorData['message'] ?? 'Failed to verify folder access',
+        );
+      } catch (e) {
+        // ✅ إذا كان response نصاً عادياً وليس JSON
+        final errorMessage = response.body.isNotEmpty 
+            ? response.body 
+            : 'Failed to verify folder access';
+        print('❌ [FolderService] verifyFolderAccess error (non-JSON): $errorMessage');
+        throw Exception(errorMessage);
+      }
     }
   }
 
@@ -1162,10 +1183,19 @@ class FolderService {
     if (response.statusCode == 200) {
       return jsonDecode(response.body);
     } else {
-      final errorData = jsonDecode(response.body);
-      throw Exception(
-        errorData['message'] ?? 'Failed to remove folder protection',
-      );
+      // ✅ معالجة آمنة للأخطاء - قد يكون response نصاً وليس JSON
+      try {
+        final errorData = jsonDecode(response.body);
+        throw Exception(
+          errorData['message'] ?? 'Failed to remove folder protection',
+        );
+      } catch (e) {
+        // ✅ إذا كان response نصاً عادياً وليس JSON
+        final errorMessage = response.body.isNotEmpty 
+            ? response.body 
+            : 'Failed to remove folder protection';
+        throw Exception(errorMessage);
+      }
     }
   }
 }

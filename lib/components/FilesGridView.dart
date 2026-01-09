@@ -949,9 +949,34 @@ void _showProtectFolderDialog(
     return;
   }
 
-  // ✅ الحصول على حالة الحماية الحالية
-  final isCurrentlyProtected = folderData['isProtected'] == true;
-  final currentProtectionType = folderData['protectionType']?.toString() ?? 'none';
+  // ✅ جلب معلومات الحماية الحالية من السيرفر (للتأكد من أحدث البيانات)
+  final folderController = Provider.of<FolderController>(
+    scaffoldContext,
+    listen: false,
+  );
+  
+  bool isCurrentlyProtected = false;
+  String currentProtectionType = 'none';
+  
+  try {
+    final folderDetails = await folderController.getFolderDetails(
+      folderId: folderId,
+    );
+    
+    if (folderDetails != null && folderDetails['folder'] != null) {
+      final serverFolderData = folderDetails['folder'] as Map<String, dynamic>;
+      isCurrentlyProtected = serverFolderData['isProtected'] == true;
+      currentProtectionType = serverFolderData['protectionType']?.toString() ?? 'none';
+    } else {
+      // ✅ fallback إلى البيانات المحلية
+      isCurrentlyProtected = folderData['isProtected'] == true;
+      currentProtectionType = folderData['protectionType']?.toString() ?? 'none';
+    }
+  } catch (e) {
+    // ✅ fallback إلى البيانات المحلية في حالة الخطأ
+    isCurrentlyProtected = folderData['isProtected'] == true;
+    currentProtectionType = folderData['protectionType']?.toString() ?? 'none';
+  }
 
   // ✅ فتح dialog الحماية
   await showSetFolderProtectionDialog(
@@ -1140,7 +1165,8 @@ class FilesGridView extends StatelessWidget {
                   size: item['size'] as String,
                   showFileCount: showFileCount,
                   color: item['color'] as Color? ?? const Color(0xFF00BFA5),
-                  folderData: item,
+                  // ✅ تمرير folderData من item - التأكد من أن folderData موجود
+                  folderData: item['folderData'] as Map<String, dynamic>? ?? item,
                   isStarred: isStarred,
                   sharedBy: item['sharedBy'] as String?,
                   roomId: (type == 'folder' && roomId != null) ? roomId : null,
@@ -1294,7 +1320,7 @@ class FilesGridView extends StatelessWidget {
                     if (roomId != null) {
                       _handleSharedFileMenuAction(context, value, item, roomId: roomId);
                     } else {
-                      _handleNormalFileMenuAction(context, value, item);
+                      _handleNormalFileMenuAction(context, value, item, onFileRemoved);
                     }
                   },
                 ),
@@ -1683,6 +1709,7 @@ void _handleNormalFileMenuAction(
   BuildContext context,
   String action,
   Map<String, dynamic> item,
+  void Function()? onFileRemoved,
 ) {
   // ✅ الحصول على originalData من جميع الأماكن المحتملة
   final originalData = item['originalData'] ?? item['itemData'] ?? item;
@@ -1725,7 +1752,23 @@ void _handleNormalFileMenuAction(
       FileActionsService.downloadFile(context, fileData);
       break;
     case 'edit':
-      FileActionsService.editFile(context, fileData);
+      FileActionsService.editFile(context, fileData).then((updated) {
+        // ✅ إذا تم تحديث الملف، استدعي callback لإعادة تحميل البيانات
+        print('🔄 [FilesGridView] Edit file result: $updated');
+        print('🔄 [FilesGridView] onFileRemoved is null: ${onFileRemoved == null}');
+        if (updated == true) {
+          print('✅ [FilesGridView] File updated, calling onFileRemoved callback');
+          if (onFileRemoved != null) {
+            onFileRemoved();
+          } else {
+            print('⚠️ [FilesGridView] onFileRemoved is null, cannot refresh');
+          }
+        } else {
+          print('❌ [FilesGridView] File not updated, skipping refresh');
+        }
+      }).catchError((error) {
+        print('❌ [FilesGridView] Error in editFile: $error');
+      });
       break;
     case 'share':
       FileActionsService.shareFile(context, fileData);
@@ -1756,8 +1799,9 @@ void _handleNormalFileMenuAction(
         fileData,
         onLocalUpdate: () {
           // ✅ استدعاء onFileRemoved إذا كان موجوداً لإعادة تحميل الصفحة
-          // Note: onFileRemoved is not available in this context, 
-          // but the parent widget should handle refresh via FileController listener
+          if (onFileRemoved != null) {
+            onFileRemoved!();
+          }
         },
       );
       break;

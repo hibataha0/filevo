@@ -1,17 +1,21 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:filevo/services/user_service.dart';
+import 'package:filevo/services/file_service.dart';
 
 class ProfileController with ChangeNotifier {
   final UserService _userService = UserService();
+  final FileService _fileService = FileService();
 
   bool _isLoading = false;
   String? _errorMessage;
   Map<String, dynamic>? _userData;
+  Map<String, dynamic>? _storageInfo;
 
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
   Map<String, dynamic>? get userData => _userData;
+  Map<String, dynamic>? get storageInfo => _storageInfo;
 
   String? get userName => _userData?['name'] as String?;
   String? get userEmail => _userData?['email'] as String?;
@@ -211,6 +215,25 @@ class ProfileController with ChangeNotifier {
       return false;
     } finally {
       _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  /// ✅ جلب معلومات المساحة التخزينية
+  Future<void> getStorageInfo() async {
+    try {
+      final result = await _fileService.getStorageInfo();
+      
+      if (result['success'] == true) {
+        _storageInfo = result['storage'] as Map<String, dynamic>?;
+        notifyListeners();
+      } else {
+        _storageInfo = null;
+        notifyListeners();
+      }
+    } catch (e) {
+      print('❌ ProfileController: Error getting storage info: $e');
+      _storageInfo = null;
       notifyListeners();
     }
   }

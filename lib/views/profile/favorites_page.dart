@@ -353,10 +353,10 @@ class _FavoritesPageState extends State<FavoritesPage> {
                 ),
                 onPressed: () => setState(() => _isGridView = !_isGridView),
               ),
-              IconButton(
-                icon: const Icon(Icons.refresh_rounded),
-                onPressed: _refreshFiles,
-              ),
+              // IconButton(
+              //   icon: const Icon(Icons.refresh_rounded),
+              //   onPressed: _refreshFiles,
+              // ),
             ],
           ),
           body: SmartRefresher(

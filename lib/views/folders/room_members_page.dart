@@ -383,15 +383,15 @@ class _RoomMembersPageState extends State<RoomMembersPage> {
             Navigator.of(context).pop(_hasChanges);
           },
         ),
-        actions: [
-          IconButton(
-            icon: Icon(Icons.refresh),
-            onPressed: () {
-              setState(() => isLoading = true);
-              _loadRoomData();
-            },
-          ),
-        ],
+        // actions: [
+        //   IconButton(
+        //     icon: Icon(Icons.refresh),
+        //     onPressed: () {
+        //       setState(() => isLoading = true);
+        //       _loadRoomData();
+        //     },
+        //   ),
+        // ],
       ),
       body: isLoading
           ? _buildShimmerLoading()

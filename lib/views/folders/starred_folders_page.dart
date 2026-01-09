@@ -244,10 +244,10 @@ class _StarredFoldersPageState extends State<StarredFoldersPage> {
                 ),
                 onPressed: () => setState(() => _isGridView = !_isGridView),
               ),
-              IconButton(
-                icon: const Icon(Icons.refresh_rounded),
-                onPressed: _refreshFolders,
-              ),
+              // IconButton(
+              //   icon: const Icon(Icons.refresh_rounded),
+              //   onPressed: _refreshFolders,
+              // ),
             ],
           ),
           body: SmartRefresher(

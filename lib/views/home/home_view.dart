@@ -25,6 +25,8 @@ import 'dart:io';
 import 'package:pull_to_refresh/pull_to_refresh.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:filevo/dialogs/folder_protection_dialogs.dart';
+import 'package:provider/provider.dart';
+import 'package:filevo/controllers/folders/folders_controller.dart';
 
 class HomeView extends StatefulWidget {
   final VoidCallback? onNavigateToFolders;
@@ -78,30 +80,122 @@ class _HomeViewState extends State<HomeView> {
           foldersResult['folders'] ?? [],
         );
         if (mounted) {
+          // ✅ جلب تفاصيل كل مجلد بشكل متسلسل (لتجنب Too many requests)
+          final folderController = Provider.of<FolderController>(
+            context,
+            listen: false,
+          );
+
+          final foldersWithStats = <Map<String, dynamic>>[];
+          for (final folder in folders.take(3)) {
+            try {
+              final folderId = folder['_id']?.toString();
+              if (folderId == null || folderId.isEmpty) {
+                foldersWithStats.add({...folder, 'size': 0, 'filesCount': 0});
+                continue;
+              }
+
+              // ✅ جلب تفاصيل المجلد (نفس الطريقة في _showFolderInfo)
+              final folderDetails = await folderController.getFolderDetails(
+                folderId: folderId,
+              );
+
+              if (folderDetails != null && folderDetails['folder'] != null) {
+                final folderData =
+                    folderDetails['folder'] as Map<String, dynamic>;
+                // ✅ نسخ جميع البيانات من folderData بما في ذلك معلومات الحماية
+                foldersWithStats.add({
+                  ...folder,
+                  ...folderData, // ✅ نسخ جميع البيانات من folderData أولاً
+                  'size': folderData['size'] is int
+                      ? folderData['size']
+                      : (folderData['size'] is num
+                            ? folderData['size'].toInt()
+                            : 0),
+                  'filesCount': folderData['filesCount'] is int
+                      ? folderData['filesCount']
+                      : (folderData['filesCount'] is num
+                            ? folderData['filesCount'].toInt()
+                            : 0),
+                  // ✅ التأكد من وجود معلومات الحماية
+                  'isProtected':
+                      folderData['isProtected'] ??
+                      folder['isProtected'] ??
+                      false,
+                  'protectionType':
+                      folderData['protectionType'] ??
+                      folder['protectionType'] ??
+                      'none',
+                });
+              } else {
+                // ✅ fallback إلى القيم من البيانات الأصلية
+                foldersWithStats.add({
+                  ...folder,
+                  'size': folder['size'] ?? folder['totalSize'] ?? 0,
+                  'filesCount':
+                      folder['filesCount'] ?? folder['totalFiles'] ?? 0,
+                });
+              }
+            } catch (e) {
+              print(
+                '❌ [HomeView] Error getting details for folder ${folder['name']}: $e',
+              );
+              // ✅ fallback إلى القيم من البيانات الأصلية
+              foldersWithStats.add({
+                ...folder,
+                'size': folder['size'] ?? folder['totalSize'] ?? 0,
+                'filesCount': folder['filesCount'] ?? folder['totalFiles'] ?? 0,
+                // ✅ التأكد من وجود معلومات الحماية حتى في fallback
+                'isProtected': folder['isProtected'] ?? false,
+                'protectionType': folder['protectionType'] ?? 'none',
+              });
+            }
+          }
+
+          if (!mounted) return;
+
           setState(() {
-            // ✅ عرض آخر 3 مجلدات فقط
-            _recentFolders = folders.take(3).map((folder) {
-              final size = folder['size'];
-              final filesCount = folder['filesCount'];
+            // ✅ بناء البيانات بنفس الطريقة المستخدمة في folders_view (السطر 389-426)
+            _recentFolders = foldersWithStats.map((folder) {
+              final folderData = folder;
+              dynamic sizeValue = folderData['size'];
+              dynamic filesCountValue = folderData['filesCount'];
+
+              int size = 0;
+              int filesCount = 0;
+
+              if (sizeValue != null) {
+                if (sizeValue is int) {
+                  size = sizeValue;
+                } else if (sizeValue is num) {
+                  size = sizeValue.toInt();
+                } else if (sizeValue is String) {
+                  size = int.tryParse(sizeValue) ?? 0;
+                }
+              }
+
+              if (filesCountValue != null) {
+                if (filesCountValue is int) {
+                  filesCount = filesCountValue;
+                } else if (filesCountValue is num) {
+                  filesCount = filesCountValue.toInt();
+                } else if (filesCountValue is String) {
+                  filesCount = int.tryParse(filesCountValue) ?? 0;
+                }
+              }
+
+              // ✅ نفس البنية المستخدمة في folders_view (السطر 417-426)
+              // ✅ استخدام folderData مباشرة (يحتوي على جميع البيانات من السيرفر بما في ذلك isProtected و protectionType)
               return {
-                'title': folder['name'] ?? S.of(context).noName,
-                'name': folder['name'] ?? S.of(context).noName,
-                'type': 'folder', // ✅ إضافة type للمجلدات
-                'fileCount': (filesCount != null && filesCount is int)
-                    ? filesCount
-                    : (filesCount != null && filesCount is num)
-                    ? filesCount.toInt()
-                    : 0,
-                'size': _formatBytes(
-                  (size != null && size is int)
-                      ? size
-                      : (size != null && size is num)
-                      ? size.toInt()
-                      : 0,
-                ),
-                'folderId': folder['_id'],
-                'originalData': folder,
-                'folderData': folder, // ✅ إضافة folderData للمجلدات
+                "title": folderData['name'] ?? S.of(context).unnamedFolder,
+                "fileCount": filesCount,
+                "size": _formatBytes(size),
+                "icon": Icons.folder,
+                "color": Color(0xff28336f),
+                "type": "folder",
+                "folderId": folderData['_id'],
+                "folderData":
+                    folderData, // ✅ استخدام folderData مباشرة (مثل folders_view) - يحتوي على جميع البيانات من السيرفر
               };
             }).toList();
           });
@@ -147,7 +241,9 @@ class _HomeViewState extends State<HomeView> {
                       ? size.toInt()
                       : 0,
                 ),
-                'createdAt': file['createdAt'],
+                'createdAt':
+                    file['uploadedAt'] ??
+                    file['createdAt'], // ✅ استخدام uploadedAt من الباك إند
                 'path': filePath,
                 'originalData': file,
                 'originalName': fileName,
@@ -232,69 +328,87 @@ class _HomeViewState extends State<HomeView> {
   }
 
   Future<void> _handleFolderTap(Map<String, dynamic> folder) async {
-    final folderId = folder['folderId'] ?? folder['originalData']?['_id'];
-    final folderName =
-        folder['title'] ??
-        folder['name'] ??
-        folder['originalData']?['name'] ??
-        S.of(context).folder;
+    // ✅ استخدام نفس الكود من folders_view (السطر 2405-2471)
+    final type = folder['type'] as String?;
+    if (type == 'folder') {
+      final folderId =
+          folder['folderId']?.toString() ?? folder['_id']?.toString();
+      if (folderId == null || folderId.isEmpty) return;
 
-    if (folderId == null) return;
+      final folderName =
+          folder['title']?.toString() ??
+          folder['name']?.toString() ??
+          S.of(context).folder;
 
-    // ✅ التحقق من أن المجلد محمي
-    final folderData = folder['originalData'] ?? folder;
-    final isProtected = folderData['isProtected'] == true;
-    final protectionType = folderData['protectionType']?.toString() ?? 'none';
+      // ✅ التحقق من أن المجلد محمي (نفس الكود من folders_view)
+      final folderData = folder['folderData'] ?? folder;
+      final isProtected = folderData['isProtected'] == true;
+      final protectionType = folderData['protectionType']?.toString() ?? 'none';
 
-    // ✅ إذا كان المجلد محمي، نطلب كلمة السر أولاً
-    if (isProtected && protectionType != 'none') {
-      final result = await showVerifyFolderAccessDialog(
-        context,
-        folderId.toString(),
-        folderName,
-        protectionType,
-      );
+      // ✅ إذا كان المجلد محمي، نطلب كلمة السر أولاً (قبل فتح المجلد)
+      if (isProtected && protectionType != 'none') {
+        final result = await showVerifyFolderAccessDialog(
+          context,
+          folderId,
+          folderName,
+          protectionType,
+        );
 
-      // ✅ إذا لم يتم التحقق بنجاح، نوقف العملية
-      if (result['success'] != true) {
-        return;
+        // ✅ إذا لم يتم التحقق بنجاح، نوقف العملية
+        if (result['success'] != true) {
+          return;
+        }
       }
-    }
 
-    // ✅ بعد التحقق (إذا كان محمياً) أو مباشرة (إذا لم يكن محمياً)، نفتح المجلد
-    if (mounted) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => FolderContentsPage(
-            folderId: folderId.toString(),
-            folderName: folderName,
+      // ✅ بعد التحقق (إذا كان محمياً) أو مباشرة (إذا لم يكن محمياً)، نفتح المجلد
+      if (mounted) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) =>
+                FolderContentsPage(folderId: folderId, folderName: folderName),
           ),
-        ),
-      );
+        );
+      }
     }
   }
 
   Future<void> _handleFileTap(Map<String, dynamic> file) async {
-    final filePath = file['path'] as String?;
-    if (filePath == null || filePath.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(S.of(context).fileUrlNotAvailable),
-          behavior: SnackBarBehavior.floating,
-          backgroundColor: Colors.orange,
-        ),
-      );
-      return;
-    }
-
     final originalData = file['originalData'] ?? file;
     final originalName =
         file['originalName'] ?? file['name'] ?? S.of(context).fileWithoutName;
     final name = originalName.toLowerCase();
-    final url = _getFileUrl(filePath);
 
-    if (!_isValidUrl(url)) {
+    // ✅ استخدام url من البيانات إذا كان موجوداً، وإلا استخدام path
+    String? url = file['url'] as String?;
+    String? filePath = file['path'] as String?;
+
+    if (url == null || url.isEmpty) {
+      if (filePath != null && filePath.isNotEmpty) {
+        url = _getFileUrl(filePath);
+      } else {
+        // ✅ إذا لم يكن هناك path أو url، استخدم fileId لبناء URL
+        final fileId =
+            originalData['_id']?.toString() ?? file['_id']?.toString();
+        if (fileId != null && fileId.isNotEmpty) {
+          final baseUrl = ApiConfig.baseUrl.replaceAll('/api/v1', '');
+          url = "$baseUrl/files/$fileId/view";
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(S.of(context).fileUrlNotAvailable),
+              behavior: SnackBarBehavior.floating,
+              backgroundColor: Colors.orange,
+            ),
+          );
+          return;
+        }
+      }
+    }
+
+    final finalUrl = url; // ✅ بعد الفحص، url لن يكون null
+
+    if (!_isValidUrl(finalUrl)) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(S.of(context).invalidUrl),
@@ -308,11 +422,15 @@ class _HomeViewState extends State<HomeView> {
     _showLoadingDialog(context);
 
     try {
+      // ✅ جلب token لإضافته إلى headers
+      final token = await StorageService.getToken();
+      final headers = <String, String>{'Range': 'bytes=0-511'};
+      if (token != null && token.isNotEmpty) {
+        headers['Authorization'] = 'Bearer $token';
+      }
+
       final client = http.Client();
-      final response = await client.get(
-        Uri.parse(url),
-        headers: {'Range': 'bytes=0-511'},
-      );
+      final response = await client.get(Uri.parse(finalUrl), headers: headers);
       if (mounted) Navigator.pop(context);
 
       if (response.statusCode == 200 || response.statusCode == 206) {
@@ -353,7 +471,9 @@ class _HomeViewState extends State<HomeView> {
           if (name.contains('.')) {
             return name.substring(name.lastIndexOf('.') + 1);
           }
-          if (filePath.contains('.')) {
+          if (filePath != null &&
+              filePath.isNotEmpty &&
+              filePath.contains('.')) {
             return filePath
                 .substring(filePath.lastIndexOf('.') + 1)
                 .toLowerCase();
@@ -415,7 +535,7 @@ class _HomeViewState extends State<HomeView> {
             context,
             MaterialPageRoute(
               builder: (_) =>
-                  PdfViewerPage(pdfUrl: url, fileName: originalName),
+                  PdfViewerPage(pdfUrl: finalUrl, fileName: originalName),
             ),
           );
         }
@@ -423,7 +543,7 @@ class _HomeViewState extends State<HomeView> {
         else if (isVideoFile()) {
           Navigator.push(
             context,
-            MaterialPageRoute(builder: (_) => VideoViewer(url: url)),
+            MaterialPageRoute(builder: (_) => VideoViewer(url: finalUrl)),
           );
         }
         // صورة
@@ -432,7 +552,7 @@ class _HomeViewState extends State<HomeView> {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (_) => ImageViewer(imageUrl: url, fileId: fileId),
+              builder: (_) => ImageViewer(imageUrl: finalUrl, fileId: fileId),
             ),
           );
         }
@@ -441,7 +561,16 @@ class _HomeViewState extends State<HomeView> {
             contentType.startsWith('text/')) {
           _showLoadingDialog(context);
           try {
-            final fullResponse = await http.get(Uri.parse(url));
+            // ✅ جلب token لإضافته إلى headers
+            final textToken = await StorageService.getToken();
+            final textHeaders = <String, String>{};
+            if (textToken != null && textToken.isNotEmpty) {
+              textHeaders['Authorization'] = 'Bearer $textToken';
+            }
+            final fullResponse = await http.get(
+              Uri.parse(finalUrl),
+              headers: textHeaders,
+            );
             if (mounted) Navigator.pop(context);
             if (fullResponse.statusCode == 200) {
               final tempDir = await getTemporaryDirectory();
@@ -467,7 +596,7 @@ class _HomeViewState extends State<HomeView> {
             context,
             MaterialPageRoute(
               builder: (_) =>
-                  AudioPlayerPage(audioUrl: url, fileName: originalName),
+                  AudioPlayerPage(audioUrl: finalUrl, fileName: originalName),
             ),
           );
         }
@@ -475,9 +604,10 @@ class _HomeViewState extends State<HomeView> {
         else {
           final token = await StorageService.getToken();
           await OfficeFileOpener.openAnyFile(
-            url: url,
+            url: finalUrl,
             context: context,
             token: token,
+            fileName: originalName,
           );
         }
       }
@@ -843,6 +973,10 @@ class _HomeViewState extends State<HomeView> {
                                 items: _recentFolders,
                                 showFileCount: true,
                                 onItemTap: _handleFolderTap,
+                                onFileRemoved: () {
+                                  // ✅ إعادة تحميل البيانات بعد تغيير الحماية أو حذف المجلد
+                                  _loadRecentData();
+                                },
                               ),
 
                             SizedBox(
@@ -913,6 +1047,14 @@ class _HomeViewState extends State<HomeView> {
                                 onFileTap: (file) {
                                   _handleFileTap(file);
                                 },
+                                onFileRemoved: () {
+                                  // ✅ إعادة تحميل البيانات بعد حذف ملف
+                                  _loadRecentData();
+                                },
+                                onFileUpdated: () {
+                                  // ✅ إعادة تحميل البيانات بعد تعديل ملف
+                                  _loadRecentData();
+                                },
                               )
                             else
                               FilesListView(
@@ -935,6 +1077,10 @@ class _HomeViewState extends State<HomeView> {
                                 showMoreOptions: true,
                                 onItemTap: (item) {
                                   _handleFileTap(item);
+                                },
+                                onFileRemoved: () {
+                                  // ✅ إعادة تحميل البيانات بعد حذف ملف
+                                  _loadRecentData();
                                 },
                               ),
 

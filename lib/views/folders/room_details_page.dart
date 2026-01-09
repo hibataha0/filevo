@@ -137,16 +137,16 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
           ),
         ),
         actions: [
-          IconButton(
-            icon: Icon(Icons.refresh),
-            iconSize: ResponsiveUtils.getResponsiveValue(
-              context,
-              mobile: 24.0,
-              tablet: 26.0,
-              desktop: 28.0,
-            ),
-            onPressed: _refreshRoom,
-          ),
+          // IconButton(
+          //   icon: Icon(Icons.refresh),
+          //   iconSize: ResponsiveUtils.getResponsiveValue(
+          //     context,
+          //     mobile: 24.0,
+          //     tablet: 26.0,
+          //     desktop: 28.0,
+          //   ),
+          //   onPressed: _refreshRoom,
+          // ),
           // ✅ قائمة خيارات الغرفة (حذف/مغادرة)
           if (roomData != null)
             PopupMenuButton<String>(
