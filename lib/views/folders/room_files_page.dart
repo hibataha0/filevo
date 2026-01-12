@@ -42,6 +42,10 @@ class _RoomFilesPageState extends State<RoomFilesPage> {
   final RefreshController _refreshController = RefreshController(
     initialRefresh: false,
   );
+  
+  // ✅ حماية من فتح الملف مرتين
+  bool _isOpeningFile = false;
+  String? _openingFileId;
 
   @override
   void initState() {
@@ -303,6 +307,15 @@ class _RoomFilesPageState extends State<RoomFilesPage> {
       );
       return;
     }
+    
+    // ✅ حماية من فتح الملف مرتين
+    if (_isOpeningFile && _openingFileId == fileId) {
+      print('⚠️ [openFile] File $fileId is already being opened, ignoring duplicate call');
+      return;
+    }
+    
+    _isOpeningFile = true;
+    _openingFileId = fileId;
 
     // ✅ التحقق من أن الملف مشترك لمرة واحدة والوصول إليه
     final roomFiles = roomData?['files'] as List?;
@@ -465,6 +478,10 @@ class _RoomFilesPageState extends State<RoomFilesPage> {
             }
           }
           return; // ✅ منع فتح الملف في حالة الخطأ
+        } finally {
+          // ✅ إعادة تعيين flag بعد انتهاء العملية
+          _isOpeningFile = false;
+          _openingFileId = null;
         }
       }
     }
@@ -484,7 +501,13 @@ class _RoomFilesPageState extends State<RoomFilesPage> {
     if (filePath == null || filePath.isEmpty) {
       print('⚠️ [openFile] No path found, using view endpoint');
       // ✅ استخدام endpoint جديد لتحميل الملف
-      await _openFileViaEndpoint(fileId, fileData);
+      try {
+        await _openFileViaEndpoint(fileId, fileData);
+      } finally {
+        // ✅ إعادة تعيين flag بعد انتهاء العملية
+        _isOpeningFile = false;
+        _openingFileId = null;
+      }
       return;
     }
 
@@ -652,6 +675,10 @@ class _RoomFilesPageState extends State<RoomFilesPage> {
           ),
         );
       }
+    } finally {
+      // ✅ إعادة تعيين flag بعد انتهاء العملية
+      _isOpeningFile = false;
+      _openingFileId = null;
     }
   }
 
@@ -886,7 +913,9 @@ class _RoomFilesPageState extends State<RoomFilesPage> {
         'originalData': {
           ...fileData,
           'isStarred': isStarred, // ✅ التأكد من وجود isStarred
+          'roomId': widget.roomId, // ✅ إضافة roomId إلى originalData
         },
+        'roomId': widget.roomId, // ✅ إضافة roomId إلى بيانات الملف
         'originalName': fileName,
         'fileId': fileId,
         'sharedBy': sharedBy,

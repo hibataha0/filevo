@@ -658,6 +658,22 @@ void _showShareDialog(BuildContext context, Map<String, dynamic> folder) async {
     return;
   }
 
+  // ✅ التحقق من أن المجلد محمي - منع المشاركة
+  final folderData = folder['folderData'] ?? folder;
+  final isProtected = folderData['isProtected'] == true;
+  final protectionType = folderData['protectionType']?.toString() ?? 'none';
+
+  if (isProtected && protectionType != 'none') {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('لا يمكن مشاركة المجلدات المحمية'),
+        backgroundColor: Colors.orange,
+        duration: const Duration(seconds: 3),
+      ),
+    );
+    return;
+  }
+
   final result = await Navigator.push(
     context,
     MaterialPageRoute(
@@ -958,6 +974,11 @@ void _showProtectFolderDialog(
   bool isCurrentlyProtected = false;
   String currentProtectionType = 'none';
   
+  // ✅ التحقق من البيانات المحلية أولاً
+  isCurrentlyProtected = folderData['isProtected'] == true;
+  currentProtectionType = folderData['protectionType']?.toString() ?? 'none';
+  
+  // ✅ محاولة جلب أحدث البيانات من السيرفر
   try {
     final folderDetails = await folderController.getFolderDetails(
       folderId: folderId,
@@ -965,18 +986,24 @@ void _showProtectFolderDialog(
     
     if (folderDetails != null && folderDetails['folder'] != null) {
       final serverFolderData = folderDetails['folder'] as Map<String, dynamic>;
-      isCurrentlyProtected = serverFolderData['isProtected'] == true;
-      currentProtectionType = serverFolderData['protectionType']?.toString() ?? 'none';
-    } else {
-      // ✅ fallback إلى البيانات المحلية
-      isCurrentlyProtected = folderData['isProtected'] == true;
-      currentProtectionType = folderData['protectionType']?.toString() ?? 'none';
+      final serverIsProtected = serverFolderData['isProtected'] == true;
+      final serverProtectionType = serverFolderData['protectionType']?.toString() ?? 'none';
+      
+      // ✅ استخدام بيانات السيرفر إذا كانت متوفرة
+      if (serverIsProtected || serverProtectionType != 'none') {
+        isCurrentlyProtected = serverIsProtected;
+        currentProtectionType = serverProtectionType;
+      }
     }
   } catch (e) {
-    // ✅ fallback إلى البيانات المحلية في حالة الخطأ
-    isCurrentlyProtected = folderData['isProtected'] == true;
-    currentProtectionType = folderData['protectionType']?.toString() ?? 'none';
+    // ✅ في حالة الخطأ، نستخدم البيانات المحلية
+    print('⚠️ [FilesGridView] Error fetching folder details: $e');
   }
+  
+  // ✅ طباعة للتحقق من البيانات
+  print('🔐 [FilesGridView] Folder protection status:');
+  print('   - isCurrentlyProtected: $isCurrentlyProtected');
+  print('   - currentProtectionType: $currentProtectionType');
 
   // ✅ فتح dialog الحماية
   await showSetFolderProtectionDialog(

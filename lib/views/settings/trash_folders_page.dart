@@ -2,6 +2,7 @@ import 'package:filevo/generated/l10n.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:filevo/controllers/folders/folders_controller.dart';
+import 'package:filevo/controllers/profile/profile_controller.dart';
 
 class TrashFoldersPage extends StatefulWidget {
   const TrashFoldersPage({super.key});
@@ -67,12 +68,16 @@ class _TrashFoldersPageState extends State<TrashFoldersPage> {
 
   Future<void> _restoreFolder(Map<String, dynamic> folder) async {
     final controller = Provider.of<FolderController>(context, listen: false);
+    final profileController = Provider.of<ProfileController>(context, listen: false);
     final s = S.of(context); // ✅ مرجع الترجمة
 
     final success = await controller.restoreFolder(folderId: folder["_id"]);
 
     if (mounted) {
       if (success) {
+        // ✅ تحديث معلومات المساحة بعد الاستعادة (سيتم التحديث تلقائياً من FolderController)
+        profileController.getStorageInfo();
+        
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(s.folderRestoredSuccess),
@@ -95,6 +100,7 @@ class _TrashFoldersPageState extends State<TrashFoldersPage> {
 
   Future<void> _permanentDeleteFolder(Map<String, dynamic> folder) async {
     final controller = Provider.of<FolderController>(context, listen: false);
+    final profileController = Provider.of<ProfileController>(context, listen: false);
     final s = S.of(context); // ✅ مرجع الترجمة
 
     final success = await controller.deleteFolderPermanent(
@@ -103,6 +109,9 @@ class _TrashFoldersPageState extends State<TrashFoldersPage> {
 
     if (mounted) {
       if (success) {
+        // ✅ تحديث معلومات المساحة بعد الحذف النهائي
+        profileController.getStorageInfo();
+        
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(s.folderPermanentDeleteSuccess),

@@ -448,9 +448,6 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
         await tempFile.writeAsBytes(response.bodyBytes);
         print('📥 [openRoomFile] File saved to: ${tempFile.path}');
         
-        // ✅ فتح الملف من المسار المؤقت
-        await _openFileFromPath(tempFile.path, fileName, name);
-
         // ✅ فتح الملف حسب نوعه
         if (name.endsWith('.pdf')) {
           Navigator.push(

@@ -1,7 +1,9 @@
 import 'dart:io';
 import 'package:filevo/services/file_service.dart';
+import 'package:filevo/controllers/profile/profile_controller.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 class FileController extends ChangeNotifier {
   final FileService _fileService = FileService();
@@ -89,6 +91,14 @@ class FileController extends ChangeNotifier {
     setError(null);
     setSuccess(null);
     try {
+      // ✅ التحقق من المساحة قبل رفع الملف
+      final fileSize = await file.length();
+      final hasSpace = await checkStorageBeforeUpload(fileSize);
+      if (!hasSpace) {
+        setLoading(false);
+        return false; // ✅ تم تعيين رسالة الخطأ في checkStorageBeforeUpload
+      }
+      
       final result = await _fileService.uploadSingleFile(
         file: file,
         token: token,
@@ -100,6 +110,8 @@ class FileController extends ChangeNotifier {
         _uploadedFiles.add(Map<String, dynamic>.from(result['file']));
         _safeNotifyListeners();
         setSuccess(result['message'] ?? 'File uploaded successfully');
+        // ✅ تحديث معلومات المساحة بعد رفع الملف
+        _refreshStorageInfo();
         return true;
       } else {
         // ✅ التحقق من خطأ المساحة التخزينية
@@ -142,6 +154,22 @@ class FileController extends ChangeNotifier {
     setError(null);
     setSuccess(null);
     try {
+      // ✅ التحقق من المساحة قبل رفع الملفات
+      int totalFileSize = 0;
+      for (var file in files) {
+        totalFileSize += await file.length();
+      }
+      
+      final hasSpace = await checkStorageBeforeUpload(totalFileSize);
+      if (!hasSpace) {
+        setLoading(false);
+        return {
+          'success': false,
+          'message': errorMessage ?? 'مساحة التخزين غير كافية',
+          'storageLimitExceeded': true,
+        };
+      }
+      
       final result = await _fileService.uploadMultipleFiles(
         files: files,
         token: token,
@@ -175,6 +203,8 @@ class FileController extends ChangeNotifier {
             : (result['message'] ??
                   '$uploadedCount file(s) uploaded successfully');
         setSuccess(successText);
+        // ✅ تحديث معلومات المساحة بعد رفع الملفات
+        _refreshStorageInfo();
       }
 
       if (uploadedCount == 0 || errorsCount > 0) {
@@ -227,6 +257,69 @@ class FileController extends ChangeNotifier {
       return null;
     } finally {
       setLoading(false);
+    }
+  }
+
+  // ✅ context للوصول إلى ProfileController
+  BuildContext? _context;
+  
+  void setContext(BuildContext context) {
+    _context = context;
+  }
+
+  /// ✅ تحديث معلومات المساحة التخزينية (بدون loading state)
+  Future<void> _refreshStorageInfo() async {
+    try {
+      final result = await _fileService.getStorageInfo();
+      if (result['success'] == true) {
+        // ✅ تحديث ProfileController أيضاً
+        if (_context != null) {
+          final profileController = Provider.of<ProfileController>(
+            _context!,
+            listen: false,
+          );
+          profileController.getStorageInfo();
+        }
+        print('✅ [FilesController] Storage info refreshed');
+      }
+    } catch (e) {
+      print('⚠️ [FilesController] Error refreshing storage info: $e');
+    }
+  }
+
+  /// ✅ التحقق من المساحة التخزينية قبل رفع الملف
+  Future<bool> checkStorageBeforeUpload(int fileSize) async {
+    try {
+      final result = await _fileService.getStorageInfo();
+      
+      if (result['success'] == true && result['storage'] != null) {
+        final storage = result['storage'] as Map<String, dynamic>;
+        final storageLimit = storage['limit'] as int? ?? (10 * 1024 * 1024 * 1024); // 10 GB
+        final storageUsed = storage['used'] as int? ?? 0;
+        final availableSpace = storageLimit - storageUsed;
+        
+        if (fileSize > availableSpace) {
+          final formatBytes = (int bytes) {
+            if (bytes < 1024) return '$bytes B';
+            if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(2)} KB';
+            if (bytes < 1024 * 1024 * 1024) return '${(bytes / (1024 * 1024)).toStringAsFixed(2)} MB';
+            return '${(bytes / (1024 * 1024 * 1024)).toStringAsFixed(2)} GB';
+          };
+          
+          final availableFormatted = formatBytes(availableSpace);
+          final fileSizeFormatted = formatBytes(fileSize);
+          
+          setError('مساحة التخزين غير كافية. المساحة المتاحة: $availableFormatted، حجم الملف: $fileSizeFormatted. يرجى شراء مساحة إضافية أو حذف بعض الملفات.');
+          return false;
+        }
+        
+        return true;
+      }
+      
+      return true; // ✅ إذا فشل جلب المعلومات، نسمح بالرفع (الباك إند سيتحقق)
+    } catch (e) {
+      print('⚠️ [FilesController] Error checking storage: $e');
+      return true; // ✅ إذا حدث خطأ، نسمح بالرفع (الباك إند سيتحقق)
     }
   }
 
@@ -517,6 +610,8 @@ class FileController extends ChangeNotifier {
         _uploadedFiles.removeWhere((file) => file['_id'] == fileId);
         _safeNotifyListeners();
         setSuccess(result['message'] ?? 'File deleted successfully');
+        // ✅ تحديث معلومات المساحة بعد حذف الملف
+        _refreshStorageInfo();
         return true;
       } else {
         setError(result['message'] ?? 'Failed to delete file');
@@ -919,6 +1014,8 @@ class FileController extends ChangeNotifier {
         _trashFiles.removeWhere((file) => fileIds.contains(file['_id']));
         setSuccess(result['message'] ?? 'Files restored successfully');
         _safeNotifyListeners();
+        // ✅ تحديث معلومات المساحة بعد الاستعادة (المساحة لا تتغير لكن للتأكد من التحديث)
+        _refreshStorageInfo();
         return true;
       } else {
         setError(result['message'] ?? 'Failed to restore files');
@@ -950,10 +1047,13 @@ class FileController extends ChangeNotifier {
       if (result['success'] == true) {
         // Remove deleted files from local list
         _trashFiles.removeWhere((file) => fileIds.contains(file['_id']));
+        _uploadedFiles.removeWhere((file) => fileIds.contains(file['_id']));
         setSuccess(
           result['message'] ?? 'Files permanently deleted successfully',
         );
         _safeNotifyListeners();
+        // ✅ تحديث معلومات المساحة بعد الحذف النهائي
+        _refreshStorageInfo();
         return true;
       } else {
         setError(result['message'] ?? 'Failed to permanently delete files');

@@ -50,12 +50,24 @@ class ProfileController with ChangeNotifier {
 
       if (result['success'] == true) {
         _userData = _extractUserData(result['data']);
-        print('ProfileController: Fetched user data: $_userData');
+        print('✅ ProfileController: Fetched user data: $_userData');
+        if (_userData != null) {
+          print('✅ ProfileController: User data keys: ${_userData!.keys.toList()}');
+          print('✅ ProfileController: User name: ${_userData!['name']}');
+          print('✅ ProfileController: User email: ${_userData!['email']}');
+        } else {
+          print('⚠️ ProfileController: User data is null after extraction');
+        }
         _errorMessage = null;
 
       } else {
-        _errorMessage = result['error'] ?? 'فشل في جلب بيانات المستخدم';
-        _userData = null;
+        final errorMsg = result['error'] ?? result['message'] ?? 'فشل في جلب بيانات المستخدم';
+        _errorMessage = errorMsg;
+        print('❌ ProfileController: Failed to fetch user data: $errorMsg');
+        // ✅ عدم حذف userData الموجودة عند الفشل - قد تكون البيانات موجودة من قبل
+        if (_userData == null) {
+          _userData = null;
+        }
       }
     } catch (e) {
       _errorMessage = 'خطأ في جلب بيانات المستخدم: ${e.toString()}';
@@ -84,7 +96,19 @@ class ProfileController with ChangeNotifier {
       );
 
       if (result['success'] == true) {
-        _userData = _extractUserData(result['data']);
+        // ✅ تحديث البيانات من الـ response إذا كانت موجودة
+        if (result['data'] != null) {
+          final userData = _extractUserData(result['data']);
+          if (userData != null) {
+            _userData = userData;
+            print('✅ ProfileController: Updated user data from response');
+          }
+        }
+        
+        // ✅ إعادة جلب البيانات من السيرفر للتأكد من التحديث
+        print('🔄 ProfileController: Refetching user data from server...');
+        await getLoggedUserData();
+        
         _errorMessage = null;
         return true;
       } else {
@@ -221,6 +245,11 @@ class ProfileController with ChangeNotifier {
 
   /// ✅ جلب معلومات المساحة التخزينية
   Future<void> getStorageInfo() async {
+    // ✅ منع الاستدعاء المتكرر إذا كان هناك طلب قيد التنفيذ
+    if (_isLoading && _storageInfo != null) {
+      return; // ✅ إذا كانت البيانات موجودة وتحميل قيد التنفيذ، لا نستدعي مرة أخرى
+    }
+    
     try {
       final result = await _fileService.getStorageInfo();
       
@@ -228,13 +257,19 @@ class ProfileController with ChangeNotifier {
         _storageInfo = result['storage'] as Map<String, dynamic>?;
         notifyListeners();
       } else {
-        _storageInfo = null;
-        notifyListeners();
+        // ✅ فقط تحديث إذا كانت البيانات غير موجودة
+        if (_storageInfo == null) {
+          _storageInfo = null;
+          notifyListeners();
+        }
       }
     } catch (e) {
       print('❌ ProfileController: Error getting storage info: $e');
-      _storageInfo = null;
-      notifyListeners();
+      // ✅ فقط تحديث في حالة الخطأ إذا كانت البيانات غير موجودة
+      if (_storageInfo == null) {
+        _storageInfo = null;
+        notifyListeners();
+      }
     }
   }
 

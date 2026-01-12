@@ -13,6 +13,32 @@ Future<void> showSetFolderProtectionDialog(
   String? currentProtectionType,
   VoidCallback? onProtectionChanged,
 ) async {
+  // ✅ إذا كان المجلد محمياً، استخدم الـ dialog البسيط لإزالة الحماية
+  print('🔐 [showSetFolderProtectionDialog] Checking protection status:');
+  print('   - isCurrentlyProtected: $isCurrentlyProtected');
+  print('   - currentProtectionType: $currentProtectionType');
+  
+  if (isCurrentlyProtected) {
+    // ✅ استخدام protectionType من البيانات أو افتراض 'password' إذا لم يكن محدداً
+    final protectionType = (currentProtectionType != null && currentProtectionType != 'none')
+        ? currentProtectionType
+        : 'password'; // ✅ افتراض password إذا لم يكن محدداً
+    
+    print('🔓 [showSetFolderProtectionDialog] Opening remove protection dialog with type: $protectionType');
+    
+    await showRemoveFolderProtectionDialog(
+      context,
+      folderId,
+      folderName,
+      protectionType,
+      onProtectionChanged,
+    );
+    return;
+  }
+  
+  print('🔒 [showSetFolderProtectionDialog] Opening set protection dialog');
+
+  // ✅ إذا لم يكن محمياً، استخدم الـ dialog العادي لتعيين الحماية
   final passwordController = TextEditingController();
   final confirmPasswordController = TextEditingController();
   bool showPassword = false;
@@ -121,36 +147,6 @@ Future<void> showSetFolderProtectionDialog(
                     ),
                   ),
                 ],
-              ] else ...[
-                Text(
-                  S.of(context).removeProtectionQuestion,
-                  style: TextStyle(fontSize: 16),
-                ),
-                if (currentProtectionType == 'password') ...[
-                  SizedBox(height: 20),
-                  TextField(
-                    controller: passwordController,
-                    obscureText: !showPassword,
-                    decoration: InputDecoration(
-                      labelText: S.of(context).currentPasswordLabel,
-                      hintText: S.of(context).enterPasswordToRemoveProtection,
-                      border: OutlineInputBorder(),
-                      prefixIcon: Icon(Icons.lock),
-                      suffixIcon: IconButton(
-                        icon: Icon(
-                          showPassword
-                              ? Icons.visibility
-                              : Icons.visibility_off,
-                        ),
-                        onPressed: () {
-                          setState(() {
-                            showPassword = !showPassword;
-                          });
-                        },
-                      ),
-                    ),
-                  ),
-                ],
               ],
             ],
           ),
@@ -167,8 +163,224 @@ Future<void> showSetFolderProtectionDialog(
                 errorMessage = null;
               });
 
-              if (!isCurrentlyProtected) {
-                // تعيين حماية جديدة - فقط كلمة السر
+              // ✅ تعيين حماية جديدة - فقط كلمة السر
+              if (passwordController.text.isEmpty) {
+                setState(() {
+                  errorMessage = S.of(context).pleaseEnterPassword;
+                });
+                return;
+              }
+
+              if (passwordController.text.length < 4) {
+                setState(() {
+                  errorMessage = S.of(context).passwordMin4Chars;
+                });
+                return;
+              }
+
+              if (passwordController.text != confirmPasswordController.text) {
+                setState(() {
+                  errorMessage = S.of(context).passwordsDoNotMatch;
+                });
+                return;
+              }
+
+              // تفعيل الحماية - فقط كلمة السر
+              final folderController = Provider.of<FolderController>(
+                context,
+                listen: false,
+              );
+              final success = await folderController.protectFolder(
+                folderId: folderId,
+                protectionType: 'password',
+                password: passwordController.text,
+              );
+
+              if (success) {
+                Navigator.pop(dialogContext);
+                // ✅ استخدام callback فقط - لا نستخدم ScaffoldMessenger
+                if (onProtectionChanged != null) {
+                  onProtectionChanged();
+                }
+              } else {
+                setState(() {
+                  errorMessage =
+                      folderController.errorMessage ??
+                      S.of(context).failedToEnableProtection;
+                });
+              }
+            },
+            child: Text(S.of(context).lockFolder),
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
+/// 🔓 Dialog بسيط لإزالة حماية المجلد
+Future<bool> showRemoveFolderProtectionDialog(
+  BuildContext context,
+  String folderId,
+  String folderName,
+  String protectionType, // "password" | "biometric"
+  VoidCallback? onProtectionRemoved,
+) async {
+  bool? successResult;
+  final passwordController = TextEditingController();
+  bool showPassword = false;
+  final LocalAuthentication localAuth = LocalAuthentication();
+  String? errorMessage;
+
+  await showDialog(
+    context: context,
+    barrierDismissible: false,
+    builder: (dialogContext) => StatefulBuilder(
+      builder: (context, setState) => AlertDialog(
+        title: Row(
+          children: [
+            Icon(Icons.lock_open, color: Colors.orange),
+            SizedBox(width: 10),
+            Text(S.of(context).unlockFolder),
+          ],
+        ),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                S.of(context).removeProtectionQuestion,
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              ),
+              SizedBox(height: 20),
+              // ✅ عرض رسالة الخطأ داخل dialog
+              if (errorMessage != null) ...[
+                Container(
+                  padding: EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.red.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.red.withOpacity(0.3)),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.error_outline, color: Colors.red, size: 20),
+                      SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          errorMessage!,
+                          style: TextStyle(
+                            color: Colors.red[700],
+                            fontSize: 14,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                SizedBox(height: 10),
+              ],
+              if (protectionType == 'password') ...[
+                TextField(
+                  controller: passwordController,
+                  obscureText: !showPassword,
+                  autofocus: true,
+                  decoration: InputDecoration(
+                    labelText: S.of(context).currentPasswordLabel,
+                    hintText: S.of(context).enterPasswordToRemoveProtection,
+                    border: OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.lock),
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        showPassword ? Icons.visibility : Icons.visibility_off,
+                      ),
+                      onPressed: () {
+                        setState(() {
+                          showPassword = !showPassword;
+                        });
+                      },
+                    ),
+                  ),
+                  onSubmitted: (value) async {
+                    if (value.isNotEmpty) {
+                      setState(() {
+                        errorMessage = null;
+                      });
+                      await _removeProtection(
+                        context,
+                        folderId,
+                        password: value,
+                        dialogContext: dialogContext,
+                        setState: setState,
+                        setErrorMessage: (msg) {
+                          setState(() {
+                            errorMessage = msg;
+                          });
+                        },
+                        setResult: (success) {
+                          successResult = success;
+                        },
+                        onProtectionRemoved: onProtectionRemoved,
+                      );
+                    }
+                  },
+                ),
+              ] else if (protectionType == 'biometric') ...[
+                Center(
+                  child: Column(
+                    children: [
+                      Icon(Icons.fingerprint, size: 64, color: Colors.blue),
+                      SizedBox(height: 20),
+                      Text(
+                        S.of(context).useFingerprintToAccess,
+                        style: TextStyle(fontSize: 16),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+        actions: [
+          if (protectionType == 'biometric')
+            ElevatedButton.icon(
+              onPressed: () async {
+                setState(() {
+                  errorMessage = null;
+                });
+                await _removeProtectionWithBiometric(
+                  context,
+                  folderId,
+                  dialogContext: dialogContext,
+                  localAuth: localAuth,
+                  setState: setState,
+                  setErrorMessage: (msg) {
+                    setState(() {
+                      errorMessage = msg;
+                    });
+                  },
+                  setResult: (success) {
+                    successResult = success;
+                  },
+                  onProtectionRemoved: onProtectionRemoved,
+                );
+              },
+              icon: Icon(Icons.fingerprint),
+              label: Text(S.of(context).verifyWithFingerprint),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.blue,
+                foregroundColor: Colors.white,
+              ),
+            ),
+          if (protectionType == 'password')
+            ElevatedButton(
+              onPressed: () async {
+                setState(() {
+                  errorMessage = null;
+                });
+
                 if (passwordController.text.isEmpty) {
                   setState(() {
                     errorMessage = S.of(context).pleaseEnterPassword;
@@ -176,82 +388,131 @@ Future<void> showSetFolderProtectionDialog(
                   return;
                 }
 
-                if (passwordController.text.length < 4) {
-                  setState(() {
-                    errorMessage = S.of(context).passwordMin4Chars;
-                  });
-                  return;
-                }
-
-                if (passwordController.text != confirmPasswordController.text) {
-                  setState(() {
-                    errorMessage = S.of(context).passwordsDoNotMatch;
-                  });
-                  return;
-                }
-
-                // تفعيل الحماية - فقط كلمة السر
-                final folderController = Provider.of<FolderController>(
+                await _removeProtection(
                   context,
-                  listen: false,
-                );
-                final success = await folderController.protectFolder(
-                  folderId: folderId,
-                  protectionType: 'password',
+                  folderId,
                   password: passwordController.text,
+                  dialogContext: dialogContext,
+                  setState: setState,
+                  setErrorMessage: (msg) {
+                    setState(() {
+                      errorMessage = msg;
+                    });
+                  },
+                  setResult: (success) {
+                    successResult = success;
+                  },
+                  onProtectionRemoved: onProtectionRemoved,
                 );
-
-                if (success) {
-                  Navigator.pop(dialogContext);
-                  // ✅ استخدام callback فقط - لا نستخدم ScaffoldMessenger
-                  if (onProtectionChanged != null) {
-                    onProtectionChanged();
-                  }
-                } else {
-                  setState(() {
-                    errorMessage =
-                        folderController.errorMessage ??
-                        S.of(context).failedToEnableProtection;
-                  });
-                }
-              } else {
-                // إزالة الحماية
-                final folderController = Provider.of<FolderController>(
-                  context,
-                  listen: false,
-                );
-                final success = await folderController.removeFolderProtection(
-                  folderId: folderId,
-                  password: currentProtectionType == 'password'
-                      ? passwordController.text
-                      : null,
-                );
-
-                if (success) {
-                  Navigator.pop(dialogContext);
-                  // ✅ استخدام callback فقط - لا نستخدم ScaffoldMessenger
-                  if (onProtectionChanged != null) {
-                    onProtectionChanged();
-                  }
-                } else {
-                  setState(() {
-                    errorMessage =
-                        folderController.errorMessage ??
-                        S.of(context).failedToRemoveProtection;
-                  });
-                }
-              }
-            },
-            child: Text(
-              isCurrentlyProtected
-                  ? S.of(context).unlockFolder
-                  : S.of(context).lockFolder,
+              },
+              child: Text(S.of(context).unlockFolder),
             ),
+          TextButton(
+            onPressed: () {
+              successResult = false;
+              Navigator.pop(dialogContext);
+            },
+            child: Text(S.of(context).cancel),
           ),
         ],
       ),
     ),
   );
+
+  return successResult ?? false;
+}
+
+/// 🔓 إزالة الحماية
+Future<void> _removeProtection(
+  BuildContext context,
+  String folderId, {
+  String? password,
+  required BuildContext dialogContext,
+  required StateSetter setState,
+  required Function(String) setErrorMessage,
+  required Function(bool) setResult,
+  VoidCallback? onProtectionRemoved,
+}) async {
+  final folderController = Provider.of<FolderController>(
+    context,
+    listen: false,
+  );
+
+  final success = await folderController.removeFolderProtection(
+    folderId: folderId,
+    password: password,
+  );
+
+  if (success) {
+    setResult(true);
+    Navigator.pop(dialogContext);
+    if (onProtectionRemoved != null) {
+      onProtectionRemoved();
+    }
+  } else {
+    setResult(false);
+    setErrorMessage(
+      folderController.errorMessage ?? S.of(context).failedToRemoveProtection,
+    );
+  }
+}
+
+/// 👆 إزالة الحماية بالبصمة
+Future<void> _removeProtectionWithBiometric(
+  BuildContext context,
+  String folderId, {
+  required BuildContext dialogContext,
+  required LocalAuthentication localAuth,
+  required StateSetter setState,
+  required Function(String) setErrorMessage,
+  required Function(bool) setResult,
+  VoidCallback? onProtectionRemoved,
+}) async {
+  try {
+    final bool canCheckBiometrics = await localAuth.canCheckBiometrics;
+    final bool isDeviceSupported = await localAuth.isDeviceSupported();
+
+    if (!canCheckBiometrics || !isDeviceSupported) {
+      setErrorMessage(S.of(context).fingerprintNotAvailable);
+      return;
+    }
+
+    final bool didAuthenticate = await localAuth.authenticate(
+      localizedReason: S.of(context).pleaseVerifyFingerprint,
+      options: const AuthenticationOptions(
+        biometricOnly: true,
+        stickyAuth: true,
+      ),
+    );
+
+    if (didAuthenticate) {
+      final folderController = Provider.of<FolderController>(
+        context,
+        listen: false,
+      );
+
+      final success = await folderController.removeFolderProtection(
+        folderId: folderId,
+        password: null,
+      );
+
+      if (success) {
+        setResult(true);
+        Navigator.pop(dialogContext);
+        if (onProtectionRemoved != null) {
+          onProtectionRemoved();
+        }
+      } else {
+        setResult(false);
+        setErrorMessage(
+          folderController.errorMessage ??
+              S.of(context).failedToRemoveProtection,
+        );
+      }
+    }
+  } catch (e) {
+    setErrorMessage(S.of(context).fingerprintVerificationError(e.toString()));
+  }
 }
 
 /// 🔐 Dialog للتحقق من الوصول لمجلد محمي

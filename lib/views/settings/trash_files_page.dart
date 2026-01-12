@@ -2,6 +2,7 @@ import 'package:filevo/generated/l10n.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:filevo/controllers/folders/files_controller.dart';
+import 'package:filevo/controllers/profile/profile_controller.dart';
 
 class TrashFilesPage extends StatefulWidget {
   final String token;
@@ -61,6 +62,7 @@ class _TrashFilesPageState extends State<TrashFilesPage> {
 
   Future<void> _restoreFile(String fileId) async {
     final controller = Provider.of<FileController>(context, listen: false);
+    final profileController = Provider.of<ProfileController>(context, listen: false);
 
     final success = await controller.restoreFiles(
       fileIds: [fileId],
@@ -68,12 +70,18 @@ class _TrashFilesPageState extends State<TrashFilesPage> {
     );
 
     if (success && mounted) {
+      // ✅ تحديث معلومات المساحة بعد الاستعادة (سيتم التحديث تلقائياً من FileController)
+      profileController.getStorageInfo();
+      
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(S.of(context).fileRestoredSuccess),
           backgroundColor: Colors.green,
         ),
       );
+      
+      // ✅ تحديث القائمة
+      setState(() {});
     }
   }
 
@@ -86,12 +94,19 @@ class _TrashFilesPageState extends State<TrashFilesPage> {
     );
 
     if (success && mounted) {
+      // ✅ تحديث معلومات المساحة بعد الحذف النهائي (سيتم التحديث تلقائياً من FileController)
+      final profileController = Provider.of<ProfileController>(context, listen: false);
+      profileController.getStorageInfo();
+      
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(S.of(context).fileDeletedPermanently),
           backgroundColor: Colors.red,
         ),
       );
+      
+      // ✅ تحديث القائمة
+      setState(() {});
     }
   }
 

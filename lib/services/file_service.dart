@@ -1797,4 +1797,63 @@ class FileService {
       };
     }
   }
+
+  /// ✅ جلب المساحة الإجمالية المستخدمة في التطبيق (جميع المستخدمين)
+  Future<Map<String, dynamic>> getTotalStorageInfo() async {
+    try {
+      final token = await StorageService.getToken();
+      if (token == null || token.isEmpty) {
+        return {
+          'success': false,
+          'error': 'لا يوجد token. يرجى تسجيل الدخول',
+        };
+      }
+
+      final uri = Uri.parse("$_apiBase${ApiEndpoints.totalStorageInfo}");
+
+      final response = await http.get(
+        uri,
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
+
+      print('📊 [FileService] Get total storage info response: ${response.statusCode}');
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final totalStorageData = data['totalStorage'] ?? {};
+        
+        return {
+          'success': true,
+          'totalStorage': {
+            'totalUsed': totalStorageData['totalUsed'] ?? 0,
+            'totalUsedFormatted': totalStorageData['totalUsedFormatted'] ?? '0 Bytes',
+            'totalFiles': totalStorageData['totalFiles'] ?? 0,
+            'totalUsers': totalStorageData['totalUsers'] ?? 0,
+          },
+        };
+      } else {
+        try {
+          final errorData = jsonDecode(response.body);
+          return {
+            'success': false,
+            'error': errorData['message'] ?? 'فشل في جلب المساحة الإجمالية',
+          };
+        } catch (e) {
+          return {
+            'success': false,
+            'error': 'فشل في جلب المساحة الإجمالية',
+          };
+        }
+      }
+    } catch (e) {
+      print('❌ [FileService] Get total storage info error: $e');
+      return {
+        'success': false,
+        'error': 'خطأ في جلب المساحة الإجمالية: ${e.toString()}',
+      };
+    }
+  }
 }

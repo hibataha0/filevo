@@ -360,18 +360,74 @@ class _EditFilePageState extends State<EditFilePage> {
 
       // تحميل الصورة
       final token = await StorageService.getToken();
-      if (token == null) return;
+      if (token == null) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('يرجى تسجيل الدخول'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+        return;
+      }
 
-      final url = "${ApiConfig.baseUrl}${ApiEndpoints.viewFile(fileId)}";
-      final response = await http.get(
-        Uri.parse(url),
-        headers: {'Authorization': 'Bearer $token'},
-      );
+      // ✅ استخدام url من بيانات الملف إذا كان موجوداً، وإلا بناء URL من fileId
+      String? imageUrl = widget.file['url'] as String?;
+      if (imageUrl == null || imageUrl.isEmpty) {
+        imageUrl = "${ApiConfig.baseUrl}${ApiEndpoints.viewFile(fileId)}";
+      }
+      
+      print('📷 [EditFilePage] Loading image for editing: $imageUrl');
+      print('📷 [EditFilePage] File ID: $fileId');
+      print('📷 [EditFilePage] Using URL from file data: ${widget.file['url'] != null}');
+      
+      http.Response response;
+      try {
+        response = await http.get(
+          Uri.parse(imageUrl),
+          headers: {'Authorization': 'Bearer $token'},
+        ).timeout(
+          const Duration(seconds: 30),
+          onTimeout: () {
+            throw Exception('انتهت مهلة الاتصال');
+          },
+        );
+        
+        print('📷 [EditFilePage] Response status: ${response.statusCode}');
+        print('📷 [EditFilePage] Response size: ${response.bodyBytes.length} bytes');
+      } catch (e) {
+        print('❌ [EditFilePage] Error loading image: $e');
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('خطأ في تحميل الصورة: ${e.toString()}'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+        return;
+      }
 
       if (response.statusCode != 200) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(S.of(context).failedToLoadImage)),
-        );
+        print('❌ [EditFilePage] Failed to load image: HTTP ${response.statusCode}');
+        String errorMessage = S.of(context).failedToLoadImage;
+        if (response.statusCode == 404) {
+          errorMessage = 'الصورة غير موجودة';
+        } else if (response.statusCode == 403) {
+          errorMessage = 'ليس لديك صلاحية للوصول إلى هذه الصورة';
+        } else if (response.statusCode == 401) {
+          errorMessage = 'انتهت صلاحية الجلسة. يرجى تسجيل الدخول مرة أخرى';
+        }
+        
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(errorMessage),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
         return;
       }
 
@@ -2319,61 +2375,67 @@ class _EditFilePageState extends State<EditFilePage> {
               fileType.startsWith('image/') ||
               _fileType == 'image';
 
-          // ✅ التحقق من أن الملف مشترك (isShared أو sharedWith) أو في غرفة (roomId)
-          final isShared =
-              originalData['isShared'] == true ||
-              (originalData['sharedWith'] != null &&
-                  (originalData['sharedWith'] as List).isNotEmpty);
-          final hasRoomId =
-              widget.file['roomId'] != null || originalData['roomId'] != null;
-
-          // ✅ استخدام updateFileContent للصور (الباك إند يجعل replaceMode افتراضياً true للصور)
-          // ✅ أو للملفات المشتركة أو في غرفة
-          if (isImage || isShared || hasRoomId) {
+          // ✅ للصور: استخدام الطريقة البديلة (رفع ملف جديد + حذف القديم)
+          // ✅ لأن route updateFileContent غير موجود في الباك إند
+          if (isImage) {
             print(
-              '📝 [EditFilePage] File is image/shared/in room, using updateFileContent',
+              '📝 [EditFilePage] File is image, using upload + delete method',
             );
             print('   - isImage: $isImage');
-            print('   - isShared: $isShared');
-            print('   - hasRoomId: $hasRoomId');
-            final updateSuccess = await fileController.updateFileContent(
-              fileId: fileId,
+            print('   - parentFolderId: ${originalData['parentFolderId']}');
+            
+            // ✅ استخدام الطريقة البديلة (رفع ملف جديد + حذف القديم)
+            final uploadSuccess = await fileController.uploadSingleFile(
               file: _editedFile!,
               token: token,
-              replaceMode:
-                  true, // ✅ استبدال تلقائي (الباك إند يجعلها افتراضية للصور)
+              parentFolderId: originalData['parentFolderId'],
             );
 
-            if (updateSuccess) {
-              print('✅ [EditFilePage] File content updated successfully');
-
-              // ✅ مسح cache الصور في Flutter بعد التحديث الناجح
-              // ✅ هذا يضمن أن الصور المحدثة يتم إعادة تحميلها
-              // ✅ استخدام PaintingBinding.instance.imageCache بدلاً من imageCache مباشرة
-              PaintingBinding.instance.imageCache.clear();
-              PaintingBinding.instance.imageCache.clearLiveImages();
-              print('✅ [EditFilePage] Image cache cleared');
-
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(S.of(context).fileUpdatedSuccessfully),
-                  backgroundColor: Colors.green,
-                ),
+            if (uploadSuccess) {
+              // ✅ حذف الملف القديم
+              final deleteSuccess = await fileController.deleteFile(
+                fileId: fileId,
+                token: token,
               );
-              // ✅ إرجاع true لإعلام الصفحة الأم أن التحديث تم بنجاح
-              Navigator.pop(context, true);
-              return;
-            } else {
-              print(
-                '❌ [EditFilePage] Failed to update file content: ${fileController.errorMessage}',
-              );
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    fileController.errorMessage ??
-                        S.of(context).updateFileError,
+
+              if (deleteSuccess) {
+                // ✅ مسح cache الصور في Flutter بعد التحديث الناجح
+                PaintingBinding.instance.imageCache.clear();
+                PaintingBinding.instance.imageCache.clearLiveImages();
+                print('✅ [EditFilePage] Image cache cleared');
+
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(S.of(context).fileReplacedSuccessfully),
+                    backgroundColor: Colors.green,
                   ),
+                );
+                Navigator.pop(context, true);
+                return;
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      '${S.of(context).fileUploadedButDeleteFailed} ${fileController.errorMessage ?? S.of(context).unknownError}',
+                    ),
+                    backgroundColor: Colors.orange,
+                  ),
+                );
+              }
+            } else {
+              String errorMessage = fileController.errorMessage ?? S.of(context).updateFileError;
+              
+              // ✅ معالجة خطأ rate limiting (429)
+              if (fileController.errorMessage?.contains('429') == true ||
+                  fileController.errorMessage?.toLowerCase().contains('too many requests') == true) {
+                errorMessage = 'تم إرسال طلبات كثيرة. يرجى الانتظار قليلاً والمحاولة مرة أخرى';
+              }
+              
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(errorMessage),
                   backgroundColor: Colors.red,
+                  duration: const Duration(seconds: 5),
                 ),
               );
             }

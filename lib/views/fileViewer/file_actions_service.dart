@@ -1,5 +1,6 @@
 import 'package:filevo/controllers/folders/files_controller.dart';
 import 'package:filevo/controllers/folders/room_controller.dart';
+import 'package:filevo/controllers/profile/profile_controller.dart';
 import 'package:filevo/services/storage_service.dart';
 import 'package:filevo/services/file_service.dart';
 import 'package:filevo/views/folders/share_file_with_room_page.dart';
@@ -301,6 +302,15 @@ class FileActionsService {
           (f) => f['_id'] == (file['_id'] ?? file['originalData']?['_id']),
         );
         if (onLocalUpdate != null) onLocalUpdate();
+        
+        // ✅ تحديث معلومات المساحة بعد الحذف (سيتم التحديث تلقائياً من FileController)
+        if (context.mounted) {
+          final profileController = Provider.of<ProfileController>(
+            context,
+            listen: false,
+          );
+          profileController.getStorageInfo();
+        }
 
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

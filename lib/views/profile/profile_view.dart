@@ -24,37 +24,58 @@ class _ProfilePageState extends State<ProfilePage> {
   final RefreshController _refreshController = RefreshController(
     initialRefresh: false,
   );
+  bool _hasInitialized = false; // ✅ flag لمنع الاستدعاء المتكرر
 
   @override
   void initState() {
     super.initState();
+    // ✅ جلب البيانات مرة واحدة فقط عند فتح الصفحة
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final controller = context.read<ProfileController>();
-      if (!controller.isLoading && controller.userName == null) {
-        controller.getLoggedUserData();
-      }
+      if (!mounted) return;
+      _loadProfileData();
     });
+  }
+
+  // ✅ دالة لجلب بيانات البروفايل مرة واحدة فقط
+  void _loadProfileData() {
+    if (_hasInitialized) return; // ✅ منع الاستدعاء المتكرر
+    _hasInitialized = true;
+
+    final controller = context.read<ProfileController>();
+    
+    // ✅ جلب بيانات المستخدم إذا كانت غير موجودة
+    if (controller.userData == null || controller.userName == null) {
+      controller.getLoggedUserData().then((_) {
+        if (!mounted) return;
+        // ✅ بعد جلب بيانات المستخدم، جلب معلومات التخزين
+        if (controller.storageInfo == null) {
+          controller.getStorageInfo();
+        }
+        // ✅ تحديث StorageCard بعد جلب البيانات
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            _storageCardKey.currentState?.refresh();
+          }
+        });
+      });
+    } else {
+      // ✅ إذا كانت بيانات المستخدم موجودة، جلب معلومات التخزين فقط
+      if (controller.storageInfo == null) {
+        controller.getStorageInfo();
+      }
+      // ✅ تحديث StorageCard
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          _storageCardKey.currentState?.refresh();
+        }
+      });
+    }
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    // ✅ تحديث بيانات المستخدم عند العودة للصفحة
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        final controller = context.read<ProfileController>();
-        // ✅ تحديث البيانات إذا كانت قديمة أو غير موجودة
-        if (controller.userData == null || controller.userName == null) {
-          controller.getLoggedUserData();
-        }
-        // ✅ تحديث معلومات المساحة التخزينية في ProfileController
-        if (controller.storageInfo == null) {
-          controller.getStorageInfo();
-        }
-        // ✅ تحديث بيانات التخزين في StorageCard
-        _storageCardKey.currentState?.refresh();
-      }
-    });
+    // ✅ لا نستدعي أي شيء هنا لتجنب الـ infinite loop
   }
 
   @override

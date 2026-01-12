@@ -795,6 +795,7 @@ class FolderFileCard extends StatelessWidget {
 
   // ✅ قائمة المجلدات العادية
   void _showNormalFolderMenu(BuildContext context) {
+    final scaffoldContext = context; // ✅ حفظ context الأصلي
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
@@ -899,7 +900,25 @@ class FolderFileCard extends StatelessWidget {
                           icon: Icons.share,
                           title: S.of(context).share,
                           onTap: () {
+                            // ✅ التحقق من أن المجلد محمي - منع المشاركة
+                            final isProtected = _isFolderProtected();
                             Navigator.pop(context);
+
+                            if (isProtected) {
+                              // ✅ استخدام scaffoldContext الأصلي
+                              ScaffoldMessenger.of(
+                                scaffoldContext,
+                              ).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    'لا يمكن مشاركة المجلدات المحمية',
+                                  ),
+                                  backgroundColor: Colors.orange,
+                                  duration: const Duration(seconds: 3),
+                                ),
+                              );
+                              return;
+                            }
                             onShareTap?.call();
                           },
                         ),
@@ -949,8 +968,8 @@ class FolderFileCard extends StatelessWidget {
                               ? Icons.lock_open
                               : Icons.lock,
                           title: _isFolderProtected()
-                              ? 'إلغاء قفل المجلد'
-                              : 'قفل المجلد',
+                              ? S.of(context).unlockFolder
+                              : S.of(context).lockFolder,
                           iconColor: Colors.orange[700],
                           onTap: () {
                             Navigator.pop(context);

@@ -5,6 +5,7 @@ import 'package:filevo/components/NavigationBar .dart';
 import 'package:filevo/components/folder_selection_dialog.dart';
 import 'package:filevo/controllers/folders/files_controller.dart';
 import 'package:filevo/controllers/folders/folders_controller.dart';
+import 'package:filevo/controllers/profile/profile_controller.dart';
 import 'package:filevo/generated/l10n.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -244,6 +245,10 @@ class _MainPageState extends State<MainPage> {
         context,
         listen: false,
       );
+      
+      // ✅ تعيين context للـ FolderController لتحديث ProfileController
+      folderController.setContext(context);
+      
       _showSnackBar(
         S.of(context).uploadingFolder(folderName, filesData.length),
       );
@@ -258,6 +263,12 @@ class _MainPageState extends State<MainPage> {
         relativePaths: relativePaths,
         parentFolderId: parentFolderId,
       );
+      
+      // ✅ تحديث معلومات المساحة بعد رفع المجلد
+      if (response != null && response['folder'] != null) {
+        final profileController = Provider.of<ProfileController>(context, listen: false);
+        profileController.getStorageInfo();
+      }
 
       if (response != null && response['folder'] != null) {
         _showSnackBar(
@@ -830,6 +841,35 @@ class _MainPageState extends State<MainPage> {
         context,
         listen: false,
       );
+      
+      // ✅ تعيين context للـ FileController لتحديث ProfileController
+      fileController.setContext(context);
+      
+      // ✅ التحقق من المساحة قبل رفع الملفات
+      int totalFileSize = 0;
+      for (var tempFile in tempFiles) {
+        totalFileSize += await tempFile.length();
+      }
+      
+      final hasSpace = await fileController.checkStorageBeforeUpload(totalFileSize);
+      if (!hasSpace) {
+        // ✅ حذف الملفات المؤقتة
+        for (var tempFile in tempFiles) {
+          try {
+            if (await tempFile.exists()) {
+              await tempFile.delete();
+            }
+          } catch (e) {
+            print('⚠️ Error deleting temp file: $e');
+          }
+        }
+        // ✅ عرض رسالة الخطأ
+        _showSnackBar(
+          fileController.errorMessage ?? 'مساحة التخزين غير كافية',
+          isError: true,
+        );
+        return;
+      }
 
       Future<T?> _showProgressDialog<T>({
         required String title,
@@ -932,6 +972,12 @@ class _MainPageState extends State<MainPage> {
                   : fileController.errorMessage ?? S.of(context).uploadFailed,
               isError: !success,
             );
+            
+            // ✅ تحديث معلومات المساحة بعد رفع الملف بنجاح
+            if (success) {
+              final profileController = Provider.of<ProfileController>(context, listen: false);
+              profileController.getStorageInfo();
+            }
           }
         } else {
           final response =
@@ -1123,6 +1169,9 @@ class _MainPageState extends State<MainPage> {
       context,
       listen: false,
     );
+    
+    // ✅ تعيين context للـ FolderController لتحديث ProfileController
+    folderController.setContext(context);
 
     // ✅ استخدام selectedFolderId ('ROOT' = الجذر = null)
     final parentId = selectedFolderId == 'ROOT' ? null : selectedFolderId;
@@ -1131,6 +1180,12 @@ class _MainPageState extends State<MainPage> {
       name: folderName,
       parentId: parentId,
     );
+    
+    // ✅ تحديث معلومات المساحة بعد إنشاء المجلد (إذا تم رفع ملفات)
+    if (success) {
+      final profileController = Provider.of<ProfileController>(context, listen: false);
+      profileController.getStorageInfo();
+    }
 
     if (success) {
       _showSnackBar(S.of(context).folderCreatedSuccess(folderName));

@@ -1,5 +1,7 @@
 import 'package:filevo/services/folders_service.dart';
+import 'package:filevo/controllers/profile/profile_controller.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 class FolderController with ChangeNotifier {
   final FolderService _service = FolderService();
@@ -7,6 +9,13 @@ class FolderController with ChangeNotifier {
   bool isLoading = false;
   String? errorMessage;
   bool _isDisposed = false;
+  
+  // ✅ context للوصول إلى ProfileController
+  BuildContext? _context;
+  
+  void setContext(BuildContext context) {
+    _context = context;
+  }
 
   // ✅ Deleted folders list
   List<Map<String, dynamic>> _trashFolders = [];
@@ -407,6 +416,8 @@ class FolderController with ChangeNotifier {
     try {
       final response = await _service.restoreFolder(folderId: folderId);
       if (response['message'] != null || response['folder'] != null) {
+        // ✅ تحديث معلومات المساحة بعد الاستعادة
+        _refreshStorageInfo();
         return true;
       }
       errorMessage = response['message'] ?? 'Failed to restore folder';
@@ -427,6 +438,8 @@ class FolderController with ChangeNotifier {
     try {
       final response = await _service.deleteFolderPermanent(folderId: folderId);
       if (response['message'] != null) {
+        // ✅ تحديث معلومات المساحة بعد الحذف النهائي
+        _refreshStorageInfo();
         return true;
       }
       errorMessage =
@@ -437,6 +450,22 @@ class FolderController with ChangeNotifier {
       return false;
     } finally {
       setLoading(false);
+    }
+  }
+
+  /// ✅ تحديث معلومات المساحة التخزينية (بدون loading state)
+  Future<void> _refreshStorageInfo() async {
+    try {
+      if (_context != null) {
+        final profileController = Provider.of<ProfileController>(
+          _context!,
+          listen: false,
+        );
+        profileController.getStorageInfo();
+        print('✅ [FolderController] Storage info refreshed');
+      }
+    } catch (e) {
+      print('⚠️ [FolderController] Error refreshing storage info: $e');
     }
   }
 
