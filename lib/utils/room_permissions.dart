@@ -205,6 +205,150 @@ class RoomPermissions {
     return await isOwnerOrEditor(roomData);
   }
 
+  /// ✅ التحقق من أن المستخدم يمكنه إزالة ملف محدد من الغرفة
+  /// ✅ يسمح لـ: room owner, file owner (الذي رفع الملف), file sharer (الذي شارك الملف), أو members مع owner/editor role
+  static Future<bool> canRemoveFileFromRoom(
+    Map<String, dynamic> roomData,
+    Map<String, dynamic>? fileEntry, // ✅ fileEntry من room.files
+    Map<String, dynamic>? fileData, // ✅ fileData (fileId populated)
+  ) async {
+    // ✅ 1. التحقق من أن المستخدم هو room owner أو member مع owner/editor role
+    final canRemoveAsRoomMember = await isOwnerOrEditor(roomData);
+    if (canRemoveAsRoomMember) {
+      print('✅ [canRemoveFileFromRoom] User can remove as room owner/editor');
+      return true;
+    }
+
+    // ✅ 2. التحقق من أن المستخدم هو من شارك الملف (sharedBy)
+    if (fileEntry != null) {
+      final currentUserId = await StorageService.getUserId();
+      if (currentUserId != null) {
+        final sharedBy = fileEntry['sharedBy'];
+        if (sharedBy != null) {
+          String? sharedById;
+          if (sharedBy is Map<String, dynamic>) {
+            sharedById = sharedBy['_id']?.toString() ?? 
+                        sharedBy['id']?.toString() ?? 
+                        sharedBy.toString();
+          } else {
+            sharedById = sharedBy.toString();
+          }
+          
+          if (sharedById != null && sharedById.isNotEmpty) {
+            final isFileSharer = sharedById.trim().toLowerCase() == 
+                               currentUserId.trim().toLowerCase();
+            if (isFileSharer) {
+              print('✅ [canRemoveFileFromRoom] User is file sharer');
+              return true;
+            }
+          }
+        }
+      }
+    }
+
+    // ✅ 3. التحقق من أن المستخدم هو صاحب الملف (file owner - الذي رفع الملف)
+    if (fileData != null) {
+      final currentUserId = await StorageService.getUserId();
+      if (currentUserId != null) {
+        final fileUserId = fileData['userId'];
+        if (fileUserId != null) {
+          String? fileUserIdStr;
+          if (fileUserId is Map<String, dynamic>) {
+            fileUserIdStr = fileUserId['_id']?.toString() ?? 
+                           fileUserId['id']?.toString() ?? 
+                           fileUserId.toString();
+          } else {
+            fileUserIdStr = fileUserId.toString();
+          }
+          
+          if (fileUserIdStr != null && fileUserIdStr.isNotEmpty) {
+            final isFileOwner = fileUserIdStr.trim().toLowerCase() == 
+                              currentUserId.trim().toLowerCase();
+            if (isFileOwner) {
+              print('✅ [canRemoveFileFromRoom] User is file owner');
+              return true;
+            }
+          }
+        }
+      }
+    }
+
+    print('❌ [canRemoveFileFromRoom] User cannot remove file');
+    return false;
+  }
+
+  /// ✅ التحقق من أن المستخدم يمكنه إزالة مجلد محدد من الغرفة
+  /// ✅ يسمح لـ: room owner, folder owner (الذي رفع المجلد), folder sharer (الذي شارك المجلد), أو members مع owner/editor role
+  static Future<bool> canRemoveFolderFromRoom(
+    Map<String, dynamic> roomData,
+    Map<String, dynamic>? folderEntry, // ✅ folderEntry من room.folders
+    Map<String, dynamic>? folderData, // ✅ folderData (folderId populated)
+  ) async {
+    // ✅ 1. التحقق من أن المستخدم هو room owner أو member مع owner/editor role
+    final canRemoveAsRoomMember = await isOwnerOrEditor(roomData);
+    if (canRemoveAsRoomMember) {
+      print('✅ [canRemoveFolderFromRoom] User can remove as room owner/editor');
+      return true;
+    }
+
+    // ✅ 2. التحقق من أن المستخدم هو من شارك المجلد (sharedBy)
+    if (folderEntry != null) {
+      final currentUserId = await StorageService.getUserId();
+      if (currentUserId != null) {
+        final sharedBy = folderEntry['sharedBy'];
+        if (sharedBy != null) {
+          String? sharedById;
+          if (sharedBy is Map<String, dynamic>) {
+            sharedById = sharedBy['_id']?.toString() ?? 
+                        sharedBy['id']?.toString() ?? 
+                        sharedBy.toString();
+          } else {
+            sharedById = sharedBy.toString();
+          }
+          
+          if (sharedById != null && sharedById.isNotEmpty) {
+            final isFolderSharer = sharedById.trim().toLowerCase() == 
+                                 currentUserId.trim().toLowerCase();
+            if (isFolderSharer) {
+              print('✅ [canRemoveFolderFromRoom] User is folder sharer');
+              return true;
+            }
+          }
+        }
+      }
+    }
+
+    // ✅ 3. التحقق من أن المستخدم هو صاحب المجلد (folder owner - الذي رفع المجلد)
+    if (folderData != null) {
+      final currentUserId = await StorageService.getUserId();
+      if (currentUserId != null) {
+        final folderUserId = folderData['userId'];
+        if (folderUserId != null) {
+          String? folderUserIdStr;
+          if (folderUserId is Map<String, dynamic>) {
+            folderUserIdStr = folderUserId['_id']?.toString() ?? 
+                             folderUserId['id']?.toString() ?? 
+                             folderUserId.toString();
+          } else {
+            folderUserIdStr = folderUserId.toString();
+          }
+          
+          if (folderUserIdStr != null && folderUserIdStr.isNotEmpty) {
+            final isFolderOwner = folderUserIdStr.trim().toLowerCase() == 
+                                currentUserId.trim().toLowerCase();
+            if (isFolderOwner) {
+              print('✅ [canRemoveFolderFromRoom] User is folder owner');
+              return true;
+            }
+          }
+        }
+      }
+    }
+
+    print('❌ [canRemoveFolderFromRoom] User cannot remove folder');
+    return false;
+  }
+
   /// ✅ التحقق من أن المستخدم يمكنه إضافة تعليقات (owner, editor, commenter)
   static Future<bool> canAddComments(Map<String, dynamic> roomData) async {
     final role = await getCurrentUserRole(roomData);

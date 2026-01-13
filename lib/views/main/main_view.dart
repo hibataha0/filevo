@@ -267,7 +267,7 @@ class _MainPageState extends State<MainPage> {
       // ✅ تحديث معلومات المساحة بعد رفع المجلد
       if (response != null && response['folder'] != null) {
         final profileController = Provider.of<ProfileController>(context, listen: false);
-        profileController.getStorageInfo();
+        profileController.getStorageInfo(forceRefresh: true);
       }
 
       if (response != null && response['folder'] != null) {
@@ -976,7 +976,7 @@ class _MainPageState extends State<MainPage> {
             // ✅ تحديث معلومات المساحة بعد رفع الملف بنجاح
             if (success) {
               final profileController = Provider.of<ProfileController>(context, listen: false);
-              profileController.getStorageInfo();
+              profileController.getStorageInfo(forceRefresh: true);
             }
           }
         } else {

@@ -307,9 +307,13 @@ class StorageCardState extends State<StorageCard> {
     final double other = _categoryPercentages['other'] ?? 0.0;
 
     // ✅ حساب النسبة المئوية المستخدمة من الحجم الكلي
-    final int usedPercentage = _usedSize > 0 && _totalStorage > 0
-        ? ((_usedSize / _totalStorage) * 100).round()
-        : 0;
+    // ✅ استخدام toStringAsFixed(1) لعرض رقم عشري واحد بدلاً من round() لتجنب 0%
+    final String usedPercentageText = _usedSize > 0 && _totalStorage > 0
+        ? ((_usedSize / _totalStorage) * 100).toStringAsFixed(1)
+        : '0.0';
+    final double usedPercentageValue = _usedSize > 0 && _totalStorage > 0
+        ? (_usedSize / _totalStorage) * 100
+        : 0.0;
 
     return Container(
       margin: EdgeInsets.symmetric(
@@ -360,6 +364,9 @@ class StorageCardState extends State<StorageCard> {
                     code: code,
                     other: other,
                     totalCapacity: 1.0, // ✅ السعة الكاملة (1.0 = 100%)
+                    usedPercentage:
+                        usedPercentageValue /
+                        100.0, // ✅ النسبة المستخدمة (0.0 إلى 1.0)
                   ),
                   child: Container(
                     width: 120,
@@ -369,7 +376,7 @@ class StorageCardState extends State<StorageCard> {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Text(
-                          '$usedPercentage%',
+                          '$usedPercentageText%',
                           style: TextStyle(
                             fontSize: ResponsiveUtils.getResponsiveValue(
                               context,
@@ -748,6 +755,7 @@ class StorageCirclePainter extends CustomPainter {
   final double code;
   final double other;
   final double totalCapacity;
+  final double usedPercentage; // ✅ النسبة المستخدمة الإجمالية (0.0 إلى 1.0)
 
   StorageCirclePainter({
     required this.images,
@@ -759,6 +767,7 @@ class StorageCirclePainter extends CustomPainter {
     required this.code,
     required this.other,
     required this.totalCapacity,
+    this.usedPercentage = 0.0, // ✅ افتراضي 0.0
   });
 
   @override
@@ -769,104 +778,117 @@ class StorageCirclePainter extends CustomPainter {
 
     double startAngle = -math.pi / 2;
 
-    final used =
-        images +
-        videos +
-        audio +
-        compressed +
-        applications +
-        documents +
-        code +
-        other;
+    // ✅ استخدام usedPercentage إذا كانت متاحة (أكثر دقة)
+    // ✅ وإلا استخدام مجموع النسب
+    final double used = usedPercentage > 0.0
+        ? usedPercentage
+        : (images +
+              videos +
+              audio +
+              compressed +
+              applications +
+              documents +
+              code +
+              other);
 
-    final free = math.max(0.0, totalCapacity - used);
+    final double free = math.max(0.0, totalCapacity - used);
 
-    final segments = [
-      {'value': images, 'color': const Color(0xFF4285F4), 'name': 'Images'},
-      {'value': videos, 'color': const Color(0xFFEA4335), 'name': 'Videos'},
-      {'value': audio, 'color': const Color(0xFF34A853), 'name': 'Audio'},
-      {
-        'value': compressed,
-        'color': const Color(0xFFFF6D00),
-        'name': 'Compressed',
-      },
-      {'value': applications, 'color': const Color(0xFF9C27B0), 'name': 'Apps'},
-      {'value': documents, 'color': const Color(0xFF795548), 'name': 'Docs'},
-      {'value': code, 'color': const Color(0xFF009688), 'name': 'Code'},
-      {'value': other, 'color': const Color(0xFF607D8B), 'name': 'Other'},
-      {
-        'value': free,
-        'color': const Color(
-          0xFF607D8B,
-        ).withOpacity(0.25), // ✅ شفاف - لا يغطي على باقي التصنيفات
-        'name': 'Free',
-      },
+    // ✅ طباعة للتحقق
+    print('🎨 [StorageCirclePainter] Drawing chart:');
+    print('   - usedPercentage: $usedPercentage');
+    print('   - used (calculated): $used');
+    print('   - free: $free');
+    print('   - totalCapacity: $totalCapacity');
+    print('   - images: $images, videos: $videos, audio: $audio');
+
+    // ✅ إنشاء قائمة بالأقسام المستخدمة فقط (بدون Free)
+    final usedSegments = [
+      if (images > 0)
+        {'value': images, 'color': const Color(0xFF4285F4), 'name': 'Images'},
+      if (videos > 0)
+        {'value': videos, 'color': const Color(0xFFEA4335), 'name': 'Videos'},
+      if (audio > 0)
+        {'value': audio, 'color': const Color(0xFF34A853), 'name': 'Audio'},
+      if (compressed > 0)
+        {
+          'value': compressed,
+          'color': const Color(0xFFFF6D00),
+          'name': 'Compressed',
+        },
+      if (applications > 0)
+        {
+          'value': applications,
+          'color': const Color(0xFF9C27B0),
+          'name': 'Apps',
+        },
+      if (documents > 0)
+        {'value': documents, 'color': const Color(0xFF795548), 'name': 'Docs'},
+      if (code > 0)
+        {'value': code, 'color': const Color(0xFF009688), 'name': 'Code'},
+      if (other > 0)
+        {'value': other, 'color': const Color(0xFF607D8B), 'name': 'Other'},
     ];
 
-    for (var segment in segments) {
-      final double value = segment['value'] as double;
-      final String name = segment['name'] as String;
+    // ✅ حساب مجموع الأقسام المستخدمة
+    final double totalUsed = usedSegments.fold(
+      0.0,
+      (sum, seg) => sum + (seg['value'] as double),
+    );
 
-      if (value <= 0 || totalCapacity <= 0) continue;
+    // ✅ إذا كان الاستخدام صغير جداً، نستخدم جزء من الدائرة فقط (مثلاً 30%) لعرض الأقسام بشكل أوضح
+    final double visualUsedPortion = totalUsed > 0.0 && totalUsed < 0.05
+        ? 0.30 // ✅ استخدام 30% من الدائرة لعرض الأقسام الصغيرة بشكل أوضح
+        : math.min(
+            1.0,
+            totalUsed,
+          ); // ✅ إذا كان الاستخدام كبير، نستخدم النسبة الفعلية
 
-      double sweepAngle = 2 * math.pi * (value / totalCapacity);
+    // ✅ رسم خلفية رمادية للدائرة الكاملة
+    final bgPaint = Paint()
+      ..color = Colors.grey[300]!
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = strokeWidth;
+    canvas.drawCircle(center, radius - strokeWidth / 2, bgPaint);
 
-      // ✅ حد أدنى بصري للقوس (ما عدا Free)
-      // هذا يضمن أن الأقسام المستخدمة تظهر بشكل واضح
-      if (name != 'Free' && value > 0 && sweepAngle < 0.1) {
-        sweepAngle = 0.1; // حوالي 5.7 درجة
+    // ✅ رسم الأقسام المستخدمة
+    if (usedSegments.isNotEmpty && totalUsed > 0) {
+      double segmentStartAngle = -math.pi / 2;
+
+      for (var segment in usedSegments) {
+        final double value = segment['value'] as double;
+        final String name = segment['name'] as String;
+
+        // ✅ حساب النسبة من الأقسام المستخدمة (وليس من السعة الكاملة)
+        final double segmentRatio = value / totalUsed;
+
+        // ✅ حساب زاوية القوس بناءً على visualUsedPortion
+        double sweepAngle = 2 * math.pi * visualUsedPortion * segmentRatio;
+
+        // ✅ حد أدنى بصري للقوس (حوالي 0.1 راديان = 5.7 درجة)
+        if (sweepAngle < 0.1) {
+          sweepAngle = 0.1;
+        }
+
+        // ✅ رسم القوس
+        final paint = Paint()
+          ..color = segment['color'] as Color
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = strokeWidth
+          ..strokeCap = StrokeCap.round;
+
+        canvas.drawArc(
+          Rect.fromCircle(center: center, radius: radius - strokeWidth / 2),
+          segmentStartAngle,
+          sweepAngle,
+          false,
+          paint,
+        );
+
+        segmentStartAngle += sweepAngle;
       }
-
-      // 🎨 رسم القوس
-      final paint = Paint()
-        ..color = segment['color'] as Color
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = strokeWidth
-        ..strokeCap = StrokeCap.round;
-
-      // ✅ رسم القوس (بما في ذلك المساحة الفارغة بشكل شفاف)
-      canvas.drawArc(
-        Rect.fromCircle(center: center, radius: radius - strokeWidth / 2),
-        startAngle,
-        sweepAngle,
-        false,
-        paint,
-      );
-
-      // 🧮 كتابة النسبة (فقط لو واضحة)
-      final percent = (value / totalCapacity) * 100;
-
-      if (name != 'Free' && percent >= 4) {
-        final midAngle = startAngle + sweepAngle / 2;
-        final textRadius = radius - strokeWidth - 18;
-
-        final offset = Offset(
-          center.dx + textRadius * math.cos(midAngle),
-          center.dy + textRadius * math.sin(midAngle),
-        );
-
-        final textPainter = TextPainter(
-          text: TextSpan(
-            text: '${percent.toStringAsFixed(0)}%',
-            style: const TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.bold,
-              color: Colors.black,
-            ),
-          ),
-          textAlign: TextAlign.center,
-          textDirection: TextDirection.ltr,
-        );
-
-        textPainter.layout();
-        textPainter.paint(
-          canvas,
-          offset - Offset(textPainter.width / 2, textPainter.height / 2),
-        );
-      }
-
-      startAngle += sweepAngle;
     }
+
+    // ✅ لا نرسم المساحة الفارغة لأنها ستكون الخلفية الرمادية
   }
 
   @override

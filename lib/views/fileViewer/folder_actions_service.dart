@@ -13,13 +13,79 @@ class FolderActionsService {
     Map<String, dynamic> folder, {
     VoidCallback? onLocalUpdate,
   }) async {
+    // ✅ التحقق من مشاركة المجلد في Rooms قبل الحذف
+    String? roomWarning;
+    try {
+      final folderId = folder['_id'] ?? 
+                      folder['originalData']?['_id'] ?? 
+                      folder['folderData']?['_id'];
+      if (folderId != null) {
+        final folderService = FolderService();
+        final sharedDetails = await folderService.getSharedFolderDetailsInRoom(
+          folderId: folderId.toString(),
+        );
+        // ✅ التحقق من وجود room في sharedDetails
+        if (sharedDetails != null) {
+          // ✅ محاولة قراءة room من folder.room أو rooms
+          final folderData = sharedDetails['folder'] as Map<String, dynamic>?;
+          final room = folderData?['room'] as Map<String, dynamic>?;
+          final rooms = sharedDetails['rooms'] as List?;
+          
+          if (room != null) {
+            // ✅ إذا كان هناك room واحد
+            final roomName = room['name'] ?? 'Unknown';
+            roomWarning = '⚠️ هذا المجلد مشارك في غرفة: $roomName';
+          } else if (rooms != null && rooms.isNotEmpty) {
+            // ✅ إذا كان هناك قائمة rooms
+            final roomNames = rooms.map((r) => r['name'] ?? 'Unknown').join(', ');
+            roomWarning = '⚠️ هذا المجلد مشارك في ${rooms.length} غرفة: $roomNames';
+          }
+        }
+      }
+    } catch (e) {
+      print('⚠️ [FolderActionsService] Error checking room sharing: $e');
+      // لا نعرض خطأ للمستخدم، فقط نتابع الحذف
+    }
+
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) {
         return AlertDialog(
           title: Text(S.of(context).deleteFolder),
-          content: Text(
-            S.of(context).confirmDeleteFolder(folder['name'] ?? ''),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                S.of(context).confirmDeleteFolder(folder['name'] ?? ''),
+              ),
+              if (roomWarning != null) ...[
+                SizedBox(height: 12),
+                Container(
+                  padding: EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.orange.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.orange),
+                  ),
+                  child: Text(
+                    roomWarning!,
+                    style: TextStyle(
+                      color: Colors.orange[800],
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+                SizedBox(height: 8),
+                Text(
+                  'سيتم إزالة المجلد من جميع الغرف تلقائياً عند الحذف.',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey[600],
+                  ),
+                ),
+              ],
+            ],
           ),
           actions: [
             TextButton(
@@ -58,26 +124,38 @@ class FolderActionsService {
         return;
       }
 
-      final success = await folderController.deleteFolder(
+      final result = await folderController.deleteFolder(
         folderId: folderId.toString(),
       );
 
       if (!context.mounted) return;
 
-      if (success) {
+      if (result['success'] == true) {
         if (onLocalUpdate != null) onLocalUpdate();
+
+        // ✅ بناء رسالة النجاح مع معلومات الـ Rooms إذا كانت موجودة
+        String successMessage = S.of(context).folderDeletedSuccessfully(folder['name'] ?? '');
+        final warning = result['warning'];
+        final roomsRemovedFrom = result['roomsRemovedFrom'] as List? ?? [];
+        
+        if (warning != null && warning.toString().isNotEmpty) {
+          successMessage += '\n\n$warning';
+        }
 
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(
-              S.of(context).folderDeletedSuccessfully(folder['name'] ?? ''),
-            ),
+            content: Text(successMessage),
             backgroundColor: Colors.green,
+            duration: roomsRemovedFrom.isNotEmpty 
+              ? Duration(seconds: 5) 
+              : Duration(seconds: 3),
           ),
         );
       } else {
         final errorMsg =
-            folderController.errorMessage ?? S.of(context).errorDeletingFolder;
+            result['message'] ?? 
+            folderController.errorMessage ?? 
+            S.of(context).errorDeletingFolder;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(errorMsg), backgroundColor: Colors.red),
         );
@@ -124,26 +202,37 @@ class FolderActionsService {
         return;
       }
 
-      final success = await folderController.restoreFolder(
+      final result = await folderController.restoreFolder(
         folderId: folderId.toString(),
       );
 
       if (!context.mounted) return;
 
-      if (success) {
+      if (result['success'] == true) {
         if (onLocalUpdate != null) onLocalUpdate();
+
+        // ✅ بناء رسالة النجاح مع عدد الملفات المسترجعة
+        final filesRestored = result['filesRestored'] as int? ?? 0;
+        String successMessage = S.of(context).folderRestoredSuccessfully(folder['name'] ?? '');
+        
+        if (filesRestored > 0) {
+          successMessage += '\nتم استعادة $filesRestored ملف مع المجلد.';
+        }
 
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(
-              S.of(context).folderRestoredSuccessfully(folder['name'] ?? ''),
-            ),
+            content: Text(successMessage),
             backgroundColor: Colors.green,
+            duration: filesRestored > 0 
+              ? Duration(seconds: 4) 
+              : Duration(seconds: 3),
           ),
         );
       } else {
         final errorMsg =
-            folderController.errorMessage ?? S.of(context).errorRestoringFolder;
+            result['message'] ?? 
+            folderController.errorMessage ?? 
+            S.of(context).errorRestoringFolder;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(errorMsg), backgroundColor: Colors.red),
         );
@@ -215,27 +304,38 @@ class FolderActionsService {
         return;
       }
 
-      final success = await folderController.deleteFolderPermanent(
+      final result = await folderController.deleteFolderPermanent(
         folderId: folderId.toString(),
       );
 
       if (!context.mounted) return;
 
-      if (success) {
+      if (result['success'] == true) {
         if (onLocalUpdate != null) onLocalUpdate();
+
+        // ✅ بناء رسالة النجاح مع معلومات الـ Rooms إذا كانت موجودة
+        String successMessage = S
+            .of(context)
+            .folderPermanentlyDeletedSuccessfully(folder['name'] ?? '');
+        final warning = result['warning'];
+        final roomsRemovedFrom = result['roomsRemovedFrom'] as List? ?? [];
+        
+        if (warning != null && warning.toString().isNotEmpty) {
+          successMessage += '\n\n$warning';
+        }
 
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(
-              S
-                  .of(context)
-                  .folderPermanentlyDeletedSuccessfully(folder['name'] ?? ''),
-            ),
+            content: Text(successMessage),
             backgroundColor: Colors.green,
+            duration: roomsRemovedFrom.isNotEmpty 
+              ? Duration(seconds: 5) 
+              : Duration(seconds: 3),
           ),
         );
       } else {
         final errorMsg =
+            result['message'] ?? 
             folderController.errorMessage ??
             S.of(context).errorPermanentlyDeletingFolder;
         ScaffoldMessenger.of(context).showSnackBar(

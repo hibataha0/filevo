@@ -27,6 +27,7 @@ import 'package:shimmer/shimmer.dart';
 import 'package:filevo/dialogs/folder_protection_dialogs.dart';
 import 'package:provider/provider.dart';
 import 'package:filevo/controllers/folders/folders_controller.dart';
+import 'package:filevo/controllers/profile/profile_controller.dart';
 
 class HomeView extends StatefulWidget {
   final VoidCallback? onNavigateToFolders;
@@ -54,6 +55,18 @@ class _HomeViewState extends State<HomeView> {
   void initState() {
     super.initState();
     _loadRecentData();
+    // ✅ جلب معلومات المساحة من ProfileController عند تحميل الصفحة
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        final profileController = Provider.of<ProfileController>(
+          context,
+          listen: false,
+        );
+        if (profileController.storageInfo == null) {
+          profileController.getStorageInfo(forceRefresh: true);
+        }
+      }
+    });
   }
 
   @override
@@ -79,6 +92,13 @@ class _HomeViewState extends State<HomeView> {
         final folders = List<Map<String, dynamic>>.from(
           foldersResult['folders'] ?? [],
         );
+
+        print('🏠 [HomeView] ===========================================');
+        print('🏠 [HomeView] Loading Recent Folders...');
+        print('🏠 [HomeView] Total folders from API: ${folders.length}');
+        print('🏠 [HomeView] Will process: ${folders.take(3).length} folders');
+        print('🏠 [HomeView] ===========================================');
+
         if (mounted) {
           // ✅ جلب تفاصيل كل مجلد بشكل متسلسل (لتجنب Too many requests)
           final folderController = Provider.of<FolderController>(
@@ -95,64 +115,244 @@ class _HomeViewState extends State<HomeView> {
                 continue;
               }
 
-              // ✅ جلب تفاصيل المجلد (نفس الطريقة في _showFolderInfo)
+              // ✅ طباعة البيانات الأصلية من getRecentFolders
+              print('📁 [HomeView] Folder: ${folder['name']} (${folderId})');
+              print('   📊 Original data filesCount: ${folder['filesCount']}');
+              print('   📊 Original data totalFiles: ${folder['totalFiles']}');
+              print('   📊 Original data size: ${folder['size']}');
+              print('   📊 Original data totalSize: ${folder['totalSize']}');
+
+              // ✅ جلب تفاصيل المجلد للحصول على معلومات الحماية
               final folderDetails = await folderController.getFolderDetails(
                 folderId: folderId,
               );
 
+              // ✅ جلب محتويات المجلد للحصول على filesCount (مثل صفحة المجلدات)
+              // ✅ في صفحة المجلدات، البيانات تأتي من getFolderContents مع filesCount محسوب
+              final folderContents = await folderController.getFolderContents(
+                folderId: folderId,
+                page: 1,
+                limit: 1, // ✅ نحتاج فقط للتحقق من وجود ملفات، لا نحتاج كل الملفات
+              );
+
+              print('folderContents ---------------- $folderContents');
+              
+              // ✅ طباعة folderDetails
               if (folderDetails != null && folderDetails['folder'] != null) {
                 final folderData =
                     folderDetails['folder'] as Map<String, dynamic>;
-                // ✅ نسخ جميع البيانات من folderData بما في ذلك معلومات الحماية
-                foldersWithStats.add({
-                  ...folder,
-                  ...folderData, // ✅ نسخ جميع البيانات من folderData أولاً
-                  'size': folderData['size'] is int
-                      ? folderData['size']
-                      : (folderData['size'] is num
-                            ? folderData['size'].toInt()
-                            : 0),
-                  'filesCount': folderData['filesCount'] is int
-                      ? folderData['filesCount']
-                      : (folderData['filesCount'] is num
-                            ? folderData['filesCount'].toInt()
-                            : 0),
-                  // ✅ التأكد من وجود معلومات الحماية
-                  'isProtected':
-                      folderData['isProtected'] ??
-                      folder['isProtected'] ??
-                      false,
-                  'protectionType':
-                      folderData['protectionType'] ??
-                      folder['protectionType'] ??
-                      'none',
-                });
+                print(
+                  '   📋 folderDetails filesCount: ${folderData['filesCount']}',
+                );
+                print('   📋 folderDetails size: ${folderData['size']}');
               } else {
-                // ✅ fallback إلى القيم من البيانات الأصلية
-                foldersWithStats.add({
-                  ...folder,
-                  'size': folder['size'] ?? folder['totalSize'] ?? 0,
-                  'filesCount':
-                      folder['filesCount'] ?? folder['totalFiles'] ?? 0,
-                });
+                print('   ⚠️ folderDetails is null or empty');
               }
-            } catch (e) {
-              print(
-                '❌ [HomeView] Error getting details for folder ${folder['name']}: $e',
-              );
-              // ✅ fallback إلى القيم من البيانات الأصلية
+
+              // ✅ طباعة folderContents
+              if (folderContents != null) {
+                final folderData = folderContents['folder'] as Map<String, dynamic>?;
+                final pagination = folderContents['pagination'] as Map<String, dynamic>?;
+                print('   📂 folderContents folder filesCount: ${folderData?['filesCount']}');
+                print('   📂 folderContents pagination totalFiles: ${pagination?['totalFiles']}');
+              } else {
+                print('   ⚠️ folderContents is null');
+              }
+
+              int filesCount = 0;
+              int size = 0;
+
+              // ✅ استخراج filesCount من folderContents (مثل صفحة المجلدات)
+              // ✅ الأولوية: pagination['totalFiles'] (العدد الصحيح) ثم folder['filesCount']
+              if (folderContents != null) {
+                // ✅ الأولوية الأولى: pagination['totalFiles'] (العدد الكلي الصحيح)
+                final pagination = folderContents['pagination'] as Map<String, dynamic>?;
+                if (pagination != null && pagination['totalFiles'] != null) {
+                  final filesCountValue = pagination['totalFiles'];
+                  print(
+                    '   ✅ Using folderContents.pagination totalFiles: $filesCountValue (type: ${filesCountValue.runtimeType})',
+                  );
+                  if (filesCountValue is int) {
+                    filesCount = filesCountValue;
+                  } else if (filesCountValue is num) {
+                    filesCount = filesCountValue.toInt();
+                  } else if (filesCountValue is String) {
+                    filesCount = int.tryParse(filesCountValue) ?? 0;
+                  }
+                } else {
+                  // ✅ fallback: استخدام folder['filesCount']
+                  final folderData = folderContents['folder'] as Map<String, dynamic>?;
+                  if (folderData != null && folderData['filesCount'] != null) {
+                    final filesCountValue = folderData['filesCount'];
+                    print(
+                      '   ✅ Using folderContents.folder filesCount: $filesCountValue (type: ${filesCountValue.runtimeType})',
+                    );
+                    if (filesCountValue is int) {
+                      filesCount = filesCountValue;
+                    } else if (filesCountValue is num) {
+                      filesCount = filesCountValue.toInt();
+                    } else if (filesCountValue is String) {
+                      filesCount = int.tryParse(filesCountValue) ?? 0;
+                    }
+                  }
+                }
+              }
+
+              // ✅ إذا لم نحصل على filesCount من folderContents، استخدم folderDetails
+              if (filesCount == 0 &&
+                  folderDetails != null &&
+                  folderDetails['folder'] != null) {
+                final folderData =
+                    folderDetails['folder'] as Map<String, dynamic>;
+                final filesCountValue = folderData['filesCount'];
+                if (filesCountValue != null && filesCountValue != 0) {
+                  print(
+                    '   ✅ Using folderDetails filesCount: $filesCountValue (type: ${filesCountValue.runtimeType})',
+                  );
+                  if (filesCountValue is int) {
+                    filesCount = filesCountValue;
+                  } else if (filesCountValue is num) {
+                    filesCount = filesCountValue.toInt();
+                  } else if (filesCountValue is String) {
+                    filesCount = int.tryParse(filesCountValue) ?? 0;
+                  }
+                }
+              }
+
+              // ✅ إذا لم نحصل على filesCount بعد، استخدم البيانات الأصلية
+              if (filesCount == 0) {
+                final filesCountValue =
+                    folder['filesCount'] ?? folder['totalFiles'];
+                if (filesCountValue != null && filesCountValue != 0) {
+                  print(
+                    '   ⚠️ Using original data filesCount: $filesCountValue (type: ${filesCountValue.runtimeType})',
+                  );
+                  if (filesCountValue is int) {
+                    filesCount = filesCountValue;
+                  } else if (filesCountValue is num) {
+                    filesCount = filesCountValue.toInt();
+                  } else if (filesCountValue is String) {
+                    filesCount = int.tryParse(filesCountValue) ?? 0;
+                  }
+                }
+              }
+
+              print('   🎯 Final filesCount: $filesCount');
+
+              // ✅ استخراج size من folderDetails أو البيانات الأصلية
+              if (folderDetails != null && folderDetails['folder'] != null) {
+                final folderData =
+                    folderDetails['folder'] as Map<String, dynamic>;
+                final sizeValue = folderData['size'];
+                if (sizeValue != null) {
+                  if (sizeValue is int) {
+                    size = sizeValue;
+                  } else if (sizeValue is num) {
+                    size = sizeValue.toInt();
+                  } else if (sizeValue is String) {
+                    size = int.tryParse(sizeValue) ?? 0;
+                  }
+                }
+              }
+
+              // ✅ إذا لم نحصل على size بعد، استخدم البيانات الأصلية
+              if (size == 0) {
+                final sizeValue = folder['size'] ?? folder['totalSize'];
+                if (sizeValue != null) {
+                  if (sizeValue is int) {
+                    size = sizeValue;
+                  } else if (sizeValue is num) {
+                    size = sizeValue.toInt();
+                  } else if (sizeValue is String) {
+                    size = int.tryParse(sizeValue) ?? 0;
+                  }
+                }
+              }
+
+              // ✅ استخراج معلومات الحماية من folderDetails
+              bool isProtected = folder['isProtected'] ?? false;
+              String protectionType =
+                  folder['protectionType']?.toString() ?? 'none';
+
+              if (folderDetails != null && folderDetails['folder'] != null) {
+                final folderData =
+                    folderDetails['folder'] as Map<String, dynamic>;
+                isProtected = folderData['isProtected'] ?? isProtected;
+                protectionType =
+                    folderData['protectionType']?.toString() ?? protectionType;
+              }
+
+              // ✅ بناء البيانات النهائية (مثل صفحة المجلدات)
               foldersWithStats.add({
                 ...folder,
-                'size': folder['size'] ?? folder['totalSize'] ?? 0,
-                'filesCount': folder['filesCount'] ?? folder['totalFiles'] ?? 0,
-                // ✅ التأكد من وجود معلومات الحماية حتى في fallback
+                'size': size,
+                'filesCount': filesCount, // ✅ العدد الفعلي من getFolderStats
+                'isProtected': isProtected,
+                'protectionType': protectionType,
+              });
+
+              print(
+                '   ✅ Final folder data - filesCount: $filesCount, size: $size',
+              );
+              print('   ──────────────────────────────────────────');
+            } catch (e) {
+              print(
+                '❌ [HomeView] Error getting stats for folder ${folder['name']}: $e',
+              );
+              // ✅ fallback إلى القيم من البيانات الأصلية
+              final filesCountValue =
+                  folder['filesCount'] ?? folder['totalFiles'] ?? 0;
+              final sizeValue = folder['size'] ?? folder['totalSize'] ?? 0;
+
+              print(
+                '   ⚠️ Error fallback - filesCountValue: $filesCountValue, sizeValue: $sizeValue',
+              );
+
+              int filesCount = 0;
+              int size = 0;
+
+              if (filesCountValue is int) {
+                filesCount = filesCountValue;
+              } else if (filesCountValue is num) {
+                filesCount = filesCountValue.toInt();
+              }
+
+              if (sizeValue is int) {
+                size = sizeValue;
+              } else if (sizeValue is num) {
+                size = sizeValue.toInt();
+              }
+
+              print(
+                '   🎯 Error fallback final - filesCount: $filesCount, size: $size',
+              );
+
+              foldersWithStats.add({
+                ...folder,
+                'size': size,
+                'filesCount': filesCount,
                 'isProtected': folder['isProtected'] ?? false,
                 'protectionType': folder['protectionType'] ?? 'none',
               });
+
+              print('   ──────────────────────────────────────────');
             }
           }
 
           if (!mounted) return;
+
+          print('🏠 [HomeView] ===========================================');
+          print(
+            '🏠 [HomeView] Final foldersWithStats count: ${foldersWithStats.length}',
+          );
+          for (var i = 0; i < foldersWithStats.length; i++) {
+            final f = foldersWithStats[i];
+            print('ffff --------------------:$f');
+            print(
+              '🏠 [HomeView] Folder ${i + 1}: ${f['name']} - filesCount: ${f['filesCount']}, size: ${f['size']}',
+            );
+          }
+          print('🏠 [HomeView] ===========================================');
 
           setState(() {
             // ✅ بناء البيانات بنفس الطريقة المستخدمة في folders_view (السطر 389-426)

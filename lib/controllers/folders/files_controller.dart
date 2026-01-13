@@ -278,7 +278,7 @@ class FileController extends ChangeNotifier {
             _context!,
             listen: false,
           );
-          profileController.getStorageInfo();
+          profileController.getStorageInfo(forceRefresh: true);
         }
         print('✅ [FilesController] Storage info refreshed');
       }
@@ -597,7 +597,8 @@ class FileController extends ChangeNotifier {
   }
 
   /// Delete file
-  Future<bool> deleteFile({
+  /// Returns: Map with 'success', 'warning', and 'roomsRemovedFrom' if successful
+  Future<Map<String, dynamic>> deleteFile({
     required String fileId,
     required String token,
   }) async {
@@ -612,14 +613,25 @@ class FileController extends ChangeNotifier {
         setSuccess(result['message'] ?? 'File deleted successfully');
         // ✅ تحديث معلومات المساحة بعد حذف الملف
         _refreshStorageInfo();
-        return true;
+        return {
+          'success': true,
+          'message': result['message'],
+          'warning': result['warning'],
+          'roomsRemovedFrom': result['roomsRemovedFrom'] ?? [],
+        };
       } else {
         setError(result['message'] ?? 'Failed to delete file');
-        return false;
+        return {
+          'success': false,
+          'message': result['message'] ?? 'Failed to delete file',
+        };
       }
     } catch (e) {
       setError('Error deleting file: ${e.toString()}');
-      return false;
+      return {
+        'success': false,
+        'message': 'Error deleting file: ${e.toString()}',
+      };
     } finally {
       setLoading(false);
     }

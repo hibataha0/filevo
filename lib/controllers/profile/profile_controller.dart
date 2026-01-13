@@ -243,33 +243,71 @@ class ProfileController with ChangeNotifier {
     }
   }
 
+  bool _isLoadingStorage = false; // ✅ flag منفصل لـ loading state للمساحة
+
   /// ✅ جلب معلومات المساحة التخزينية
-  Future<void> getStorageInfo() async {
-    // ✅ منع الاستدعاء المتكرر إذا كان هناك طلب قيد التنفيذ
-    if (_isLoading && _storageInfo != null) {
-      return; // ✅ إذا كانت البيانات موجودة وتحميل قيد التنفيذ، لا نستدعي مرة أخرى
+  Future<void> getStorageInfo({bool forceRefresh = false}) async {
+    // ✅ إذا كان هناك طلب قيد التنفيذ ولم يكن force refresh، لا نستدعي مرة أخرى
+    if (_isLoadingStorage && !forceRefresh) {
+      print('⏳ [ProfileController] Storage info already loading, skipping...');
+      return;
     }
     
     try {
+      _isLoadingStorage = true;
+      print('📊 [ProfileController] Getting storage info... (forceRefresh: $forceRefresh)');
       final result = await _fileService.getStorageInfo();
       
-      if (result['success'] == true) {
-        _storageInfo = result['storage'] as Map<String, dynamic>?;
-        notifyListeners();
+      print('📊 [ProfileController] Storage info result success: ${result['success']}');
+      
+      if (result['success'] == true && result['storage'] != null) {
+        final newStorageInfo = result['storage'] as Map<String, dynamic>?;
+        // ✅ تحديث فقط إذا تغيرت البيانات (لتجنب rebuilds غير ضرورية)
+        if (_storageInfo == null || 
+            (_storageInfo!['used'] as int? ?? 0) != (newStorageInfo?['used'] as int? ?? 0)) {
+          _storageInfo = newStorageInfo;
+          print('✅ [ProfileController] Storage info updated: $_storageInfo');
+          notifyListeners();
+        } else {
+          print('ℹ️ [ProfileController] Storage info unchanged, skipping notify');
+        }
       } else {
-        // ✅ فقط تحديث إذا كانت البيانات غير موجودة
+        print('⚠️ [ProfileController] Storage info failed: ${result['error']}');
+        // ✅ إذا فشل الجلب ولم تكن هناك بيانات، استخدم قيم افتراضية (10 GB)
         if (_storageInfo == null) {
-          _storageInfo = null;
+          _storageInfo = {
+            'limit': 10 * 1024 * 1024 * 1024, // 10 GB
+            'limitFormatted': '10.00 GB',
+            'used': 0,
+            'usedFormatted': '0 B',
+            'available': 10 * 1024 * 1024 * 1024,
+            'availableFormatted': '10.00 GB',
+            'percentage': 0.0,
+            'isFull': false,
+            'canUpload': true,
+          };
           notifyListeners();
         }
       }
     } catch (e) {
       print('❌ ProfileController: Error getting storage info: $e');
-      // ✅ فقط تحديث في حالة الخطأ إذا كانت البيانات غير موجودة
+      // ✅ في حالة الخطأ، استخدم قيم افتراضية (10 GB) إذا لم تكن هناك بيانات
       if (_storageInfo == null) {
-        _storageInfo = null;
+        _storageInfo = {
+          'limit': 10 * 1024 * 1024 * 1024, // 10 GB
+          'limitFormatted': '10.00 GB',
+          'used': 0,
+          'usedFormatted': '0 B',
+          'available': 10 * 1024 * 1024 * 1024,
+          'availableFormatted': '10.00 GB',
+          'percentage': 0.0,
+          'isFull': false,
+          'canUpload': true,
+        };
         notifyListeners();
       }
+    } finally {
+      _isLoadingStorage = false;
     }
   }
 

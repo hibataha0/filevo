@@ -2393,12 +2393,12 @@ class _EditFilePageState extends State<EditFilePage> {
 
             if (uploadSuccess) {
               // ✅ حذف الملف القديم
-              final deleteSuccess = await fileController.deleteFile(
+              final deleteResult = await fileController.deleteFile(
                 fileId: fileId,
                 token: token,
               );
 
-              if (deleteSuccess) {
+              if (deleteResult['success'] == true) {
                 // ✅ مسح cache الصور في Flutter بعد التحديث الناجح
                 PaintingBinding.instance.imageCache.clear();
                 PaintingBinding.instance.imageCache.clearLiveImages();
@@ -2453,12 +2453,12 @@ class _EditFilePageState extends State<EditFilePage> {
 
             if (uploadSuccess) {
               // ثانياً: حذف الملف القديم
-              final deleteSuccess = await fileController.deleteFile(
+              final deleteResult = await fileController.deleteFile(
                 fileId: fileId,
                 token: token,
               );
 
-              if (deleteSuccess) {
+              if (deleteResult['success'] == true) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Text(S.of(context).fileReplacedSuccessfully),

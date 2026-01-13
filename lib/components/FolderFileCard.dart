@@ -248,6 +248,7 @@ class FolderFileCard extends StatelessWidget {
 
   // ✅ بناء الكارد العادي (للمجلدات والملفات)
   Widget _buildNormalCard(BuildContext context, double w, double h) {
+    print('FILE COUNT =====================$fileCount');
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisAlignment: MainAxisAlignment.spaceBetween,

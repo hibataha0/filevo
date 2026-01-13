@@ -250,12 +250,80 @@ class FileActionsService {
     Map<String, dynamic> file, {
     VoidCallback? onLocalUpdate,
   }) async {
+    // ✅ التحقق من مشاركة الملف في Rooms قبل الحذف
+    String? roomWarning;
+    final token = await StorageService.getToken();
+    if (token != null) {
+      try {
+        final fileId = file['_id'] ?? file['originalData']?['_id'];
+        if (fileId != null) {
+          final fileService = FileService();
+          final sharedDetails = await fileService.getSharedFileDetailsInRoom(
+            fileId: fileId.toString(),
+            token: token,
+          );
+          // ✅ التحقق من وجود room في sharedDetails
+          if (sharedDetails != null) {
+            // ✅ محاولة قراءة room من file.room أو rooms
+            final fileData = sharedDetails['file'] as Map<String, dynamic>?;
+            final room = fileData?['room'] as Map<String, dynamic>?;
+            final rooms = sharedDetails['rooms'] as List?;
+            
+            if (room != null) {
+              // ✅ إذا كان هناك room واحد
+              final roomName = room['name'] ?? 'Unknown';
+              roomWarning = '⚠️ هذا الملف مشارك في غرفة: $roomName';
+            } else if (rooms != null && rooms.isNotEmpty) {
+              // ✅ إذا كان هناك قائمة rooms
+              final roomNames = rooms.map((r) => r['name'] ?? 'Unknown').join(', ');
+              roomWarning = '⚠️ هذا الملف مشارك في ${rooms.length} غرفة: $roomNames';
+            }
+          }
+        }
+      } catch (e) {
+        print('⚠️ [FileActionsService] Error checking room sharing: $e');
+        // لا نعرض خطأ للمستخدم، فقط نتابع الحذف
+      }
+    }
+
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) {
         return AlertDialog(
           title: Text(S.of(context).deleteFile),
-          content: Text(S.of(context).confirmDeleteFile(file['name'] ?? '')),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(S.of(context).confirmDeleteFile(file['name'] ?? '')),
+              if (roomWarning != null) ...[
+                SizedBox(height: 12),
+                Container(
+                  padding: EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.orange.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.orange),
+                  ),
+                  child: Text(
+                    roomWarning!,
+                    style: TextStyle(
+                      color: Colors.orange[800],
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+                SizedBox(height: 8),
+                Text(
+                  'سيتم إزالة الملف من جميع الغرف تلقائياً عند الحذف.',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey[600],
+                  ),
+                ),
+              ],
+            ],
+          ),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(ctx).pop(false),
@@ -273,7 +341,7 @@ class FileActionsService {
 
     if (confirm != true) return;
 
-    final token = await StorageService.getToken();
+    // ✅ استخدام نفس token من الأعلى
     if (token == null) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -290,14 +358,14 @@ class FileActionsService {
     fileController.setSuccess(null);
 
     try {
-      final success = await fileController.deleteFile(
+      final result = await fileController.deleteFile(
         fileId: file['_id'] ?? file['originalData']?['_id'],
         token: token,
       );
 
       if (!context.mounted) return;
 
-      if (success) {
+      if (result['success'] == true) {
         fileController.starredFiles.removeWhere(
           (f) => f['_id'] == (file['_id'] ?? file['originalData']?['_id']),
         );
@@ -309,20 +377,32 @@ class FileActionsService {
             context,
             listen: false,
           );
-          profileController.getStorageInfo();
+          profileController.getStorageInfo(forceRefresh: true);
+        }
+
+        // ✅ بناء رسالة النجاح مع معلومات الـ Rooms إذا كانت موجودة
+        String successMessage = S.of(context).fileDeletedSuccessfully(file['name'] ?? '');
+        final warning = result['warning'];
+        final roomsRemovedFrom = result['roomsRemovedFrom'] as List? ?? [];
+        
+        if (warning != null && warning.toString().isNotEmpty) {
+          successMessage += '\n\n$warning';
         }
 
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(
-              S.of(context).fileDeletedSuccessfully(file['name'] ?? ''),
-            ),
+            content: Text(successMessage),
             backgroundColor: Colors.green,
+            duration: roomsRemovedFrom.isNotEmpty 
+              ? Duration(seconds: 5) 
+              : Duration(seconds: 3),
           ),
         );
       } else {
         final errorMsg =
-            fileController.errorMessage ?? S.of(context).errorDeletingFile('');
+            result['message'] ?? 
+            fileController.errorMessage ?? 
+            S.of(context).errorDeletingFile('');
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(errorMsg), backgroundColor: Colors.red),
         );

@@ -634,39 +634,90 @@ class _FilesGridState extends State<FilesGrid> {
         break;
       case 'remove_from_room':
         // ✅ التحقق من الصلاحيات قبل إزالة الملف
-        if (_roomData != null) {
-          RoomPermissions.canRemoveFiles(_roomData!).then((canRemove) {
-            if (canRemove) {
-              _showRemoveFileFromRoomDialog(file);
-            } else {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(S.of(context).removeFilePermissionError),
-                  backgroundColor: Colors.red,
-                ),
-              );
-            }
-          });
-        } else {
-          // ✅ إذا لم تكن بيانات الغرفة محملة، حاول تحميلها أولاً
-          _loadRoomData().then((_) {
-            if (_roomData != null) {
-              RoomPermissions.canRemoveFiles(_roomData!).then((canRemove) {
-                if (canRemove) {
-                  _showRemoveFileFromRoomDialog(file);
-                } else {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(S.of(context).removeFilePermissionError),
-                      backgroundColor: Colors.red,
-                    ),
-                  );
-                }
-              });
-            }
-          });
-        }
+        _checkAndRemoveFileFromRoom(file);
         break;
+    }
+  }
+
+  /// ✅ التحقق من الصلاحيات وإزالة الملف من الغرفة
+  Future<void> _checkAndRemoveFileFromRoom(Map<String, dynamic> file) async {
+    // ✅ جلب fileEntry من roomData
+    Map<String, dynamic>? fileEntry;
+    Map<String, dynamic>? fileData;
+    
+    if (_roomData != null) {
+      final fileId = file['originalData']?['_id'] ?? file['fileId'];
+      if (fileId != null) {
+        final roomFiles = _roomData!['files'] as List?;
+        if (roomFiles != null) {
+          fileEntry = roomFiles.firstWhere(
+            (f) {
+              final fId = f['fileId'];
+              if (fId is Map) return fId['_id']?.toString() == fileId.toString();
+              if (fId is String) return fId == fileId.toString();
+              return fId?.toString() == fileId.toString();
+            },
+            orElse: () => null,
+          );
+          
+          // ✅ fileData هو fileId populated (file['originalData'])
+          fileData = file['originalData'] as Map<String, dynamic>?;
+        }
+      }
+    }
+    
+    // ✅ إذا لم تكن بيانات الغرفة محملة، حاول تحميلها أولاً
+    if (_roomData == null) {
+      await _loadRoomData();
+      if (_roomData != null) {
+        final fileId = file['originalData']?['_id'] ?? file['fileId'];
+        if (fileId != null) {
+          final roomFiles = _roomData!['files'] as List?;
+          if (roomFiles != null) {
+            fileEntry = roomFiles.firstWhere(
+              (f) {
+                final fId = f['fileId'];
+                if (fId is Map) return fId['_id']?.toString() == fileId.toString();
+                if (fId is String) return fId == fileId.toString();
+                return fId?.toString() == fileId.toString();
+              },
+              orElse: () => null,
+            );
+            
+            fileData = file['originalData'] as Map<String, dynamic>?;
+          }
+        }
+      }
+    }
+    
+    if (_roomData != null) {
+      final canRemove = await RoomPermissions.canRemoveFileFromRoom(
+        _roomData!,
+        fileEntry,
+        fileData,
+      );
+      
+      if (canRemove) {
+        _showRemoveFileFromRoomDialog(file);
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(S.of(context).removeFilePermissionError),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(S.of(context).removeFilePermissionError),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 

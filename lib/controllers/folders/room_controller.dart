@@ -461,7 +461,8 @@ class RoomController with ChangeNotifier {
   }
 
   /// ✅ Leave room (any member can leave, but owner cannot)
-  Future<bool> leaveRoom(String roomId) async {
+  /// ✅ Returns: Map with 'success' and 'details' (filesRemoved, foldersRemoved)
+  Future<Map<String, dynamic>> leaveRoom(String roomId) async {
     setLoading(true);
     setError(null);
 
@@ -474,14 +475,31 @@ class RoomController with ChangeNotifier {
           (room) => room['_id']?.toString() == roomId.toString(),
         );
         notifyListeners();
-        return true;
+        
+        // ✅ إرجاع النتيجة مع التفاصيل (عدد الملفات والمجلدات المحذوفة)
+        return {
+          'success': true,
+          'message': response['message'],
+          'details': response['details'] ?? {
+            'filesRemoved': 0,
+            'foldersRemoved': 0,
+          },
+        };
       }
 
       setError(response['message'] ?? 'Failed to leave room');
-      return false;
+      return {
+        'success': false,
+        'message': response['message'] ?? 'Failed to leave room',
+        'details': {'filesRemoved': 0, 'foldersRemoved': 0},
+      };
     } catch (e) {
       setError(e.toString());
-      return false;
+      return {
+        'success': false,
+        'message': e.toString(),
+        'details': {'filesRemoved': 0, 'foldersRemoved': 0},
+      };
     } finally {
       setLoading(false);
     }

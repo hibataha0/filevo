@@ -689,7 +689,13 @@ class FolderService {
     );
 
     if (response.statusCode == 200) {
-      return jsonDecode(response.body);
+      final data = jsonDecode(response.body);
+      // ✅ التأكد من أن البيانات تحتوي على warning و roomsRemovedFrom
+      return {
+        ...data,
+        'warning': data['warning'], // ✅ تحذير إذا كان المجلد مشاركاً في Rooms
+        'roomsRemovedFrom': data['roomsRemovedFrom'] ?? [], // ✅ قائمة الـ Rooms المتأثرة
+      };
     } else {
       final errorData = jsonDecode(response.body);
       throw Exception(
@@ -699,11 +705,20 @@ class FolderService {
   }
 
   // ✅ جلب المجلدات المحذوفة (trash)
-  Future<Map<String, dynamic>> getTrashFolders() async {
+  Future<Map<String, dynamic>> getTrashFolders({
+    int page = 1,
+    int limit = 20,
+  }) async {
     final token = await StorageService.getToken();
 
+    final uri = Uri.parse("${ApiConfig.baseUrl}${ApiEndpoints.trashFolders}")
+        .replace(queryParameters: {
+      'page': page.toString(),
+      'limit': limit.toString(),
+    });
+
     final response = await http.get(
-      Uri.parse("${ApiConfig.baseUrl}${ApiEndpoints.trashFolders}"),
+      uri,
       headers: {
         'Authorization': 'Bearer $token',
         'Content-Type': 'application/json',

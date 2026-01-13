@@ -2508,21 +2508,6 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
     }
   }
 
-  IconData _getRoleIcon(String role) {
-    switch (role) {
-      case 'owner':
-        return Icons.star;
-      case 'editor':
-        return Icons.edit;
-      case 'viewer':
-        return Icons.visibility;
-      case 'commenter':
-        return Icons.comment;
-      default:
-        return Icons.person;
-    }
-  }
-
   // ✅ بناء URL كامل للصورة من اسم الملف (للـ backward compatibility)
   String? _buildProfileImageUrl(String? profileImg) {
     if (profileImg == null ||
@@ -3030,15 +3015,78 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
   }
 
   /// ✅ عرض dialog لمغادرة الغرفة
-  void _showLeaveRoomDialog() {
+  Future<void> _showLeaveRoomDialog() async {
     if (roomData == null) return;
     final roomName = roomData!['name'] ?? S.of(context).room;
+    
+    // ✅ حساب عدد الملفات والمجلدات المشتركة من قبل المستخدم الحالي
+    final currentUserId = await StorageService.getUserId();
+    int sharedFilesCount = 0;
+    int sharedFoldersCount = 0;
+    
+    if (currentUserId != null) {
+      final files = roomData!['files'] as List? ?? [];
+      final folders = roomData!['folders'] as List? ?? [];
+      
+      // ✅ حساب الملفات المشتركة من قبل المستخدم الحالي
+      for (final fileEntry in files) {
+        final sharedBy = fileEntry['sharedBy'];
+        if (sharedBy != null) {
+          String? sharedById;
+          if (sharedBy is Map<String, dynamic>) {
+            sharedById = sharedBy['_id']?.toString() ?? 
+                        sharedBy['id']?.toString() ?? 
+                        sharedBy.toString();
+          } else {
+            sharedById = sharedBy.toString();
+          }
+          
+          if (sharedById.trim().toLowerCase() == currentUserId.trim().toLowerCase()) {
+            sharedFilesCount++;
+          }
+        }
+      }
+      
+      // ✅ حساب المجلدات المشتركة من قبل المستخدم الحالي
+      for (final folderEntry in folders) {
+        final sharedBy = folderEntry['sharedBy'];
+        if (sharedBy != null) {
+          String? sharedById;
+          if (sharedBy is Map<String, dynamic>) {
+            sharedById = sharedBy['_id']?.toString() ?? 
+                        sharedBy['id']?.toString() ?? 
+                        sharedBy.toString();
+          } else {
+            sharedById = sharedBy.toString();
+          }
+          
+          if (sharedById.trim().toLowerCase() == currentUserId.trim().toLowerCase()) {
+            sharedFoldersCount++;
+          }
+        }
+      }
+    }
 
+    // ✅ بناء رسالة التحذير
+    String warningMessage = S.of(context).leaveRoomConfirm(roomName);
+    if (sharedFilesCount > 0 || sharedFoldersCount > 0) {
+      final filesText = sharedFilesCount > 0 
+          ? '${sharedFilesCount} ${sharedFilesCount == 1 ? S.of(context).file : S.of(context).files}'
+          : '';
+      final foldersText = sharedFoldersCount > 0 
+          ? '${sharedFoldersCount} ${sharedFoldersCount == 1 ? S.of(context).folder : S.of(context).folders}'
+          : '';
+      
+      final itemsText = [filesText, foldersText].where((t) => t.isNotEmpty).join(' و ');
+      warningMessage += '\n\n⚠️ سيتم حذف $itemsText تلقائياً من الغرفة عند المغادرة';
+    }
+
+    if (!mounted) return;
     showDialog(
       context: context,
       builder: (dialogContext) => AlertDialog(
         title: Text(S.of(context).leaveRoom),
-        content: Text(S.of(context).leaveRoomConfirm(roomName)),
+        content: Text(warningMessage),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
@@ -3114,13 +3162,27 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
         context,
         listen: false,
       );
-      final success = await roomController.leaveRoom(widget.roomId);
+      final result = await roomController.leaveRoom(widget.roomId);
 
       if (mounted) {
-        if (success) {
+        if (result['success'] == true) {
+          final filesRemoved = result['details']?['filesRemoved'] ?? 0;
+          final foldersRemoved = result['details']?['foldersRemoved'] ?? 0;
+          String successMessage = S.of(context).roomLeftSuccessfully;
+          if (filesRemoved > 0 || foldersRemoved > 0) {
+            final removedItems = [];
+            if (filesRemoved > 0) {
+              removedItems.add('$filesRemoved ${filesRemoved == 1 ? S.of(context).file : S.of(context).files}');
+            }
+            if (foldersRemoved > 0) {
+              removedItems.add('$foldersRemoved ${foldersRemoved == 1 ? S.of(context).folder : S.of(context).folders}');
+            }
+            successMessage += '\nتم حذف: ${removedItems.join(' و ')}.';
+          }
+
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(S.of(context).roomLeftSuccessfully),
+              content: Text(successMessage),
               backgroundColor: Colors.green,
             ),
           );
@@ -3132,7 +3194,7 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
-                roomController.errorMessage ?? S.of(context).roomLeaveFailed,
+                result['message'] ?? S.of(context).roomLeaveFailed,
               ),
               backgroundColor: Colors.red,
             ),

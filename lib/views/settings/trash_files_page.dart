@@ -71,7 +71,7 @@ class _TrashFilesPageState extends State<TrashFilesPage> {
 
     if (success && mounted) {
       // ✅ تحديث معلومات المساحة بعد الاستعادة (سيتم التحديث تلقائياً من FileController)
-      profileController.getStorageInfo();
+      profileController.getStorageInfo(forceRefresh: true);
       
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -88,16 +88,18 @@ class _TrashFilesPageState extends State<TrashFilesPage> {
   Future<void> _permanentDeleteFile(String fileId) async {
     final controller = Provider.of<FileController>(context, listen: false);
 
-    final success = await controller.permanentDelete(
+    final result = await controller.permanentDelete(
       fileIds: [fileId],
       token: widget.token,
     );
 
-    if (success && mounted) {
+    if (result && mounted) {
       // ✅ تحديث معلومات المساحة بعد الحذف النهائي (سيتم التحديث تلقائياً من FileController)
       final profileController = Provider.of<ProfileController>(context, listen: false);
-      profileController.getStorageInfo();
+      profileController.getStorageInfo(forceRefresh: true);
       
+      // ✅ ملاحظة: FileController.permanentDelete لا يزال يرجع bool
+      // ✅ في المستقبل يمكن تحديثه لعرض warning و roomsRemovedFrom
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(S.of(context).fileDeletedPermanently),

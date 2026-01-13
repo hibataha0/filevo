@@ -71,25 +71,40 @@ class _TrashFoldersPageState extends State<TrashFoldersPage> {
     final profileController = Provider.of<ProfileController>(context, listen: false);
     final s = S.of(context); // ✅ مرجع الترجمة
 
-    final success = await controller.restoreFolder(folderId: folder["_id"]);
+    final result = await controller.restoreFolder(folderId: folder["_id"]);
 
     if (mounted) {
-      if (success) {
+      if (result['success'] == true) {
         // ✅ تحديث معلومات المساحة بعد الاستعادة (سيتم التحديث تلقائياً من FolderController)
-        profileController.getStorageInfo();
+        profileController.getStorageInfo(forceRefresh: true);
+        
+        // ✅ بناء رسالة النجاح مع عدد الملفات المسترجعة
+        final filesRestored = result['filesRestored'] as int? ?? 0;
+        String successMessage = s.folderRestoredSuccess;
+        
+        if (filesRestored > 0) {
+          successMessage += '\nتم استعادة $filesRestored ملف مع المجلد.';
+        }
         
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(s.folderRestoredSuccess),
+            content: Text(successMessage),
             backgroundColor: Colors.green,
             behavior: SnackBarBehavior.floating,
+            duration: filesRestored > 0 
+              ? Duration(seconds: 4) 
+              : Duration(seconds: 3),
           ),
         );
         _loadTrashFolders(loadMore: false);
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(controller.errorMessage ?? s.folderRestoredError),
+            content: Text(
+              result['message'] ?? 
+              controller.errorMessage ?? 
+              s.folderRestoredError
+            ),
             backgroundColor: Colors.red,
             behavior: SnackBarBehavior.floating,
           ),
@@ -103,20 +118,32 @@ class _TrashFoldersPageState extends State<TrashFoldersPage> {
     final profileController = Provider.of<ProfileController>(context, listen: false);
     final s = S.of(context); // ✅ مرجع الترجمة
 
-    final success = await controller.deleteFolderPermanent(
+    final result = await controller.deleteFolderPermanent(
       folderId: folder["_id"],
     );
 
     if (mounted) {
-      if (success) {
+      if (result['success'] == true) {
         // ✅ تحديث معلومات المساحة بعد الحذف النهائي
-        profileController.getStorageInfo();
+        profileController.getStorageInfo(forceRefresh: true);
+        
+        // ✅ بناء رسالة النجاح مع معلومات الـ Rooms إذا كانت موجودة
+        String successMessage = s.folderPermanentDeleteSuccess;
+        final warning = result['warning'];
+        final roomsRemovedFrom = result['roomsRemovedFrom'] as List? ?? [];
+        
+        if (warning != null && warning.toString().isNotEmpty) {
+          successMessage += '\n\n$warning';
+        }
         
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(s.folderPermanentDeleteSuccess),
+            content: Text(successMessage),
             backgroundColor: Colors.redAccent,
             behavior: SnackBarBehavior.floating,
+            duration: roomsRemovedFrom.isNotEmpty 
+              ? Duration(seconds: 5) 
+              : Duration(seconds: 3),
           ),
         );
         _loadTrashFolders(loadMore: false);
@@ -124,7 +151,9 @@ class _TrashFoldersPageState extends State<TrashFoldersPage> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              controller.errorMessage ?? s.folderPermanentDeleteError,
+              result['message'] ?? 
+              controller.errorMessage ?? 
+              s.folderPermanentDeleteError,
             ),
             backgroundColor: Colors.red,
             behavior: SnackBarBehavior.floating,

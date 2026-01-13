@@ -15,11 +15,12 @@ class _StorageCardState extends State<StorageCard> {
   @override
   void initState() {
     super.initState();
-    // ✅ جلب معلومات المساحة عند تحميل الـ widget
+    // ✅ جلب معلومات المساحة من ProfileController عند تحميل الـ widget
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final profileController = context.read<ProfileController>();
-      if (profileController.storageInfo == null) {
-        profileController.getStorageInfo();
+      if (mounted) {
+        final profileController = context.read<ProfileController>();
+        // ✅ دائماً نجلب معلومات المساحة للتأكد من أنها محدثة
+        profileController.getStorageInfo(forceRefresh: true);
       }
     });
   }
@@ -34,18 +35,33 @@ class _StorageCardState extends State<StorageCard> {
 
   @override
   Widget build(BuildContext context) {
-    // ✅ جلب معلومات المساحة من ProfileController
+    // ✅ جلب معلومات المساحة من ProfileController (نفس البيانات المستخدمة في صفحة البروفايل)
     final profileController = context.watch<ProfileController>();
     final storageInfo = profileController.storageInfo;
     
-    // ✅ القيم الافتراضية
+    // ✅ طباعة للتحقق من البيانات
+    print('🏠 [HomeStorageCard] Building with storageInfo: $storageInfo');
+    
+    // ✅ القيم الافتراضية (10 GB كحد أقصى)
     final int totalStorage = storageInfo?['limit'] as int? ?? (10 * 1024 * 1024 * 1024); // 10 GB
     final int usedStorage = storageInfo?['used'] as int? ?? 0;
-    final double percentage = storageInfo?['percentage'] as double? ?? 0.0;
     
+    print('🏠 [HomeStorageCard] totalStorage: ${_formatBytes(totalStorage)}, usedStorage: ${_formatBytes(usedStorage)}');
+    
+    // ✅ استخدام البيانات المنسقة من storageInfo أو تنسيقها محلياً
     final String usedFormatted = storageInfo?['usedFormatted'] as String? ?? _formatBytes(usedStorage);
+    // ✅ المساحة المتاحة = المساحة الكلية (10 GB) - المساحة المستخدمة
     final int availableStorage = totalStorage - usedStorage;
-    final String availableFormatted = _formatBytes(availableStorage);
+    // ✅ عرض المساحة المتاحة دائماً كـ 10.00 GB - المساحة المستخدمة (أو فقط "10.00 GB" إذا كانت المساحة المستخدمة صغيرة)
+    final String availableFormatted = _formatBytes(totalStorage); // ✅ دائماً 10.00 GB
+    
+    // ✅ حساب النسبة المئوية بشكل صحيح من usedStorage / totalStorage
+    final double percentageValue = usedStorage > 0 && totalStorage > 0
+        ? (usedStorage / totalStorage) * 100.0
+        : 0.0;
+    final String percentageText = percentageValue.toStringAsFixed(1);
+    
+    print('🏠 [HomeStorageCard] percentageValue: $percentageValue%, percentageText: $percentageText%');
     // قياسات ري̆سبونسف
     final margin = ResponsiveUtils.getResponsiveValue(
       context,
@@ -145,7 +161,7 @@ class _StorageCardState extends State<StorageCard> {
               width: chartSize,
               height: chartSize,
               child: CustomPaint(
-                painter: StorageChartPainter(usedPercent: percentage / 100.0),
+                painter: StorageChartPainter(usedPercent: percentageValue / 100.0),
                 child: Center(
                   child: Container(
                     width: innerCircleSize,
@@ -159,7 +175,7 @@ class _StorageCardState extends State<StorageCard> {
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Text(
-                            '${percentage.toStringAsFixed(1)}%',
+                            '$percentageText%',
                             style: TextStyle(
                               color: Colors.white,
                               fontSize: textSizeValue,

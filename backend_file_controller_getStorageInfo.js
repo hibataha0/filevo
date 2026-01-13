@@ -91,10 +91,11 @@ exports.getStorageInfo = asyncHandler(async (req, res) => {
     };
 
     // ✅ إرجاع النتيجة
+    // ✅ استخدام data بدلاً من storage للتوافق مع الفرونت إند
     res.status(200).json({
       success: true,
       message: 'Storage information retrieved successfully',
-      storage: {
+      data: {
         limit: storageLimit,
         limitFormatted: formatBytes(storageLimit),
         used: storageUsed,

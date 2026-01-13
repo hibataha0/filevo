@@ -1188,6 +1188,8 @@ class FileService {
           'message': data['message'] ?? 'تم نقل الملف للمحذوفات بنجاح',
           'file': data['file'],
           'deleteExpiryDate': data['deleteExpiryDate'],
+          'warning': data['warning'], // ✅ تحذير إذا كان الملف مشاركاً في Rooms
+          'roomsRemovedFrom': data['roomsRemovedFrom'] ?? [], // ✅ قائمة الـ Rooms المتأثرة
         };
       } else {
         final data = jsonDecode(response.body);
@@ -1328,6 +1330,8 @@ class FileService {
           'success': true,
           'message': data['message'] ?? 'تم الحذف النهائي للملفات بنجاح',
           'deletedCount': data['data']?['deletedCount'] ?? fileIds.length,
+          'warning': data['warning'], // ✅ تحذير إذا كان الملف مشاركاً في Rooms
+          'roomsRemovedFrom': data['roomsRemovedFrom'] ?? [], // ✅ قائمة الـ Rooms المتأثرة
         };
       } else {
         final data = jsonDecode(response.body);
@@ -1756,36 +1760,50 @@ class FileService {
       );
 
       print('📊 [FileService] Get storage info response: ${response.statusCode}');
+      print('📊 [FileService] Get storage info response body: ${response.body}');
 
       if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        final storageData = data['storage'] ?? {};
-        
-        return {
-          'success': true,
-          'storage': {
-            'limit': storageData['limit'] ?? 0,
-            'limitFormatted': storageData['limitFormatted'] ?? '0 Bytes',
-            'used': storageData['used'] ?? 0,
-            'usedFormatted': storageData['usedFormatted'] ?? '0 Bytes',
-            'available': storageData['available'] ?? 0,
-            'availableFormatted': storageData['availableFormatted'] ?? '0 Bytes',
-            'percentage': storageData['percentage'] ?? 0.0,
-            'isFull': storageData['isFull'] ?? false,
-            'canUpload': storageData['canUpload'] ?? true,
-          },
-        };
+        try {
+          final data = jsonDecode(response.body);
+          // ✅ دعم كلا التنسيقين: data أو storage
+          final storageData = data['data'] ?? data['storage'] ?? {};
+          
+          print('✅ [FileService] Storage data retrieved: $storageData');
+          
+          return {
+            'success': true,
+            'storage': {
+              'limit': storageData['limit'] ?? 0,
+              'limitFormatted': storageData['limitFormatted'] ?? '0 Bytes',
+              'used': storageData['used'] ?? 0,
+              'usedFormatted': storageData['usedFormatted'] ?? '0 Bytes',
+              'available': storageData['available'] ?? 0,
+              'availableFormatted': storageData['availableFormatted'] ?? '0 Bytes',
+              'percentage': storageData['percentage'] ?? 0.0,
+              'isFull': storageData['isFull'] ?? false,
+              'canUpload': storageData['canUpload'] ?? true,
+            },
+          };
+        } catch (e) {
+          print('❌ [FileService] Error parsing storage info response: $e');
+          return {
+            'success': false,
+            'error': 'خطأ في تحليل بيانات المساحة: ${e.toString()}',
+          };
+        }
       } else {
         try {
           final errorData = jsonDecode(response.body);
+          print('❌ [FileService] Storage info error: ${errorData['message'] ?? 'Unknown error'}');
           return {
             'success': false,
             'error': errorData['message'] ?? 'فشل في جلب معلومات المساحة',
           };
         } catch (e) {
+          print('❌ [FileService] Error parsing error response: $e');
           return {
             'success': false,
-            'error': 'فشل في جلب معلومات المساحة',
+            'error': 'فشل في جلب معلومات المساحة (Status: ${response.statusCode})',
           };
         }
       }

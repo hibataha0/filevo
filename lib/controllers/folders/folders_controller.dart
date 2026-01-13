@@ -389,27 +389,40 @@ class FolderController with ChangeNotifier {
   }
 
   // ✅ Delete folder (soft delete)
-  Future<bool> deleteFolder({required String folderId}) async {
+  /// Returns: Map with 'success', 'warning', and 'roomsRemovedFrom' if successful
+  Future<Map<String, dynamic>> deleteFolder({required String folderId}) async {
     setLoading(true);
     errorMessage = null;
 
     try {
       final response = await _service.deleteFolder(folderId: folderId);
       if (response['message'] != null || response['folder'] != null) {
-        return true;
+        return {
+          'success': true,
+          'message': response['message'],
+          'warning': response['warning'],
+          'roomsRemovedFrom': response['roomsRemovedFrom'] ?? [],
+        };
       }
       errorMessage = response['message'] ?? 'Failed to delete folder';
-      return false;
+      return {
+        'success': false,
+        'message': response['message'] ?? 'Failed to delete folder',
+      };
     } catch (e) {
       errorMessage = e.toString();
-      return false;
+      return {
+        'success': false,
+        'message': e.toString(),
+      };
     } finally {
       setLoading(false);
     }
   }
 
   // ✅ Restore folder from trash
-  Future<bool> restoreFolder({required String folderId}) async {
+  /// Returns: Map with 'success', 'filesRestored' count, and 'message' if successful
+  Future<Map<String, dynamic>> restoreFolder({required String folderId}) async {
     setLoading(true);
     errorMessage = null;
 
@@ -418,20 +431,32 @@ class FolderController with ChangeNotifier {
       if (response['message'] != null || response['folder'] != null) {
         // ✅ تحديث معلومات المساحة بعد الاستعادة
         _refreshStorageInfo();
-        return true;
+        return {
+          'success': true,
+          'message': response['message'] ?? 'Folder restored successfully',
+          'filesRestored': response['filesRestored'] ?? 0,
+          'folder': response['folder'],
+        };
       }
       errorMessage = response['message'] ?? 'Failed to restore folder';
-      return false;
+      return {
+        'success': false,
+        'message': errorMessage,
+      };
     } catch (e) {
       errorMessage = e.toString();
-      return false;
+      return {
+        'success': false,
+        'message': errorMessage,
+      };
     } finally {
       setLoading(false);
     }
   }
 
   // ✅ Permanently delete folder
-  Future<bool> deleteFolderPermanent({required String folderId}) async {
+  /// Returns: Map with 'success', 'warning', and 'roomsRemovedFrom' if successful
+  Future<Map<String, dynamic>> deleteFolderPermanent({required String folderId}) async {
     setLoading(true);
     errorMessage = null;
 
@@ -440,14 +465,25 @@ class FolderController with ChangeNotifier {
       if (response['message'] != null) {
         // ✅ تحديث معلومات المساحة بعد الحذف النهائي
         _refreshStorageInfo();
-        return true;
+        return {
+          'success': true,
+          'message': response['message'],
+          'warning': response['warning'],
+          'roomsRemovedFrom': response['roomsRemovedFrom'] ?? [],
+        };
       }
       errorMessage =
           response['message'] ?? 'Failed to permanently delete folder';
-      return false;
+      return {
+        'success': false,
+        'message': response['message'] ?? 'Failed to permanently delete folder',
+      };
     } catch (e) {
       errorMessage = e.toString();
-      return false;
+      return {
+        'success': false,
+        'message': e.toString(),
+      };
     } finally {
       setLoading(false);
     }
@@ -461,7 +497,7 @@ class FolderController with ChangeNotifier {
           _context!,
           listen: false,
         );
-        profileController.getStorageInfo();
+        profileController.getStorageInfo(forceRefresh: true);
         print('✅ [FolderController] Storage info refreshed');
       }
     } catch (e) {
@@ -483,11 +519,17 @@ class FolderController with ChangeNotifier {
     errorMessage = null;
 
     try {
-      final response = await _service.getTrashFolders();
+      final response = await _service.getTrashFolders(
+        page: _currentPage,
+        limit: 20,
+      );
 
       if (response['folders'] != null) {
         final List<Map<String, dynamic>> newFolders =
             List<Map<String, dynamic>>.from(response['folders'] ?? []);
+        final pagination = Map<String, dynamic>.from(
+          response['pagination'] ?? {},
+        );
 
         if (loadMore) {
           _trashFolders.addAll(newFolders);
@@ -495,12 +537,10 @@ class FolderController with ChangeNotifier {
           _trashFolders = newFolders;
         }
 
-        // Determine if there are more folders
-        _hasMore =
-            newFolders.length >= 20; // If count = max limit, there may be more
-
-        // Update page information
-        _pagination = {'currentPage': _currentPage, 'hasNext': _hasMore};
+        // ✅ استخدام pagination من الـ response
+        _pagination = pagination;
+        final totalPages = pagination['totalPages'] ?? 1;
+        _hasMore = _currentPage < totalPages;
 
         _safeNotifyListeners();
       } else {
