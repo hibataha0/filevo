@@ -731,6 +731,7 @@ class _FoldersPageState extends State<FoldersPage>
     });
   }
 
+
   Widget? _buildSuffixIcons() {
     final hasText = _searchController.text.isNotEmpty;
 
@@ -1017,7 +1018,7 @@ class _FoldersPageState extends State<FoldersPage>
                         children: [
                           Icon(Icons.meeting_room, size: 18),
                           SizedBox(width: 6),
-                          Text('غرف'),
+                          Text(S.of(context).rooms),
                         ],
                       ),
                     ),
@@ -1992,14 +1993,19 @@ class _FoldersPageState extends State<FoldersPage>
 
   Map<String, dynamic> _extractFileData(Map<String, dynamic> file) {
     final originalData = file['originalData'] ?? file;
-    final filePath = file['path'] as String?;
+    // ✅ محاولة الحصول على path من عدة أماكن
+    final filePath = (file['path'] as String?) ?? 
+                     (originalData['path'] as String?);
     final fileId =
         file['_id']?.toString() ??
         file['id']?.toString() ??
         originalData['_id']?.toString() ??
         originalData['id']?.toString();
     final originalName =
-        file['originalName'] ?? file['name'] ?? S.of(context).unnamedFile;
+        file['originalName'] ?? 
+        file['name'] ?? 
+        originalData['name'] ?? 
+        S.of(context).unnamedFile;
 
     return {
       'originalData': originalData,
@@ -2026,15 +2032,11 @@ class _FoldersPageState extends State<FoldersPage>
         extension.toLowerCase(),
       );
 
-      if (isExternalFile) {
-        final baseUrl = ApiConfig.baseUrl.replaceAll('/api/v1', '');
-        final downloadPath = ApiEndpoints.downloadFile(fileId);
-        return {'url': "$baseUrl$downloadPath", 'useDownloadEndpoint': true};
-      } else {
-        final baseUrl = ApiConfig.baseUrl;
-        final viewPath = ApiEndpoints.viewFile(fileId);
-        return {'url': "$baseUrl$viewPath", 'useDownloadEndpoint': false};
-      }
+      // ✅ استخدام downloadFile endpoint بدلاً من viewFile لتجنب 404
+      // ✅ لأن viewFile endpoint قد لا يعمل إذا لم يكن path موجوداً
+      // ✅ استخدام ApiConfig.baseUrl مباشرة (يحتوي على /api/v1)
+      final downloadPath = ApiEndpoints.downloadFile(fileId);
+      return {'url': "${ApiConfig.baseUrl}$downloadPath", 'useDownloadEndpoint': true};
     } else if (filePath != null && filePath.isNotEmpty) {
       return {
         'url': _getFileUrlForSearch(filePath),

@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:filevo/controllers/folders/room_controller.dart';
 import 'package:filevo/generated/l10n.dart';
 import 'package:pull_to_refresh/pull_to_refresh.dart';
+import 'package:filevo/utils/room_permissions.dart';
 
 class ShareFolderWithRoomPage extends StatefulWidget {
   final String folderId;
@@ -40,11 +41,35 @@ class _ShareFolderWithRoomPageState extends State<ShareFolderWithRoomPage> {
     if (!mounted) return;
 
     final roomController = Provider.of<RoomController>(context, listen: false);
-    final success = await roomController.getRooms();
+    await roomController.getRooms();
 
     if (mounted) {
+      final roomsList = roomController.rooms;
+
+      // ✅ تحميل تفاصيل كل روم بشكل متوازي للحصول على المجلدات المشتركة
+      final roomsWithDetails = await Future.wait(
+        roomsList.map((room) async {
+          try {
+            final roomId = room['_id']?.toString();
+            if (roomId != null) {
+              // ✅ تحميل تفاصيل الروم للحصول على المجلدات
+              final roomDetails = await roomController.getRoomById(roomId);
+              if (roomDetails != null && roomDetails['room'] != null) {
+                return roomDetails['room'] as Map<String, dynamic>;
+              }
+            }
+            // ✅ إذا فشل تحميل التفاصيل، استخدم البيانات الأساسية
+            return room;
+          } catch (e) {
+            print('⚠️ Error loading room details for ${room['name']}: $e');
+            // ✅ في حالة الخطأ، استخدم البيانات الأساسية
+            return room;
+          }
+        }),
+      );
+
       setState(() {
-        rooms = roomController.rooms;
+        rooms = roomsWithDetails;
         isLoading = false;
       });
     }
@@ -197,24 +222,11 @@ class _ShareFolderWithRoomPageState extends State<ShareFolderWithRoomPage> {
                         final foldersCount =
                             (room['folders'] as List?)?.length ?? 0;
 
-                        final isAlreadyShared =
-                            (room['folders'] as List?)?.any((f) {
-                              final folderIdRef = f['folderId'];
-                              if (folderIdRef == null) return false;
-
-                              if (folderIdRef is String) {
-                                return folderIdRef == widget.folderId;
-                              }
-
-                              if (folderIdRef is Map<String, dynamic>) {
-                                final folderId = folderIdRef['_id']?.toString();
-                                return folderId == widget.folderId ||
-                                    folderIdRef['_id'] == widget.folderId;
-                              }
-
-                              return folderIdRef.toString() == widget.folderId;
-                            }) ??
-                            false;
+                        // ✅ التحقق من أن المجلد مشترك مع هذه الغرفة
+                        final isAlreadyShared = _checkIfFolderIsShared(
+                          room,
+                          widget.folderId,
+                        );
 
                         return Card(
                           margin: const EdgeInsets.only(bottom: 12),
@@ -236,7 +248,22 @@ class _ShareFolderWithRoomPageState extends State<ShareFolderWithRoomPage> {
                           child: InkWell(
                             onTap: isAlreadyShared
                                 ? null // ✅ منع الضغط على الرومات المشتركة
-                                : () {
+                                : () async {
+                                    // ✅ التحقق من صلاحية المشاركة قبل الاختيار
+                                    final canShare = await RoomPermissions.canShareFiles(room);
+                                    if (!canShare) {
+                                      // ✅ عرض رسالة أنه لا يملك صلاحية
+                                      if (mounted) {
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          SnackBar(
+                                            content: Text(S.of(context).noPermissionToShareInRoom),
+                                            backgroundColor: Colors.orange,
+                                            duration: Duration(seconds: 3),
+                                          ),
+                                        );
+                                      }
+                                      return;
+                                    }
                                     setState(() {
                                       selectedRoomId = room['_id'];
                                     });
@@ -301,31 +328,46 @@ class _ShareFolderWithRoomPageState extends State<ShareFolderWithRoomPage> {
                                           ],
                                         ),
                                       ),
-                                      if (isSelected)
-                                        Icon(
-                                          Icons.check_circle,
-                                          color: Color(0xff28336f),
-                                        ),
                                       if (isAlreadyShared)
                                         Container(
                                           padding: EdgeInsets.symmetric(
-                                            horizontal: 8,
-                                            vertical: 4,
+                                            horizontal: 10,
+                                            vertical: 6,
                                           ),
                                           decoration: BoxDecoration(
-                                            color: Colors.green.shade50,
+                                            color: Colors.green.shade100,
                                             borderRadius: BorderRadius.circular(
-                                              8,
+                                              12,
+                                            ),
+                                            border: Border.all(
+                                              color: Colors.green.shade300,
+                                              width: 1,
                                             ),
                                           ),
-                                          child: Text(
-                                            S.of(context).sharedd,
-                                            style: TextStyle(
-                                              fontSize: 10,
-                                              color: Colors.green.shade700,
-                                              fontWeight: FontWeight.w600,
-                                            ),
+                                          child: Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              Icon(
+                                                Icons.check_circle,
+                                                size: 14,
+                                                color: Colors.green.shade700,
+                                              ),
+                                              SizedBox(width: 4),
+                                              Text(
+                                                S.of(context).shared,
+                                                style: TextStyle(
+                                                  fontSize: 11,
+                                                  color: Colors.green.shade700,
+                                                  fontWeight: FontWeight.w700,
+                                                ),
+                                              ),
+                                            ],
                                           ),
+                                        )
+                                      else if (isSelected)
+                                        Icon(
+                                          Icons.check_circle,
+                                          color: Color(0xff28336f),
                                         ),
                                     ],
                                   ),
@@ -368,7 +410,7 @@ class _ShareFolderWithRoomPageState extends State<ShareFolderWithRoomPage> {
                                           SizedBox(width: 8),
                                           Expanded(
                                             child: Text(
-                                              S.of(context).fileAlreadyShared,
+                                              S.of(context).folderAlreadyShared,
                                               style: TextStyle(
                                                 fontSize: 13,
                                                 color: Colors.green.shade800,
@@ -383,44 +425,88 @@ class _ShareFolderWithRoomPageState extends State<ShareFolderWithRoomPage> {
                                   // ✅ إظهار خيارات المشاركة إذا كان المجلد غير مشارك
                                   if (isSelected && !isAlreadyShared) ...[
                                     SizedBox(height: 12),
-                                    SizedBox(
-                                      width: double.infinity,
-                                      child: Consumer<RoomController>(
-                                        builder: (context, roomController, child) {
-                                          return ElevatedButton.icon(
-                                            onPressed: roomController.isLoading
-                                                ? null
-                                                : () => _shareFolderWithRoom(
-                                                    room['_id'],
-                                                  ),
-                                            icon: roomController.isLoading
-                                                ? SizedBox(
-                                                    width: 16,
-                                                    height: 16,
-                                                    child: CircularProgressIndicator(
-                                                      strokeWidth: 2,
-                                                      valueColor:
-                                                          AlwaysStoppedAnimation<
-                                                            Color
-                                                          >(Colors.white),
-                                                    ),
-                                                  )
-                                                : Icon(Icons.share),
-                                            label: Text(
-                                              S.of(context).shareWithThisRoom,
+                                    FutureBuilder<bool>(
+                                      future: RoomPermissions.canShareFiles(room),
+                                      builder: (context, snapshot) {
+                                        // ✅ لا نعرض أي شيء حتى يتم تحميل البيانات
+                                        if (snapshot.connectionState == ConnectionState.waiting) {
+                                          return SizedBox.shrink();
+                                        }
+                                        
+                                        final canShare = snapshot.data ?? false;
+                                        if (!canShare) {
+                                          return Container(
+                                            padding: EdgeInsets.all(12),
+                                            decoration: BoxDecoration(
+                                              color: Colors.orange.shade50,
+                                              borderRadius: BorderRadius.circular(8),
+                                              border: Border.all(
+                                                color: Colors.orange.shade200,
+                                                width: 1,
+                                              ),
                                             ),
-                                            style: ElevatedButton.styleFrom(
-                                              backgroundColor: Color(
-                                                0xff28336f,
-                                              ),
-                                              foregroundColor: Colors.white,
-                                              padding: EdgeInsets.symmetric(
-                                                vertical: 12,
-                                              ),
+                                            child: Row(
+                                              children: [
+                                                Icon(
+                                                  Icons.warning_amber_rounded,
+                                                  size: 20,
+                                                  color: Colors.orange.shade700,
+                                                ),
+                                                SizedBox(width: 8),
+                                                Expanded(
+                                                  child: Text(
+                                                    S.of(context).noPermissionToShareInRoom,
+                                                    style: TextStyle(
+                                                      fontSize: 13,
+                                                      color: Colors.orange.shade800,
+                                                      fontWeight: FontWeight.w600,
+                                                    ),
+                                                  ),
+                                                ),
+                                              ],
                                             ),
                                           );
-                                        },
-                                      ),
+                                        }
+                                        return SizedBox(
+                                          width: double.infinity,
+                                          child: Consumer<RoomController>(
+                                            builder: (context, roomController, child) {
+                                              return ElevatedButton.icon(
+                                                onPressed: roomController.isLoading
+                                                    ? null
+                                                    : () => _shareFolderWithRoom(
+                                                        room['_id'],
+                                                      ),
+                                                icon: roomController.isLoading
+                                                    ? SizedBox(
+                                                        width: 16,
+                                                        height: 16,
+                                                        child: CircularProgressIndicator(
+                                                          strokeWidth: 2,
+                                                          valueColor:
+                                                              AlwaysStoppedAnimation<
+                                                                Color
+                                                              >(Colors.white),
+                                                        ),
+                                                      )
+                                                    : Icon(Icons.share),
+                                                label: Text(
+                                                  S.of(context).shareWithThisRoom,
+                                                ),
+                                                style: ElevatedButton.styleFrom(
+                                                  backgroundColor: Color(
+                                                    0xff28336f,
+                                                  ),
+                                                  foregroundColor: Colors.white,
+                                                  padding: EdgeInsets.symmetric(
+                                                    vertical: 12,
+                                                  ),
+                                                ),
+                                              );
+                                            },
+                                          ),
+                                        );
+                                      },
                                     ),
                                   ],
                                 ],
@@ -454,5 +540,73 @@ class _ShareFolderWithRoomPageState extends State<ShareFolderWithRoomPage> {
         Text(label, style: TextStyle(fontSize: 12, color: Colors.grey[600])),
       ],
     );
+  }
+
+  // ✅ دالة للتحقق من أن المجلد مشترك مع الغرفة (مشابهة لـ _checkIfFileIsShared)
+  bool _checkIfFolderIsShared(Map<String, dynamic> room, String folderId) {
+    print('🔍 [checkIfFolderIsShared] Checking folderId: $folderId');
+    print('🔍 [checkIfFolderIsShared] Room: ${room['name']}');
+
+    final folders = room['folders'] as List?;
+    print('🔍 [checkIfFolderIsShared] Folders count: ${folders?.length ?? 0}');
+
+    if (folders == null || folders.isEmpty) {
+      print('❌ [checkIfFolderIsShared] No folders in room');
+      return false;
+    }
+
+    // ✅ طباعة جميع المجلدات للتحقق
+    for (int i = 0; i < folders.length; i++) {
+      final f = folders[i];
+      print('📁 [checkIfFolderIsShared] Folder $i: $f');
+    }
+
+    final isShared = folders.any((f) {
+      if (f == null) {
+        return false;
+      }
+
+      final folderIdRef = f['folderId'];
+      if (folderIdRef == null) {
+        return false;
+      }
+
+      String? actualFolderId;
+
+      // ✅ إذا كان folderId هو String مباشرة
+      if (folderIdRef is String) {
+        actualFolderId = folderIdRef;
+      }
+      // ✅ إذا كان folderId هو Map/Object
+      else if (folderIdRef is Map<String, dynamic>) {
+        // ✅ محاولة قراءة _id بطرق مختلفة
+        actualFolderId =
+            folderIdRef['_id']?.toString() ?? folderIdRef['id']?.toString();
+
+        // ✅ إذا كان _id نفسه Map (nested)
+        if (actualFolderId == null && folderIdRef['_id'] is Map) {
+          final nestedId = folderIdRef['_id'] as Map;
+          actualFolderId =
+              nestedId['_id']?.toString() ?? nestedId['id']?.toString();
+        }
+      }
+      // ✅ إذا كان folderId هو ObjectId أو أي نوع آخر
+      else {
+        actualFolderId = folderIdRef.toString();
+      }
+
+      if (actualFolderId == null) {
+        return false;
+      }
+
+      final matches = actualFolderId == folderId;
+      if (matches) {
+        print('✅ [checkIfFolderIsShared] Found match: $actualFolderId == $folderId');
+      }
+      return matches;
+    });
+
+    print('${isShared ? "✅" : "❌"} [checkIfFolderIsShared] Result: $isShared');
+    return isShared;
   }
 }

@@ -71,9 +71,9 @@ class _StarredFoldersPageState extends State<StarredFoldersPage> {
   }
 
   String _formatBytes(int bytes) {
-    if (bytes < 1024) return '$bytes بايت';
-    if (bytes < 1048576) return '${(bytes / 1024).toStringAsFixed(1)} ك.ب';
-    return '${(bytes / 1048576).toStringAsFixed(1)} م.ب';
+    if (bytes < 1024) return '$bytes ${S.of(context).bytes}';
+    if (bytes < 1048576) return '${(bytes / 1024).toStringAsFixed(1)} ${S.of(context).unitKB}';
+    return '${(bytes / 1048576).toStringAsFixed(1)} ${S.of(context).unitMB}';
   }
 
   Future<void> _handleFolderTap(Map<String, dynamic> folder) async {
@@ -183,8 +183,8 @@ class _StarredFoldersPageState extends State<StarredFoldersPage> {
         SnackBar(
           content: Text(
             isStarred
-                ? '✅ تم إضافة المجلد إلى المفضلة'
-                : '✅ تم إزالة المجلد من المفضلة',
+                ? S.of(context).folderAddedToFavorites
+                : S.of(context).folderRemovedFromFavorites,
           ),
           backgroundColor: Colors.green,
         ),
@@ -200,6 +200,38 @@ class _StarredFoldersPageState extends State<StarredFoldersPage> {
     });
   }
 
+  void _showProtectFolderDialog(BuildContext context, Map<String, dynamic> folder) async {
+    if (!mounted) return;
+
+    final folderData = folder['folderData'] ?? folder;
+    final folderId = folder['folderId'] ?? folder['_id'];
+    final folderName = folder['title'] ?? folder['name'] ?? S.of(context).folder;
+    final isCurrentlyProtected = folderData['isProtected'] == true;
+    final currentProtectionType = folderData['protectionType']?.toString() ?? 'none';
+
+    if (folderId == null) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(S.of(context).folderIdNotFound)),
+      );
+      return;
+    }
+
+    await showSetFolderProtectionDialog(
+      context,
+      folderId.toString(),
+      folderName,
+      isCurrentlyProtected,
+      currentProtectionType,
+      () {
+        if (mounted) {
+          // ✅ إعادة تحميل قائمة المفضلة بعد تحديث الحماية
+          _loadStarredFolders();
+        }
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Consumer<FolderController>(
@@ -208,7 +240,7 @@ class _StarredFoldersPageState extends State<StarredFoldersPage> {
 
         // تحويل المجلدات إلى format مناسب للعرض
         final displayFolders = starredFolders.map((folder) {
-          final name = folder['name'] as String? ?? 'بدون اسم';
+          final name = folder['name'] as String? ?? S.of(context).unnamedFolder;
           final size = folder['size'] as int? ?? 0;
 
           return {
@@ -228,8 +260,8 @@ class _StarredFoldersPageState extends State<StarredFoldersPage> {
         return Scaffold(
           backgroundColor: Colors.white,
           appBar: AppBar(
-            title: const Text(
-              'المجلدات المفضلة',
+            title: Text(
+              S.of(context).starredFolders,
               style: TextStyle(fontWeight: FontWeight.bold),
             ),
             backgroundColor: const Color(0xff28336f),
@@ -323,6 +355,7 @@ class _StarredFoldersPageState extends State<StarredFoldersPage> {
                               _showMoveFolderDialog(context, folder),
                           onFavoriteTap: () => _toggleFavorite(context, folder),
                           onDeleteTap: () => _showDeleteDialog(context, folder),
+                          onProtectTap: () => _showProtectFolderDialog(context, folder),
                         ),
                       );
                     },
@@ -455,6 +488,27 @@ class _StarredFoldersPageState extends State<StarredFoldersPage> {
                                 ),
                                 PopupMenuDivider(),
                                 PopupMenuItem<String>(
+                                  value: 'protect',
+                                  child: Row(
+                                    children: [
+                                      Icon(
+                                        (folder['folderData'] ?? folder)['isProtected'] == true
+                                            ? Icons.lock_open
+                                            : Icons.lock,
+                                        color: Colors.orange,
+                                        size: 20,
+                                      ),
+                                      SizedBox(width: 8),
+                                      Text(
+                                        (folder['folderData'] ?? folder)['isProtected'] == true
+                                            ? S.of(context).unlockFolder
+                                            : S.of(context).lockFolder,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                PopupMenuDivider(),
+                                PopupMenuItem<String>(
                                   value: 'delete',
                                   child: Row(
                                     children: [
@@ -491,6 +545,9 @@ class _StarredFoldersPageState extends State<StarredFoldersPage> {
                                     break;
                                   case 'favorite':
                                     _toggleFavorite(context, folder);
+                                    break;
+                                  case 'protect':
+                                    _showProtectFolderDialog(context, folder);
                                     break;
                                   case 'delete':
                                     _showDeleteDialog(context, folder);

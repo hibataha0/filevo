@@ -653,18 +653,26 @@ class _CategoryPageState extends State<CategoryPage> {
                   final fileName =
                       f['name']?.toString() ?? S.of(context).unnamedFile;
                   final formattedName = _formatFileName(fileName);
+                  final filePath = f['path']?.toString() ?? '';
 
                   return {
                     'title': formattedName,
                     'size': _formatFileSize(f['size']?.toString() ?? '0'),
-                    'path': f['path'],
+                    'path': filePath,
+                    'url': getFileUrl(filePath),
+                    'type': _getFileType(fileName),
                     'createdAt': f['createdAt'],
                     'originalName': fileName,
                     '_id': f['_id']?.toString(),
                     'originalData': f,
                   };
                 }).toList(),
-                onItemTap: (item) => _handleFileTap(item, context),
+                onItemTap: (item) {
+                  final originalData = item['originalData'] as Map<String, dynamic>?;
+                  if (originalData != null) {
+                    _handleFileTap(originalData, context);
+                  }
+                },
                 onFileRemoved: () async {
                   if (mounted && _token != null && _token!.isNotEmpty) {
                     final fileController = Provider.of<FileController>(

@@ -243,6 +243,88 @@ class FileSearchService {
     }
   }
 
+  /// البحث عن طريق Tags (الوسوم)
+  /// يبحث في tags الملفات والمجلدات
+  ///
+  /// [tag]: Tag للبحث عنه
+  /// [limit]: عدد النتائج (افتراضي: 20)
+  ///
+  /// Returns: Map يحتوي على results, resultsCount, tag
+  Future<Map<String, dynamic>> searchByTags({
+    required String tag,
+    int limit = 20,
+  }) async {
+    try {
+      final token = await StorageService.getToken();
+      if (token == null) {
+        return {'success': false, 'error': 'لا يوجد token. يرجى تسجيل الدخول'};
+      }
+
+      if (tag.trim().isEmpty) {
+        return {'success': false, 'error': 'Tag مطلوب'};
+      }
+
+      print('🏷️ [FileSearchService] Searching by tag: $tag');
+      print('   Limit: $limit');
+
+      final response = await http
+          .post(
+            Uri.parse("$_apiBase${ApiEndpoints.aiSearchByTags}"),
+            headers: {
+              'Authorization': 'Bearer $token',
+              'Content-Type': 'application/json',
+            },
+            body: jsonEncode({'tag': tag.trim(), 'limit': limit}),
+          )
+          .timeout(Duration(seconds: 30));
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final resultsCount = data['resultsCount'] ?? 0;
+        print('✅ [FileSearchService] Tag search completed: $resultsCount results found');
+        
+        // ✅ تحويل النتائج إلى نفس format المستخدم في smartSearch
+        final results = List<Map<String, dynamic>>.from(data['results'] ?? []);
+        final processedResults = results.map<Map<String, dynamic>>((r) {
+          final item = Map<String, dynamic>.from(r);
+          // ✅ إضافة معلومات إضافية للتوافق مع smartSearch format
+          if (item['_id'] != null) {
+            item['item'] = item; // ✅ للتوافق مع format الموجود
+            item['type'] = item['type'] ?? 'file';
+            item['searchType'] = item['searchType'] ?? 'tags';
+            item['relevanceScore'] = item['relevanceScore'] ?? 0.95;
+          }
+          return item;
+        }).toList();
+        
+        return {
+          'success': true,
+          'results': processedResults,
+          'resultsCount': resultsCount,
+          'tag': data['tag'] ?? tag,
+        };
+      } else {
+        final errorData = jsonDecode(response.body);
+        final errorMessage = errorData['message'] ?? 'فشل البحث عن طريق Tags';
+        print('❌ [FileSearchService] Tag search failed: $errorMessage');
+        return {
+          'success': false,
+          'error': errorMessage,
+          'statusCode': response.statusCode,
+        };
+      }
+    } catch (e) {
+      print('❌ [FileSearchService] Tag search error: ${e.toString()}');
+      String errorMessage = 'حدث خطأ في الاتصال: ${e.toString()}';
+      
+      if (e.toString().contains('TimeoutException')) {
+        errorMessage = 'انتهت مهلة الاتصال. يرجى المحاولة مرة أخرى...';
+      }
+      
+      return {'success': false, 'error': errorMessage};
+    }
+  }
+
   /// معالجة ملف (استخراج نص، توليد embedding باستخدام Hugging Face، تلخيص)
   /// يستخدم Hugging Face Inference API المجاني لمعالجة الملفات
   /// الباك إند يستخدم:

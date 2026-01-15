@@ -198,7 +198,17 @@ Future<void> showSetFolderProtectionDialog(
 
               if (success) {
                 Navigator.pop(dialogContext);
-                // ✅ استخدام callback فقط - لا نستخدم ScaffoldMessenger
+                // ✅ عرض رسالة النجاح
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(S.of(context).folderProtectionEnabled),
+                      backgroundColor: Colors.green,
+                      duration: Duration(seconds: 2),
+                    ),
+                  );
+                }
+                // ✅ استخدام callback لإعادة تحميل البيانات
                 if (onProtectionChanged != null) {
                   onProtectionChanged();
                 }
@@ -446,6 +456,16 @@ Future<void> _removeProtection(
   if (success) {
     setResult(true);
     Navigator.pop(dialogContext);
+    // ✅ عرض رسالة النجاح
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(S.of(context).folderProtectionDisabled),
+          backgroundColor: Colors.green,
+          duration: Duration(seconds: 2),
+        ),
+      );
+    }
     if (onProtectionRemoved != null) {
       onProtectionRemoved();
     }
@@ -499,6 +519,16 @@ Future<void> _removeProtectionWithBiometric(
       if (success) {
         setResult(true);
         Navigator.pop(dialogContext);
+        // ✅ عرض رسالة النجاح
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(S.of(context).folderProtectionDisabled),
+              backgroundColor: Colors.green,
+              duration: Duration(seconds: 2),
+            ),
+          );
+        }
         if (onProtectionRemoved != null) {
           onProtectionRemoved();
         }

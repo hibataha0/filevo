@@ -912,7 +912,7 @@ class FolderFileCard extends StatelessWidget {
                               ).showSnackBar(
                                 SnackBar(
                                   content: Text(
-                                    'لا يمكن مشاركة المجلدات المحمية',
+                                    S.of(scaffoldContext).cannotShareProtectedFolder,
                                   ),
                                   backgroundColor: Colors.orange,
                                   duration: const Duration(seconds: 3),

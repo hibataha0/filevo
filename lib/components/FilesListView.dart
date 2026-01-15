@@ -9,6 +9,7 @@ import 'package:filevo/views/fileViewer/file_details_page.dart';
 import 'package:filevo/views/folders/room_comments_page.dart';
 import 'package:filevo/services/storage_service.dart';
 import 'package:filevo/generated/l10n.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 class FilesListView extends StatefulWidget {
   final List<Map<String, dynamic>> items;
@@ -253,29 +254,10 @@ class _FilesListViewState extends State<FilesListView> {
             children: [
               // Thumbnail
               if (thumbnailUrl != null || url != null)
-                Image.network(
+                _buildNetworkImage(
                   thumbnailUrl ?? url!,
-                  width: 56,
-                  height: 56,
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) {
-                    return _buildFileTypeIcon(type, iconSize, true);
-                  },
-                  loadingBuilder: (context, child, loadingProgress) {
-                    if (loadingProgress == null) return child;
-                    return Center(
-                      child: SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(
-                            _getTypeColor(type),
-                          ),
-                        ),
-                      ),
-                    );
-                  },
+                  type,
+                  iconSize,
                 ),
 
               // Play icon for videos
@@ -330,6 +312,57 @@ class _FilesListViewState extends State<FilesListView> {
       ),
       child: _buildFileTypeIcon(type, iconSize, false),
     );
+  }
+
+  /// ✅ بناء صورة من الشبكة مع headers للـ Authorization
+  Widget _buildNetworkImage(String imageUrl, String? type, double iconSize) {
+    // ✅ التحقق من أن الصورة تحتاج إلى token
+    final needsToken = imageUrl.contains('/api/') || 
+                       imageUrl.contains('/download/') || 
+                       imageUrl.contains('/view');
+    
+    return FutureBuilder<Map<String, String>?>(
+      future: needsToken ? _getImageHeaders() : Future.value(null),
+      builder: (context, snapshot) {
+        return CachedNetworkImage(
+          imageUrl: imageUrl,
+          width: 56,
+          height: 56,
+          fit: BoxFit.cover,
+          httpHeaders: snapshot.data,
+          memCacheWidth: 200,
+          memCacheHeight: 200,
+          placeholder: (context, url) => Center(
+            child: SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                valueColor: AlwaysStoppedAnimation<Color>(
+                  _getTypeColor(type),
+                ),
+              ),
+            ),
+          ),
+          errorWidget: (context, url, error) {
+            return _buildFileTypeIcon(type, iconSize, true);
+          },
+        );
+      },
+    );
+  }
+
+  /// ✅ الحصول على headers للصور التي تحتاج token
+  Future<Map<String, String>?> _getImageHeaders() async {
+    try {
+      final token = await StorageService.getToken();
+      if (token != null && token.isNotEmpty) {
+        return {'Authorization': 'Bearer $token'};
+      }
+    } catch (e) {
+      print('❌ Error getting token for image headers: $e');
+    }
+    return null;
   }
 
   Widget _buildFileTypeIcon(String? type, double iconSize, bool isThumbnail) {

@@ -850,36 +850,47 @@ class _HomeViewState extends State<HomeView> {
   }
 
   Widget _buildShimmerLoading() {
-    return ListView(
-      padding: EdgeInsets.all(16),
-      children: [
-        SizedBox(height: 20),
-        // Shimmer للمجلدات
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: List.generate(
-            3,
-            (index) => SizedBox(
-              width: (MediaQuery.of(context).size.width - 48) / 3,
-              child: _buildFolderShimmerCard(),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // حساب العرض المتاح بعد Padding (16 * 2 = 32)
+        final availableWidth = constraints.maxWidth - 32; // 32 for ListView padding (16*2)
+        
+        // حساب عرض كل عنصر بشكل آمن
+        final folderItemWidth = ((availableWidth - 16) / 3).clamp(0.0, double.infinity); // 16 for 2 gaps (8*2)
+        final fileItemWidth = ((availableWidth - 8) / 2).clamp(0.0, double.infinity); // 8 for 1 gap
+        
+        return ListView(
+          padding: EdgeInsets.all(16),
+          children: [
+            SizedBox(height: 20),
+            // Shimmer للمجلدات
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: List.generate(
+                3,
+                (index) => SizedBox(
+                  width: folderItemWidth,
+                  child: _buildFolderShimmerCard(),
+                ),
+              ),
             ),
-          ),
-        ),
-        SizedBox(height: 30),
-        // Shimmer للملفات
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: List.generate(
-            6,
-            (index) => SizedBox(
-              width: (MediaQuery.of(context).size.width - 40) / 2,
-              child: _buildFileShimmerCard(),
+            SizedBox(height: 30),
+            // Shimmer للملفات
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: List.generate(
+                6,
+                (index) => SizedBox(
+                  width: fileItemWidth,
+                  child: _buildFileShimmerCard(),
+                ),
+              ),
             ),
-          ),
-        ),
-      ],
+          ],
+        );
+      },
     );
   }
 
@@ -1259,24 +1270,26 @@ class _HomeViewState extends State<HomeView> {
                             else
                               FilesListView(
                                 items: _recentFiles.map((f) {
+                                  final fileName = f['name'] ?? S.of(context).fileWithoutName;
                                   return {
-                                    'title':
-                                        f['name'] ??
-                                        S.of(context).fileWithoutName,
+                                    'title': fileName,
                                     'size': f['size'] ?? '0 B',
                                     'path': f['path'],
+                                    'url': f['url'] ?? '',
+                                    'type': f['type'] ?? 'file',
                                     'createdAt': f['createdAt'],
-                                    'originalName':
-                                        f['originalName'] ?? f['name'],
-                                    '_id': f['originalData']?['_id']
-                                        ?.toString(),
+                                    'originalName': f['originalName'] ?? fileName,
+                                    '_id': f['originalData']?['_id']?.toString(),
                                     'originalData': f['originalData'] ?? f,
                                   };
                                 }).toList(),
                                 itemMargin: const EdgeInsets.only(bottom: 10),
                                 showMoreOptions: true,
                                 onItemTap: (item) {
-                                  _handleFileTap(item);
+                                  final originalData = item['originalData'] as Map<String, dynamic>?;
+                                  if (originalData != null) {
+                                    _handleFileTap(originalData);
+                                  }
                                 },
                                 onFileRemoved: () {
                                   // ✅ إعادة تحميل البيانات بعد حذف ملف

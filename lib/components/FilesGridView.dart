@@ -666,7 +666,7 @@ void _showShareDialog(BuildContext context, Map<String, dynamic> folder) async {
   if (isProtected && protectionType != 'none') {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('لا يمكن مشاركة المجلدات المحمية'),
+        content: Text(S.of(context).cannotShareProtectedFolder),
         backgroundColor: Colors.orange,
         duration: const Duration(seconds: 3),
       ),

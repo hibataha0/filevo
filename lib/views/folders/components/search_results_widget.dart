@@ -64,28 +64,35 @@ class SearchResultsWidget extends StatelessWidget {
       searchFiles.addAll(
         searchFilesResults.map((file) {
           final fileName = file['name']?.toString() ?? 'ملف بدون اسم';
-          final filePath = file['path']?.toString() ?? '';
-          final fileId = file['_id']?.toString() ?? file['id']?.toString();
+          // ✅ محاولة الحصول على path من عدة أماكن
+          final filePath = file['path']?.toString() ?? 
+                          file['originalData']?['path']?.toString() ?? 
+                          '';
+          final fileId = file['_id']?.toString() ?? 
+                        file['id']?.toString() ??
+                        file['originalData']?['_id']?.toString() ??
+                        file['originalData']?['id']?.toString();
           final size = file['size'];
 
           // ✅ بناء URL للصورة
-          String imageUrl;
-          if (fileId != null && fileId.isNotEmpty) {
-            final baseUrl = ApiConfig.baseUrl;
-            final viewPath = ApiEndpoints.viewFile(fileId);
-            imageUrl = "$baseUrl$viewPath";
-          } else if (filePath.isNotEmpty && filePath.trim().isNotEmpty) {
+          String imageUrl = '';
+          if (filePath.isNotEmpty && filePath.trim().isNotEmpty) {
+            // ✅ استخدام path مباشرة إذا كان موجوداً
             imageUrl = getFileUrlForSearch(filePath.trim());
-          } else {
-            imageUrl = '';
+          } else if (fileId != null && fileId.isNotEmpty) {
+            // ✅ إذا لم يكن path موجوداً، استخدم downloadFile endpoint للمعاينة
+            // ✅ استخدام ApiConfig.baseUrl مباشرة (يحتوي على /api/v1)
+            final downloadPath = ApiEndpoints.downloadFile(fileId);
+            imageUrl = "${ApiConfig.baseUrl}$downloadPath";
           }
 
           // ✅ بناء originalData مع جميع الحقول من الباك إند
+          // ✅ التأكد من أن path موجود في originalData إذا كان موجوداً في file
           final originalData = {
             ...file,
             '_id': fileId,
             'name': fileName,
-            'path': filePath,
+            'path': filePath.isNotEmpty ? filePath : (file['path'] ?? ''),
             'size': size,
             'relevanceScore': file['relevanceScore'] ?? 0.0,
             'searchType': file['searchType'] ?? 'text',
@@ -267,6 +274,8 @@ class SearchResultsWidget extends StatelessWidget {
                           'title': f['name'] ?? S.of(context).unnamedFile,
                           'size': f['size'] ?? '0 B',
                           'path': f['path'],
+                          'url': f['url'] ?? '',
+                          'type': f['type'] ?? 'file',
                           'createdAt': f['createdAt'],
                           'originalName': f['originalName'] ?? f['name'],
                           '_id': f['_id']?.toString(),
@@ -276,7 +285,12 @@ class SearchResultsWidget extends StatelessWidget {
                       itemMargin: const EdgeInsets.only(bottom: 10),
                       showMoreOptions: true,
                       onItemTap: (item) {
-                        onFileTap(item['originalData'] ?? item);
+                        final originalData = item['originalData'] as Map<String, dynamic>?;
+                        if (originalData != null) {
+                          onFileTap(originalData);
+                        } else {
+                          onFileTap(item);
+                        }
                       },
                     ),
                 ],

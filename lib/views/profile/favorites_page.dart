@@ -8,6 +8,7 @@ import 'package:filevo/controllers/folders/files_controller.dart';
 import 'package:filevo/services/storage_service.dart';
 import 'package:filevo/views/fileViewer/FilesGridView1.dart';
 import 'package:filevo/config/api_config.dart';
+import 'package:filevo/components/FilesListView.dart';
 import 'package:filevo/views/fileViewer/VideoViewer.dart';
 import 'package:filevo/views/fileViewer/audioPlayer.dart';
 import 'package:filevo/views/fileViewer/imageViewer.dart';
@@ -397,24 +398,49 @@ class _FavoritesPageState extends State<FavoritesPage> {
                       ],
                     ),
                   )
-                : FilesGrid(
-                    // ✅ القائمة تيجي من الـ controller مباشرة
-                    files: starredFiles.map((f) {
-                      final fileName = f['name'] ?? S.of(context).unnamedfile;
-                      final filePath = f['path'] ?? '';
-                      return {
-                        'name': _formatFileName(fileName),
-                        'url': getFileUrl(filePath),
-                        'type': _getFileType(fileName),
-                        'size': f['size']?.toString() ?? '0',
-                        'originalData': f,
-                        'originalName':
-                            fileName, // ✅ إضافة originalName للتحقق من نوع الملف بشكل صحيح
-                      };
-                    }).toList(),
-                    onFileTap: (file) =>
-                        _handleFileTap(file['originalData'], context),
-                  ),
+                : _isGridView
+                    ? FilesGrid(
+                        // ✅ القائمة تيجي من الـ controller مباشرة
+                        files: starredFiles.map((f) {
+                          final fileName = f['name'] ?? S.of(context).unnamedfile;
+                          final filePath = f['path'] ?? '';
+                          return {
+                            'name': _formatFileName(fileName),
+                            'url': getFileUrl(filePath),
+                            'type': _getFileType(fileName),
+                            'size': f['size']?.toString() ?? '0',
+                            'originalData': f,
+                            'originalName':
+                                fileName, // ✅ إضافة originalName للتحقق من نوع الملف بشكل صحيح
+                          };
+                        }).toList(),
+                        onFileTap: (file) =>
+                            _handleFileTap(file['originalData'], context),
+                      )
+                    : FilesListView(
+                        items: starredFiles.map((f) {
+                          final fileName = f['name'] ?? S.of(context).unnamedfile;
+                          final filePath = f['path'] ?? '';
+                          return {
+                            'title': fileName,
+                            'size': _formatFileSize(f['size']?.toString() ?? '0'),
+                            'path': filePath,
+                            'url': getFileUrl(filePath),
+                            'type': _getFileType(fileName),
+                            'createdAt': f['createdAt'],
+                            'originalName': fileName,
+                            '_id': f['_id']?.toString(),
+                            'originalData': f,
+                          };
+                        }).toList(),
+                        onItemTap: (item) {
+                          final originalData = item['originalData'] as Map<String, dynamic>?;
+                          if (originalData != null) {
+                            _handleFileTap(originalData, context);
+                          }
+                        },
+                        showMoreOptions: true,
+                      ),
           ),
         );
       },

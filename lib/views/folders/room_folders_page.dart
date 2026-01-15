@@ -12,6 +12,7 @@ import 'package:filevo/views/fileViewer/folder_actions_service.dart';
 import 'package:pull_to_refresh/pull_to_refresh.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:filevo/dialogs/folder_protection_dialogs.dart';
+import 'package:filevo/services/socket_service.dart';
 
 class RoomFoldersPage extends StatefulWidget {
   final String roomId;
@@ -31,11 +32,75 @@ class _RoomFoldersPageState extends State<RoomFoldersPage> {
     initialRefresh: false,
   );
 
+  final SocketService _socketService = SocketService();
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadRoomData();
+      _setupSocketListeners();
+    });
+  }
+
+  /// ✅ إعداد مستمعي socket.io
+  void _setupSocketListeners() {
+    // ✅ الاتصال بـ socket.io
+    _socketService.connect().then((_) {
+      // ✅ الانضمام إلى الروم
+      _socketService.joinRoom(widget.roomId);
+
+      // ✅ الاستماع لحدث new_folder
+      _socketService.onNewFolder((data) {
+        if (!mounted) return;
+
+        final folder = data['folder'] as Map<String, dynamic>?;
+        final roomId = data['roomId'] as String?;
+        final sharedBy = data['sharedBy'] as String?;
+
+        // ✅ التحقق من أن المجلد يخص هذا الروم
+        if (roomId != widget.roomId || folder == null) {
+          return;
+        }
+
+        print('📂 [RoomFoldersPage] New folder received via socket: ${folder['name']}');
+
+        // ✅ إضافة المجلد إلى القائمة
+        if (mounted && roomData != null) {
+          setState(() {
+            final folders = roomData!['folders'] as List? ?? [];
+            // ✅ التحقق من أن المجلد غير موجود بالفعل
+            final folderId = folder['_id']?.toString();
+            final exists = folders.any((f) {
+              final fId = f['folderId'] is Map
+                  ? f['folderId']['_id']?.toString()
+                  : f['folderId']?.toString();
+              return fId == folderId;
+            });
+
+            if (!exists) {
+              folders.add({
+                'folderId': folder,
+                'sharedBy': sharedBy,
+                'sharedAt': DateTime.now().toIso8601String(),
+              });
+              roomData!['folders'] = folders;
+            }
+          });
+
+          // ✅ تحديث تفاصيل المجلد
+          _loadFoldersDetails();
+
+          // ✅ عرض إشعار
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('📂 ${S.of(context).newFolderShared(folder['name'] ?? S.of(context).folder)}'),
+              backgroundColor: Colors.green,
+              duration: Duration(seconds: 3),
+            ),
+          );
+        }
+      });
     });
   }
 
@@ -124,6 +189,9 @@ class _RoomFoldersPageState extends State<RoomFoldersPage> {
 
   @override
   void dispose() {
+    // ✅ مغادرة الروم وإزالة المستمعين
+    _socketService.leaveRoom(widget.roomId);
+    _socketService.removeAllListeners();
     _refreshController.dispose();
     super.dispose();
   }
@@ -244,7 +312,18 @@ class _RoomFoldersPageState extends State<RoomFoldersPage> {
     }
 
     // ✅ تحويل المجلدات إلى format مناسب لـ FilesGridView
-    final displayFolders = folders.map((folder) {
+    // ✅ تصفية المجلدات المحمية من العرض في الروم
+    final filteredFolders = folders.where((folder) {
+      final folderIdRef = folder['folderId'];
+      final folderData = folderIdRef is Map<String, dynamic>
+          ? folderIdRef
+          : <String, dynamic>{};
+      // ✅ استبعاد المجلدات المحمية من العرض في الروم
+      final isProtected = folderData['isProtected'] == true;
+      return !isProtected; // ✅ إرجاع false للمجلدات المحمية (لن تظهر)
+    }).toList();
+    
+    final displayFolders = filteredFolders.map((folder) {
       final folderIdRef = folder['folderId'];
       final folderData = folderIdRef is Map<String, dynamic>
           ? folderIdRef

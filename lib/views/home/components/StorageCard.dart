@@ -3,6 +3,7 @@ import 'package:filevo/responsive.dart';
 import 'package:filevo/views/home/components/StorageChartPainter.dart';
 import 'package:provider/provider.dart';
 import 'package:filevo/controllers/profile/profile_controller.dart';
+import 'package:filevo/generated/l10n.dart';
 
 class StorageCard extends StatefulWidget {
   const StorageCard({super.key});
@@ -219,7 +220,7 @@ class _StorageCardState extends State<StorageCard> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'المتاح',
+                          S.of(context).storageAvailable,
                           style: TextStyle(
                             color: Colors.white.withOpacity(0.8),
                             fontSize: textSizeLabel,
@@ -254,7 +255,7 @@ class _StorageCardState extends State<StorageCard> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'المستخدم',
+                          S.of(context).storageUsed,
                           style: TextStyle(
                             color: Colors.white.withOpacity(0.8),
                             fontSize: textSizeLabel,

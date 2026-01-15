@@ -195,9 +195,52 @@ class RoomPermissions {
     return await isOwnerOrEditor(roomData);
   }
 
-  /// ✅ التحقق من أن المستخدم يمكنه مشاركة الملفات/المجلدات (owner فقط)
+  /// ✅ التحقق من أن المستخدم يمكنه مشاركة الملفات/المجلدات
+  /// ✅ يسمح لـ: room owner أو members مع canShare = true
   static Future<bool> canShareFiles(Map<String, dynamic> roomData) async {
-    return await isOwner(roomData);
+    // ✅ 1. التحقق من أن المستخدم هو owner
+    final isRoomOwner = await isOwner(roomData);
+    if (isRoomOwner) {
+      print('✅ [canShareFiles] User is room owner, can share');
+      return true;
+    }
+
+    // ✅ 2. التحقق من أن المستخدم عضو مع canShare = true
+    final currentUserId = await StorageService.getUserId();
+    if (currentUserId == null || currentUserId.isEmpty) {
+      print('❌ [canShareFiles] No currentUserId found');
+      return false;
+    }
+
+    final members = roomData['members'] as List?;
+    if (members != null) {
+      for (final member in members) {
+        final user = member['user'];
+        String? userId;
+        if (user is Map<String, dynamic>) {
+          userId =
+              user['_id']?.toString() ??
+              user['id']?.toString() ??
+              user['userId']?.toString() ??
+              user['user_id']?.toString();
+        } else if (user is String) {
+          userId = user;
+        } else {
+          userId = user?.toString();
+        }
+
+        if (userId != null && userId.isNotEmpty) {
+          if (userId.trim().toLowerCase() == currentUserId.trim().toLowerCase()) {
+            final canShare = member['canShare'] == true;
+            print('🔍 [canShareFiles] User found in members, canShare: $canShare');
+            return canShare;
+          }
+        }
+      }
+    }
+
+    print('❌ [canShareFiles] User cannot share files');
+    return false;
   }
 
   /// ✅ التحقق من أن المستخدم يمكنه إزالة الملفات/المجلدات (owner أو editor)

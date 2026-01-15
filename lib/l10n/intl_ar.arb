@@ -42,6 +42,9 @@
   "freeInternalValue": "120.5 جيجابايت",
   "usedStorageValue": "149.5 جيجابايت",
   "searchHint": "ابحث هنا عن أي شيء",
+  "searchByTagsHint": "ابحث عن طريق Tag (مثال: مشروع، مهم)",
+  "switchToTagSearch": "التبديل إلى البحث عن طريق Tags",
+  "switchToTextSearch": "التبديل إلى البحث النصي",
   "all": "الكل",
   "myFiles": "ملفاتي",
   "shared": "مشتركة",
@@ -1607,6 +1610,7 @@
   "noDeletedFiles": "لا يوجد ملفات محذوفة",
   "loading": "جاري التحميل...",
   "unnamedFile": "ملف بدون اسم",
+  "unnamedfile": "ملف بدون اسم",
   "deletedAt": "تم الحذف: {date}",
   "restore": "استعادة",
   "permanentDelete": "حذف نهائي",
@@ -1777,6 +1781,9 @@
   "messageLabel": "رسالة (اختياري)",
   "messageHint": "أضف رسالة ترحيبية...",
   "fileAlreadyShared": "ℹ️ الملف مشارك بالفعل مع هذه الغرفة",
+  "folderAlreadyShared": "ℹ️ المجلد مشارك بالفعل مع هذه الغرفة",
+  "noPermissionToShareInRoom": "⚠️ ليس لديك صلاحية للمشاركة في هذه الغرفة",
+  "onlyRoomOwnerCanShare": "⚠️ فقط مالك الغرفة يمكنه المشاركة",
   "fileSharedSuccessOneTime": "✅ تم مشاركة الملف مع الغرفة (لمرة واحدة) بنجاح",
   "fileSharedSuccess": "✅ تم مشاركة الملف مع الغرفة بنجاح",
   "fileShareFailed": " فشل مشاركة الملف ",
@@ -1851,6 +1858,48 @@
   "@fingerprintVerificationError": {
     "placeholders": {
       "error": {
+        "type": "String"
+      }
+    }
+  },
+  "storageAvailable": "المتاح",
+  "cannotShareProtectedFolder": "لا يمكن مشاركة المجلدات المحمية",
+  "folderProtectedVerifyPassword": "المجلد محمي. يرجى التحقق من كلمة السر أولاً",
+  "errorLoadingFolderContents": "خطأ في تحميل محتويات المجلد: {error}",
+  "@errorLoadingFolderContents": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "rateLimitExceeded": "تم تجاوز الحد المسموح من الطلبات. يرجى المحاولة لاحقاً.",
+  "fileNotFoundInRoom": "الملف غير موجود في هذه الغرفة أو داخل مجلد مشترك",
+  "errorLoadingVideoFolderContents": "خطأ في تحميل الفيديو: {error}",
+  "@errorLoadingVideoFolderContents": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "noPermissionToAccessFile": "ليس لديك صلاحية للوصول إلى هذا الملف",
+  "accessDeniedOrFileAlreadyAccessed": "تم رفض الوصول أو تم الوصول إلى الملف مسبقاً",
+  "unnamedFolder": "مجلد بدون اسم",
+  "folderAddedToFavorites": "✅ تم إضافة المجلد إلى المفضلة",
+  "folderRemovedFromFavorites": "✅ تم إزالة المجلد من المفضلة",
+  "newFileShared": "تم مشاركة ملف جديد: {fileName}",
+  "@newFileShared": {
+    "placeholders": {
+      "fileName": {
+        "type": "String"
+      }
+    }
+  },
+  "newFolderShared": "تم مشاركة مجلد جديد: {folderName}",
+  "@newFolderShared": {
+    "placeholders": {
+      "folderName": {
         "type": "String"
       }
     }

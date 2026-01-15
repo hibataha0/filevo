@@ -42,6 +42,9 @@
   "freeInternalValue": "120.5 GB",
   "usedStorageValue": "149.5 GB",
   "searchHint": "Search anything here",
+  "searchByTagsHint": "Search by tag (e.g., project, important)",
+  "switchToTagSearch": "Switch to tag search",
+  "switchToTextSearch": "Switch to text search",
   "all": "All",
   "myFiles": "My Files",
   "shared": "Shared",
@@ -1643,6 +1646,9 @@
   "messageLabel": "Message (Optional)",
   "messageHint": "Add a welcome message...",
   "fileAlreadyShared": "ℹ️ File is already shared with this room",
+  "folderAlreadyShared": "ℹ️ Folder is already shared with this room",
+  "noPermissionToShareInRoom": "⚠️ You do not have permission to share in this room",
+  "onlyRoomOwnerCanShare": "⚠️ Only room owner can share",
   "fileSharedSuccessOneTime": "✅ File shared with the room (One-time) successfully",
   "fileSharedSuccess": "✅ File shared with the room successfully",
   "fileShareFailed": "❌ Failed to share file ",
@@ -1669,6 +1675,22 @@
   "fullAccess": "View, Edit, and Delete",
   "folderSharedSuccess": "✅ Folder shared with the room successfully",
   "folderSharedFailed": "❌ Failed to share the folder",
+  "newFileShared": "New file shared: {fileName}",
+  "@newFileShared": {
+    "placeholders": {
+      "fileName": {
+        "type": "String"
+      }
+    }
+  },
+  "newFolderShared": "New folder shared: {folderName}",
+  "@newFolderShared": {
+    "placeholders": {
+      "folderName": {
+        "type": "String"
+      }
+    }
+  },
   "noRoomsAvailable": "No rooms available",
   "createRoomFirstToShare": "Create a room first to start sharing",
   "sharedd": "Shared",
@@ -1720,5 +1742,28 @@
         "type": "String"
       }
     }
-  }
+  },
+  "storageAvailable": "Available",
+  "cannotShareProtectedFolder": "Cannot share protected folders",
+  "folderProtectedVerifyPassword": "Folder is protected. Please verify password first",
+  "errorLoadingFolderContents": "Error loading folder contents: {error}",
+  "@errorLoadingFolderContents": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "rateLimitExceeded": "Rate limit exceeded. Please try again later.",
+  "fileNotFoundInRoom": "File not found in this room or inside a shared folder",
+  "errorLoadingVideoFolderContents": "Error loading video: {error}",
+  "@errorLoadingVideoFolderContents": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "noPermissionToAccessFile": "You do not have permission to access this file",
+  "accessDeniedOrFileAlreadyAccessed": "Access denied or file already accessed"
 }

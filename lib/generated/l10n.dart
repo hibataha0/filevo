@@ -404,6 +404,36 @@ class S {
     );
   }
 
+  /// `Search by tag (e.g., project, important)`
+  String get searchByTagsHint {
+    return Intl.message(
+      'Search by tag (e.g., project, important)',
+      name: 'searchByTagsHint',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Switch to tag search`
+  String get switchToTagSearch {
+    return Intl.message(
+      'Switch to tag search',
+      name: 'switchToTagSearch',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Switch to text search`
+  String get switchToTextSearch {
+    return Intl.message(
+      'Switch to text search',
+      name: 'switchToTextSearch',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `All`
   String get all {
     return Intl.message('All', name: 'all', desc: '', args: []);
@@ -9189,6 +9219,36 @@ class S {
     );
   }
 
+  /// `ℹ️ Folder is already shared with this room`
+  String get folderAlreadyShared {
+    return Intl.message(
+      'ℹ️ Folder is already shared with this room',
+      name: 'folderAlreadyShared',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `⚠️ You do not have permission to share in this room`
+  String get noPermissionToShareInRoom {
+    return Intl.message(
+      '⚠️ You do not have permission to share in this room',
+      name: 'noPermissionToShareInRoom',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `⚠️ Only room owner can share`
+  String get onlyRoomOwnerCanShare {
+    return Intl.message(
+      '⚠️ Only room owner can share',
+      name: 'onlyRoomOwnerCanShare',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `✅ File shared with the room (One-time) successfully`
   String get fileSharedSuccessOneTime {
     return Intl.message(
@@ -9421,6 +9481,26 @@ class S {
       name: 'folderSharedFailed',
       desc: '',
       args: [],
+    );
+  }
+
+  /// `New file shared: {fileName}`
+  String newFileShared(String fileName) {
+    return Intl.message(
+      'New file shared: $fileName',
+      name: 'newFileShared',
+      desc: '',
+      args: [fileName],
+    );
+  }
+
+  /// `New folder shared: {folderName}`
+  String newFolderShared(String folderName) {
+    return Intl.message(
+      'New folder shared: $folderName',
+      name: 'newFolderShared',
+      desc: '',
+      args: [folderName],
     );
   }
 
@@ -9676,6 +9756,96 @@ class S {
       name: 'fingerprintVerificationError',
       desc: '',
       args: [error],
+    );
+  }
+
+  /// `Available`
+  String get storageAvailable {
+    return Intl.message(
+      'Available',
+      name: 'storageAvailable',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Cannot share protected folders`
+  String get cannotShareProtectedFolder {
+    return Intl.message(
+      'Cannot share protected folders',
+      name: 'cannotShareProtectedFolder',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Folder is protected. Please verify password first`
+  String get folderProtectedVerifyPassword {
+    return Intl.message(
+      'Folder is protected. Please verify password first',
+      name: 'folderProtectedVerifyPassword',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Error loading folder contents: {error}`
+  String errorLoadingFolderContents(String error) {
+    return Intl.message(
+      'Error loading folder contents: $error',
+      name: 'errorLoadingFolderContents',
+      desc: '',
+      args: [error],
+    );
+  }
+
+  /// `Rate limit exceeded. Please try again later.`
+  String get rateLimitExceeded {
+    return Intl.message(
+      'Rate limit exceeded. Please try again later.',
+      name: 'rateLimitExceeded',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `File not found in this room or inside a shared folder`
+  String get fileNotFoundInRoom {
+    return Intl.message(
+      'File not found in this room or inside a shared folder',
+      name: 'fileNotFoundInRoom',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Error loading video: {error}`
+  String errorLoadingVideoFolderContents(String error) {
+    return Intl.message(
+      'Error loading video: $error',
+      name: 'errorLoadingVideoFolderContents',
+      desc: '',
+      args: [error],
+    );
+  }
+
+  /// `You do not have permission to access this file`
+  String get noPermissionToAccessFile {
+    return Intl.message(
+      'You do not have permission to access this file',
+      name: 'noPermissionToAccessFile',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Access denied or file already accessed`
+  String get accessDeniedOrFileAlreadyAccessed {
+    return Intl.message(
+      'Access denied or file already accessed',
+      name: 'accessDeniedOrFileAlreadyAccessed',
+      desc: '',
+      args: [],
     );
   }
 }

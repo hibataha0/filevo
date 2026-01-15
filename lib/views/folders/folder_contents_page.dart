@@ -187,6 +187,19 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
       if (result != null) {
         if (result['contents'] != null) {
           newContents = List<Map<String, dynamic>>.from(result['contents']);
+          
+          // ✅ إذا كان المجلد مشترك في الروم، تصفية المجلدات المحمية
+          if (widget.roomId != null && widget.roomId!.isNotEmpty) {
+            newContents = newContents.where((item) {
+              if (item['type'] == 'folder') {
+                final isProtected = item['isProtected'] == true;
+                // ✅ استبعاد المجلدات المحمية من العرض في الروم
+                return !isProtected;
+              }
+              return true; // ✅ الملفات تظهر دائماً
+            }).toList();
+          }
+          
           newContents.sort((a, b) {
             final aType = a['type'] as String?;
             final bType = b['type'] as String?;
@@ -199,8 +212,19 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
             result['subfolders'] ?? [],
           );
           final files = List<Map<String, dynamic>>.from(result['files'] ?? []);
+          
+          // ✅ إذا كان المجلد مشترك في الروم، تصفية المجلدات المحمية
+          List<Map<String, dynamic>> filteredSubfolders = subfolders;
+          if (widget.roomId != null && widget.roomId!.isNotEmpty) {
+            filteredSubfolders = subfolders.where((f) {
+              final isProtected = f['isProtected'] == true;
+              // ✅ استبعاد المجلدات المحمية من العرض في الروم
+              return !isProtected;
+            }).toList();
+          }
+          
           newContents = [
-            ...subfolders.map((f) => {...f, 'type': 'folder'}),
+            ...filteredSubfolders.map((f) => {...f, 'type': 'folder'}),
             ...files.map((f) => {...f, 'type': 'file'}),
           ];
         }
@@ -316,8 +340,8 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
           SnackBar(
             content: Text(
               errorString.contains('403') || errorString.contains('protected')
-                  ? 'المجلد محمي. يرجى التحقق من كلمة السر أولاً'
-                  : 'خطأ في تحميل محتويات المجلد: ${e.toString()}'
+                  ? S.of(context).folderProtectedVerifyPassword
+                  : S.of(context).errorLoadingFolderContents(e.toString())
             ),
             backgroundColor: Colors.red,
           ),
@@ -547,7 +571,7 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
           }
         } else {
           _showSnackBar(
-            'تم تجاوز الحد المسموح من الطلبات. يرجى المحاولة لاحقاً.',
+            S.of(context).rateLimitExceeded,
             Colors.orange,
           );
           return;
@@ -559,7 +583,7 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
         } catch (e) {
           print('❌ [openRoomFile] Error opening file from regular endpoint: $e');
           _showSnackBar(
-            'تم تجاوز الحد المسموح من الطلبات. يرجى المحاولة لاحقاً.',
+            S.of(context).rateLimitExceeded,
             Colors.orange,
           );
         }
@@ -571,11 +595,11 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
         try {
           final errorJson = jsonDecode(response.body);
           final errorMessage = errorJson['message'] ?? 
-                             'الملف غير موجود في هذه الغرفة أو داخل مجلد مشترك';
+                             S.of(context).fileNotFoundInRoom;
           _showSnackBar(errorMessage, Colors.red);
         } catch (e) {
           _showSnackBar(
-            'الملف غير موجود في هذه الغرفة أو داخل مجلد مشترك',
+            S.of(context).fileNotFoundInRoom,
             Colors.red,
           );
         }
@@ -592,7 +616,7 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
         } catch (e) {
           // ✅ إذا لم يكن JSON، استخدم الرسالة الأصلية
           if (response.statusCode == 403) {
-            errorMessage = 'Access denied or file already accessed';
+            errorMessage = S.of(context).accessDeniedOrFileAlreadyAccessed;
           }
         }
         _showSnackBar(errorMessage, Colors.red);
@@ -684,12 +708,12 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
                 ),
               );
             } else {
-              _showSnackBar('فشل تحميل الفيديو: ${fullResponse.statusCode}', Colors.red);
+              _showSnackBar(S.of(context).failedToLoadVideo(fullResponse.statusCode), Colors.red);
             }
           } catch (e) {
             if (mounted) {
               Navigator.pop(context);
-              _showSnackBar('خطأ في تحميل الفيديو: $e', Colors.red);
+              _showSnackBar(S.of(context).errorLoadingVideoFolderContents(e.toString()), Colors.red);
             }
           }
         } else if (name.endsWith('.jpg') ||
@@ -769,11 +793,11 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
         } catch (e) {
           print('❌ [openFileFromUrl] Could not parse error JSON: $e');
           if (response.statusCode == 403) {
-            errorMessage = 'ليس لديك صلاحية للوصول إلى هذا الملف';
+            errorMessage = S.of(context).noPermissionToAccessFile;
           } else if (response.statusCode == 404) {
-            errorMessage = 'الملف غير موجود';
+            errorMessage = S.of(context).fileNotFound;
           } else if (response.statusCode == 401) {
-            errorMessage = 'يرجى إعادة تسجيل الدخول';
+            errorMessage = S.of(context).pleaseLoginAgain;
           } else {
             errorMessage = S.of(context).fileUnavailableWithCode(response.statusCode.toString());
           }
@@ -796,7 +820,7 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
     try {
       final file = File(filePath);
       if (!await file.exists()) {
-        _showSnackBar('File not found', Colors.red);
+        _showSnackBar(S.of(context).fileNotFound, Colors.red);
         return;
       }
 
@@ -868,7 +892,7 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
       }
     } catch (e) {
       if (mounted) {
-        _showSnackBar('Error opening file: $e', Colors.red);
+        _showSnackBar(S.of(context).errorOpeningFile(e.toString()), Colors.red);
       }
     }
   }
@@ -2043,7 +2067,7 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
                           if (isProtected && protectionType != 'none') {
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
-                                content: Text('لا يمكن مشاركة المجلدات المحمية'),
+                                content: Text(S.of(context).cannotShareProtectedFolder),
                                 backgroundColor: Colors.orange,
                                 duration: Duration(seconds: 3),
                               ),
@@ -2106,8 +2130,8 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
                             ? Icons.lock_open
                             : Icons.lock,
                         title: (folder['folderData'] ?? folder)['isProtected'] == true
-                            ? 'إلغاء قفل المجلد'
-                            : 'قفل المجلد',
+                            ? S.of(context).unlockFolder
+                            : S.of(context).lockFolder,
                         iconColor: Colors.orange,
                         onTap: () {
                           Navigator.pop(context);

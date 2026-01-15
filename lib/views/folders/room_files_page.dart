@@ -23,6 +23,7 @@ import 'package:filevo/views/fileViewer/FilesGridView1.dart';
 import 'package:filevo/controllers/folders/folders_controller.dart';
 import 'package:pull_to_refresh/pull_to_refresh.dart';
 import 'package:shimmer/shimmer.dart';
+import 'package:filevo/services/socket_service.dart';
 
 class RoomFilesPage extends StatefulWidget {
   final String roomId;
@@ -47,11 +48,74 @@ class _RoomFilesPageState extends State<RoomFilesPage> {
   bool _isOpeningFile = false;
   String? _openingFileId;
 
+  final SocketService _socketService = SocketService();
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadRoomData();
+      _setupSocketListeners();
+    });
+  }
+
+  /// ✅ إعداد مستمعي socket.io
+  void _setupSocketListeners() {
+    // ✅ الاتصال بـ socket.io
+    _socketService.connect().then((_) {
+      // ✅ الانضمام إلى الروم
+      _socketService.joinRoom(widget.roomId);
+
+      // ✅ الاستماع لحدث new_file
+      _socketService.onNewFile((data) {
+        if (!mounted) return;
+
+        final file = data['file'] as Map<String, dynamic>?;
+        final roomId = data['roomId'] as String?;
+        final sharedBy = data['sharedBy'] as String?;
+
+        // ✅ التحقق من أن الملف يخص هذا الروم
+        if (roomId != widget.roomId || file == null) {
+          return;
+        }
+
+        print('📁 [RoomFilesPage] New file received via socket: ${file['name']}');
+
+        // ✅ إضافة الملف إلى القائمة
+        if (mounted && roomData != null) {
+          setState(() {
+            final files = roomData!['files'] as List? ?? [];
+            // ✅ التحقق من أن الملف غير موجود بالفعل
+            final fileId = file['_id']?.toString();
+            final exists = files.any((f) {
+              final fId = f['fileId'] is Map
+                  ? f['fileId']['_id']?.toString()
+                  : f['fileId']?.toString();
+              return fId == fileId;
+            });
+
+            if (!exists) {
+              files.add({
+                'fileId': file,
+                'sharedBy': sharedBy,
+                'sharedAt': DateTime.now().toIso8601String(),
+                'isOneTimeShare': file['isOneTimeShare'] ?? false,
+                'expiresAt': file['expiresAt'],
+              });
+              roomData!['files'] = files;
+            }
+          });
+
+          // ✅ عرض إشعار
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('📁 ${S.of(context).newFileShared(file['name'] ?? S.of(context).file)}'),
+              backgroundColor: Colors.green,
+              duration: Duration(seconds: 3),
+            ),
+          );
+        }
+      });
     });
   }
 
@@ -74,6 +138,9 @@ class _RoomFilesPageState extends State<RoomFilesPage> {
 
   @override
   void dispose() {
+    // ✅ مغادرة الروم وإزالة المستمعين
+    _socketService.leaveRoom(widget.roomId);
+    _socketService.removeAllListeners();
     _refreshController.dispose();
     super.dispose();
   }

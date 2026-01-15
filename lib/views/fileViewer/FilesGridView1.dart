@@ -2556,7 +2556,7 @@ class _FolderNavigationDialogState extends State<_FolderNavigationDialog> {
                   ListTile(
                     leading: Icon(Icons.check_circle, color: Colors.green),
                     title: Text(
-                      '${S.of(context).selectFolder} "${_breadcrumb.last['name'] ?? S.of(context).folderNameHint}"',
+                      S.of(context).selectFolder(_breadcrumb.last['name'] ?? S.of(context).folderNameHint),
                     ),
                     subtitle: Text(S.of(context).selectFolderDescription),
                     onTap: () => widget.onSelect(_currentFolderId),

@@ -5,6 +5,7 @@ import 'package:filevo/constants/app_colors.dart';
 import 'package:filevo/generated/l10n.dart';
 import 'package:pull_to_refresh/pull_to_refresh.dart';
 import 'package:filevo/utils/file_type_utils.dart';
+import 'package:filevo/utils/room_permissions.dart';
 
 class ShareFileWithRoomPage extends StatefulWidget {
   final String fileId;
@@ -364,7 +365,22 @@ class _ShareFileWithRoomPageState extends State<ShareFileWithRoomPage> {
                             ),
                           ),
                           child: InkWell(
-                            onTap: () {
+                            onTap: () async {
+                              // ✅ التحقق من صلاحية المشاركة قبل الاختيار
+                              final canShare = await RoomPermissions.canShareFiles(room);
+                              if (!canShare) {
+                                // ✅ عرض رسالة أنه لا يملك صلاحية
+                                if (mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(S.of(context).noPermissionToShareInRoom),
+                                      backgroundColor: Colors.orange,
+                                      duration: Duration(seconds: 3),
+                                    ),
+                                  );
+                                }
+                                return;
+                              }
                               setState(() {
                                 selectedRoomId = room['_id'];
                               });
@@ -586,46 +602,90 @@ class _ShareFileWithRoomPageState extends State<ShareFileWithRoomPage> {
                                       ],
                                     ),
                                     SizedBox(height: 8),
-                                    SizedBox(
-                                      width: double.infinity,
-                                      child: Consumer<RoomController>(
-                                        builder: (context, roomController, child) {
-                                          return ElevatedButton.icon(
-                                            onPressed: roomController.isLoading
-                                                ? null
-                                                : () => _shareFileWithRoom(
-                                                    room['_id'],
-                                                  ),
-                                            icon: roomController.isLoading
-                                                ? SizedBox(
-                                                    width: 16,
-                                                    height: 16,
-                                                    child: CircularProgressIndicator(
-                                                      strokeWidth: 2,
-                                                      valueColor:
-                                                          AlwaysStoppedAnimation<
-                                                            Color
-                                                          >(Colors.white),
-                                                    ),
-                                                  )
-                                                : Icon(Icons.share),
-                                            label: Text(
-                                              isOneTimeShare
-                                                  ? S.of(context).oneTimeShare
-                                                  : S.of(context).share,
+                                    FutureBuilder<bool>(
+                                      future: RoomPermissions.canShareFiles(room),
+                                      builder: (context, snapshot) {
+                                        // ✅ لا نعرض أي شيء حتى يتم تحميل البيانات
+                                        if (snapshot.connectionState == ConnectionState.waiting) {
+                                          return SizedBox.shrink();
+                                        }
+                                        
+                                        final canShare = snapshot.data ?? false;
+                                        if (!canShare) {
+                                          return Container(
+                                            padding: EdgeInsets.all(12),
+                                            decoration: BoxDecoration(
+                                              color: Colors.orange.shade50,
+                                              borderRadius: BorderRadius.circular(8),
+                                              border: Border.all(
+                                                color: Colors.orange.shade200,
+                                                width: 1,
+                                              ),
                                             ),
-                                            style: ElevatedButton.styleFrom(
-                                              backgroundColor: Color(
-                                                0xff28336f,
-                                              ),
-                                              foregroundColor: Colors.white,
-                                              padding: EdgeInsets.symmetric(
-                                                vertical: 12,
-                                              ),
+                                            child: Row(
+                                              children: [
+                                                Icon(
+                                                  Icons.warning_amber_rounded,
+                                                  size: 20,
+                                                  color: Colors.orange.shade700,
+                                                ),
+                                                SizedBox(width: 8),
+                                                Expanded(
+                                                  child: Text(
+                                                    S.of(context).noPermissionToShareInRoom,
+                                                    style: TextStyle(
+                                                      fontSize: 13,
+                                                      color: Colors.orange.shade800,
+                                                      fontWeight: FontWeight.w600,
+                                                    ),
+                                                  ),
+                                                ),
+                                              ],
                                             ),
                                           );
-                                        },
-                                      ),
+                                        }
+                                        return SizedBox(
+                                          width: double.infinity,
+                                          child: Consumer<RoomController>(
+                                            builder: (context, roomController, child) {
+                                              return ElevatedButton.icon(
+                                                onPressed: roomController.isLoading
+                                                    ? null
+                                                    : () => _shareFileWithRoom(
+                                                        room['_id'],
+                                                      ),
+                                                icon: roomController.isLoading
+                                                    ? SizedBox(
+                                                        width: 16,
+                                                        height: 16,
+                                                        child: CircularProgressIndicator(
+                                                          strokeWidth: 2,
+                                                          valueColor:
+                                                              AlwaysStoppedAnimation<
+                                                                Color
+                                                              >(Colors.white),
+                                                        ),
+                                                      )
+                                                    : Icon(Icons.share),
+                                                label: Text(
+                                                  isOneTimeShare
+                                                      ? S.of(context).oneTimeShare
+                                                      : S.of(context).share,
+                                                ),
+                                                style: ElevatedButton.styleFrom(
+                                                  backgroundColor: Color(
+                                                    0xff28336f,
+                                                  ),
+                                                  foregroundColor: Colors.white,
+                                                  padding: EdgeInsets.symmetric(
+                                                    vertical: 12,
+                                                  ),
+                                                ),
+                                              );
+                                            },
+                                          ),
+                                        );
+                                      },
                                     ),
                                   ],
                                 ],

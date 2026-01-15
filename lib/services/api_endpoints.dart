@@ -159,6 +159,7 @@ class ApiEndpoints {
   static const String aiSmartSearch = '/search/smart';
   static const String aiSearchContent = '/search/content';
   static const String aiSearchFilename = '/search/filename';
+  static const String aiSearchByTags = '/search/tags';
   static String aiProcessFile(String fileId) => '/search/process/$fileId';
   static String aiReprocessFile(String fileId) => '/search/reprocess/$fileId';
   static const String aiHFStatus = '/search/hf-status';
