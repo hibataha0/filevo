@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
+import 'package:flutter/widgets.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:filevo/controllers/folders/folders_controller.dart';
 import 'package:provider/provider.dart';
@@ -44,6 +46,7 @@ Future<void> showSetFolderProtectionDialog(
   bool showPassword = false;
   bool showConfirmPassword = false;
   String? errorMessage; // ✅ رسالة الخطأ
+  final scaffoldContext = context; // ✅ حفظ الـ context الأصلي للـ Scaffold
 
   await showDialog(
     context: context,
@@ -198,16 +201,22 @@ Future<void> showSetFolderProtectionDialog(
 
               if (success) {
                 Navigator.pop(dialogContext);
-                // ✅ عرض رسالة النجاح
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(S.of(context).folderProtectionEnabled),
-                      backgroundColor: Colors.green,
-                      duration: Duration(seconds: 2),
-                    ),
-                  );
-                }
+                // ✅ عرض رسالة النجاح باستخدام الـ context الأصلي
+                // ✅ استخدام WidgetsBinding للتأكد من أن الـ dialog تم إغلاقه والـ Scaffold جاهز
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (scaffoldContext.mounted) {
+                    final messenger = ScaffoldMessenger.maybeOf(scaffoldContext);
+                    if (messenger != null) {
+                      messenger.showSnackBar(
+                        SnackBar(
+                          content: Text(S.of(scaffoldContext).folderProtectionEnabled),
+                          backgroundColor: Colors.green,
+                          duration: Duration(seconds: 2),
+                        ),
+                      );
+                    }
+                  }
+                });
                 // ✅ استخدام callback لإعادة تحميل البيانات
                 if (onProtectionChanged != null) {
                   onProtectionChanged();
@@ -241,6 +250,7 @@ Future<bool> showRemoveFolderProtectionDialog(
   bool showPassword = false;
   final LocalAuthentication localAuth = LocalAuthentication();
   String? errorMessage;
+  final scaffoldContext = context; // ✅ حفظ الـ context الأصلي للـ Scaffold
 
   await showDialog(
     context: context,
@@ -318,7 +328,7 @@ Future<bool> showRemoveFolderProtectionDialog(
                         errorMessage = null;
                       });
                       await _removeProtection(
-                        context,
+                        scaffoldContext,
                         folderId,
                         password: value,
                         dialogContext: dialogContext,
@@ -361,7 +371,7 @@ Future<bool> showRemoveFolderProtectionDialog(
                   errorMessage = null;
                 });
                 await _removeProtectionWithBiometric(
-                  context,
+                  scaffoldContext,
                   folderId,
                   dialogContext: dialogContext,
                   localAuth: localAuth,
@@ -399,7 +409,7 @@ Future<bool> showRemoveFolderProtectionDialog(
                 }
 
                 await _removeProtection(
-                  context,
+                  scaffoldContext,
                   folderId,
                   password: passwordController.text,
                   dialogContext: dialogContext,
@@ -456,16 +466,24 @@ Future<void> _removeProtection(
   if (success) {
     setResult(true);
     Navigator.pop(dialogContext);
-    // ✅ عرض رسالة النجاح
-    if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(S.of(context).folderProtectionDisabled),
-          backgroundColor: Colors.green,
-          duration: Duration(seconds: 2),
-        ),
-      );
-    }
+    // ✅ عرض رسالة النجاح باستخدام الـ context الأصلي
+    // ✅ استخدام Future.delayed مع WidgetsBinding للتأكد من أن الـ dialog تم إغلاقه بالكامل
+    Future.delayed(Duration(milliseconds: 50), () {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (context.mounted) {
+          final messenger = ScaffoldMessenger.maybeOf(context);
+          if (messenger != null) {
+            messenger.showSnackBar(
+              SnackBar(
+                content: Text(S.of(context).folderProtectionDisabled),
+                backgroundColor: Colors.green,
+                duration: Duration(seconds: 2),
+              ),
+            );
+          }
+        }
+      });
+    });
     if (onProtectionRemoved != null) {
       onProtectionRemoved();
     }
@@ -519,16 +537,24 @@ Future<void> _removeProtectionWithBiometric(
       if (success) {
         setResult(true);
         Navigator.pop(dialogContext);
-        // ✅ عرض رسالة النجاح
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(S.of(context).folderProtectionDisabled),
-              backgroundColor: Colors.green,
-              duration: Duration(seconds: 2),
-            ),
-          );
-        }
+        // ✅ عرض رسالة النجاح باستخدام الـ context الأصلي
+        // ✅ استخدام Future.delayed مع WidgetsBinding للتأكد من أن الـ dialog تم إغلاقه بالكامل
+        Future.delayed(Duration(milliseconds: 50), () {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (context.mounted) {
+              final messenger = ScaffoldMessenger.maybeOf(context);
+              if (messenger != null) {
+                messenger.showSnackBar(
+                  SnackBar(
+                    content: Text(S.of(context).folderProtectionDisabled),
+                    backgroundColor: Colors.green,
+                    duration: Duration(seconds: 2),
+                  ),
+                );
+              }
+            }
+          });
+        });
         if (onProtectionRemoved != null) {
           onProtectionRemoved();
         }
