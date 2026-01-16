@@ -1,5 +1,6 @@
 import 'package:filevo/responsive.dart';
 import 'package:flutter/material.dart';
+import 'package:filevo/constants/app_colors.dart';
 
 class CustomTextField extends StatefulWidget {
   final String hintText;
@@ -24,6 +25,7 @@ class _CustomTextFieldState extends State<CustomTextField> {
 
   @override
   Widget build(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     final screenWidth = MediaQuery.of(context).size.width;
 
     // Responsive max width للحقل النصي
@@ -77,11 +79,11 @@ class _CustomTextFieldState extends State<CustomTextField> {
             vertical: 10,
           ),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: AppColors.getCardColor(isDarkMode),
             borderRadius: BorderRadius.circular(borderRadius),
             boxShadow: [
               BoxShadow(
-                color: Colors.grey.withOpacity(0.2),
+                color: AppColors.getShadow(isDarkMode),
                 blurRadius: 10,
                 offset: const Offset(0, 4),
               ),
@@ -97,11 +99,12 @@ class _CustomTextFieldState extends State<CustomTextField> {
                 tablet: 15.0,
                 desktop: 16.0,
               ),
+              color: AppColors.getTextPrimary(isDarkMode),
             ),
             decoration: InputDecoration(
               hintText: widget.hintText,
               hintStyle: TextStyle(
-                color: Colors.grey[500],
+                color: AppColors.getTextSecondary(isDarkMode),
                 fontSize: ResponsiveUtils.getResponsiveValue(
                   context,
                   mobile: 14.0,
@@ -111,7 +114,7 @@ class _CustomTextFieldState extends State<CustomTextField> {
               ),
               prefixIcon: Icon(
                 widget.icon,
-                color: Colors.grey,
+                color: AppColors.getTextSecondary(isDarkMode),
                 size: iconSize,
               ),
               border: InputBorder.none,
@@ -123,7 +126,7 @@ class _CustomTextFieldState extends State<CustomTextField> {
                   ? IconButton(
                       icon: Icon(
                         _obscureText ? Icons.visibility_off : Icons.visibility,
-                        color: Colors.grey,
+                        color: AppColors.getTextSecondary(isDarkMode),
                         size: iconSize,
                       ),
                       onPressed: () {

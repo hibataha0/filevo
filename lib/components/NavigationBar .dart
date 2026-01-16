@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'dart:ui' as ui;
+import 'package:filevo/constants/app_colors.dart';
 
 class MyBottomBar extends StatelessWidget {
   final Function(int) onTap;
@@ -9,6 +9,7 @@ class MyBottomBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     final width = MediaQuery.of(context).size.width;
 
     return Container(
@@ -23,23 +24,23 @@ class MyBottomBar extends StatelessWidget {
             right: 0,
             child: CustomPaint(
               size: Size(width, 80),
-              painter: RPSCustomPainter(),
+              painter: RPSCustomPainter(isDarkMode: isDarkMode),
             ),
           ),
 
           // الأيقونات السفلية
           Positioned.fill(
             child: Padding(
-              padding: EdgeInsets.only(bottom: 20),
+              padding: const EdgeInsets.only(bottom: 20),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  _buildItem(Icons.home_outlined, 0),
-                  _buildItem(Icons.folder_outlined, 1),
-                  SizedBox(width: 40), // مكان للزر العائم
-                  _buildItem(Icons.person_outline_outlined, 2),
-                  _buildItem(Icons.settings_outlined, 3),
+                  _buildItem(Icons.home_outlined, 0, isDarkMode),
+                  _buildItem(Icons.folder_outlined, 1, isDarkMode),
+                  const SizedBox(width: 40), // مكان للزر العائم
+                  _buildItem(Icons.person_outline_outlined, 2, isDarkMode),
+                  _buildItem(Icons.settings_outlined, 3, isDarkMode),
                 ],
               ),
             ),
@@ -49,19 +50,26 @@ class MyBottomBar extends StatelessWidget {
     );
   }
 
-  Widget _buildItem(IconData icon, int index) {
-    Color color = selectedIndex == index ? Color(0xFF28336F) : Colors.black;
+  Widget _buildItem(IconData icon, int index, bool isDarkMode) {
+    Color color = selectedIndex == index
+        ? AppColors.getPrimary(isDarkMode)
+        : AppColors.getTextSecondary(isDarkMode);
     return InkWell(
       onTap: () => onTap(index),
+      borderRadius: BorderRadius.circular(12),
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 6.0, horizontal: 12),
-        child: Icon(icon, color: color),
+        child: Icon(icon, color: color, size: 26),
       ),
     );
   }
 }
 
 class RPSCustomPainter extends CustomPainter {
+  final bool isDarkMode;
+
+  RPSCustomPainter({bool? isDarkMode}) : isDarkMode = isDarkMode ?? false;
+
   @override
   void paint(Canvas canvas, Size size) {
     Path path_0 = Path();
@@ -122,15 +130,23 @@ class RPSCustomPainter extends CustomPainter {
     path_0.close();
 
     Paint paint_0_fill = Paint()..style = PaintingStyle.fill;
-    paint_0_fill.color = Colors.white.withOpacity(1.0);
+    paint_0_fill.color = AppColors.getCardColor(isDarkMode);
 
     // إضافة ظل للبار
-    canvas.drawShadow(path_0, Colors.grey.withOpacity(0.3), 10.0, true);
+    canvas.drawShadow(
+      path_0,
+      AppColors.getShadow(isDarkMode),
+      10.0,
+      true,
+    );
     canvas.drawPath(path_0, paint_0_fill);
   }
 
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) {
+    if (oldDelegate is RPSCustomPainter) {
+      return oldDelegate.isDarkMode != isDarkMode;
+    }
     return true;
   }
 }

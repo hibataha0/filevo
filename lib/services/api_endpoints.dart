@@ -95,6 +95,7 @@ class ApiEndpoints {
   static const String updateMe = '/users/updateMe';
   static const String changeMyPassword = '/users/changeMyPassword';
   static const String deleteMe = '/users/deleteMe';
+  static const String verifyEmailChange = '/users/verifyEmailChange'; // ✅ التحقق من كود تغيير الإيميل
 
   // Shared files endpoints
   static const String sharedFiles = '/files/shared';

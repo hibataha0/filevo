@@ -1,29 +1,29 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:filevo/controllers/auth/auth_controller.dart';
+import 'package:filevo/controllers/profile/profile_controller.dart';
 import 'package:filevo/responsive.dart';
 import 'package:filevo/generated/l10n.dart';
 import 'package:filevo/constants/app_colors.dart';
 
-class EmailVerificationPage extends StatefulWidget {
-  final String email;
-  final String? userId;
+class EmailChangeVerificationPage extends StatefulWidget {
+  final String pendingEmail;
 
-  const EmailVerificationPage({Key? key, required this.email, this.userId})
-    : super(key: key);
+  const EmailChangeVerificationPage({
+    Key? key,
+    required this.pendingEmail,
+  }) : super(key: key);
 
   @override
-  State<EmailVerificationPage> createState() => _EmailVerificationPageState();
+  State<EmailChangeVerificationPage> createState() => _EmailChangeVerificationPageState();
 }
 
-class _EmailVerificationPageState extends State<EmailVerificationPage> {
+class _EmailChangeVerificationPageState extends State<EmailChangeVerificationPage> {
   final List<TextEditingController> _codeControllers = List.generate(
     6,
     (index) => TextEditingController(),
   );
   final List<FocusNode> _focusNodes = List.generate(6, (index) => FocusNode());
   bool _isLoading = false;
-  bool _isResending = false;
   int _countdown = 0;
 
   @override
@@ -64,12 +64,14 @@ class _EmailVerificationPageState extends State<EmailVerificationPage> {
   Future<void> _verifyCode() async {
     final code = _getVerificationCode();
     if (code.length != 6) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(S.of(context).pleaseEnter6DigitCode),
-          backgroundColor: AppColors.warning,
-        ),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(S.of(context).pleaseEnter6DigitCode),
+            backgroundColor: AppColors.warning,
+          ),
+        );
+      }
       return;
     }
 
@@ -77,9 +79,8 @@ class _EmailVerificationPageState extends State<EmailVerificationPage> {
       _isLoading = true;
     });
 
-    final authController = Provider.of<AuthController>(context, listen: false);
-    final success = await authController.verifyEmailCode(
-      email: widget.email,
+    final profileController = Provider.of<ProfileController>(context, listen: false);
+    final success = await profileController.verifyEmailChange(
       verificationCode: code,
     );
 
@@ -91,19 +92,21 @@ class _EmailVerificationPageState extends State<EmailVerificationPage> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('✅ ${S.of(context).accountActivatedSuccessfully}'),
+            content: Text('✅ ${S.of(context).emailChangedSuccessfully}'),
             backgroundColor: AppColors.success,
             duration: const Duration(seconds: 3),
           ),
         );
-        // ✅ العودة إلى صفحة تسجيل الدخول
-        Navigator.of(context).popUntil((route) => route.isFirst);
+        // ✅ العودة إلى صفحة تعديل الملف الشخصي
+        Navigator.of(context).pop();
       }
     } else {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(authController.errorMessage ?? S.of(context).invalidVerificationCode),
+            content: Text(
+              profileController.errorMessage ?? S.of(context).invalidVerificationCode,
+            ),
             backgroundColor: AppColors.error,
           ),
         );
@@ -112,57 +115,6 @@ class _EmailVerificationPageState extends State<EmailVerificationPage> {
           controller.clear();
         }
         _focusNodes[0].requestFocus();
-      }
-    }
-  }
-
-  Future<void> _resendCode() async {
-    if (_countdown > 0) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(S.of(context).pleaseWaitBeforeResend(_countdown)),
-          backgroundColor: AppColors.warning,
-        ),
-      );
-      return;
-    }
-
-    setState(() {
-      _isResending = true;
-    });
-
-    final authController = Provider.of<AuthController>(context, listen: false);
-    final success = await authController.resendVerificationCode(widget.email);
-
-    setState(() {
-      _isResending = false;
-    });
-
-    if (success) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('✅ ${S.of(context).verificationCodeSent}'),
-            backgroundColor: AppColors.success,
-          ),
-        );
-        _startCountdown();
-        // ✅ مسح الحقول
-        for (var controller in _codeControllers) {
-          controller.clear();
-        }
-        _focusNodes[0].requestFocus();
-      }
-    } else {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              authController.errorMessage ?? S.of(context).failedToResendCode,
-            ),
-            backgroundColor: AppColors.error,
-          ),
-        );
       }
     }
   }
@@ -226,7 +178,7 @@ class _EmailVerificationPageState extends State<EmailVerificationPage> {
 
             // ✅ الرسالة
             Text(
-              S.of(context).verificationCodeSentTo(widget.email),
+              '${S.of(context).verificationCodeSentTo} ${widget.pendingEmail}',
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: ResponsiveUtils.getResponsiveValue(
@@ -306,7 +258,7 @@ class _EmailVerificationPageState extends State<EmailVerificationPage> {
                     )
                   : Text(
                       S.of(context).verify,
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
                       ),
@@ -315,44 +267,21 @@ class _EmailVerificationPageState extends State<EmailVerificationPage> {
 
             const SizedBox(height: 24),
 
-            // ✅ زر إعادة الإرسال
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  S.of(context).didNotReceiveCode,
-                  style: TextStyle(
-                    fontSize: ResponsiveUtils.getResponsiveValue(
-                      context,
-                      mobile: 14.0,
-                      tablet: 16.0,
-                      desktop: 18.0,
-                    ),
-                    color: AppColors.getTextSecondary(isDarkMode),
-                  ),
+            // ✅ رسالة العد التنازلي
+            Text(
+              _countdown > 0
+                  ? 'يمكنك إعادة إرسال الكود بعد $_countdown ثانية'
+                  : 'لم تستلم الكود؟',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: ResponsiveUtils.getResponsiveValue(
+                  context,
+                  mobile: 14.0,
+                  tablet: 16.0,
+                  desktop: 18.0,
                 ),
-                const SizedBox(width: 8),
-                TextButton(
-                  onPressed: _isResending || _countdown > 0
-                      ? null
-                      : _resendCode,
-                  child: _isResending
-                      ? const SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : Text(
-                          _countdown > 0
-                              ? S.of(context).resendWithCountdown(_countdown)
-                              : S.of(context).resend,
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.getPrimary(isDarkMode),
-                          ),
-                        ),
-                ),
-              ],
+                color: AppColors.getTextSecondary(isDarkMode),
+              ),
             ),
           ],
         ),

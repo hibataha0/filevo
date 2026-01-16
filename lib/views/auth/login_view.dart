@@ -1,4 +1,3 @@
-import 'dart:ui' as ui;
 import 'package:filevo/responsive.dart';
 import 'package:filevo/views/auth/components/divider_with_text.dart';
 import 'package:filevo/views/auth/components/social_login_buttons.dart';
@@ -14,6 +13,7 @@ import 'package:provider/provider.dart';
 import 'package:filevo/controllers/auth/auth_controller.dart';
 import 'package:filevo/views/main/main_view.dart';
 import 'package:filevo/views/auth/email_verification_page.dart';
+import 'package:filevo/constants/app_colors.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -67,7 +67,7 @@ class _LoginPageState extends State<LoginPage> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(S.of(context).loginSuccessful),
-            backgroundColor: Colors.green,
+            backgroundColor: AppColors.success,
           ),
         );
       } else {
@@ -87,7 +87,7 @@ class _LoginPageState extends State<LoginPage> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(errorMsg),
-              backgroundColor: Colors.red,
+              backgroundColor: AppColors.error,
               duration: const Duration(seconds: 4),
             ),
           );
@@ -119,7 +119,10 @@ class _LoginPageState extends State<LoginPage> {
             padding: const EdgeInsets.only(left: 50),
             child: Text(
               errorText,
-              style: const TextStyle(color: Colors.red, fontSize: 12),
+              style: TextStyle(
+                color: AppColors.error,
+                fontSize: 12,
+              ),
             ),
           ),
         ],
@@ -133,7 +136,11 @@ class _LoginPageState extends State<LoginPage> {
       children: [
         Text(
           S.of(context).dontHaveAccount,
-          style: const TextStyle(color: Colors.black45),
+          style: TextStyle(
+            color: AppColors.getTextSecondary(
+              Theme.of(context).brightness == Brightness.dark,
+            ),
+          ),
         ),
         GestureDetector(
           onTap: () {
@@ -166,7 +173,9 @@ class _LoginPageState extends State<LoginPage> {
     final screenHeight = MediaQuery.of(context).size.height;
     final isSmallScreen = screenHeight < 600;
 
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
+      backgroundColor: AppColors.getBackground(isDarkMode),
       resizeToAvoidBottomInset: true,
       body: SingleChildScrollView(
         physics: const BouncingScrollPhysics(),
@@ -186,12 +195,12 @@ class _LoginPageState extends State<LoginPage> {
                   desktop: 48.0,
                 ),
                 fontWeight: FontWeight.bold,
-                color: const ui.Color.fromARGB(255, 0, 0, 0),
+                color: AppColors.getTextPrimary(isDarkMode),
                 shadows: [
                   Shadow(
                     offset: const Offset(2, 2),
                     blurRadius: 3,
-                    color: Colors.black.withOpacity(0.3),
+                    color: AppColors.getShadow(isDarkMode),
                   ),
                 ],
               ),
@@ -209,7 +218,7 @@ class _LoginPageState extends State<LoginPage> {
                   tablet: 16.0,
                   desktop: 18.0,
                 ),
-                color: Colors.grey[1000],
+                color: AppColors.getTextSecondary(isDarkMode),
               ),
             ),
 
@@ -309,8 +318,8 @@ class _LoginPageState extends State<LoginPage> {
                         tablet: 15.0,
                         desktop: 16.0,
                       ),
-                      color: Colors.blue, // خلي اللون أزرق ليوضح إنه رابط
-                      decoration: TextDecoration.underline, // خط تحت النص
+                      color: AppColors.getPrimary(isDarkMode),
+                      decoration: TextDecoration.underline,
                     ),
                   ),
                 ),
@@ -349,11 +358,14 @@ class _LoginPageState extends State<LoginPage> {
                         desktop: 30.0,
                       ),
                       fontWeight: FontWeight.bold,
+                      color: AppColors.getTextPrimary(isDarkMode),
                     ),
                   ),
                   const SizedBox(width: 12),
                   _isLoading
-                      ? const CircularProgressIndicator()
+                      ? CircularProgressIndicator(
+                          color: AppColors.getPrimary(isDarkMode),
+                        )
                       : IconButtonGradient(onPressed: _validateAndSubmit),
                 ],
               ),

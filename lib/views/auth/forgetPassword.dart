@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:filevo/controllers/auth/auth_controller.dart';
 import 'package:filevo/views/auth/verify_code_view.dart';
 import 'package:filevo/generated/l10n.dart'; // ملف الترجمة
+import 'package:filevo/constants/app_colors.dart';
 
 class ForgotPasswordPage extends StatefulWidget {
   const ForgotPasswordPage({super.key});
@@ -19,12 +20,12 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
     final email = _emailController.text.trim();
 
     if (email.isEmpty) {
-      _showSnackBar(S.of(context).enterEmail, Colors.orange);
+      _showSnackBar(S.of(context).enterEmail, AppColors.warning);
       return;
     }
 
     if (!email.contains('@')) {
-      _showSnackBar(S.of(context).validEmail, Colors.orange);
+      _showSnackBar(S.of(context).validEmail, AppColors.warning);
       return;
     }
 
@@ -40,7 +41,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
     if (success) {
       _showSnackBar(
         authController.successMessage ?? S.of(context).codeSent,
-        Colors.green,
+        AppColors.success,
       );
 
       await Future.delayed(const Duration(milliseconds: 500));
@@ -56,7 +57,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
     } else {
       _showSnackBar(
         authController.errorMessage ?? S.of(context).failedSendCode,
-        Colors.red,
+        AppColors.error,
       );
     }
   }
@@ -75,72 +76,92 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
       create: (context) => AuthController(),
-      child: Scaffold(
-        backgroundColor: const Color(0xFFF4F6FB),
-        appBar: AppBar(
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          title: Text(
-            S.of(context).resetPassword,
-            style: const TextStyle(color: Colors.black, fontWeight: FontWeight.w600),
-          ),
-          iconTheme: const IconThemeData(color: Colors.black),
-          centerTitle: true,
-        ),
-        body: Consumer<AuthController>(
-          builder: (context, authController, child) {
-            return SingleChildScrollView(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 28.0),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const SizedBox(height: 50),
-                    const Icon(
-                      Icons.lock_reset_rounded,
-                      color: Color(0xFF6A5AE0),
-                      size: 80,
-                    ),
-                    const SizedBox(height: 20),
-                    Text(
-                      S.of(context).forgotPasswordTitle,
-                      style: const TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF2D2D2D),
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 10),
-                    Text(
-                      S.of(context).forgotPasswordSubtitle,
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: Colors.grey[600],
-                        height: 1.4,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 40),
-                    TextField(
-                      controller: _emailController,
-                      decoration: InputDecoration(
-                        labelText: S.of(context).email,
-                        labelStyle: const TextStyle(color: Colors.blueGrey),
-                        filled: true,
-                        fillColor: Colors.white,
-                        prefixIcon: const Icon(
-                          Icons.email_outlined,
-                          color: Colors.blueGrey,
+      child: Builder(
+        builder: (context) {
+          final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+          return Scaffold(
+            backgroundColor: AppColors.getBackground(isDarkMode),
+            appBar: AppBar(
+              backgroundColor: AppColors.getAppBar(isDarkMode),
+              elevation: 0,
+              title: Text(
+                S.of(context).resetPassword,
+                style: TextStyle(
+                  color: AppColors.getTextPrimary(isDarkMode),
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              iconTheme: IconThemeData(
+                color: AppColors.getTextPrimary(isDarkMode),
+              ),
+              centerTitle: true,
+            ),
+            body: Consumer<AuthController>(
+              builder: (context, authController, child) {
+                return SingleChildScrollView(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 28.0),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const SizedBox(height: 50),
+                        Icon(
+                          Icons.lock_reset_rounded,
+                          color: AppColors.getPrimary(isDarkMode),
+                          size: 80,
                         ),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(14),
-                          borderSide: BorderSide.none,
+                        const SizedBox(height: 20),
+                        Text(
+                          S.of(context).forgotPasswordTitle,
+                          style: TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.getTextPrimary(isDarkMode),
+                          ),
+                          textAlign: TextAlign.center,
                         ),
-                      ),
-                      keyboardType: TextInputType.emailAddress,
-                      onSubmitted: (_) => _sendCode(),
-                    ),
+                        const SizedBox(height: 10),
+                        Text(
+                          S.of(context).forgotPasswordSubtitle,
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: AppColors.getTextSecondary(isDarkMode),
+                            height: 1.4,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 40),
+                        TextField(
+                          controller: _emailController,
+                          style: TextStyle(
+                            color: AppColors.getTextPrimary(isDarkMode),
+                          ),
+                          decoration: InputDecoration(
+                            labelText: S.of(context).email,
+                            labelStyle: TextStyle(
+                              color: AppColors.getTextSecondary(isDarkMode),
+                            ),
+                            filled: true,
+                            fillColor: AppColors.getCardColor(isDarkMode),
+                            prefixIcon: Icon(
+                              Icons.email_outlined,
+                              color: AppColors.getTextSecondary(isDarkMode),
+                            ),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(14),
+                              borderSide: BorderSide.none,
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(14),
+                              borderSide: BorderSide(
+                                color: AppColors.getPrimary(isDarkMode),
+                                width: 2,
+                              ),
+                            ),
+                          ),
+                          keyboardType: TextInputType.emailAddress,
+                          onSubmitted: (_) => _sendCode(),
+                        ),
                     const SizedBox(height: 30),
                     GestureDetector(
                       onTap: _isLoading ? null : _sendCode,
@@ -183,19 +204,21 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                       },
                       child: Text(
                         S.of(context).backToLogin,
-                        style: const TextStyle(
-                          color: Color(0xFF6A5AE0),
+                        style: TextStyle(
+                          color: AppColors.getPrimary(isDarkMode),
                           fontSize: 16,
                           fontWeight: FontWeight.w500,
                         ),
                       ),
                     ),
-                  ],
-                ),
-              ),
-            );
-          },
-        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+          );
+        },
       ),
     );
   }

@@ -1,4 +1,3 @@
-import 'dart:ui' as ui;
 import 'package:filevo/responsive.dart';
 import 'package:filevo/views/auth/components/divider_with_text.dart';
 import 'package:filevo/views/auth/components/responsive.dart';
@@ -12,6 +11,7 @@ import 'package:filevo/generated/l10n.dart'; // ✅ استدعاء intl
 import 'package:provider/provider.dart';
 import 'package:filevo/controllers/auth/auth_controller.dart';
 import 'package:filevo/views/auth/email_verification_page.dart';
+import 'package:filevo/constants/app_colors.dart';
 
 class SignUpPage extends StatefulWidget {
   const SignUpPage({super.key});
@@ -97,7 +97,7 @@ class _SignUpPageState extends State<SignUpPage> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(errorMsg),
-            backgroundColor: Colors.red,
+            backgroundColor: AppColors.error,
             duration: const Duration(seconds: 4),
           ),
         );
@@ -128,7 +128,10 @@ class _SignUpPageState extends State<SignUpPage> {
             padding: const EdgeInsets.only(left: 50),
             child: Text(
               errorText,
-              style: const TextStyle(color: Colors.red, fontSize: 12),
+              style: TextStyle(
+                color: AppColors.error,
+                fontSize: 12,
+              ),
             ),
           ),
         ],
@@ -142,7 +145,12 @@ class _SignUpPageState extends State<SignUpPage> {
       children: [
         Text(
           S.of(context).alreadyHaveAccount,
-          style: TextStyle(color: Colors.grey[600], fontSize: 16),
+          style: TextStyle(
+            color: AppColors.getTextSecondary(
+              Theme.of(context).brightness == Brightness.dark,
+            ),
+            fontSize: 16,
+          ),
         ),
         InkWell(
           onTap: () {
@@ -150,8 +158,10 @@ class _SignUpPageState extends State<SignUpPage> {
           },
           child: Text(
             S.of(context).logIn,
-            style: const TextStyle(
-              color: Colors.blue,
+            style: TextStyle(
+              color: AppColors.getPrimary(
+                Theme.of(context).brightness == Brightness.dark,
+              ),
               fontWeight: FontWeight.bold,
               decoration: TextDecoration.underline,
             ),
@@ -172,7 +182,9 @@ class _SignUpPageState extends State<SignUpPage> {
 
   @override
   Widget build(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
+      backgroundColor: AppColors.getBackground(isDarkMode),
       resizeToAvoidBottomInset: true,
       body: SingleChildScrollView(
         physics: const BouncingScrollPhysics(),
@@ -187,12 +199,12 @@ class _SignUpPageState extends State<SignUpPage> {
               style: TextStyle(
                 fontSize: ResponsiveHelpers.getTitleFontSize(context),
                 fontWeight: FontWeight.bold,
-                color: const ui.Color.fromARGB(255, 0, 0, 0),
+                color: AppColors.getTextPrimary(isDarkMode),
                 shadows: [
                   Shadow(
                     offset: const Offset(2, 2),
                     blurRadius: 3,
-                    color: Colors.black.withOpacity(0.3),
+                    color: AppColors.getShadow(isDarkMode),
                   ),
                 ],
               ),
@@ -212,7 +224,7 @@ class _SignUpPageState extends State<SignUpPage> {
               S.of(context).createAccount,
               style: TextStyle(
                 fontSize: ResponsiveHelpers.getBigFontSize(context),
-                color: Colors.grey[1000],
+                color: AppColors.getTextSecondary(isDarkMode),
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -319,11 +331,14 @@ class _SignUpPageState extends State<SignUpPage> {
                     style: TextStyle(
                       fontSize: ResponsiveHelpers.getBigFontSize(context),
                       fontWeight: FontWeight.bold,
+                      color: AppColors.getTextPrimary(isDarkMode),
                     ),
                   ),
                   const SizedBox(width: 12),
                   _isLoading
-                      ? const CircularProgressIndicator()
+                      ? CircularProgressIndicator(
+                          color: AppColors.getPrimary(isDarkMode),
+                        )
                       : IconButtonGradient(onPressed: _validateAndSubmit),
                 ],
               ),

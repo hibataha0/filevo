@@ -5,6 +5,7 @@ import 'package:flutter_verification_code_field/flutter_verification_code_field.
 import 'package:filevo/controllers/auth/auth_controller.dart';
 import 'package:provider/provider.dart';
 import 'package:filevo/generated/l10n.dart'; // استدعاء ملف الترجمة
+import 'package:filevo/constants/app_colors.dart';
 
 class VerifyCodePage extends StatefulWidget {
   final String email;
@@ -22,7 +23,7 @@ class _VerifyCodePageState extends State<VerifyCodePage> {
 
   void _verifyCode() async {
     if (_code.length != 6) {
-      _showSnackBar(S.of(context).enter6DigitCode, Colors.orange);
+      _showSnackBar(S.of(context).enter6DigitCode, AppColors.warning);
       return;
     }
 
@@ -35,7 +36,7 @@ class _VerifyCodePageState extends State<VerifyCodePage> {
     setState(() => _isVerifying = false);
 
     if (success) {
-      _showSnackBar(authController.successMessage ?? S.of(context).codeVerified, Colors.green);
+      _showSnackBar(authController.successMessage ?? S.of(context).codeVerified, AppColors.success);
 
       await Future.delayed(const Duration(milliseconds: 500));
 
@@ -48,7 +49,7 @@ class _VerifyCodePageState extends State<VerifyCodePage> {
         );
       }
     } else {
-      _showSnackBar(authController.errorMessage ?? S.of(context).invalidOrExpiredCode, Colors.red);
+      _showSnackBar(authController.errorMessage ?? S.of(context).invalidOrExpiredCode, AppColors.error);
     }
   }
 
@@ -67,9 +68,9 @@ class _VerifyCodePageState extends State<VerifyCodePage> {
         _verificationKey = UniqueKey();
       });
 
-      _showSnackBar(authController.successMessage ?? S.of(context).codeResent, Colors.green);
+      _showSnackBar(authController.successMessage ?? S.of(context).codeResent, AppColors.success);
     } else {
-      _showSnackBar(authController.errorMessage ?? S.of(context).failedResendCode, Colors.red);
+      _showSnackBar(authController.errorMessage ?? S.of(context).failedResendCode, AppColors.error);
     }
   }
 
@@ -87,18 +88,24 @@ class _VerifyCodePageState extends State<VerifyCodePage> {
 
   @override
   Widget build(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     return ChangeNotifierProvider(
       create: (context) => AuthController(),
       child: Scaffold(
-        backgroundColor: const Color(0xFFF4F6FB),
+        backgroundColor: AppColors.getBackground(isDarkMode),
         appBar: AppBar(
-          backgroundColor: Colors.transparent,
+          backgroundColor: AppColors.getAppBar(isDarkMode),
           elevation: 0,
           title: Text(
             S.of(context).verifyCodeTitle,
-            style: const TextStyle(color: Colors.black, fontWeight: FontWeight.w600),
+            style: TextStyle(
+              color: AppColors.getTextPrimary(isDarkMode),
+              fontWeight: FontWeight.w600,
+            ),
           ),
-          iconTheme: const IconThemeData(color: Colors.black),
+          iconTheme: IconThemeData(
+            color: AppColors.getTextPrimary(isDarkMode),
+          ),
           centerTitle: true,
         ),
         body: Consumer<AuthController>(
@@ -108,17 +115,17 @@ class _VerifyCodePageState extends State<VerifyCodePage> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(
+                  Icon(
                     Icons.mark_email_unread_rounded,
                     size: 90,
-                    color: Color(0xFF6A5AE0),
+                    color: AppColors.getPrimary(isDarkMode),
                   ),
                   const SizedBox(height: 20),
                   Text(
                     S.of(context).enterCodeToEmail(widget.email),
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 16,
-                      color: Colors.black54,
+                      color: AppColors.getTextSecondary(isDarkMode),
                       height: 1.5,
                     ),
                     textAlign: TextAlign.center,
@@ -174,18 +181,18 @@ class _VerifyCodePageState extends State<VerifyCodePage> {
                   TextButton(
                     onPressed: _isResending ? null : _resendCode,
                     child: _isResending
-                        ? const SizedBox(
+                        ? SizedBox(
                             width: 20,
                             height: 20,
                             child: CircularProgressIndicator(
                               strokeWidth: 2,
-                              color: Color(0xFF6A5AE0),
+                              color: AppColors.getPrimary(isDarkMode),
                             ),
                           )
                         : Text(
                             S.of(context).resendCode,
-                            style: const TextStyle(
-                              color: Color(0xFF6A5AE0),
+                            style: TextStyle(
+                              color: AppColors.getPrimary(isDarkMode),
                               fontSize: 16,
                               fontWeight: FontWeight.w500,
                             ),

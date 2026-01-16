@@ -79,7 +79,8 @@ class ProfileController with ChangeNotifier {
   }
 
   /// تحديث بيانات المستخدم
-  Future<bool> updateLoggedUserData({
+  /// Returns: Map with 'success' (bool) and optionally 'requiresVerification' (bool) and 'pendingEmail' (String)
+  Future<Map<String, dynamic>> updateLoggedUserData({
     String? name,
     String? email,
     String? phone,
@@ -95,7 +96,28 @@ class ProfileController with ChangeNotifier {
         phone: phone,
       );
 
+      print('🔵 ProfileController: updateLoggedUserData result: $result');
+      print('🔵 ProfileController: result keys: ${result.keys.toList()}');
+      
+      // ✅ الـ response من api_service يكون في result['data']
+      final responseData = result['data'] as Map<String, dynamic>? ?? {};
+      print('🔵 ProfileController: responseData keys: ${responseData.keys.toList()}');
+      print('🔵 ProfileController: requiresVerification = ${responseData['requiresVerification']}');
+      print('🔵 ProfileController: pendingEmail = ${responseData['pendingEmail']}');
+
       if (result['success'] == true) {
+        // ✅ التحقق من وجود requiresVerification في الـ response (في data)
+        if (responseData['requiresVerification'] == true) {
+          print('✅ ProfileController: requiresVerification is true, returning verification info');
+          // ✅ إرجاع معلومات التحقق من الإيميل
+          return {
+            'success': true,
+            'requiresVerification': true,
+            'pendingEmail': responseData['pendingEmail'] as String?,
+            'message': responseData['message'] as String?,
+          };
+        }
+
         // ✅ تحديث البيانات من الـ response إذا كانت موجودة
         if (result['data'] != null) {
           final userData = _extractUserData(result['data']);
@@ -110,13 +132,54 @@ class ProfileController with ChangeNotifier {
         await getLoggedUserData();
         
         _errorMessage = null;
-        return true;
+        return {'success': true};
       } else {
         _errorMessage = result['error'] ?? 'فشل في تحديث البيانات';
-        return false;
+        return {'success': false, 'error': _errorMessage};
       }
     } catch (e) {
       _errorMessage = 'خطأ في تحديث البيانات: ${e.toString()}';
+      return {'success': false, 'error': _errorMessage};
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  /// التحقق من كود تغيير الإيميل
+  Future<bool> verifyEmailChange({
+    required String verificationCode,
+  }) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      final result = await _userService.verifyEmailChange(
+        verificationCode: verificationCode,
+      );
+
+      if (result['success'] == true) {
+        // ✅ تحديث البيانات من الـ response
+        if (result['data'] != null) {
+          final userData = _extractUserData(result['data']);
+          if (userData != null) {
+            _userData = userData;
+            print('✅ ProfileController: Email verified and updated');
+          }
+        }
+        
+        // ✅ إعادة جلب البيانات من السيرفر
+        await getLoggedUserData();
+        
+        _errorMessage = null;
+        return true;
+      } else {
+        _errorMessage = result['error'] ?? 'فشل في التحقق من كود الإيميل';
+        return false;
+      }
+    } catch (e) {
+      _errorMessage = 'خطأ في التحقق من كود الإيميل: ${e.toString()}';
       return false;
     } finally {
       _isLoading = false;

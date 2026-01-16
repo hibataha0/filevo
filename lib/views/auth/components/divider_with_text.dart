@@ -1,5 +1,6 @@
 import 'package:filevo/responsive.dart';
 import 'package:flutter/material.dart';
+import 'package:filevo/constants/app_colors.dart';
 
 class DividerWithText extends StatelessWidget {
   final String text;
@@ -19,6 +20,7 @@ class DividerWithText extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     // Responsive thickness للخط
     final lineThickness = thickness ?? ResponsiveUtils.getResponsiveValue(
       context,
@@ -43,6 +45,9 @@ class DividerWithText extends StatelessWidget {
       desktop: 16.0,
     );
 
+    final defaultDividerColor = dividerColor ?? AppColors.darkSurface;
+    final defaultTextColor = textStyle?.color ?? AppColors.getTextSecondary(isDarkMode);
+
     return Padding(
       padding: EdgeInsets.symmetric(
         horizontal: ResponsiveUtils.getResponsiveValue(
@@ -58,7 +63,7 @@ class DividerWithText extends StatelessWidget {
           Expanded(
             child: Divider(
               thickness: lineThickness,
-              color: (dividerColor ?? Colors.grey).withOpacity(0.5),
+              color: defaultDividerColor.withOpacity(0.5),
             ),
           ),
           Padding(
@@ -69,7 +74,7 @@ class DividerWithText extends StatelessWidget {
             child: Text(
               text,
               style: textStyle ?? TextStyle(
-                color: const Color.fromARGB(115, 2, 2, 2),
+                color: defaultTextColor,
                 fontSize: fontSize,
               ),
             ),
@@ -77,7 +82,7 @@ class DividerWithText extends StatelessWidget {
           Expanded(
             child: Divider(
               thickness: lineThickness,
-              color: (dividerColor ?? Colors.grey).withOpacity(0.5),
+              color: defaultDividerColor.withOpacity(0.5),
             ),
           ),
         ],

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:filevo/controllers/auth/auth_controller.dart';
 import 'package:filevo/generated/l10n.dart'; // ملف الترجمات
+import 'package:filevo/constants/app_colors.dart';
 
 class ResetPasswordPage extends StatefulWidget {
   final String email;
@@ -25,17 +26,17 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
 
     // التحقق من الحقول
     if (password.isEmpty || confirmPassword.isEmpty) {
-      _showSnackBar(S.of(context).pleaseFillAllFields, Colors.orange);
+      _showSnackBar(S.of(context).pleaseFillAllFields, AppColors.warning);
       return;
     }
 
     if (password.length < 6) {
-      _showSnackBar(S.of(context).passwordTooShort, Colors.orange);
+      _showSnackBar(S.of(context).passwordTooShort, AppColors.warning);
       return;
     }
 
     if (password != confirmPassword) {
-      _showSnackBar(S.of(context).passwordsDoNotMatch, Colors.orange);
+      _showSnackBar(S.of(context).passwordsDoNotMatch, AppColors.warning);
       return;
     }
 
@@ -55,7 +56,7 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
     if (success) {
       _showSnackBar(
         authController.successMessage ?? S.of(context).passwordResetSuccess,
-        Colors.green,
+        AppColors.success,
       );
 
       // الانتقال للشاشة الرئيسية بعد نجاح العملية
@@ -67,7 +68,7 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
     } else {
       _showSnackBar(
         authController.errorMessage ?? S.of(context).passwordResetFailed,
-        Colors.red,
+        AppColors.error,
       );
     }
   }
@@ -86,127 +87,164 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
       create: (context) => AuthController(),
-      child: Scaffold(
-        backgroundColor: const Color(0xFFF4F6FB),
-        appBar: AppBar(
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          title: Text(
-            S.of(context).resetPasswordTitle,
-            style: const TextStyle(
-              color: Colors.black,
-              fontWeight: FontWeight.w600,
+      child: Builder(
+        builder: (context) {
+          final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+          return Scaffold(
+            backgroundColor: AppColors.getBackground(isDarkMode),
+            appBar: AppBar(
+              backgroundColor: AppColors.getAppBar(isDarkMode),
+              elevation: 0,
+              title: Text(
+                S.of(context).resetPasswordTitle,
+                style: TextStyle(
+                  color: AppColors.getTextPrimary(isDarkMode),
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              iconTheme: IconThemeData(
+                color: AppColors.getTextPrimary(isDarkMode),
+              ),
+              centerTitle: true,
             ),
-          ),
-          iconTheme: const IconThemeData(color: Colors.black),
-          centerTitle: true,
-        ),
-        body: Consumer<AuthController>(
-          builder: (context, authController, child) {
-            return SafeArea(
-              child: Padding(
-                padding: const EdgeInsets.all(24.0),
-                child: Column(
-                  children: [
-                    const SizedBox(height: 50),
-                    const Icon(
-                      Icons.lock_reset_rounded,
-                      color: Color(0xFF6A5AE0),
-                      size: 70,
-                    ),
-                    const SizedBox(height: 20),
-                    Text(
-                      S.of(context).createNewPassword,
-                      style: const TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF2D2D2D),
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    Text(
-                      S.of(context).enterNewPasswordFor(widget.email),
-                      style: TextStyle(fontSize: 16, color: Colors.grey[600]),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 30),
-
-                    // New Password Field
-                    TextField(
-                      controller: _passwordController,
-                      obscureText: !_isPasswordVisible,
-                      decoration: InputDecoration(
-                        labelText: S.of(context).newPassword,
-                        filled: true,
-                        fillColor: Colors.white,
-                        prefixIcon: const Icon(
-                          Icons.lock_outline,
-                          color: Colors.blueGrey,
+            body: Consumer<AuthController>(
+              builder: (context, authController, child) {
+                return SafeArea(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24.0),
+                    child: Column(
+                      children: [
+                        const SizedBox(height: 50),
+                        Icon(
+                          Icons.lock_reset_rounded,
+                          color: AppColors.getPrimary(isDarkMode),
+                          size: 70,
                         ),
-                        suffixIcon: IconButton(
-                          icon: Icon(
-                            _isPasswordVisible
-                                ? Icons.visibility
-                                : Icons.visibility_off,
-                            color: Colors.blueGrey,
+                        const SizedBox(height: 20),
+                        Text(
+                          S.of(context).createNewPassword,
+                          style: TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.getTextPrimary(isDarkMode),
                           ),
-                          onPressed: () {
-                            setState(() {
-                              _isPasswordVisible = !_isPasswordVisible;
-                            });
-                          },
                         ),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(14),
-                          borderSide: BorderSide.none,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-
-                    // Confirm Password Field
-                    TextField(
-                      controller: _confirmPasswordController,
-                      obscureText: !_isConfirmPasswordVisible,
-                      decoration: InputDecoration(
-                        labelText: S.of(context).confirmPassword,
-                        filled: true,
-                        fillColor: Colors.white,
-                        prefixIcon: const Icon(
-                          Icons.lock,
-                          color: Colors.blueGrey,
-                        ),
-                        suffixIcon: IconButton(
-                          icon: Icon(
-                            _isConfirmPasswordVisible
-                                ? Icons.visibility
-                                : Icons.visibility_off,
-                            color: Colors.blueGrey,
+                        const SizedBox(height: 10),
+                        Text(
+                          S.of(context).enterNewPasswordFor(widget.email),
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: AppColors.getTextSecondary(isDarkMode),
                           ),
-                          onPressed: () {
-                            setState(() {
-                              _isConfirmPasswordVisible =
-                                  !_isConfirmPasswordVisible;
-                            });
-                          },
+                          textAlign: TextAlign.center,
                         ),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(14),
-                          borderSide: BorderSide.none,
-                        ),
-                      ),
-                      onSubmitted: (_) => _resetPassword(),
-                    ),
+                        const SizedBox(height: 30),
 
-                    const SizedBox(height: 10),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                      child: Text(
-                        S.of(context).passwordAtLeast6Chars,
-                        style: TextStyle(fontSize: 12, color: Colors.grey[500]),
-                        textAlign: TextAlign.center,
-                      ),
-                    ),
+                        // New Password Field
+                        TextField(
+                          controller: _passwordController,
+                          obscureText: !_isPasswordVisible,
+                          style: TextStyle(
+                            color: AppColors.getTextPrimary(isDarkMode),
+                          ),
+                          decoration: InputDecoration(
+                            labelText: S.of(context).newPassword,
+                            labelStyle: TextStyle(
+                              color: AppColors.getTextSecondary(isDarkMode),
+                            ),
+                            filled: true,
+                            fillColor: AppColors.getCardColor(isDarkMode),
+                            prefixIcon: Icon(
+                              Icons.lock_outline,
+                              color: AppColors.getTextSecondary(isDarkMode),
+                            ),
+                            suffixIcon: IconButton(
+                              icon: Icon(
+                                _isPasswordVisible
+                                    ? Icons.visibility
+                                    : Icons.visibility_off,
+                                color: AppColors.getTextSecondary(isDarkMode),
+                              ),
+                              onPressed: () {
+                                setState(() {
+                                  _isPasswordVisible = !_isPasswordVisible;
+                                });
+                              },
+                            ),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(14),
+                              borderSide: BorderSide.none,
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(14),
+                              borderSide: BorderSide(
+                                color: AppColors.getPrimary(isDarkMode),
+                                width: 2,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+
+                        // Confirm Password Field
+                        TextField(
+                          controller: _confirmPasswordController,
+                          obscureText: !_isConfirmPasswordVisible,
+                          style: TextStyle(
+                            color: AppColors.getTextPrimary(isDarkMode),
+                          ),
+                          decoration: InputDecoration(
+                            labelText: S.of(context).confirmPassword,
+                            labelStyle: TextStyle(
+                              color: AppColors.getTextSecondary(isDarkMode),
+                            ),
+                            filled: true,
+                            fillColor: AppColors.getCardColor(isDarkMode),
+                            prefixIcon: Icon(
+                              Icons.lock,
+                              color: AppColors.getTextSecondary(isDarkMode),
+                            ),
+                            suffixIcon: IconButton(
+                              icon: Icon(
+                                _isConfirmPasswordVisible
+                                    ? Icons.visibility
+                                    : Icons.visibility_off,
+                                color: AppColors.getTextSecondary(isDarkMode),
+                              ),
+                              onPressed: () {
+                                setState(() {
+                                  _isConfirmPasswordVisible =
+                                      !_isConfirmPasswordVisible;
+                                });
+                              },
+                            ),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(14),
+                              borderSide: BorderSide.none,
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(14),
+                              borderSide: BorderSide(
+                                color: AppColors.getPrimary(isDarkMode),
+                                width: 2,
+                              ),
+                            ),
+                          ),
+                          onSubmitted: (_) => _resetPassword(),
+                        ),
+
+                        const SizedBox(height: 10),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                          child: Text(
+                            S.of(context).passwordAtLeast6Chars,
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: AppColors.getTextSecondary(isDarkMode),
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
 
                     const SizedBox(height: 30),
 
@@ -257,19 +295,21 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
                       },
                       child: Text(
                         S.of(context).backToVerification,
-                        style: const TextStyle(
-                          color: Color(0xFF6A5AE0),
+                        style: TextStyle(
+                          color: AppColors.getPrimary(isDarkMode),
                           fontSize: 16,
                           fontWeight: FontWeight.w500,
                         ),
                       ),
                     ),
-                  ],
-                ),
-              ),
-            );
-          },
-        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+          );
+        },
       ),
     );
   }

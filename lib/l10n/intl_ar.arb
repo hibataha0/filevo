@@ -329,6 +329,7 @@
       }
     }
   },
+  "emailChangedSuccessfully": "✅ تم تغيير البريد الإلكتروني بنجاح",
   "searchError": "خطأ في البحث: {error}",
   "@searchError": {
     "placeholders": {

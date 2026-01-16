@@ -700,6 +700,7 @@
     }
   },
   "resend": "Resend",
+  "emailChangedSuccessfully": "✅ Email changed successfully",
   "openFileAsText": "Open file as text: {fileName}",
   "@openFileAsText": {
     "placeholders": {

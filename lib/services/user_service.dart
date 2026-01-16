@@ -121,6 +121,46 @@ class UserService {
     return result;
   }
 
+  /// التحقق من كود تغيير الإيميل
+  Future<Map<String, dynamic>> verifyEmailChange({
+    required String verificationCode,
+  }) async {
+    final token = await StorageService.getToken();
+    if (token == null) {
+      return {
+        'success': false,
+        'error': 'لا يوجد token. يرجى تسجيل الدخول',
+      };
+    }
+
+    // ✅ التحقق من أن الكود 6 أرقام
+    if (verificationCode.length != 6) {
+      return {
+        'success': false,
+        'error': 'كود التحقق يجب أن يكون 6 أرقام',
+      };
+    }
+
+    // ✅ التحقق من أن الكود يحتوي على أرقام فقط
+    final codeRegex = RegExp(r'^\d{6}$');
+    if (!codeRegex.hasMatch(verificationCode)) {
+      return {
+        'success': false,
+        'error': 'كود التحقق يجب أن يحتوي على أرقام فقط',
+      };
+    }
+
+    final result = await _apiService.post(
+      ApiEndpoints.verifyEmailChange,
+      body: {
+        'verificationCode': verificationCode,
+      },
+      token: token,
+    );
+
+    return result;
+  }
+
   /// حذف حساب المستخدم المسجل
   Future<Map<String, dynamic>> deleteLoggedUserData() async {
     final token = await StorageService.getToken();

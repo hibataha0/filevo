@@ -18,6 +18,7 @@ import 'package:path/path.dart' as p;
 import 'package:permission_handler/permission_handler.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:filevo/utils/file_security.dart';
+import 'package:filevo/constants/app_colors.dart';
 
 class MainPage extends StatefulWidget {
   const MainPage({Key? key}) : super(key: key);
@@ -64,7 +65,7 @@ class _MainPageState extends State<MainPage> {
     _scaffoldMessengerKey.currentState?.showSnackBar(
       SnackBar(
         content: Text(message),
-        backgroundColor: isError ? Colors.red : Colors.green,
+        backgroundColor: isError ? AppColors.error : AppColors.success,
         duration: Duration(seconds: 3),
       ),
     );
@@ -1205,64 +1206,110 @@ class _MainPageState extends State<MainPage> {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
-      builder: (context) => Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-        ),
-        child: SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              SizedBox(height: 16),
-              Text(
-                S.of(context).uploadOptions,
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              ),
-              SizedBox(height: 16),
-
-              // 🔥 خيارات Android فقط
-              if (Platform.isAndroid) _buildAndroidOptions(),
-
-              // 🔥 خيارات iOS فقط
-              if (Platform.isIOS) _buildIOSOptions(),
-
-              SizedBox(height: 8),
-            ],
+      builder: (context) {
+        final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+        return Container(
+          decoration: BoxDecoration(
+            color: AppColors.getCardColor(isDarkMode),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
           ),
-        ),
-      ),
+          child: SafeArea(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const SizedBox(height: 16),
+                Text(
+                  S.of(context).uploadOptions,
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.getTextPrimary(isDarkMode),
+                  ),
+                ),
+                const SizedBox(height: 16),
+
+                // 🔥 خيارات Android فقط
+                if (Platform.isAndroid) _buildAndroidOptions(isDarkMode),
+
+                // 🔥 خيارات iOS فقط
+                if (Platform.isIOS) _buildIOSOptions(isDarkMode),
+
+                const SizedBox(height: 8),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 
   // 🔥 خيارات Android المترجمة
-  Widget _buildAndroidOptions() {
+  Widget _buildAndroidOptions(bool isDarkMode) {
     return Column(
       children: [
         ListTile(
-          leading: const Icon(Icons.folder, color: Colors.blue),
-          title: Text(S.of(context).uploadFolder),
-          subtitle: Text(S.of(context).uploadFolderSubtitle),
+          leading: Icon(
+            Icons.folder,
+            color: AppColors.getPrimary(isDarkMode),
+          ),
+          title: Text(
+            S.of(context).uploadFolder,
+            style: TextStyle(
+              color: AppColors.getTextPrimary(isDarkMode),
+            ),
+          ),
+          subtitle: Text(
+            S.of(context).uploadFolderSubtitle,
+            style: TextStyle(
+              color: AppColors.getTextSecondary(isDarkMode),
+            ),
+          ),
           onTap: () {
             Navigator.pop(context);
             _uploadFolderAndroid();
           },
         ),
-        const Divider(height: 1),
+        Divider(height: 1, color: AppColors.darkSurface),
         ListTile(
-          leading: const Icon(Icons.file_copy, color: Colors.green),
-          title: Text(S.of(context).uploadMultipleFiles),
-          subtitle: Text(S.of(context).uploadMultipleFilesSubtitle),
+          leading: Icon(
+            Icons.file_copy,
+            color: AppColors.success,
+          ),
+          title: Text(
+            S.of(context).uploadMultipleFiles,
+            style: TextStyle(
+              color: AppColors.getTextPrimary(isDarkMode),
+            ),
+          ),
+          subtitle: Text(
+            S.of(context).uploadMultipleFilesSubtitle,
+            style: TextStyle(
+              color: AppColors.getTextSecondary(isDarkMode),
+            ),
+          ),
           onTap: () {
             Navigator.pop(context);
             _uploadFilesOrSingle();
           },
         ),
-        const Divider(height: 1),
+        Divider(height: 1, color: AppColors.darkSurface),
         ListTile(
-          leading: const Icon(Icons.create_new_folder, color: Colors.orange),
-          title: Text(S.of(context).createNewFolder),
-          subtitle: Text(S.of(context).createEmptyFolderSubtitle),
+          leading: Icon(
+            Icons.create_new_folder,
+            color: AppColors.warning,
+          ),
+          title: Text(
+            S.of(context).createNewFolder,
+            style: TextStyle(
+              color: AppColors.getTextPrimary(isDarkMode),
+            ),
+          ),
+          subtitle: Text(
+            S.of(context).createEmptyFolderSubtitle,
+            style: TextStyle(
+              color: AppColors.getTextSecondary(isDarkMode),
+            ),
+          ),
           onTap: () {
             Navigator.pop(context);
             _createNewFolder();
@@ -1273,23 +1320,49 @@ class _MainPageState extends State<MainPage> {
   }
 
   /// 🔥 خيارات iOS المترجمة
-  Widget _buildIOSOptions() {
+  Widget _buildIOSOptions(bool isDarkMode) {
     return Column(
       children: [
         ListTile(
-          leading: const Icon(Icons.file_copy, color: Colors.green),
-          title: Text(S.of(context).uploadFiles),
-          subtitle: Text(S.of(context).uploadFilesSubtitle),
+          leading: Icon(
+            Icons.file_copy,
+            color: AppColors.success,
+          ),
+          title: Text(
+            S.of(context).uploadFiles,
+            style: TextStyle(
+              color: AppColors.getTextPrimary(isDarkMode),
+            ),
+          ),
+          subtitle: Text(
+            S.of(context).uploadFilesSubtitle,
+            style: TextStyle(
+              color: AppColors.getTextSecondary(isDarkMode),
+            ),
+          ),
           onTap: () {
             Navigator.pop(context);
             _uploadFilesOrSingle();
           },
         ),
-        const Divider(height: 1),
+        Divider(height: 1, color: AppColors.darkSurface),
         ListTile(
-          leading: const Icon(Icons.create_new_folder, color: Colors.orange),
-          title: Text(S.of(context).createNewFolder),
-          subtitle: Text(S.of(context).createEmptyFolderSubtitle),
+          leading: Icon(
+            Icons.create_new_folder,
+            color: AppColors.warning,
+          ),
+          title: Text(
+            S.of(context).createNewFolder,
+            style: TextStyle(
+              color: AppColors.getTextPrimary(isDarkMode),
+            ),
+          ),
+          subtitle: Text(
+            S.of(context).createEmptyFolderSubtitle,
+            style: TextStyle(
+              color: AppColors.getTextSecondary(isDarkMode),
+            ),
+          ),
           onTap: () {
             Navigator.pop(context);
             _createNewFolder();
