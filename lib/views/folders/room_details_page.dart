@@ -88,7 +88,7 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
             content: Text(
               '${S.of(context).errorLoadingRoomDetails}: ${e.toString()}',
             ),
-            backgroundColor: Colors.red,
+            backgroundColor: AppColors.error,
           ),
         );
       }
@@ -108,8 +108,9 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
 
   @override
   Widget build(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
-      backgroundColor: Color(0xFFF8FAFD),
+      backgroundColor: AppColors.getBackground(isDarkMode),
       appBar: AppBar(
         title: Text(
           S.of(context).roomDetails,
@@ -124,7 +125,7 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
             ),
           ),
         ),
-        backgroundColor: AppColors.lightAppBar,
+        backgroundColor: AppColors.getAppBar(isDarkMode),
         elevation: 0,
         centerTitle: true,
         iconTheme: IconThemeData(
@@ -173,7 +174,7 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
                           content: Text(
                             '❌ ${S.of(context).onlyOwnerCanDelete}',
                           ),
-                          backgroundColor: Colors.red,
+                          backgroundColor: AppColors.error,
                         ),
                       );
                     }
@@ -191,7 +192,7 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
                           content: Text('❌ ${S.of(context).ownerCannotLeave}'),
-                          backgroundColor: Colors.orange,
+                          backgroundColor: AppColors.warning,
                         ),
                       );
                     }
@@ -239,9 +240,20 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.error_outline, size: 64, color: Colors.red),
+                  Icon(
+                    Icons.error_outline, 
+                    size: 64, 
+                    color: AppColors.error,
+                  ),
                   SizedBox(height: 16),
-                  Text(S.of(context).failedToLoadRoomDetails),
+                  Text(
+                    S.of(context).failedToLoadRoomDetails,
+                    style: TextStyle(
+                      color: AppColors.getTextPrimary(
+                        Theme.of(context).brightness == Brightness.dark,
+                      ),
+                    ),
+                  ),
                   SizedBox(height: 16),
                   ElevatedButton(
                     onPressed: _refreshRoom,
@@ -420,7 +432,9 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
                 ),
                 child: Icon(
                   Icons.meeting_room,
-                  color: Colors.white,
+                  color: AppColors.getCardColor(
+                  Theme.of(context).brightness == Brightness.dark,
+                ),
                   size: iconInnerSize,
                 ),
               ),
@@ -434,7 +448,9 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
                       style: TextStyle(
                         fontSize: titleFontSize,
                         fontWeight: FontWeight.bold,
-                        color: Colors.white,
+                        color: AppColors.getCardColor(
+                  Theme.of(context).brightness == Brightness.dark,
+                ),
                       ),
                     ),
                     SizedBox(height: 4),
@@ -477,7 +493,9 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
                 roomData!['description'],
                 style: TextStyle(
                   fontSize: descriptionFontSize,
-                  color: Colors.white,
+                  color: AppColors.getCardColor(
+                  Theme.of(context).brightness == Brightness.dark,
+                ),
                 ),
               ),
             ),
@@ -566,7 +584,9 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
               style: TextStyle(
                 fontSize: valueFontSize,
                 fontWeight: FontWeight.bold,
-                color: Colors.white,
+                color: AppColors.getCardColor(
+                  Theme.of(context).brightness == Brightness.dark,
+                ),
               ),
             ),
             Text(
@@ -909,15 +929,16 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
       desktop: 32.0,
     );
 
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     return Container(
       margin: EdgeInsets.symmetric(horizontal: margin),
       padding: EdgeInsets.all(padding),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.getCardColor(isDarkMode),
         borderRadius: BorderRadius.circular(borderRadius),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: AppColors.getShadow(isDarkMode),
             blurRadius: 20,
             offset: Offset(0, 4),
           ),
@@ -939,7 +960,9 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
                 ),
                 child: Icon(
                   Icons.info_outline,
-                  color: Colors.white,
+                  color: AppColors.getCardColor(
+                  Theme.of(context).brightness == Brightness.dark,
+                ),
                   size: iconInnerSize,
                 ),
               ),
@@ -1030,7 +1053,9 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
                   style: TextStyle(
                     fontSize: valueFontSize,
                     fontWeight: FontWeight.w600,
-                    color: Color(0xFF1F2937),
+                    color: AppColors.getTextPrimary(
+                      Theme.of(context).brightness == Brightness.dark,
+                    ),
                   ),
                 ),
               ],
@@ -1111,15 +1136,16 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
       desktop: 18.0,
     );
 
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     return Container(
       margin: EdgeInsets.symmetric(horizontal: margin),
       padding: EdgeInsets.all(padding),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.getCardColor(isDarkMode),
         borderRadius: BorderRadius.circular(borderRadius),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: AppColors.getShadow(isDarkMode),
             blurRadius: 20,
             offset: Offset(0, 4),
           ),
@@ -1144,7 +1170,9 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
                     ),
                     child: Icon(
                       Icons.people,
-                      color: Colors.white,
+                      color: AppColors.getCardColor(
+                  Theme.of(context).brightness == Brightness.dark,
+                ),
                       size: iconInnerSize,
                     ),
                   ),
@@ -1154,7 +1182,9 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
                     style: TextStyle(
                       fontSize: titleFontSize,
                       fontWeight: FontWeight.w700,
-                      color: Color(0xFF1F2937),
+                      color: AppColors.getTextPrimary(
+                        Theme.of(context).brightness == Brightness.dark,
+                      ),
                     ),
                   ),
                 ],
@@ -1279,13 +1309,18 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
                   style: TextStyle(
                     fontSize: nameFontSize,
                     fontWeight: FontWeight.w600,
+                    color: AppColors.getTextPrimary(
+                      Theme.of(context).brightness == Brightness.dark,
+                    ),
                   ),
                 ),
                 Text(
                   role,
                   style: TextStyle(
                     fontSize: roleFontSize,
-                    color: Colors.grey[600],
+                    color: AppColors.getTextSecondary(
+                      Theme.of(context).brightness == Brightness.dark,
+                    ),
                   ),
                 ),
               ],
@@ -1336,15 +1371,16 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
       desktop: 24.0,
     );
 
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     return Container(
       margin: EdgeInsets.symmetric(horizontal: margin),
       padding: EdgeInsets.all(padding),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.getCardColor(isDarkMode),
         borderRadius: BorderRadius.circular(borderRadius),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: AppColors.getShadow(isDarkMode),
             blurRadius: 20,
             offset: Offset(0, 4),
           ),
@@ -1370,7 +1406,9 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
                       ),
                       child: Icon(
                         Icons.insert_drive_file,
-                        color: Colors.white,
+                        color: AppColors.getCardColor(
+                  Theme.of(context).brightness == Brightness.dark,
+                ),
                         size: iconInnerSize,
                       ),
                     ),
@@ -1389,7 +1427,9 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
                         style: TextStyle(
                           fontSize: titleFontSize,
                           fontWeight: FontWeight.w700,
-                          color: Color(0xFF1F2937),
+                          color: AppColors.getTextPrimary(
+                            Theme.of(context).brightness == Brightness.dark,
+                          ),
                         ),
                         overflow: TextOverflow.ellipsis,
                         maxLines: 1,
@@ -1490,7 +1530,9 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
                               content: Text(S.of(context).shareInstruction),
-                              backgroundColor: Colors.blue,
+                              backgroundColor: AppColors.getPrimary(
+                                Theme.of(context).brightness == Brightness.dark,
+                              ),
                               duration: Duration(seconds: 4),
                             ),
                           );
@@ -1603,7 +1645,15 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
               ),
             ),
             Expanded(
-              child: Text(fileName, style: TextStyle(fontSize: fontSize)),
+              child: Text(
+                fileName, 
+                style: TextStyle(
+                  fontSize: fontSize,
+                  color: AppColors.getTextPrimary(
+                    Theme.of(context).brightness == Brightness.dark,
+                  ),
+                ),
+              ),
             ),
             PopupMenuButton<String>(
               icon: Icon(
@@ -1614,7 +1664,9 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
                   tablet: 20.0,
                   desktop: 22.0,
                 ),
-                color: Colors.grey,
+                color: AppColors.getTextSecondary(
+                  Theme.of(context).brightness == Brightness.dark,
+                ),
               ),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
@@ -1637,7 +1689,9 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
                             : Icons.star_border,
                         color: fileData['isStarred'] == true
                             ? Colors.amber
-                            : Colors.grey,
+                            : AppColors.getTextSecondary(
+                                Theme.of(context).brightness == Brightness.dark,
+                              ),
                       ),
                       SizedBox(width: 12),
                       Text(
@@ -1713,7 +1767,7 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(S.of(context).pleaseLoginAgain),
-              backgroundColor: Colors.red,
+              backgroundColor: AppColors.error,
             ),
           );
         }
@@ -1811,7 +1865,7 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content: Text(S.of(context).failedToOpenFile(e.toString())),
-                  backgroundColor: Colors.red,
+                  backgroundColor: AppColors.error,
                 ),
               );
             }
@@ -1828,7 +1882,7 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
                     .of(context)
                     .failedToLoadFileStatus(response.statusCode.toString()),
               ),
-              backgroundColor: Colors.red,
+              backgroundColor: AppColors.error,
             ),
           );
         }
@@ -1840,7 +1894,7 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(S.of(context).errorOpeningFile(e.toString())),
-            backgroundColor: Colors.red,
+            backgroundColor: AppColors.error,
           ),
         );
       }
@@ -2034,7 +2088,7 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
                     .of(context)
                     .fileNotAvailableError(response.statusCode.toString()),
               ),
-              backgroundColor: Colors.red,
+              backgroundColor: AppColors.error,
             ),
           );
         }
@@ -2045,7 +2099,7 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(S.of(context).errorLoadingFile(e.toString())),
-            backgroundColor: Colors.red,
+            backgroundColor: AppColors.error,
           ),
         );
       }
@@ -2090,7 +2144,7 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(S.of(context).errorOpeningFile(e.toString())),
-            backgroundColor: Colors.red,
+            backgroundColor: AppColors.error,
           ),
         );
       }
@@ -2137,15 +2191,16 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
       desktop: 24.0,
     );
 
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     return Container(
       margin: EdgeInsets.symmetric(horizontal: margin),
       padding: EdgeInsets.all(padding),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.getCardColor(isDarkMode),
         borderRadius: BorderRadius.circular(borderRadius),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: AppColors.getShadow(isDarkMode),
             blurRadius: 20,
             offset: Offset(0, 4),
           ),
@@ -2171,7 +2226,9 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
                       ),
                       child: Icon(
                         Icons.folder,
-                        color: Colors.white,
+                        color: AppColors.getCardColor(
+                  Theme.of(context).brightness == Brightness.dark,
+                ),
                         size: iconInnerSize,
                       ),
                     ),
@@ -2189,7 +2246,9 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
                         style: TextStyle(
                           fontSize: titleFontSize,
                           fontWeight: FontWeight.w700,
-                          color: Color(0xFF1F2937),
+                          color: AppColors.getTextPrimary(
+                            Theme.of(context).brightness == Brightness.dark,
+                          ),
                         ),
                         overflow: TextOverflow.ellipsis,
                         maxLines: 1,
@@ -2292,7 +2351,9 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
                               content: Text(
                                 S.of(context).folderShareInstruction,
                               ),
-                              backgroundColor: Colors.blue,
+                              backgroundColor: AppColors.getPrimary(
+                                Theme.of(context).brightness == Brightness.dark,
+                              ),
                               duration: Duration(seconds: 4),
                             ),
                           );
@@ -2427,7 +2488,15 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
               ),
             ),
             Expanded(
-              child: Text(folderName, style: TextStyle(fontSize: fontSize)),
+              child: Text(
+                folderName, 
+                style: TextStyle(
+                  fontSize: fontSize,
+                  color: AppColors.getTextPrimary(
+                    Theme.of(context).brightness == Brightness.dark,
+                  ),
+                ),
+              ),
             ),
             PopupMenuButton<String>(
               icon: Icon(
@@ -2438,7 +2507,9 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
                   tablet: 20.0,
                   desktop: 22.0,
                 ),
-                color: Colors.grey,
+                color: AppColors.getTextSecondary(
+                  Theme.of(context).brightness == Brightness.dark,
+                ),
               ),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
@@ -2461,7 +2532,9 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
                             : Icons.star_border,
                         color: folderData['isStarred'] == true
                             ? Colors.amber
-                            : Colors.grey,
+                            : AppColors.getTextSecondary(
+                                Theme.of(context).brightness == Brightness.dark,
+                              ),
                       ),
                       SizedBox(width: 12),
                       Text(
@@ -2715,7 +2788,7 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(S.of(context).mustLoginFirst),
-            backgroundColor: Colors.red,
+            backgroundColor: AppColors.error,
           ),
         );
         return;
@@ -2756,7 +2829,7 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
               content: Text(
                 result['message'] ?? S.of(context).failedToUpdateFavorite,
               ),
-              backgroundColor: Colors.red,
+              backgroundColor: AppColors.error,
             ),
           );
         }
@@ -2766,7 +2839,7 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(S.of(context).error(e.toString())),
-            backgroundColor: Colors.red,
+            backgroundColor: AppColors.error,
           ),
         );
       }
@@ -2843,7 +2916,7 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
                 roomController.errorMessage ??
                     S.of(context).failedToRemoveFileFromRoom,
               ),
-              backgroundColor: Colors.red,
+              backgroundColor: AppColors.error,
             ),
           );
         }
@@ -2853,7 +2926,7 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(S.of(context).error(e.toString())),
-            backgroundColor: Colors.red,
+            backgroundColor: AppColors.error,
           ),
         );
       }
@@ -2930,7 +3003,7 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
                 roomController.errorMessage ??
                     S.of(context).failedToRemoveFolderFromRoom,
               ),
-              backgroundColor: Colors.red,
+              backgroundColor: AppColors.error,
             ),
           );
         }
@@ -2940,7 +3013,7 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(S.of(context).error(e.toString())),
-            backgroundColor: Colors.red,
+            backgroundColor: AppColors.error,
           ),
         );
       }
@@ -2997,7 +3070,7 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
               content: Text(
                 result['message'] ?? S.of(context).failedToUpdateFavorite,
               ),
-              backgroundColor: Colors.red,
+              backgroundColor: AppColors.error,
             ),
           );
         }
@@ -3007,7 +3080,7 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(S.of(context).error(e.toString())),
-            backgroundColor: Colors.red,
+            backgroundColor: AppColors.error,
           ),
         );
       }
@@ -3136,7 +3209,7 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
               content: Text(
                 roomController.errorMessage ?? S.of(context).roomDeletionFailed,
               ),
-              backgroundColor: Colors.red,
+              backgroundColor: AppColors.error,
             ),
           );
         }
@@ -3146,7 +3219,7 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(S.of(context).errorPrefix(e.toString())),
-            backgroundColor: Colors.red,
+            backgroundColor: AppColors.error,
           ),
         );
       }
@@ -3196,7 +3269,7 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
               content: Text(
                 result['message'] ?? S.of(context).roomLeaveFailed,
               ),
-              backgroundColor: Colors.red,
+              backgroundColor: AppColors.error,
             ),
           );
         }
@@ -3206,7 +3279,7 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(S.of(context).errorPrefix(e.toString())),
-            backgroundColor: Colors.red,
+            backgroundColor: AppColors.error,
           ),
         );
       }
@@ -3237,8 +3310,12 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
 
   Widget _buildShimmerRoomHeader() {
     return Shimmer.fromColors(
-      baseColor: Colors.grey[300]!,
-      highlightColor: Colors.grey[100]!,
+      baseColor: AppColors.getShimmerBase(
+        Theme.of(context).brightness == Brightness.dark,
+      ),
+      highlightColor: AppColors.getShimmerHighlight(
+        Theme.of(context).brightness == Brightness.dark,
+      ),
       child: Container(
         margin: EdgeInsets.all(20),
         padding: EdgeInsets.all(24),
@@ -3255,7 +3332,9 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
                   width: 60,
                   height: 60,
                   decoration: BoxDecoration(
-                    color: Colors.grey[300],
+                    color: AppColors.getShimmerBase(
+                  Theme.of(context).brightness == Brightness.dark,
+                ),
                     shape: BoxShape.circle,
                   ),
                 ),
@@ -3268,7 +3347,9 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
                         width: double.infinity,
                         height: 24,
                         decoration: BoxDecoration(
-                          color: Colors.grey[300],
+                          color: AppColors.getShimmerBase(
+                  Theme.of(context).brightness == Brightness.dark,
+                ),
                           borderRadius: BorderRadius.circular(8),
                         ),
                       ),
@@ -3277,7 +3358,9 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
                         width: 150,
                         height: 16,
                         decoration: BoxDecoration(
-                          color: Colors.grey[300],
+                          color: AppColors.getShimmerBase(
+                  Theme.of(context).brightness == Brightness.dark,
+                ),
                           borderRadius: BorderRadius.circular(8),
                         ),
                       ),
@@ -3291,7 +3374,9 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
               width: double.infinity,
               height: 14,
               decoration: BoxDecoration(
-                color: Colors.grey[300],
+                color: AppColors.getShimmerBase(
+                  Theme.of(context).brightness == Brightness.dark,
+                ),
                 borderRadius: BorderRadius.circular(8),
               ),
             ),
@@ -3300,7 +3385,9 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
               width: 200,
               height: 14,
               decoration: BoxDecoration(
-                color: Colors.grey[300],
+                color: AppColors.getShimmerBase(
+                  Theme.of(context).brightness == Brightness.dark,
+                ),
                 borderRadius: BorderRadius.circular(8),
               ),
             ),
@@ -3312,8 +3399,12 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
 
   Widget _buildShimmerQuickActions() {
     return Shimmer.fromColors(
-      baseColor: Colors.grey[300]!,
-      highlightColor: Colors.grey[100]!,
+      baseColor: AppColors.getShimmerBase(
+        Theme.of(context).brightness == Brightness.dark,
+      ),
+      highlightColor: AppColors.getShimmerHighlight(
+        Theme.of(context).brightness == Brightness.dark,
+      ),
       child: Container(
         margin: EdgeInsets.symmetric(horizontal: 20),
         child: Row(
@@ -3324,7 +3415,9 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
               width: 70,
               height: 70,
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: AppColors.getCardColor(
+                  Theme.of(context).brightness == Brightness.dark,
+                ),
                 borderRadius: BorderRadius.circular(12),
               ),
             ),
@@ -3336,8 +3429,12 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
 
   Widget _buildShimmerRoomInfo() {
     return Shimmer.fromColors(
-      baseColor: Colors.grey[300]!,
-      highlightColor: Colors.grey[100]!,
+      baseColor: AppColors.getShimmerBase(
+        Theme.of(context).brightness == Brightness.dark,
+      ),
+      highlightColor: AppColors.getShimmerHighlight(
+        Theme.of(context).brightness == Brightness.dark,
+      ),
       child: Container(
         margin: EdgeInsets.symmetric(horizontal: 20),
         padding: EdgeInsets.all(20),
@@ -3351,7 +3448,9 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
               width: double.infinity,
               height: 20,
               decoration: BoxDecoration(
-                color: Colors.grey[300],
+                color: AppColors.getShimmerBase(
+                  Theme.of(context).brightness == Brightness.dark,
+                ),
                 borderRadius: BorderRadius.circular(8),
               ),
             ),
@@ -3364,7 +3463,9 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
                     margin: EdgeInsets.only(right: index < 2 ? 12 : 0),
                     height: 60,
                     decoration: BoxDecoration(
-                      color: Colors.grey[300],
+                      color: AppColors.getShimmerBase(
+                  Theme.of(context).brightness == Brightness.dark,
+                ),
                       borderRadius: BorderRadius.circular(8),
                     ),
                   ),
@@ -3390,7 +3491,9 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
               width: 120,
               height: 20,
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: AppColors.getCardColor(
+                  Theme.of(context).brightness == Brightness.dark,
+                ),
                 borderRadius: BorderRadius.circular(8),
               ),
             ),
@@ -3411,7 +3514,9 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
                   width: 80,
                   margin: EdgeInsets.only(right: 12),
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: AppColors.getCardColor(
+                  Theme.of(context).brightness == Brightness.dark,
+                ),
                     borderRadius: BorderRadius.circular(12),
                   ),
                 ),
@@ -3436,7 +3541,9 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
               width: 140,
               height: 20,
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: AppColors.getCardColor(
+                  Theme.of(context).brightness == Brightness.dark,
+                ),
                 borderRadius: BorderRadius.circular(8),
               ),
             ),
@@ -3457,7 +3564,9 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
                   width: 100,
                   margin: EdgeInsets.only(right: 12),
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: AppColors.getCardColor(
+                  Theme.of(context).brightness == Brightness.dark,
+                ),
                     borderRadius: BorderRadius.circular(12),
                   ),
                 ),
@@ -3482,7 +3591,9 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
               width: 160,
               height: 20,
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: AppColors.getCardColor(
+                  Theme.of(context).brightness == Brightness.dark,
+                ),
                 borderRadius: BorderRadius.circular(8),
               ),
             ),
@@ -3503,7 +3614,9 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
                   width: 100,
                   margin: EdgeInsets.only(right: 12),
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: AppColors.getCardColor(
+                  Theme.of(context).brightness == Brightness.dark,
+                ),
                     borderRadius: BorderRadius.circular(12),
                   ),
                 ),

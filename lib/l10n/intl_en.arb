@@ -1367,7 +1367,7 @@
   "speechRecognitionNotAvailable": "Speech recognition is not available on this device",
   "searchFailed": "Search failed",
   "listening": "Listening...",
-  "searchHint": "Search... (e.g., photos from last week)",
+  "searchHint": "Search... (e.g., photos from last week or #work)",
   "scopeAll": "All",
   "scopeMyFiles": "My Files",
   "scopeShared": "Shared",

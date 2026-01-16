@@ -18,6 +18,7 @@ import 'package:filevo/views/fileViewer/pdfViewer.dart';
 import 'package:filevo/views/fileViewer/textViewer.dart';
 import 'package:filevo/views/folders/share_folder_with_room_page.dart';
 import 'package:filevo/services/api_endpoints.dart';
+import 'package:filevo/constants/app_colors.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:http/http.dart' as http;
 import 'package:filevo/dialogs/folder_protection_dialogs.dart';
@@ -417,13 +418,13 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
     
     if (widget.roomId == null || widget.roomId!.isEmpty) {
       print('❌ [openRoomFile] RoomId is null or empty');
-      _showSnackBar(S.of(context).fileLinkUnavailable, Colors.orange);
+      _showSnackBar(S.of(context).fileLinkUnavailable, AppColors.warning);
       return;
     }
     
     if (fileId.isEmpty) {
       print('❌ [openRoomFile] FileId is empty');
-      _showSnackBar(S.of(context).fileIdNotAvailable, Colors.red);
+      _showSnackBar(S.of(context).fileIdNotAvailable, AppColors.error);
       return;
     }
 
@@ -596,7 +597,7 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
           final errorJson = jsonDecode(response.body);
           final errorMessage = errorJson['message'] ?? 
                              S.of(context).fileNotFoundInRoom;
-          _showSnackBar(errorMessage, Colors.red);
+          _showSnackBar(errorMessage, AppColors.error);
         } catch (e) {
           _showSnackBar(
             S.of(context).fileNotFoundInRoom,
@@ -619,7 +620,7 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
             errorMessage = S.of(context).accessDeniedOrFileAlreadyAccessed;
           }
         }
-        _showSnackBar(errorMessage, Colors.red);
+        _showSnackBar(errorMessage, AppColors.error);
       }
     } catch (e, stackTrace) {
       print('❌ [openRoomFile] Exception: $e');
@@ -803,14 +804,14 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
           }
         }
         
-        _showSnackBar(errorMessage, Colors.red);
+        _showSnackBar(errorMessage, AppColors.error);
       }
     } catch (e, stackTrace) {
       print('❌ [openFileFromUrl] Exception: $e');
       print('❌ [openFileFromUrl] Stack trace: $stackTrace');
       if (mounted) {
         Navigator.pop(context);
-        _showSnackBar(S.of(context).errorDownloadingFile1, Colors.red);
+        _showSnackBar(S.of(context).errorDownloadingFile1, AppColors.error);
       }
     }
   }
@@ -892,7 +893,7 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
       }
     } catch (e) {
       if (mounted) {
-        _showSnackBar(S.of(context).errorOpeningFile(e.toString()), Colors.red);
+        _showSnackBar(S.of(context).errorOpeningFile(e.toString()), AppColors.error);
       }
     }
   }
@@ -978,7 +979,7 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
       }
     } else {
       print('❌ [handleFileTap] No path and no fileId available');
-      _showSnackBar(S.of(context).fileLinkUnavailable, Colors.orange);
+      _showSnackBar(S.of(context).fileLinkUnavailable, AppColors.warning);
       return;
     }
 
@@ -1101,7 +1102,7 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
       if (mounted) {
         Navigator.pop(context);
         // ✅ رسالة خطأ عامة مترجمة
-        _showSnackBar(S.of(context).errorDownloadingFile1, Colors.red);
+        _showSnackBar(S.of(context).errorDownloadingFile1, AppColors.error);
       }
     }
   }
@@ -1264,6 +1265,7 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
   }
 
   Future<void> _showFolderInfo() async {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     final folderController = Provider.of<FolderController>(
       context,
       listen: false,
@@ -1271,7 +1273,7 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
     final token = await StorageService.getToken();
 
     if (token == null) {
-      _showSnackBar(S.of(context).mustLogin, Colors.red);
+      _showSnackBar(S.of(context).mustLogin, AppColors.error);
       return;
     }
 
@@ -1280,16 +1282,17 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
     );
 
     if (folderDetails == null || folderDetails['folder'] == null) {
-      _showSnackBar(S.of(context).failedToFetchFolderInfo, Colors.red);
+      _showSnackBar(S.of(context).failedToFetchFolderInfo, AppColors.error);
       return;
     }
 
     final folder = folderDetails['folder'] as Map<String, dynamic>;
-    final folderColor = widget.folderColor ?? Colors.blue;
+    final folderColor = widget.folderColor ?? AppColors.getPrimary(isDarkMode);
 
     showDialog(
       context: context,
       builder: (context) => Dialog(
+        backgroundColor: AppColors.getCardColor(isDarkMode),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         child: Container(
           padding: EdgeInsets.all(20),
@@ -1312,7 +1315,7 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.w600,
-                          color: Colors.black87,
+                          color: AppColors.getTextPrimary(isDarkMode),
                         ),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
@@ -1327,30 +1330,35 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
                 S.of(context).folder, // ✅ "مجلد"
                 Icons.folder_outlined,
                 Colors.blue,
+                isDarkMode,
               ),
               _buildInfoRow(
                 S.of(context).size, // ✅ "الحجم"
                 _formatBytes(folder['size'] ?? 0),
                 Icons.storage,
                 Colors.green,
+                isDarkMode,
               ),
               _buildInfoRow(
                 S.of(context).filesCount, // ✅ "عدد الملفات"
                 '${folder['filesCount'] ?? 0}',
                 Icons.insert_drive_file,
                 Colors.orange,
+                isDarkMode,
               ),
               _buildInfoRow(
                 S.of(context).subfoldersCount, // ✅ "المجلدات الفرعية"
                 '${folder['subfoldersCount'] ?? 0}',
                 Icons.folder_copy,
                 Colors.purple,
+                isDarkMode,
               ),
               _buildInfoRow(
                 S.of(context).createdAt, // ✅ "تاريخ الإنشاء"
                 _formatDate(folder['createdAt']),
                 Icons.calendar_today,
                 Colors.red,
+                isDarkMode,
               ),
               const SizedBox(height: 20),
               SizedBox(
@@ -1375,12 +1383,15 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
     );
   }
 
-  Widget _buildInfoRow(String label, String value, IconData icon, Color color) {
+  Widget _buildInfoRow(String label, String value, IconData icon, Color color, [bool? isDarkMode]) {
+    final darkMode = isDarkMode ?? Theme.of(context).brightness == Brightness.dark;
     return Container(
       margin: EdgeInsets.only(bottom: 10),
       padding: EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.grey[50],
+        color: darkMode 
+            ? AppColors.darkSurface 
+            : Colors.grey[50],
         borderRadius: BorderRadius.circular(10),
       ),
       child: Row(
@@ -1402,7 +1413,7 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
                   label,
                   style: TextStyle(
                     fontSize: 12,
-                    color: Colors.grey[600],
+                    color: AppColors.getTextSecondary(darkMode),
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -1411,7 +1422,7 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
                   value,
                   style: TextStyle(
                     fontSize: 15,
-                    color: Colors.black87,
+                    color: AppColors.getTextPrimary(darkMode),
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -1452,12 +1463,13 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
 
   @override
   Widget build(BuildContext context) {
-    final folderColor = widget.folderColor ?? Colors.blue;
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final folderColor = widget.folderColor ?? AppColors.getPrimary(isDarkMode);
     final folders = contents.where((item) => item['type'] == 'folder').toList();
     final files = contents.where((item) => item['type'] == 'file').toList();
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.getBackground(isDarkMode),
       body: Column(
         children: [
           // AppBar
@@ -1472,7 +1484,7 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
               color: folderColor,
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
+                  color: AppColors.getShadow(isDarkMode),
                   blurRadius: 4,
                   offset: Offset(0, 2),
                 ),
@@ -1616,6 +1628,7 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
     List<Map<String, dynamic>> files,
     Color folderColor,
   ) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     if (isLoading && contents.isEmpty) {
       return Center(
         child: Column(
@@ -1625,7 +1638,9 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
             SizedBox(height: 16),
             Text(
               S.of(context).loadingContents, // ✅ نص مترجم
-              style: TextStyle(color: Colors.grey[600]),
+              style: TextStyle(
+                color: AppColors.getTextSecondary(isDarkMode),
+              ),
             ),
           ],
         ),
@@ -1637,13 +1652,17 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.folder_open, size: 60, color: Colors.grey[300]),
+            Icon(
+              Icons.folder_open, 
+              size: 60, 
+              color: AppColors.getTextSecondary(isDarkMode),
+            ),
             SizedBox(height: 16),
             Text(
               S.of(context).emptyFolderTitle, // ✅ "المجلد فارغ"
               style: TextStyle(
                 fontSize: 18,
-                color: Colors.grey[600],
+                color: AppColors.getTextPrimary(isDarkMode),
                 fontWeight: FontWeight.w500,
               ),
             ),
@@ -1652,7 +1671,9 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
               S
                   .of(context)
                   .emptyFolderSubtitle, // ✅ "يمكنك إضافة ملفات أو مجلدات جديدة"
-              style: TextStyle(color: Colors.grey[500]),
+              style: TextStyle(
+                color: AppColors.getTextSecondary(isDarkMode),
+              ),
             ),
           ],
         ),
@@ -1677,7 +1698,9 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.w600,
-                      color: Colors.black87,
+                      color: AppColors.getTextPrimary(
+                        Theme.of(context).brightness == Brightness.dark,
+                      ),
                     ),
                   ),
                   Spacer(),
@@ -1722,7 +1745,9 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
                 children: [
                   Icon(
                     Icons.insert_drive_file,
-                    color: Colors.grey[700],
+                    color: AppColors.getTextSecondary(
+                      Theme.of(context).brightness == Brightness.dark,
+                    ),
                     size: 20,
                   ),
                   SizedBox(width: 8),
@@ -1731,7 +1756,9 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.w600,
-                      color: Colors.black87,
+                      color: AppColors.getTextPrimary(
+                        Theme.of(context).brightness == Brightness.dark,
+                      ),
                     ),
                   ),
                   Spacer(),
@@ -1802,9 +1829,10 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
   // ✅ استبدل دالة _buildFolderCard الموجودة بهذا الكود:
 
   Widget _buildFolderCard(Map<String, dynamic> folder) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     final name = folder['name'] as String? ?? S.of(context).unnamedFolder;
     final filesCount = folder['filesCount'] ?? 0;
-    final folderColor = widget.folderColor ?? Colors.blue;
+    final folderColor = widget.folderColor ?? AppColors.getPrimary(isDarkMode);
 
     // ✅ استخراج الحجم وتنسيقه
     int size = 0;
@@ -1822,6 +1850,7 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
 
     return Card(
       elevation: 1,
+      color: AppColors.getCardColor(isDarkMode),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: InkWell(
         onTap: () => _handleItemTap(folder),
@@ -1851,7 +1880,7 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
                       padding: EdgeInsets.all(4),
                       child: Icon(
                         Icons.more_vert,
-                        color: Colors.grey[600],
+                        color: AppColors.getTextSecondary(isDarkMode),
                         size: 20,
                       ),
                     ),
@@ -1864,7 +1893,7 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
                 style: TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.w600,
-                  color: Colors.black87,
+                  color: AppColors.getTextPrimary(isDarkMode),
                 ),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
@@ -1877,17 +1906,25 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
                   Container(
                     padding: EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                     decoration: BoxDecoration(
-                      color: Colors.grey[100],
+                      color: isDarkMode 
+                          ? AppColors.darkSurface 
+                          : Colors.grey[100],
                       borderRadius: BorderRadius.circular(6),
                     ),
                     child: Text(
                       '$filesCount ${S.of(context).files}', // ✅ "ملفات"
-                      style: TextStyle(fontSize: 12, color: Colors.grey[700]),
+                      style: TextStyle(
+                        fontSize: 12, 
+                        color: AppColors.getTextSecondary(isDarkMode),
+                      ),
                     ),
                   ),
                   Text(
                     formattedSize, // ✅ عرض الحجم
-                    style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                    style: TextStyle(
+                      fontSize: 12, 
+                      color: AppColors.getTextSecondary(isDarkMode),
+                    ),
                   ),
                 ],
               ),
@@ -1903,6 +1940,7 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
     BuildContext context,
     Map<String, dynamic> folder,
   ) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
@@ -1913,7 +1951,7 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
         ),
         child: Container(
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: AppColors.getCardColor(isDarkMode),
             borderRadius: BorderRadius.vertical(
               top: Radius.circular(
                 ResponsiveUtils.getResponsiveValue(
@@ -1957,7 +1995,9 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
                   desktop: 6.0,
                 ),
                 decoration: BoxDecoration(
-                  color: Colors.grey[300],
+                  color: isDarkMode 
+                      ? AppColors.darkSurface 
+                      : Colors.grey[300],
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -2068,7 +2108,7 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
                                 content: Text(S.of(context).cannotShareProtectedFolder),
-                                backgroundColor: Colors.orange,
+                                backgroundColor: AppColors.warning,
                                 duration: Duration(seconds: 3),
                               ),
                             );
@@ -2121,7 +2161,12 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
                       ),
 
                       // ✅ خط فاصل قبل الحذف
-                      Divider(height: 1),
+                      Divider(
+                        height: 1,
+                        color: isDarkMode 
+                            ? AppColors.darkSurface 
+                            : Colors.grey[300],
+                      ),
 
                       // ✅ قفل/إلغاء قفل المجلد
                       _buildMenuItem(
@@ -2147,7 +2192,12 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
                       ),
 
                       // ✅ خط فاصل قبل الحذف
-                      Divider(height: 1),
+                      Divider(
+                        height: 1,
+                        color: isDarkMode 
+                            ? AppColors.darkSurface 
+                            : Colors.grey[300],
+                      ),
 
                       // ✅ الحذف
                       _buildMenuItem(
@@ -2219,6 +2269,7 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
     Color? textColor,
     Color? iconColor,
   }) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     final iconSize = ResponsiveUtils.getResponsiveValue(
       context,
       mobile: 20.0,
@@ -2238,20 +2289,32 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
       desktop: 20.0,
     );
 
+    final defaultIconColor = isDarkMode 
+        ? AppColors.darkTextSecondary 
+        : Colors.grey[700];
+    final defaultTextColor = isDarkMode 
+        ? AppColors.getTextPrimary(isDarkMode) 
+        : Colors.black87;
+
     return ListTile(
+      tileColor: AppColors.getCardColor(isDarkMode),
       leading: Container(
         width: containerSize,
         height: containerSize,
         decoration: BoxDecoration(
-          color: (iconColor ?? Colors.grey[700])!.withOpacity(0.1),
+          color: (iconColor ?? defaultIconColor)!.withOpacity(0.1),
           shape: BoxShape.circle,
         ),
-        child: Icon(icon, color: iconColor ?? Colors.grey[700], size: iconSize),
+        child: Icon(
+          icon, 
+          color: iconColor ?? defaultIconColor, 
+          size: iconSize,
+        ),
       ),
       title: Text(
         title,
         style: TextStyle(
-          color: textColor ?? Colors.black87,
+          color: textColor ?? defaultTextColor,
           fontSize: fontSize,
           fontWeight: FontWeight.w500,
         ),
@@ -2262,6 +2325,7 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
 
   // ✅ أضف دالة عرض تفاصيل المجلد:
   Future<void> _showFolderDetailsDialog(Map<String, dynamic> folder) async {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     // ✅ الحصول على folderId من جميع الأماكن المحتملة (للمجلدات الفرعية)
     final folderId = folder['folderId'] ?? folder['_id'] ?? folder['folderData']?['_id'];
     if (folderId == null) return;
@@ -2276,16 +2340,17 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
     );
 
     if (folderDetails == null || folderDetails['folder'] == null) {
-      _showSnackBar(S.of(context).failedToFetchFolderInfo, Colors.red);
+      _showSnackBar(S.of(context).failedToFetchFolderInfo, AppColors.error);
       return;
     }
 
     final folderData = folderDetails['folder'] as Map<String, dynamic>;
-    final folderColor = widget.folderColor ?? Colors.blue;
+    final folderColor = widget.folderColor ?? AppColors.getPrimary(isDarkMode);
 
     showDialog(
       context: context,
       builder: (context) => Dialog(
+        backgroundColor: AppColors.getCardColor(isDarkMode),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         child: Container(
           padding: EdgeInsets.all(20),
@@ -2310,7 +2375,7 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.w600,
-                          color: Colors.black87,
+                          color: AppColors.getTextPrimary(isDarkMode),
                         ),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
@@ -2325,30 +2390,35 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
                 S.of(context).folder, // ✅ "مجلد"
                 Icons.folder_outlined,
                 Colors.blue,
+                isDarkMode,
               ),
               _buildInfoRow(
                 S.of(context).size, // ✅ "الحجم"
                 _formatBytes(folderData['size'] ?? 0),
                 Icons.storage,
                 Colors.green,
+                isDarkMode,
               ),
               _buildInfoRow(
                 S.of(context).filesCount, // ✅ "عدد الملفات"
                 '${folderData['filesCount'] ?? 0}',
                 Icons.insert_drive_file,
                 Colors.orange,
+                isDarkMode,
               ),
               _buildInfoRow(
                 S.of(context).subfoldersCount, // ✅ "المجلدات الفرعية"
                 '${folderData['subfoldersCount'] ?? 0}',
                 Icons.folder_copy,
                 Colors.purple,
+                isDarkMode,
               ),
               _buildInfoRow(
                 S.of(context).createdAt, // ✅ "تاريخ الإنشاء"
                 _formatDate(folderData['createdAt']),
                 Icons.calendar_today,
                 Colors.red,
+                isDarkMode,
               ),
               const SizedBox(height: 20),
               SizedBox(

@@ -15,6 +15,7 @@ import 'package:filevo/services/storage_service.dart';
 import 'package:filevo/utils/room_permissions.dart';
 import 'file_actions_service.dart';
 import 'package:filevo/generated/l10n.dart';
+import 'package:filevo/constants/app_colors.dart';
 
 class FilesGrid extends StatefulWidget {
   final List<Map<String, dynamic>> files;
@@ -704,7 +705,7 @@ class _FilesGridState extends State<FilesGrid> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(S.of(context).removeFilePermissionError),
-              backgroundColor: Colors.red,
+              backgroundColor: AppColors.error,
             ),
           );
         }
@@ -714,7 +715,7 @@ class _FilesGridState extends State<FilesGrid> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(S.of(context).removeFilePermissionError),
-            backgroundColor: Colors.red,
+            backgroundColor: AppColors.error,
           ),
         );
       }
@@ -763,7 +764,7 @@ class _FilesGridState extends State<FilesGrid> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(S.of(context).fileIdNotFound),
-            backgroundColor: Colors.red,
+            backgroundColor: AppColors.error,
           ),
         );
       }
@@ -814,7 +815,7 @@ class _FilesGridState extends State<FilesGrid> {
               content: Text(
                 roomController.errorMessage ?? S.of(context).failedToSaveFile,
               ),
-              backgroundColor: Colors.red,
+              backgroundColor: AppColors.error,
             ),
           );
         }
@@ -826,7 +827,7 @@ class _FilesGridState extends State<FilesGrid> {
           SnackBar(
             content: Text(S.of(context).errorOccurred(e.toString())),
 
-            backgroundColor: Colors.red,
+            backgroundColor: AppColors.error,
           ),
         );
       }
@@ -861,7 +862,7 @@ class _FilesGridState extends State<FilesGrid> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(S.of(context).fileIdNotFound),
-            backgroundColor: Colors.red,
+            backgroundColor: AppColors.error,
           ),
         );
       }
@@ -897,7 +898,7 @@ class _FilesGridState extends State<FilesGrid> {
                 roomController.errorMessage ??
                     '❌ ${S.of(context).failedToRemoveFile}',
               ),
-              backgroundColor: Colors.red,
+              backgroundColor: AppColors.error,
             ),
           );
         }
@@ -907,7 +908,7 @@ class _FilesGridState extends State<FilesGrid> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(S.of(context).errorOccurred(e.toString())),
-            backgroundColor: Colors.red,
+            backgroundColor: AppColors.error,
           ),
         );
       }
@@ -1020,7 +1021,7 @@ class _FilesGridState extends State<FilesGrid> {
               fileController.errorMessage ??
                   '❌ ${S.of(context).failedToMoveFile}',
             ),
-            backgroundColor: Colors.red,
+            backgroundColor: AppColors.error,
           ),
         );
       }
@@ -2408,7 +2409,7 @@ class _FolderNavigationDialogState extends State<_FolderNavigationDialog> {
             content: Text(
               '${S.of(context).errorLoadingSubfolders}: ${e.toString()}',
             ),
-            backgroundColor: Colors.red,
+            backgroundColor: AppColors.error,
           ),
         );
       }
@@ -2445,10 +2446,11 @@ class _FolderNavigationDialogState extends State<_FolderNavigationDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     return Container(
       height: MediaQuery.of(context).size.height * 0.7,
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.getCardColor(isDarkMode),
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       child: Column(
@@ -2457,7 +2459,7 @@ class _FolderNavigationDialogState extends State<_FolderNavigationDialog> {
           Container(
             padding: EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: Colors.purple,
+              color: AppColors.getPrimary(isDarkMode),
               borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
             ),
             child: Row(
@@ -2490,7 +2492,9 @@ class _FolderNavigationDialogState extends State<_FolderNavigationDialog> {
           if (_breadcrumb.length > 1)
             Container(
               padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              color: Colors.grey[100],
+              color: isDarkMode 
+                  ? AppColors.darkSurface 
+                  : Colors.grey[100],
               child: Row(
                 children: [
                   Expanded(
@@ -2512,14 +2516,16 @@ class _FolderNavigationDialogState extends State<_FolderNavigationDialog> {
                                   Icon(
                                     Icons.chevron_left,
                                     size: 16,
-                                    color: Colors.grey,
+                                    color: AppColors.getTextSecondary(isDarkMode),
                                   ),
                                   SizedBox(width: 4),
                                 ],
                                 Text(
                                   item['name'] ?? S.of(context).root,
                                   style: TextStyle(
-                                    color: isLast ? Colors.purple : Colors.blue,
+                                    color: isLast 
+                                        ? AppColors.getPrimary(isDarkMode) 
+                                        : AppColors.getPrimary(isDarkMode).withOpacity(0.8),
                                     fontWeight: isLast
                                         ? FontWeight.bold
                                         : FontWeight.normal,
@@ -2546,35 +2552,73 @@ class _FolderNavigationDialogState extends State<_FolderNavigationDialog> {
                 // ✅ خيار "اختيار الجذر" (إذا كنا في الجذر)
                 if (_currentFolderId == null)
                   ListTile(
-                    leading: Icon(Icons.home_rounded, color: Colors.blue),
-                    title: Text(S.of(context).moveToRoot),
-                    subtitle: Text(S.of(context).moveToRootDescription),
+                    tileColor: AppColors.getCardColor(isDarkMode),
+                    leading: Icon(
+                      Icons.home_rounded, 
+                      color: AppColors.getPrimary(isDarkMode),
+                    ),
+                    title: Text(
+                      S.of(context).moveToRoot,
+                      style: TextStyle(
+                        color: AppColors.getTextPrimary(isDarkMode),
+                      ),
+                    ),
+                    subtitle: Text(
+                      S.of(context).moveToRootDescription,
+                      style: TextStyle(
+                        color: AppColors.getTextSecondary(isDarkMode),
+                      ),
+                    ),
                     onTap: () => widget.onSelect(null),
                   ),
                 // ✅ خيار "اختيار المجلد الحالي" (إذا كنا داخل مجلد)
                 if (_currentFolderId != null)
                   ListTile(
-                    leading: Icon(Icons.check_circle, color: Colors.green),
+                    tileColor: AppColors.getCardColor(isDarkMode),
+                    leading: Icon(
+                      Icons.check_circle, 
+                      color: AppColors.success,
+                    ),
                     title: Text(
                       S.of(context).selectFolder(_breadcrumb.last['name'] ?? S.of(context).folderNameHint),
+                      style: TextStyle(
+                        color: AppColors.getTextPrimary(isDarkMode),
+                      ),
                     ),
-                    subtitle: Text(S.of(context).selectFolderDescription),
+                    subtitle: Text(
+                      S.of(context).selectFolderDescription,
+                      style: TextStyle(
+                        color: AppColors.getTextSecondary(isDarkMode),
+                      ),
+                    ),
                     onTap: () => widget.onSelect(_currentFolderId),
                   ),
                 // ✅ Divider بين الخيارات وقائمة المجلدات
-                Divider(),
+                Divider(
+                  color: isDarkMode 
+                      ? AppColors.darkSurface 
+                      : Colors.grey[300],
+                ),
 
                 // ✅ قائمة المجلدات
                 Expanded(
                   child: _isLoading
-                      ? Center(child: CircularProgressIndicator())
+                      ? Center(
+                          child: CircularProgressIndicator(
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              AppColors.getPrimary(isDarkMode),
+                            ),
+                          ),
+                        )
                       : _currentFolders.isEmpty
                       ? Center(
                           child: Text(
                             _currentFolderId == null
                                 ? S.of(context).noFoldersAvailable
                                 : S.of(context).noSubfolders,
-                            style: TextStyle(color: Colors.grey),
+                            style: TextStyle(
+                              color: AppColors.getTextSecondary(isDarkMode),
+                            ),
                           ),
                         )
                       : ListView.builder(
@@ -2600,44 +2644,56 @@ class _FolderNavigationDialogState extends State<_FolderNavigationDialog> {
                                   );
                                 }
                               },
-                              child: ListTile(
-                                leading: Icon(
-                                  Icons.folder_rounded,
-                                  color: Colors.orange,
-                                ),
-                                title: Text(folderName),
-                                subtitle: Text(
-                                  '${folder['filesCount'] ?? 0} ${S.of(context).files}',
-                                ),
-                                trailing: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    // ✅ زر اختيار المجلد (checkmark)
-                                    Material(
-                                      color: Colors.transparent,
-                                      child: InkWell(
-                                        onTap: () {
-                                          // ✅ اختيار المجلد مباشرة
-                                          widget.onSelect(folderId);
-                                        },
-                                        borderRadius: BorderRadius.circular(20),
-                                        child: Container(
-                                          padding: EdgeInsets.all(8),
-                                          child: Icon(
-                                            Icons.check_circle_outline,
-                                            color: Colors.green,
-                                            size: 24,
+                              child: Container(
+                                color: AppColors.getCardColor(isDarkMode),
+                                child: ListTile(
+                                  tileColor: AppColors.getCardColor(isDarkMode),
+                                  leading: Icon(
+                                    Icons.folder_rounded,
+                                    color: AppColors.warning,
+                                  ),
+                                  title: Text(
+                                    folderName,
+                                    style: TextStyle(
+                                      color: AppColors.getTextPrimary(isDarkMode),
+                                    ),
+                                  ),
+                                  subtitle: Text(
+                                    '${folder['filesCount'] ?? 0} ${S.of(context).files}',
+                                    style: TextStyle(
+                                      color: AppColors.getTextSecondary(isDarkMode),
+                                    ),
+                                  ),
+                                  trailing: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      // ✅ زر اختيار المجلد (checkmark)
+                                      Material(
+                                        color: Colors.transparent,
+                                        child: InkWell(
+                                          onTap: () {
+                                            // ✅ اختيار المجلد مباشرة
+                                            widget.onSelect(folderId);
+                                          },
+                                          borderRadius: BorderRadius.circular(20),
+                                          child: Container(
+                                            padding: EdgeInsets.all(8),
+                                            child: Icon(
+                                              Icons.check_circle_outline,
+                                              color: AppColors.success,
+                                              size: 24,
+                                            ),
                                           ),
                                         ),
                                       ),
-                                    ),
-                                    SizedBox(width: 8),
-                                    // ✅ أيقونة chevron للإشارة إلى إمكانية فتح المجلد
-                                    Icon(
-                                      Icons.chevron_right,
-                                      color: Colors.grey,
-                                    ),
-                                  ],
+                                      SizedBox(width: 8),
+                                      // ✅ أيقونة chevron للإشارة إلى إمكانية فتح المجلد
+                                      Icon(
+                                        Icons.chevron_right,
+                                        color: AppColors.getTextSecondary(isDarkMode),
+                                      ),
+                                    ],
+                                  ),
                                 ),
                               ),
                             );

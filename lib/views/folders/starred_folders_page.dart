@@ -11,6 +11,7 @@ import 'package:filevo/views/folders/share_folder_with_room_page.dart';
 import 'package:filevo/views/fileViewer/folder_actions_service.dart';
 import 'package:filevo/views/folders/starred_folders_page_helpers.dart';
 import 'package:filevo/dialogs/folder_protection_dialogs.dart';
+import 'package:filevo/constants/app_colors.dart';
 
 class StarredFoldersPage extends StatefulWidget {
   const StarredFoldersPage({Key? key}) : super(key: key);
@@ -81,6 +82,7 @@ class _StarredFoldersPageState extends State<StarredFoldersPage> {
     if (folderId == null) return;
 
     final folderName = folder['title'] as String? ?? S.of(context).folder;
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
     // ✅ التحقق من أن المجلد محمي
     final folderData = folder['folderData'] ?? folder;
@@ -110,7 +112,7 @@ class _StarredFoldersPageState extends State<StarredFoldersPage> {
           builder: (context) => FolderContentsPage(
             folderId: folderId,
             folderName: folderName,
-            folderColor: folder['color'] as Color? ?? const Color(0xff28336f),
+            folderColor: folder['color'] as Color? ?? AppColors.getPrimary(isDarkMode),
           ),
         ),
       );
@@ -186,7 +188,7 @@ class _StarredFoldersPageState extends State<StarredFoldersPage> {
                 ? S.of(context).folderAddedToFavorites
                 : S.of(context).folderRemovedFromFavorites,
           ),
-          backgroundColor: Colors.green,
+          backgroundColor: AppColors.success,
         ),
       );
     }
@@ -234,6 +236,7 @@ class _StarredFoldersPageState extends State<StarredFoldersPage> {
 
   @override
   Widget build(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     return Consumer<FolderController>(
       builder: (context, folderController, child) {
         final starredFolders = folderController.starredFolders;
@@ -248,7 +251,7 @@ class _StarredFoldersPageState extends State<StarredFoldersPage> {
             'fileCount': folder['filesCount'] ?? 0,
             'size': _formatBytes(size),
             'icon': Icons.folder,
-            'color': const Color(0xff28336f),
+            'color': AppColors.getPrimary(isDarkMode),
             'type': 'folder',
             'folderId': folder['_id'],
             'folderData': folder,
@@ -258,13 +261,13 @@ class _StarredFoldersPageState extends State<StarredFoldersPage> {
         }).toList();
 
         return Scaffold(
-          backgroundColor: Colors.white,
+          backgroundColor: AppColors.getBackground(isDarkMode),
           appBar: AppBar(
             title: Text(
               S.of(context).starredFolders,
               style: TextStyle(fontWeight: FontWeight.bold),
             ),
-            backgroundColor: const Color(0xff28336f),
+            backgroundColor: AppColors.getAppBar(isDarkMode),
             leading: IconButton(
               icon: const Icon(Icons.arrow_back),
               onPressed: () => Navigator.pop(context),
@@ -290,8 +293,10 @@ class _StarredFoldersPageState extends State<StarredFoldersPage> {
             },
             header: const WaterDropHeader(),
             child: folderController.isLoading && starredFolders.isEmpty
-                ? const Center(
-                    child: CircularProgressIndicator(color: Color(0xff28336f)),
+                ? Center(
+                    child: CircularProgressIndicator(
+                      color: AppColors.getPrimary(isDarkMode),
+                    ),
                   )
                 : starredFolders.isEmpty
                 ? Center(
@@ -301,21 +306,23 @@ class _StarredFoldersPageState extends State<StarredFoldersPage> {
                         Icon(
                           Icons.star_border_rounded,
                           size: 80,
-                          color: Colors.grey[400],
+                          color: AppColors.getTextSecondary(isDarkMode),
                         ),
                         const SizedBox(height: 16),
                         Text(
                           S.of(context).noStarredFolders,
                           style: TextStyle(
                             fontSize: 18,
-                            color: Colors.grey[600],
+                            color: AppColors.getTextPrimary(isDarkMode),
                           ),
                         ),
                         const SizedBox(height: 8),
                         Text(
                           S.of(context).addToFavoritesInstruction,
                           textAlign: TextAlign.center,
-                          style: TextStyle(color: Colors.grey[500]),
+                          style: TextStyle(
+                            color: AppColors.getTextSecondary(isDarkMode),
+                          ),
                         ),
                       ],
                     ),
@@ -370,6 +377,7 @@ class _StarredFoldersPageState extends State<StarredFoldersPage> {
                         margin: EdgeInsets.only(bottom: 12),
                         child: Card(
                           elevation: 2,
+                          color: AppColors.getCardColor(isDarkMode),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
@@ -378,7 +386,7 @@ class _StarredFoldersPageState extends State<StarredFoldersPage> {
                               Icons.folder,
                               color:
                                   folder['color'] as Color? ??
-                                  const Color(0xff28336f),
+                                  AppColors.getPrimary(isDarkMode),
                               size: 32,
                             ),
                             title: Text(
@@ -386,17 +394,22 @@ class _StarredFoldersPageState extends State<StarredFoldersPage> {
                               style: TextStyle(
                                 fontWeight: FontWeight.bold,
                                 fontSize: 16,
+                                color: AppColors.getTextPrimary(isDarkMode),
                               ),
                             ),
                             subtitle: Text(
                               '${folder['fileCount']} ${S.of(context).files}• ${folder['size']}',
                               style: TextStyle(
                                 fontSize: 12,
-                                color: Colors.grey[600],
+                                color: AppColors.getTextSecondary(isDarkMode),
                               ),
                             ),
                             trailing: PopupMenuButton<String>(
-                              icon: Icon(Icons.more_vert),
+                              icon: Icon(
+                                Icons.more_vert,
+                                color: AppColors.getTextSecondary(isDarkMode),
+                              ),
+                              color: AppColors.getCardColor(isDarkMode),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(12),
                               ),
@@ -408,11 +421,16 @@ class _StarredFoldersPageState extends State<StarredFoldersPage> {
                                     children: [
                                       Icon(
                                         Icons.open_in_new,
-                                        color: Colors.blue,
+                                        color: AppColors.getPrimary(isDarkMode),
                                         size: 20,
                                       ),
                                       SizedBox(width: 8),
-                                      Text(S.of(context).open),
+                                      Text(
+                                        S.of(context).open,
+                                        style: TextStyle(
+                                          color: AppColors.getTextPrimary(isDarkMode),
+                                        ),
+                                      ),
                                     ],
                                   ),
                                 ),
@@ -422,11 +440,16 @@ class _StarredFoldersPageState extends State<StarredFoldersPage> {
                                     children: [
                                       Icon(
                                         Icons.info_outline,
-                                        color: Colors.teal,
+                                        color: AppColors.getPrimary(isDarkMode),
                                         size: 20,
                                       ),
                                       SizedBox(width: 8),
-                                      Text(S.of(context).viewInfo),
+                                      Text(
+                                        S.of(context).viewInfo,
+                                        style: TextStyle(
+                                          color: AppColors.getTextPrimary(isDarkMode),
+                                        ),
+                                      ),
                                     ],
                                   ),
                                 ),
@@ -436,11 +459,16 @@ class _StarredFoldersPageState extends State<StarredFoldersPage> {
                                     children: [
                                       Icon(
                                         Icons.edit,
-                                        color: Colors.orange,
+                                        color: AppColors.warning,
                                         size: 20,
                                       ),
                                       SizedBox(width: 8),
-                                      Text(S.of(context).update),
+                                      Text(
+                                        S.of(context).update,
+                                        style: TextStyle(
+                                          color: AppColors.getTextPrimary(isDarkMode),
+                                        ),
+                                      ),
                                     ],
                                   ),
                                 ),
@@ -450,11 +478,16 @@ class _StarredFoldersPageState extends State<StarredFoldersPage> {
                                     children: [
                                       Icon(
                                         Icons.share,
-                                        color: Colors.green,
+                                        color: AppColors.success,
                                         size: 20,
                                       ),
                                       SizedBox(width: 8),
-                                      Text(S.of(context).share),
+                                      Text(
+                                        S.of(context).share,
+                                        style: TextStyle(
+                                          color: AppColors.getTextPrimary(isDarkMode),
+                                        ),
+                                      ),
                                     ],
                                   ),
                                 ),
@@ -464,11 +497,16 @@ class _StarredFoldersPageState extends State<StarredFoldersPage> {
                                     children: [
                                       Icon(
                                         Icons.drive_file_move_rounded,
-                                        color: Colors.purple,
+                                        color: AppColors.getPrimary(isDarkMode),
                                         size: 20,
                                       ),
                                       SizedBox(width: 8),
-                                      Text(S.of(context).move),
+                                      Text(
+                                        S.of(context).move,
+                                        style: TextStyle(
+                                          color: AppColors.getTextPrimary(isDarkMode),
+                                        ),
+                                      ),
                                     ],
                                   ),
                                 ),
@@ -478,15 +516,20 @@ class _StarredFoldersPageState extends State<StarredFoldersPage> {
                                     children: [
                                       Icon(
                                         Icons.star,
-                                        color: Colors.amber[700],
+                                        color: AppColors.warning,
                                         size: 20,
                                       ),
                                       SizedBox(width: 8),
-                                      Text(S.of(context).favoriteRemoved),
+                                      Text(
+                                        S.of(context).favoriteRemoved,
+                                        style: TextStyle(
+                                          color: AppColors.getTextPrimary(isDarkMode),
+                                        ),
+                                      ),
                                     ],
                                   ),
                                 ),
-                                PopupMenuDivider(),
+                                PopupMenuDivider(color: AppColors.darkSurface),
                                 PopupMenuItem<String>(
                                   value: 'protect',
                                   child: Row(
@@ -495,7 +538,7 @@ class _StarredFoldersPageState extends State<StarredFoldersPage> {
                                         (folder['folderData'] ?? folder)['isProtected'] == true
                                             ? Icons.lock_open
                                             : Icons.lock,
-                                        color: Colors.orange,
+                                        color: AppColors.warning,
                                         size: 20,
                                       ),
                                       SizedBox(width: 8),
@@ -503,24 +546,27 @@ class _StarredFoldersPageState extends State<StarredFoldersPage> {
                                         (folder['folderData'] ?? folder)['isProtected'] == true
                                             ? S.of(context).unlockFolder
                                             : S.of(context).lockFolder,
+                                        style: TextStyle(
+                                          color: AppColors.getTextPrimary(isDarkMode),
+                                        ),
                                       ),
                                     ],
                                   ),
                                 ),
-                                PopupMenuDivider(),
+                                PopupMenuDivider(color: AppColors.darkSurface),
                                 PopupMenuItem<String>(
                                   value: 'delete',
                                   child: Row(
                                     children: [
                                       Icon(
                                         Icons.delete_outline,
-                                        color: Colors.red,
+                                        color: AppColors.error,
                                         size: 20,
                                       ),
                                       SizedBox(width: 8),
                                       Text(
                                         S.of(context).delete,
-                                        style: TextStyle(color: Colors.red),
+                                        style: TextStyle(color: AppColors.error),
                                       ),
                                     ],
                                   ),

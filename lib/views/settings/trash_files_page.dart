@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:filevo/controllers/folders/files_controller.dart';
 import 'package:filevo/controllers/profile/profile_controller.dart';
+import 'package:filevo/constants/app_colors.dart';
 
 class TrashFilesPage extends StatefulWidget {
   final String token;
@@ -76,7 +77,7 @@ class _TrashFilesPageState extends State<TrashFilesPage> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(S.of(context).fileRestoredSuccess),
-          backgroundColor: Colors.green,
+          backgroundColor: AppColors.success,
         ),
       );
       
@@ -103,7 +104,7 @@ class _TrashFilesPageState extends State<TrashFilesPage> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(S.of(context).fileDeletedPermanently),
-          backgroundColor: Colors.red,
+          backgroundColor: AppColors.error,
         ),
       );
       
@@ -167,29 +168,46 @@ class _TrashFilesPageState extends State<TrashFilesPage> {
     final s = S.of(context);
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text(s.confirmDeleteTitle), // ✅ نص مترجم
-        content: Text(
-          // ✅ نص مترجم مع تمرير اسم الملف ديناميكياً
-          s.confirmDeleteMessage(file["name"] ?? ""),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(s.cancel), // ✅ نص مترجم
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              _permanentDeleteFile(file["_id"]);
-            },
-            child: Text(
-              s.permanentDelete, // ✅ نص مترجم
-              style: const TextStyle(color: Colors.red),
+      builder: (context) {
+        final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+        return AlertDialog(
+          backgroundColor: AppColors.getCardColor(isDarkMode),
+          title: Text(
+            s.confirmDeleteTitle,
+            style: TextStyle(
+              color: AppColors.getTextPrimary(isDarkMode),
             ),
           ),
-        ],
-      ),
+          content: Text(
+            // ✅ نص مترجم مع تمرير اسم الملف ديناميكياً
+            s.confirmDeleteMessage(file["name"] ?? ""),
+            style: TextStyle(
+              color: AppColors.getTextPrimary(isDarkMode),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text(
+                s.cancel,
+                style: TextStyle(
+                  color: AppColors.getTextSecondary(isDarkMode),
+                ),
+              ),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+                _permanentDeleteFile(file["_id"]);
+              },
+              child: Text(
+                s.permanentDelete,
+                style: TextStyle(color: AppColors.error),
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 
@@ -198,29 +216,48 @@ class _TrashFilesPageState extends State<TrashFilesPage> {
 
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text(s.emptyTrashTitle), // ✅ نص مترجم
-        content: Text(s.emptyTrashMessage), // ✅ نص مترجم
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(s.cancel), // ✅ نص مترجم
-          ),
-          TextButton(
-            onPressed: () {
-              // Navigator.pop(context); // إغلاق الديالوج أولاً
-              // _emptyTrash(); // استدعاء دالة الإفراغ
-            },
-            child: Text(
-              s.empty, // ✅ نص مترجم
-              style: const TextStyle(
-                color: Colors.red,
-                fontWeight: FontWeight.bold,
-              ),
+      builder: (context) {
+        final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+        return AlertDialog(
+          backgroundColor: AppColors.getCardColor(isDarkMode),
+          title: Text(
+            s.emptyTrashTitle,
+            style: TextStyle(
+              color: AppColors.getTextPrimary(isDarkMode),
             ),
           ),
-        ],
-      ),
+          content: Text(
+            s.emptyTrashMessage,
+            style: TextStyle(
+              color: AppColors.getTextPrimary(isDarkMode),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text(
+                s.cancel,
+                style: TextStyle(
+                  color: AppColors.getTextSecondary(isDarkMode),
+                ),
+              ),
+            ),
+            TextButton(
+              onPressed: () {
+                // Navigator.pop(context); // إغلاق الديالوج أولاً
+                // _emptyTrash(); // استدعاء دالة الإفراغ
+              },
+              child: Text(
+                s.empty,
+                style: TextStyle(
+                  color: AppColors.error,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 
@@ -239,14 +276,15 @@ class _TrashFilesPageState extends State<TrashFilesPage> {
 
     return Consumer<FileController>(
       builder: (context, fileController, child) {
+        final isDarkMode = Theme.of(context).brightness == Brightness.dark;
         final files = fileController.trashFiles;
         final isLoading = fileController.isLoading;
         final hasFiles = files.isNotEmpty;
 
         return Scaffold(
-          backgroundColor: const Color(0xff28336f),
+          backgroundColor: AppColors.getAppBar(isDarkMode),
           appBar: AppBar(
-            backgroundColor: const Color(0xff28336f),
+            backgroundColor: AppColors.getAppBar(isDarkMode),
             title: Text(
               s.trashTitle, // ✅ نص مترجم
               style: const TextStyle(color: Colors.white),
@@ -263,9 +301,9 @@ class _TrashFilesPageState extends State<TrashFilesPage> {
             ],
           ),
           body: Container(
-            decoration: const BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.vertical(top: Radius.circular(25)),
+            decoration: BoxDecoration(
+              color: AppColors.getBackground(isDarkMode),
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(25)),
             ),
             child: Column(
               children: [
@@ -275,9 +313,11 @@ class _TrashFilesPageState extends State<TrashFilesPage> {
                     padding: const EdgeInsets.all(16),
                     margin: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: Colors.grey[50],
+                      color: AppColors.getCardColor(isDarkMode),
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.grey[300]!),
+                      border: Border.all(
+                        color: AppColors.darkSurface,
+                      ),
                     ),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -292,7 +332,7 @@ class _TrashFilesPageState extends State<TrashFilesPage> {
                           Icons.schedule,
                           s.autoDeleteNotice, // ✅ "حذف تلقائي" مترجم
                           "",
-                          Colors.orange,
+                          AppColors.warning,
                         ),
                       ],
                     ),
@@ -307,17 +347,17 @@ class _TrashFilesPageState extends State<TrashFilesPage> {
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              const Icon(
+                              Icon(
                                 Icons.delete_outline,
                                 size: 80,
-                                color: Colors.grey,
+                                color: AppColors.getTextSecondary(isDarkMode),
                               ),
                               const SizedBox(height: 16),
                               Text(
                                 s.noDeletedFiles, // ✅ "لا يوجد ملفات" مترجم
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 18,
-                                  color: Colors.grey,
+                                  color: AppColors.getTextPrimary(isDarkMode),
                                 ),
                               ),
                             ],
@@ -399,13 +439,15 @@ class _TrashFilesPageState extends State<TrashFilesPage> {
       child: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: Theme.of(
-            context,
-          ).cardColor.withOpacity(0.9), // دعم الوضع الليلي
+          color: AppColors.getCardColor(
+            Theme.of(context).brightness == Brightness.dark,
+          ),
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
+              color: AppColors.getShadow(
+                Theme.of(context).brightness == Brightness.dark,
+              ),
               blurRadius: 4,
               offset: const Offset(0, 2),
             ),
@@ -452,7 +494,7 @@ class _TrashFilesPageState extends State<TrashFilesPage> {
                 IconButton(
                   icon: const Icon(
                     Icons.restore,
-                    color: Colors.green,
+                    color: AppColors.success,
                     size: 20,
                   ),
                   onPressed: () => _restoreFile(file["_id"]),
@@ -461,7 +503,7 @@ class _TrashFilesPageState extends State<TrashFilesPage> {
                 IconButton(
                   icon: const Icon(
                     Icons.delete_forever,
-                    color: Colors.red,
+                    color: AppColors.error,
                     size: 20,
                   ),
                   onPressed: () => _showDeleteConfirmation(file),

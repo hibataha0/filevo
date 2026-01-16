@@ -35,6 +35,7 @@ import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'package:permission_handler/permission_handler.dart';
 import 'package:pull_to_refresh/pull_to_refresh.dart';
 import 'package:shimmer/shimmer.dart';
+import 'package:filevo/constants/app_colors.dart';
 
 class FoldersPage extends StatefulWidget {
   @override
@@ -223,14 +224,33 @@ class _FoldersPageState extends State<FoldersPage>
             dateRangeMap[_selectedDateRange] ?? _selectedDateRange;
       }
 
-      final result = await _fileSearchService.smartSearch(
-        query: query,
-        limit: 50,
-        category: categoryForBackend,
-        dateRange: dateRangeForBackend,
-        startDate: _customStartDate,
-        endDate: _customEndDate,
-      );
+      // ✅ التحقق من البحث عن طريق التاغات (#tag)
+      Map<String, dynamic> result;
+      if (query.startsWith('#')) {
+        // ✅ البحث عن طريق التاغات (لا يدعم category و dateRange)
+        final tag = query.substring(1).trim(); // إزالة # من البداية
+        if (tag.isEmpty) {
+          setState(() {
+            _searchFilesResults = [];
+            _isSearchLoadingFiles = false;
+          });
+          return;
+        }
+        print('🏷️ [FoldersView] Searching by tag: $tag');
+        result = await _fileSearchService.searchByTags(
+          tag: tag,
+          limit: 50,
+        );
+      } else {
+        result = await _fileSearchService.smartSearch(
+          query: query,
+          limit: 50,
+          category: categoryForBackend,
+          dateRange: dateRangeForBackend,
+          startDate: _customStartDate,
+          endDate: _customEndDate,
+        );
+      }
 
       if (!mounted) return;
 
@@ -239,10 +259,13 @@ class _FoldersPageState extends State<FoldersPage>
           result['results'] ?? [],
         );
         final processedResults = results.map<Map<String, dynamic>>((r) {
-          final file = Map<String, dynamic>.from(r['item'] ?? r);
-          file['type'] = 'file';
-          file['searchType'] = r['searchType'] ?? 'text';
-          file['relevanceScore'] = r['relevanceScore'] ?? 0.0;
+          // ✅ معالجة النتائج من smartSearch أو searchByTags
+          // ✅ smartSearch يرسل: { _id, name, ... } مباشرة
+          // ✅ searchByTags يرسل: { _id, name, ... } مباشرة أيضاً
+          final file = Map<String, dynamic>.from(r);
+          file['type'] = file['type'] ?? 'file';
+          file['searchType'] = file['searchType'] ?? (query.startsWith('#') ? 'tags' : 'text');
+          file['relevanceScore'] = file['relevanceScore'] ?? 0.0;
           if (file['_id'] == null && file['id'] != null) {
             file['_id'] = file['id'];
           }
@@ -419,7 +442,7 @@ class _FoldersPageState extends State<FoldersPage>
             "fileCount": filesCount,
             "size": _formatBytes(size),
             "icon": Icons.folder,
-            "color": Color(0xff28336f),
+            "color": AppColors.lightPrimary,
             "type": "folder",
             "folderId": folderData['_id'],
             "folderData": folderData,
@@ -663,7 +686,7 @@ class _FoldersPageState extends State<FoldersPage>
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(S.of(context).permissionDenied),
-              backgroundColor: Colors.orange,
+              backgroundColor: AppColors.warning,
               duration: Duration(seconds: 3),
             ),
           );
@@ -734,20 +757,33 @@ class _FoldersPageState extends State<FoldersPage>
 
   Widget? _buildSuffixIcons() {
     final hasText = _searchController.text.isNotEmpty;
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
     if (hasText && !_isListening) {
       return Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           IconButton(
-            icon: Icon(Icons.mic_none, color: Colors.grey[500], size: 20),
+            icon: Icon(
+              Icons.mic_none, 
+              color: isDarkMode 
+                  ? AppColors.darkTextSecondary 
+                  : Colors.grey[500]!, 
+              size: 20,
+            ),
             onPressed: _startListening,
             tooltip: S.of(context).voiceSearch,
             padding: EdgeInsets.all(8),
             constraints: BoxConstraints(minWidth: 40, minHeight: 40),
           ),
           IconButton(
-            icon: Icon(Icons.clear, color: Colors.grey[500], size: 20),
+            icon: Icon(
+              Icons.clear, 
+              color: isDarkMode 
+                  ? AppColors.darkTextSecondary 
+                  : Colors.grey[500]!, 
+              size: 20,
+            ),
             onPressed: () {
               setState(() {
                 _searchController.clear();
@@ -762,7 +798,7 @@ class _FoldersPageState extends State<FoldersPage>
 
     if (_isListening) {
       return IconButton(
-        icon: Icon(Icons.mic, color: Colors.red, size: 20),
+        icon: Icon(Icons.mic, color: AppColors.error, size: 20),
         onPressed: _stopListening,
         tooltip: S.of(context).stopListening,
         padding: EdgeInsets.all(8),
@@ -771,7 +807,13 @@ class _FoldersPageState extends State<FoldersPage>
     }
 
     return IconButton(
-      icon: Icon(Icons.mic_none, color: Colors.grey[500], size: 20),
+      icon: Icon(
+        Icons.mic_none, 
+        color: isDarkMode 
+            ? AppColors.darkTextSecondary 
+            : Colors.grey[500]!, 
+        size: 20,
+      ),
       onPressed: _startListening,
       tooltip: S.of(context).voiceSearch,
       padding: EdgeInsets.all(8),
@@ -784,9 +826,7 @@ class _FoldersPageState extends State<FoldersPage>
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: isDarkMode
-          ? const Color(0xFF1E1E1E)
-          : const Color(0xff28336f),
+      backgroundColor: AppColors.getAppBar(isDarkMode),
       body: Column(
         children: [
           // ✅ شريط العلوي مع البحث والأزرار
@@ -798,9 +838,7 @@ class _FoldersPageState extends State<FoldersPage>
               bottom: 12,
             ),
             decoration: BoxDecoration(
-              color: isDarkMode
-                  ? const Color(0xFF1E1E1E)
-                  : const Color(0xff28336f),
+              color: AppColors.getAppBar(isDarkMode),
             ),
             child: Column(
               children: [
@@ -811,11 +849,13 @@ class _FoldersPageState extends State<FoldersPage>
                       child: Container(
                         height: 50,
                         decoration: BoxDecoration(
-                          color: Color(0xFFF5F5F5).withOpacity(0.2),
+                          color: isDarkMode 
+                              ? Colors.white.withOpacity(0.1)
+                              : Color(0xFFF5F5F5).withOpacity(0.2),
                           borderRadius: BorderRadius.circular(10),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.05),
+                              color: AppColors.getShadow(isDarkMode),
                               blurRadius: 4,
                               offset: Offset(0, 1),
                             ),
@@ -826,12 +866,16 @@ class _FoldersPageState extends State<FoldersPage>
                           decoration: InputDecoration(
                             hintText: S.of(context).searchHint,
                             hintStyle: TextStyle(
-                              color: Colors.grey[500],
+                              color: isDarkMode 
+                                  ? AppColors.darkTextSecondary 
+                                  : Colors.grey[500]!,
                               fontSize: 16,
                             ),
                             prefixIcon: Icon(
                               Icons.search,
-                              color: Colors.grey[500],
+                              color: isDarkMode 
+                                  ? AppColors.darkTextSecondary 
+                                  : Colors.grey[500]!,
                               size: 22,
                             ),
                             suffixIcon: _buildSuffixIcons(),
@@ -843,7 +887,12 @@ class _FoldersPageState extends State<FoldersPage>
                             filled: true,
                             fillColor: Colors.transparent,
                           ),
-                          style: TextStyle(color: Colors.white, fontSize: 16),
+                          style: TextStyle(
+                            color: isDarkMode 
+                                ? AppColors.darkTextPrimary 
+                                : Colors.white, 
+                            fontSize: 16,
+                          ),
                         ),
                       ),
                     ),
@@ -974,23 +1023,29 @@ class _FoldersPageState extends State<FoldersPage>
           // ✅ TabBar الجديد - تصميم محسّن
           if (_tabController != null)
             Container(
-              color: isDarkMode
-                  ? const Color(0xFF1E1E1E)
-                  : const Color(0xff28336f),
+              color: AppColors.getAppBar(isDarkMode),
               child: Container(
                 margin: EdgeInsets.symmetric(horizontal: 16),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.1),
+                  color: isDarkMode 
+                      ? Colors.white.withOpacity(0.05)
+                      : Colors.white.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: TabBar(
                   controller: _tabController!,
                   indicator: BoxDecoration(
-                    color: Colors.grey[300]?.withOpacity(0.3),
+                    color: isDarkMode 
+                        ? AppColors.darkSurface 
+                        : Colors.grey[300]!.withOpacity(0.3),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  labelColor: Colors.white,
-                  unselectedLabelColor: Colors.white70,
+                  labelColor: isDarkMode 
+                      ? AppColors.darkTextPrimary 
+                      : Colors.white,
+                  unselectedLabelColor: isDarkMode 
+                      ? AppColors.darkTextSecondary 
+                      : Colors.white70,
                   labelStyle: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.bold,
@@ -1067,15 +1122,16 @@ class _FoldersPageState extends State<FoldersPage>
   }
 
   Widget _buildShimmerLoading() {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     return Center(
       child: Shimmer.fromColors(
-        baseColor: Colors.grey[300]!,
-        highlightColor: Colors.grey[100]!,
+        baseColor: AppColors.getShimmerBase(isDarkMode),
+        highlightColor: AppColors.getShimmerHighlight(isDarkMode),
         child: Container(
           width: 100,
           height: 100,
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: AppColors.getCardColor(isDarkMode),
             shape: BoxShape.circle,
           ),
         ),
@@ -1161,26 +1217,25 @@ class _FoldersPageState extends State<FoldersPage>
   }
 
   Widget _buildFolderShimmerCard() {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     return LayoutBuilder(
       builder: (context, constraints) {
         final w = constraints.maxWidth;
         return Shimmer.fromColors(
-          baseColor: Colors.grey[300]!,
-          highlightColor: Colors.grey[100]!,
+          baseColor: AppColors.getShimmerBase(isDarkMode),
+          highlightColor: AppColors.getShimmerHighlight(isDarkMode),
           child: Container(
             padding: EdgeInsets.all(
               w * 0.08,
             ), // ✅ نفس padding الكارد الفعلي (8% من العرض)
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: AppColors.getCardColor(isDarkMode),
               borderRadius: BorderRadius.circular(
                 w * 0.08,
               ), // ✅ نفس borderRadius الكارد الفعلي
               boxShadow: [
                 BoxShadow(
-                  color: Colors.grey.withOpacity(
-                    0.2,
-                  ), // ✅ نفس shadow الكارد الفعلي
+                  color: AppColors.getShadow(isDarkMode),
                   spreadRadius: 2,
                   blurRadius: 5,
                   offset: Offset(0, 3),
@@ -1199,7 +1254,7 @@ class _FoldersPageState extends State<FoldersPage>
                       width: w * 0.22,
                       height: w * 0.22,
                       decoration: BoxDecoration(
-                        color: Colors.grey[300],
+                        color: AppColors.getShimmerBase(isDarkMode),
                         borderRadius: BorderRadius.circular(8),
                       ),
                     ),
@@ -1207,7 +1262,7 @@ class _FoldersPageState extends State<FoldersPage>
                       width: w * 0.12,
                       height: w * 0.12,
                       decoration: BoxDecoration(
-                        color: Colors.grey[300],
+                        color: AppColors.getShimmerBase(isDarkMode),
                         shape: BoxShape.circle,
                       ),
                     ),
@@ -1218,7 +1273,7 @@ class _FoldersPageState extends State<FoldersPage>
                   height: w * 0.12,
                   width: double.infinity,
                   decoration: BoxDecoration(
-                    color: Colors.grey[300],
+                    color: AppColors.getShimmerBase(isDarkMode),
                     borderRadius: BorderRadius.circular(4),
                   ),
                 ),
@@ -1233,7 +1288,7 @@ class _FoldersPageState extends State<FoldersPage>
                           height: w * 0.10,
                           width: w * 0.35,
                           decoration: BoxDecoration(
-                            color: Colors.grey[300],
+                            color: AppColors.getShimmerBase(isDarkMode),
                             borderRadius: BorderRadius.circular(4),
                           ),
                         ),
@@ -1241,7 +1296,7 @@ class _FoldersPageState extends State<FoldersPage>
                           height: w * 0.10,
                           width: w * 0.35,
                           decoration: BoxDecoration(
-                            color: Colors.grey[300],
+                            color: AppColors.getShimmerBase(isDarkMode),
                             borderRadius: BorderRadius.circular(4),
                           ),
                         ),
@@ -1258,18 +1313,19 @@ class _FoldersPageState extends State<FoldersPage>
   }
 
   Widget _buildFolderListShimmerCard() {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     return Shimmer.fromColors(
-      baseColor: Colors.grey[300]!,
-      highlightColor: Colors.grey[100]!,
+      baseColor: AppColors.getShimmerBase(isDarkMode),
+      highlightColor: AppColors.getShimmerHighlight(isDarkMode),
       child: Container(
         height: 80,
         padding: EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: AppColors.getCardColor(isDarkMode),
           borderRadius: BorderRadius.circular(12),
           boxShadow: [
             BoxShadow(
-              color: Colors.grey.withOpacity(0.1),
+              color: AppColors.getShadow(isDarkMode),
               spreadRadius: 1,
               blurRadius: 4,
               offset: Offset(0, 2),
@@ -1282,7 +1338,7 @@ class _FoldersPageState extends State<FoldersPage>
               width: 56,
               height: 56,
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: AppColors.getShimmerBase(isDarkMode),
                 borderRadius: BorderRadius.circular(8),
               ),
             ),
@@ -1296,7 +1352,7 @@ class _FoldersPageState extends State<FoldersPage>
                     height: 14,
                     width: double.infinity,
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: AppColors.getShimmerBase(isDarkMode),
                       borderRadius: BorderRadius.circular(4),
                     ),
                   ),
@@ -1305,7 +1361,7 @@ class _FoldersPageState extends State<FoldersPage>
                     height: 12,
                     width: 150,
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: AppColors.getShimmerBase(isDarkMode),
                       borderRadius: BorderRadius.circular(4),
                     ),
                   ),
@@ -1319,25 +1375,24 @@ class _FoldersPageState extends State<FoldersPage>
   }
 
   Widget _buildRoomShimmerCard() {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     return LayoutBuilder(
       builder: (context, constraints) {
         final w = constraints.maxWidth;
         final h = constraints.maxHeight;
         return Shimmer.fromColors(
-          baseColor: Colors.grey[300]!,
-          highlightColor: Colors.grey[100]!,
+          baseColor: AppColors.getShimmerBase(isDarkMode),
+          highlightColor: AppColors.getShimmerHighlight(isDarkMode),
           child: Container(
             padding: EdgeInsets.all(w * 0.08), // ✅ نفس padding الكارد الفعلي
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: AppColors.getCardColor(isDarkMode),
               borderRadius: BorderRadius.circular(
                 w * 0.08,
               ), // ✅ نفس borderRadius الكارد الفعلي
               boxShadow: [
                 BoxShadow(
-                  color: Colors.grey.withOpacity(
-                    0.2,
-                  ), // ✅ نفس shadow الكارد الفعلي
+                  color: AppColors.getShadow(isDarkMode),
                   spreadRadius: 2,
                   blurRadius: 5,
                   offset: Offset(0, 3),
@@ -1357,7 +1412,7 @@ class _FoldersPageState extends State<FoldersPage>
                       width: w * 0.3,
                       height: w * 0.3,
                       decoration: BoxDecoration(
-                        color: Colors.grey[300],
+                        color: AppColors.getShimmerBase(isDarkMode),
                         borderRadius: BorderRadius.circular(w * 0.06),
                       ),
                     ),
@@ -1366,7 +1421,7 @@ class _FoldersPageState extends State<FoldersPage>
                       width: w * 0.16,
                       height: w * 0.16,
                       decoration: BoxDecoration(
-                        color: Colors.grey[300],
+                        color: AppColors.getShimmerBase(isDarkMode),
                         shape: BoxShape.circle,
                       ),
                     ),
@@ -1377,7 +1432,7 @@ class _FoldersPageState extends State<FoldersPage>
                   height: w * 0.13,
                   width: double.infinity,
                   decoration: BoxDecoration(
-                    color: Colors.grey[300],
+                    color: AppColors.getShimmerBase(isDarkMode),
                     borderRadius: BorderRadius.circular(4),
                   ),
                 ),
@@ -1394,7 +1449,7 @@ class _FoldersPageState extends State<FoldersPage>
                           width: w * 0.11,
                           height: w * 0.11,
                           decoration: BoxDecoration(
-                            color: Colors.grey[300],
+                            color: AppColors.getShimmerBase(isDarkMode),
                             borderRadius: BorderRadius.circular(w * 0.02),
                           ),
                         ),
@@ -1403,7 +1458,7 @@ class _FoldersPageState extends State<FoldersPage>
                           height: w * 0.09,
                           width: w * 0.4,
                           decoration: BoxDecoration(
-                            color: Colors.grey[300],
+                            color: AppColors.getShimmerBase(isDarkMode),
                             borderRadius: BorderRadius.circular(4),
                           ),
                         ),
@@ -1417,7 +1472,7 @@ class _FoldersPageState extends State<FoldersPage>
                           width: w * 0.08,
                           height: w * 0.08,
                           decoration: BoxDecoration(
-                            color: Colors.grey[300],
+                            color: AppColors.getShimmerBase(isDarkMode),
                             shape: BoxShape.circle,
                           ),
                         ),
@@ -1426,7 +1481,7 @@ class _FoldersPageState extends State<FoldersPage>
                           height: w * 0.09,
                           width: w * 0.35,
                           decoration: BoxDecoration(
-                            color: Colors.grey[300],
+                            color: AppColors.getShimmerBase(isDarkMode),
                             borderRadius: BorderRadius.circular(4),
                           ),
                         ),
@@ -1445,6 +1500,7 @@ class _FoldersPageState extends State<FoldersPage>
   // ✅ Tab الكل
   Widget _buildAllTab() {
     final hasSearchQuery = _searchController.text.trim().isNotEmpty;
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
     if (hasSearchQuery) {
       return _buildSearchResults();
@@ -1452,7 +1508,7 @@ class _FoldersPageState extends State<FoldersPage>
 
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFFE9E9E9),
+        color: AppColors.getBackground(isDarkMode),
         borderRadius: BorderRadius.vertical(top: Radius.circular(25)),
       ),
       child: Padding(
@@ -1469,7 +1525,7 @@ class _FoldersPageState extends State<FoldersPage>
                   style: TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
-                    color: const Color(0xff28336f),
+                    color: AppColors.getTextPrimary(isDarkMode),
                   ),
                 ),
                 Row(
@@ -1477,7 +1533,7 @@ class _FoldersPageState extends State<FoldersPage>
                     IconButton(
                       icon: Icon(
                         Icons.create_new_folder,
-                        color: Color(0xff28336f),
+                        color: AppColors.getPrimary(isDarkMode),
                       ),
                       tooltip: S.of(context).createFolder,
                       onPressed: () => _showCreateFolderDialog(),
@@ -1517,9 +1573,10 @@ class _FoldersPageState extends State<FoldersPage>
 
   // ✅ Tab الغرف
   Widget _buildRoomsTab() {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFFE9E9E9),
+        color: AppColors.getBackground(isDarkMode),
         borderRadius: BorderRadius.vertical(top: Radius.circular(25)),
       ),
       child: Padding(
@@ -1536,7 +1593,7 @@ class _FoldersPageState extends State<FoldersPage>
                   style: TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
-                    color: const Color(0xff28336f),
+                    color: AppColors.getTextPrimary(isDarkMode),
                   ),
                 ),
                 Row(
@@ -2506,7 +2563,7 @@ class _FoldersPageState extends State<FoldersPage>
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Text(S.of(context).enterFolderName),
-                    backgroundColor: Colors.orange,
+                    backgroundColor: AppColors.warning,
                   ),
                 );
                 return;
@@ -2637,7 +2694,7 @@ class _FoldersPageState extends State<FoldersPage>
                 ScaffoldMessenger.of(dialogContext).showSnackBar(
                   SnackBar(
                     content: Text(S.of(context).pleaseEnterRoomName),
-                    backgroundColor: Colors.orange,
+                    backgroundColor: AppColors.warning,
                   ),
                 );
                 return;
@@ -2659,7 +2716,7 @@ class _FoldersPageState extends State<FoldersPage>
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(S.of(context).roomNameEmptyError),
-              backgroundColor: Colors.orange,
+              backgroundColor: AppColors.warning,
             ),
           );
         }

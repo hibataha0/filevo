@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shimmer/shimmer.dart';
 import 'dart:math' as math;
+import 'package:filevo/constants/app_colors.dart';
 
 class StorageCard extends StatefulWidget {
   final VoidCallback? onRefresh;
@@ -296,6 +297,7 @@ class StorageCardState extends State<StorageCard> {
 
   @override
   Widget build(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     // ✅ قيم الأقسام كنسب من _totalStorage (0.0 إلى 1.0)
     final double images = _categoryPercentages['images'] ?? 0.0;
     final double videos = _categoryPercentages['videos'] ?? 0.0;
@@ -333,11 +335,11 @@ class StorageCardState extends State<StorageCard> {
         ),
       ),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.getCardColor(isDarkMode),
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: AppColors.getShadow(isDarkMode),
             blurRadius: 10,
             offset: Offset(0, 4),
           ),
@@ -367,6 +369,7 @@ class StorageCardState extends State<StorageCard> {
                     usedPercentage:
                         usedPercentageValue /
                         100.0, // ✅ النسبة المستخدمة (0.0 إلى 1.0)
+                    isDarkMode: isDarkMode,
                   ),
                   child: Container(
                     width: 120,
@@ -385,7 +388,7 @@ class StorageCardState extends State<StorageCard> {
                               desktop: 32.0,
                             ),
                             fontWeight: FontWeight.bold,
-                            color: Color(0xff28336f),
+                            color: AppColors.getPrimary(isDarkMode),
                           ),
                         ),
                         Text(
@@ -397,7 +400,7 @@ class StorageCardState extends State<StorageCard> {
                               tablet: 14.0,
                               desktop: 16.0,
                             ),
-                            color: Colors.grey[600],
+                            color: AppColors.getTextSecondary(isDarkMode),
                           ),
                         ),
                       ],
@@ -636,7 +639,7 @@ class StorageCardState extends State<StorageCard> {
                             desktop: 18.0,
                           ),
                           fontWeight: FontWeight.bold,
-                          color: Color(0xff28336f),
+                          color: AppColors.getPrimary(isDarkMode),
                         ),
                         overflow: TextOverflow.ellipsis,
                         maxLines: 1,
@@ -646,7 +649,7 @@ class StorageCardState extends State<StorageCard> {
                     IconButton(
                       icon: Icon(
                         Icons.refresh,
-                        color: Color(0xff28336f),
+                        color: AppColors.getPrimary(isDarkMode),
                         size: 20,
                       ),
                       onPressed: _loadStorageData,
@@ -667,6 +670,7 @@ class StorageCardState extends State<StorageCard> {
     IconData icon,
     String categoryKey,
   ) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     final categorySize = _categorySizes[categoryKey] ?? 0;
     final categorySizeFormatted = _formatBytes(categorySize);
 
@@ -688,7 +692,7 @@ class StorageCardState extends State<StorageCard> {
             label,
             style: TextStyle(
               fontSize: 12,
-              color: Colors.grey[700],
+              color: AppColors.getTextPrimary(isDarkMode),
               fontWeight: FontWeight.w500,
             ),
             overflow: TextOverflow.ellipsis,
@@ -756,6 +760,7 @@ class StorageCirclePainter extends CustomPainter {
   final double other;
   final double totalCapacity;
   final double usedPercentage; // ✅ النسبة المستخدمة الإجمالية (0.0 إلى 1.0)
+  final bool isDarkMode;
 
   StorageCirclePainter({
     required this.images,
@@ -768,6 +773,7 @@ class StorageCirclePainter extends CustomPainter {
     required this.other,
     required this.totalCapacity,
     this.usedPercentage = 0.0, // ✅ افتراضي 0.0
+    this.isDarkMode = false,
   });
 
   @override
@@ -845,7 +851,7 @@ class StorageCirclePainter extends CustomPainter {
 
     // ✅ رسم خلفية رمادية للدائرة الكاملة
     final bgPaint = Paint()
-      ..color = Colors.grey[300]!
+      ..color = AppColors.getShimmerBase(isDarkMode)
       ..style = PaintingStyle.stroke
       ..strokeWidth = strokeWidth;
     canvas.drawCircle(center, radius - strokeWidth / 2, bgPaint);

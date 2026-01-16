@@ -32,22 +32,36 @@ class _SettingsPageState extends State<SettingsPage> {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (BuildContext context) {
+        final isDarkMode = Theme.of(context).brightness == Brightness.dark;
         return AlertDialog(
-          title: Text(S.of(context).logout),
-          content: Text(S.of(context).signOut),
+          backgroundColor: AppColors.getCardColor(isDarkMode),
+          title: Text(
+            S.of(context).logout,
+            style: TextStyle(
+              color: AppColors.getTextPrimary(isDarkMode),
+            ),
+          ),
+          content: Text(
+            S.of(context).signOut,
+            style: TextStyle(
+              color: AppColors.getTextPrimary(isDarkMode),
+            ),
+          ),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(false),
               child: Text(
                 S.of(context).cancel,
-                style: TextStyle(color: Colors.grey[600]),
+                style: TextStyle(
+                  color: AppColors.getTextSecondary(isDarkMode),
+                ),
               ),
             ),
             TextButton(
               onPressed: () => Navigator.of(context).pop(true),
               child: Text(
                 S.of(context).logout,
-                style: TextStyle(color: Colors.red),
+                style: TextStyle(color: AppColors.error),
               ),
             ),
           ],
@@ -63,7 +77,7 @@ class _SettingsPageState extends State<SettingsPage> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(S.of(context).logoutSuccess),
-            backgroundColor: Colors.green,
+            backgroundColor: AppColors.success,
           ),
         );
 
@@ -75,13 +89,15 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   void _showLanguageMenu(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     showModalBottomSheet(
       context: context,
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.getCardColor(isDarkMode),
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(25.0)),
       ),
       builder: (BuildContext context) {
+        final isDarkMode = Theme.of(context).brightness == Brightness.dark;
         return Padding(
           padding: const EdgeInsets.symmetric(vertical: 20.0),
           child: Column(
@@ -89,17 +105,29 @@ class _SettingsPageState extends State<SettingsPage> {
             children: [
               Text(
                 S.of(context).chooseLanguage,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
+                  color: AppColors.getTextPrimary(isDarkMode),
                 ),
               ),
-              const Divider(),
+              Divider(color: AppColors.darkSurface),
               ListTile(
-                leading: const Icon(Icons.language),
-                title: Text(S.of(context).english),
+                leading: Icon(
+                  Icons.language,
+                  color: AppColors.getTextSecondary(isDarkMode),
+                ),
+                title: Text(
+                  S.of(context).english,
+                  style: TextStyle(
+                    color: AppColors.getTextPrimary(isDarkMode),
+                  ),
+                ),
                 trailing: _selectedLocale.languageCode == 'en'
-                    ? const Icon(Icons.check, color: Colors.blue)
+                    ? Icon(
+                        Icons.check,
+                        color: AppColors.getPrimary(isDarkMode),
+                      )
                     : null,
                 onTap: () {
                   setState(() => _selectedLocale = const Locale('en'));
@@ -108,10 +136,21 @@ class _SettingsPageState extends State<SettingsPage> {
                 },
               ),
               ListTile(
-                leading: const Icon(Icons.language),
-                title: Text(S.of(context).arabic),
+                leading: Icon(
+                  Icons.language,
+                  color: AppColors.getTextSecondary(isDarkMode),
+                ),
+                title: Text(
+                  S.of(context).arabic,
+                  style: TextStyle(
+                    color: AppColors.getTextPrimary(isDarkMode),
+                  ),
+                ),
                 trailing: _selectedLocale.languageCode == 'ar'
-                    ? const Icon(Icons.check, color: Colors.blue)
+                    ? Icon(
+                        Icons.check,
+                        color: AppColors.getPrimary(isDarkMode),
+                      )
                     : null,
                 onTap: () {
                   setState(() => _selectedLocale = const Locale('ar'));
@@ -146,7 +185,7 @@ class _SettingsPageState extends State<SettingsPage> {
               alignment: Alignment.center,
               child: Text(
                 S.of(context).settings,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 22,
                   color: Colors.white,
                   fontWeight: FontWeight.bold,
@@ -166,9 +205,9 @@ class _SettingsPageState extends State<SettingsPage> {
                         top: Radius.circular(30),
                       ),
                     ),
-                    color: themeController.isDarkMode
-                        ? const Color(0xFF121212)
-                        : const Color(0xFFE9E9E9),
+                    color: AppColors.getBackground(
+                      themeController.isDarkMode,
+                    ),
                     child: SingleChildScrollView(
                       physics: const BouncingScrollPhysics(),
                       padding: const EdgeInsets.all(20.0),
@@ -282,55 +321,82 @@ class _SettingsPageState extends State<SettingsPage> {
                                   // عرض قائمة للاختيار بين الملفات والمجلدات
                                   showDialog(
                                     context: context,
-                                    builder: (context) => AlertDialog(
-                                      title: Text(S.of(context).trash),
-                                      content: Column(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          ListTile(
-                                            leading: const Icon(
-                                              Icons.insert_drive_file,
-                                            ),
-                                            title: Text(
-                                              S.of(context).deletedFiles,
-                                            ),
-                                            onTap: () {
-                                              Navigator.pop(context);
-                                              Navigator.push(
-                                                context,
-                                                MaterialPageRoute(
-                                                  builder: (_) =>
-                                                      TrashFilesPage(
-                                                        token: token,
-                                                      ),
-                                                ),
-                                              );
-                                            },
+                                    builder: (context) {
+                                      final isDarkMode =
+                                          Theme.of(context).brightness ==
+                                              Brightness.dark;
+                                      return AlertDialog(
+                                        backgroundColor:
+                                            AppColors.getCardColor(isDarkMode),
+                                        title: Text(
+                                          S.of(context).trash,
+                                          style: TextStyle(
+                                            color: AppColors.getTextPrimary(
+                                                isDarkMode),
                                           ),
-                                          ListTile(
-                                            leading: const Icon(Icons.folder),
-                                            title: Text(
-                                              S.of(context).deletedFolders,
-                                            ),
-                                            onTap: () {
-                                              Navigator.pop(context);
-                                              Navigator.push(
-                                                context,
-                                                MaterialPageRoute(
-                                                  builder: (_) =>
-                                                      ChangeNotifierProvider(
-                                                        create: (_) =>
-                                                            FolderController(),
-                                                        child:
-                                                            const TrashFoldersPage(),
-                                                      ),
+                                        ),
+                                        content: Column(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            ListTile(
+                                              leading: Icon(
+                                                Icons.insert_drive_file,
+                                                color: AppColors.getTextSecondary(
+                                                    isDarkMode),
+                                              ),
+                                              title: Text(
+                                                S.of(context).deletedFiles,
+                                                style: TextStyle(
+                                                  color: AppColors.getTextPrimary(
+                                                      isDarkMode),
                                                 ),
-                                              );
-                                            },
-                                          ),
-                                        ],
-                                      ),
-                                    ),
+                                              ),
+                                              onTap: () {
+                                                Navigator.pop(context);
+                                                Navigator.push(
+                                                  context,
+                                                  MaterialPageRoute(
+                                                    builder: (_) =>
+                                                        TrashFilesPage(
+                                                          token: token,
+                                                        ),
+                                                  ),
+                                                );
+                                              },
+                                            ),
+                                            ListTile(
+                                              leading: Icon(
+                                                Icons.folder,
+                                                color: AppColors.getTextSecondary(
+                                                    isDarkMode),
+                                              ),
+                                              title: Text(
+                                                S.of(context).deletedFolders,
+                                                style: TextStyle(
+                                                  color: AppColors.getTextPrimary(
+                                                      isDarkMode),
+                                                ),
+                                              ),
+                                              onTap: () {
+                                                Navigator.pop(context);
+                                                Navigator.push(
+                                                  context,
+                                                  MaterialPageRoute(
+                                                    builder: (_) =>
+                                                        ChangeNotifierProvider(
+                                                          create: (_) =>
+                                                              FolderController(),
+                                                          child:
+                                                              const TrashFoldersPage(),
+                                                        ),
+                                                  ),
+                                                );
+                                              },
+                                            ),
+                                          ],
+                                        ),
+                                      );
+                                    },
                                   );
                                 },
                               ),
@@ -399,10 +465,10 @@ class _SettingsPageState extends State<SettingsPage> {
                           Container(
                             width: double.infinity,
                             decoration: BoxDecoration(
-                              color: Colors.red.withOpacity(0.1),
+                              color: AppColors.error.withOpacity(0.1),
                               borderRadius: BorderRadius.circular(12),
                               border: Border.all(
-                                color: Colors.red.withOpacity(0.3),
+                                color: AppColors.error.withOpacity(0.3),
                                 width: 1,
                               ),
                             ),
@@ -411,12 +477,12 @@ class _SettingsPageState extends State<SettingsPage> {
                                 width: 40,
                                 height: 40,
                                 decoration: BoxDecoration(
-                                  color: Colors.red.withOpacity(0.2),
+                                  color: AppColors.error.withOpacity(0.2),
                                   borderRadius: BorderRadius.circular(10),
                                 ),
                                 child: const Icon(
                                   Icons.logout,
-                                  color: Colors.red,
+                                  color: AppColors.error,
                                   size: 20,
                                 ),
                               ),
@@ -425,19 +491,19 @@ class _SettingsPageState extends State<SettingsPage> {
                                 style: const TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.w500,
-                                  color: Colors.red,
+                                  color: AppColors.error,
                                 ),
                               ),
                               subtitle: Text(
                                 S.of(context).signOut,
                                 style: TextStyle(
                                   fontSize: 12,
-                                  color: Colors.red.withOpacity(0.7),
+                                  color: AppColors.error.withOpacity(0.7),
                                 ),
                               ),
                               trailing: const Icon(
                                 Icons.arrow_forward_ios,
-                                color: Colors.red,
+                                color: AppColors.error,
                                 size: 16,
                               ),
                               onTap: () => _handleLogout(context),

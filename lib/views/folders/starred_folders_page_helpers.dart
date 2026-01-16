@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:filevo/controllers/folders/folders_controller.dart';
 import 'package:filevo/views/folders/share_folder_with_room_page.dart';
 import 'package:filevo/views/fileViewer/folder_actions_service.dart';
+import 'package:filevo/constants/app_colors.dart';
 
 // ✅ Helper functions للتعامل مع إجراءات المجلدات المفضلة
 
@@ -38,11 +39,13 @@ String _formatDateHelper(dynamic date) {
 }
 
 Widget _buildDetailItemHelper(
+  BuildContext context,
   String type,
   String emoji,
   String label,
   String value,
 ) {
+  final isDarkMode = Theme.of(context).brightness == Brightness.dark;
   Color getIconColor() {
     switch (type) {
       case 'folder':
@@ -72,9 +75,15 @@ Widget _buildDetailItemHelper(
     margin: EdgeInsets.only(bottom: 20),
     padding: EdgeInsets.all(16),
     decoration: BoxDecoration(
-      color: Colors.grey[50],
+      color: isDarkMode 
+          ? AppColors.darkSurface 
+          : Colors.grey[50],
       borderRadius: BorderRadius.circular(12),
-      border: Border.all(color: Colors.grey[200]!),
+      border: Border.all(
+        color: isDarkMode 
+            ? AppColors.darkSurface 
+            : Colors.grey[200]!,
+      ),
     ),
     child: Row(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -96,7 +105,7 @@ Widget _buildDetailItemHelper(
                 label,
                 style: TextStyle(
                   fontSize: 12,
-                  color: Colors.grey[600],
+                  color: AppColors.getTextSecondary(isDarkMode),
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -105,7 +114,7 @@ Widget _buildDetailItemHelper(
                 value,
                 style: TextStyle(
                   fontSize: 16,
-                  color: Colors.black87,
+                  color: AppColors.getTextPrimary(isDarkMode),
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -121,9 +130,10 @@ Future<void> showFolderInfoHelper(
   BuildContext context,
   Map<String, dynamic> folder,
 ) async {
+  final isDarkMode = Theme.of(context).brightness == Brightness.dark;
   final folderId = folder['folderId'] as String?;
   final folderName = folder['title'] as String;
-  final folderColor = folder['color'] as Color? ?? Colors.blue;
+  final folderColor = folder['color'] as Color? ?? AppColors.getPrimary(isDarkMode);
 
   if (folderId == null) {
     ScaffoldMessenger.of(
@@ -160,7 +170,7 @@ Future<void> showFolderInfoHelper(
     builder: (context) => Container(
       height: MediaQuery.of(context).size.height * 0.8,
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.getCardColor(isDarkMode),
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       child: Column(
@@ -199,42 +209,49 @@ Future<void> showFolderInfoHelper(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   _buildDetailItemHelper(
+                    context,
                     'folder',
                     '📁',
                     S.of(context).type,
                     S.of(context).folder,
                   ),
                   _buildDetailItemHelper(
+                    context,
                     'size',
                     '💾',
                     S.of(context).size,
                     _formatBytesHelper(folderData['size'] ?? 0),
                   ),
                   _buildDetailItemHelper(
+                    context,
                     'files',
                     '📄',
                     S.of(context).filesCount,
                     '${folderData['filesCount'] ?? 0}',
                   ),
                   _buildDetailItemHelper(
+                    context,
                     'subfolders',
                     '📂',
                     S.of(context).subfoldersCount,
                     '${folderData['subfoldersCount'] ?? 0}',
                   ),
                   _buildDetailItemHelper(
+                    context,
                     'time',
                     '🕐',
                     S.of(context).createdAt,
                     _formatDateHelper(folderData['createdAt']),
                   ),
                   _buildDetailItemHelper(
+                    context,
                     'edit',
                     '✏️',
                     S.of(context).detailUpdatedAt,
                     _formatDateHelper(folderData['updatedAt']),
                   ),
                   _buildDetailItemHelper(
+                    context,
                     'description',
                     '📝',
                     S.of(context).description,
@@ -243,6 +260,7 @@ Future<void> showFolderInfoHelper(
                         : "—",
                   ),
                   _buildDetailItemHelper(
+                    context,
                     'tags',
                     '🏷️',
                     S.of(context).tags,
@@ -255,6 +273,7 @@ Future<void> showFolderInfoHelper(
                       children: [
                         SizedBox(height: 8),
                         _buildDetailItemHelper(
+                          context,
                           'share',
                           '👥',
                           S.of(context).sharedWith,
@@ -397,7 +416,7 @@ Future<void> showRenameDialogHelper(
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(S.of(context).folderUpdateSuccess),
-            backgroundColor: Colors.green,
+            backgroundColor: AppColors.success,
           ),
         );
         onUpdated?.call();
@@ -407,7 +426,7 @@ Future<void> showRenameDialogHelper(
             content: Text(
               folderController.errorMessage ?? S.of(context).folderUpdateFailed,
             ),
-            backgroundColor: Colors.red,
+            backgroundColor: AppColors.error,
           ),
         );
       }
@@ -468,6 +487,7 @@ Future<void> showMoveFolderDialogHelper(
   Map<String, dynamic> folder, {
   VoidCallback? onUpdated,
 }) async {
+  final isDarkMode = Theme.of(context).brightness == Brightness.dark;
   final folderData = folder['folderData'] as Map<String, dynamic>? ?? {};
   final folderId =
       folder['folderId'] as String? ?? folderData['_id'] as String?;
@@ -518,7 +538,7 @@ Future<void> showMoveFolderDialogHelper(
     builder: (context) => Container(
       height: MediaQuery.of(context).size.height * 0.7,
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.getCardColor(isDarkMode),
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       child: Column(
@@ -527,7 +547,7 @@ Future<void> showMoveFolderDialogHelper(
           Container(
             padding: EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: Colors.purple,
+              color: AppColors.getPrimary(isDarkMode),
               borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
             ),
             child: Row(
@@ -562,9 +582,23 @@ Future<void> showMoveFolderDialogHelper(
               children: [
                 // ✅ خيار "الجذر"
                 ListTile(
-                  leading: Icon(Icons.home_rounded, color: Colors.blue),
-                  title: Text(S.of(context).root),
-                  subtitle: Text(S.of(context).moveToRoot),
+                  tileColor: AppColors.getCardColor(isDarkMode),
+                  leading: Icon(
+                    Icons.home_rounded, 
+                    color: AppColors.getPrimary(isDarkMode),
+                  ),
+                  title: Text(
+                    S.of(context).root,
+                    style: TextStyle(
+                      color: AppColors.getTextPrimary(isDarkMode),
+                    ),
+                  ),
+                  subtitle: Text(
+                    S.of(context).moveToRoot,
+                    style: TextStyle(
+                      color: AppColors.getTextSecondary(isDarkMode),
+                    ),
+                  ),
                   onTap: () {
                     Navigator.pop(context);
                     _moveFolderHelper(
@@ -576,7 +610,11 @@ Future<void> showMoveFolderDialogHelper(
                     );
                   },
                 ),
-                Divider(),
+                Divider(
+                  color: isDarkMode 
+                      ? AppColors.darkSurface 
+                      : Colors.grey[300],
+                ),
 
                 // ✅ قائمة المجلدات
                 Expanded(
@@ -584,7 +622,9 @@ Future<void> showMoveFolderDialogHelper(
                       ? Center(
                           child: Text(
                             S.of(context).noFoldersAvailable,
-                            style: TextStyle(color: Colors.grey),
+                            style: TextStyle(
+                              color: AppColors.getTextSecondary(isDarkMode),
+                            ),
                           ),
                         )
                       : ListView.builder(
@@ -595,25 +635,37 @@ Future<void> showMoveFolderDialogHelper(
                             final fName =
                                 f['name'] ?? S.of(context).unnamedFolder;
 
-                            return ListTile(
-                              leading: Icon(
-                                Icons.folder_rounded,
-                                color: Colors.orange,
+                            return Container(
+                              color: AppColors.getCardColor(isDarkMode),
+                              child: ListTile(
+                                tileColor: AppColors.getCardColor(isDarkMode),
+                                leading: Icon(
+                                  Icons.folder_rounded,
+                                  color: AppColors.warning,
+                                ),
+                                title: Text(
+                                  fName,
+                                  style: TextStyle(
+                                    color: AppColors.getTextPrimary(isDarkMode),
+                                  ),
+                                ),
+                                subtitle: Text(
+                                  '${f['filesCount'] ?? 0}${S.of(context).files}}',
+                                  style: TextStyle(
+                                    color: AppColors.getTextSecondary(isDarkMode),
+                                  ),
+                                ),
+                                onTap: () {
+                                  Navigator.pop(context);
+                                  _moveFolderHelper(
+                                    context,
+                                    folderId,
+                                    fId,
+                                    folderName,
+                                    onUpdated: onUpdated,
+                                  );
+                                },
                               ),
-                              title: Text(fName),
-                              subtitle: Text(
-                                '${f['filesCount'] ?? 0}${S.of(context).files}}',
-                              ),
-                              onTap: () {
-                                Navigator.pop(context);
-                                _moveFolderHelper(
-                                  context,
-                                  folderId,
-                                  fId,
-                                  folderName,
-                                  onUpdated: onUpdated,
-                                );
-                              },
                             );
                           },
                         ),
@@ -665,7 +717,9 @@ Future<void> _moveFolderHelper(
         ],
       ),
       duration: Duration(seconds: 120), // ✅ زيادة المدة للمجلدات الكبيرة
-      backgroundColor: Colors.blue[700],
+      backgroundColor: AppColors.getPrimary(
+        Theme.of(context).brightness == Brightness.dark,
+      ),
     ),
   );
 
@@ -687,7 +741,7 @@ Future<void> _moveFolderHelper(
                 ? S.of(context).transferTimeout
                 : S.of(context).transferError(e.toString()),
           ),
-          backgroundColor: Colors.orange,
+          backgroundColor: AppColors.warning,
           duration: Duration(seconds: 5),
         ),
       );
@@ -702,7 +756,7 @@ Future<void> _moveFolderHelper(
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(S.of(context).folderMoveSuccess),
-          backgroundColor: Colors.green,
+          backgroundColor: AppColors.success,
         ),
       );
       // ✅ استدعاء callback لإعادة تحميل البيانات بعد النقل الناجح
@@ -715,7 +769,7 @@ Future<void> _moveFolderHelper(
           content: Text(
             folderController.errorMessage ?? S.of(context).folderMoveFailed,
           ),
-          backgroundColor: Colors.red,
+          backgroundColor: AppColors.error,
         ),
       );
     }

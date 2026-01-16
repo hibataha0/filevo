@@ -17,6 +17,7 @@ import 'package:filevo/views/fileViewer/pdfViewer.dart';
 import 'package:filevo/views/fileViewer/textViewer.dart';
 import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
+import 'package:filevo/constants/app_colors.dart';
 
 class FavoritesPage extends StatefulWidget {
   const FavoritesPage({Key? key}) : super(key: key);
@@ -178,7 +179,7 @@ class _FavoritesPageState extends State<FavoritesPage> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(S.of(context).invalidUrl),
-          backgroundColor: Colors.red,
+          backgroundColor: AppColors.error,
         ),
       );
       return;
@@ -275,7 +276,7 @@ class _FavoritesPageState extends State<FavoritesPage> {
                   .of(context)
                   .fileNotAvailableError(response.statusCode.toString()),
             ),
-            backgroundColor: Colors.red,
+            backgroundColor: AppColors.error,
           ),
         );
       }
@@ -284,31 +285,56 @@ class _FavoritesPageState extends State<FavoritesPage> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(S.of(context).errorLoadingFile(e.toString())),
-          backgroundColor: Colors.red,
+          backgroundColor: AppColors.error,
         ),
       );
     }
   }
 
   void _showPdfErrorDialog(String url, String fileName, String name) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(S.of(context).unsupportedFile),
-        content: Text(S.of(context).fileNotValidPdf),
+        backgroundColor: AppColors.getCardColor(isDarkMode),
+        title: Text(
+          S.of(context).unsupportedFile,
+          style: TextStyle(
+            color: AppColors.getTextPrimary(isDarkMode),
+          ),
+        ),
+        content: Text(
+          S.of(context).fileNotValidPdf,
+          style: TextStyle(
+            color: AppColors.getTextPrimary(isDarkMode),
+          ),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text(S.of(context).cancel),
+            child: Text(
+              S.of(context).cancel,
+              style: TextStyle(
+                color: AppColors.getTextSecondary(isDarkMode),
+              ),
+            ),
           ),
           TextButton(
             onPressed: () {
               Navigator.pop(context);
               ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text(S.of(context).openFileAsText(fileName))),
+                SnackBar(
+                  content: Text(S.of(context).openFileAsText(fileName)),
+                  backgroundColor: AppColors.getPrimary(isDarkMode),
+                ),
               );
             },
-            child: Text(S.of(context).openAsText),
+            child: Text(
+              S.of(context).openAsText,
+              style: TextStyle(
+                color: AppColors.getPrimary(isDarkMode),
+              ),
+            ),
           ),
         ],
       ),
@@ -329,6 +355,7 @@ class _FavoritesPageState extends State<FavoritesPage> {
 
   @override
   Widget build(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     // ✅ استخدام Consumer بدل Provider.of عشان يتحدث تلقائياً
     return Consumer<FileController>(
       builder: (context, fileController, child) {
@@ -336,13 +363,13 @@ class _FavoritesPageState extends State<FavoritesPage> {
         final starredFiles = fileController.starredFiles;
 
         return Scaffold(
-          backgroundColor: Colors.white,
+          backgroundColor: AppColors.getBackground(isDarkMode),
           appBar: AppBar(
             title: Text(
               S.of(context).favoriteFiles,
               style: TextStyle(fontWeight: FontWeight.bold),
             ),
-            backgroundColor: const Color(0xff28336f),
+            backgroundColor: AppColors.getAppBar(isDarkMode),
             leading: IconButton(
               icon: const Icon(Icons.arrow_back),
               onPressed: () => Navigator.pop(context),
@@ -368,8 +395,10 @@ class _FavoritesPageState extends State<FavoritesPage> {
             },
             header: const WaterDropHeader(),
             child: fileController.isLoading && starredFiles.isEmpty
-                ? const Center(
-                    child: CircularProgressIndicator(color: Color(0xff28336f)),
+                ? Center(
+                    child: CircularProgressIndicator(
+                      color: AppColors.getPrimary(isDarkMode),
+                    ),
                   )
                 : starredFiles.isEmpty
                 ? Center(
@@ -379,21 +408,23 @@ class _FavoritesPageState extends State<FavoritesPage> {
                         Icon(
                           Icons.star_border_rounded,
                           size: 80,
-                          color: Colors.grey[400],
+                          color: AppColors.getTextSecondary(isDarkMode),
                         ),
                         const SizedBox(height: 16),
                         Text(
                           S.of(context).noFavoriteFiles,
                           style: TextStyle(
                             fontSize: 18,
-                            color: Colors.grey[600],
+                            color: AppColors.getTextPrimary(isDarkMode),
                           ),
                         ),
                         const SizedBox(height: 8),
                         Text(
                           S.of(context).addFilesToFavorites,
                           textAlign: TextAlign.center,
-                          style: TextStyle(color: Colors.grey[500]),
+                          style: TextStyle(
+                            color: AppColors.getTextSecondary(isDarkMode),
+                          ),
                         ),
                       ],
                     ),

@@ -4,6 +4,7 @@ import 'package:filevo/generated/l10n.dart';
 import 'package:provider/provider.dart';
 import 'package:filevo/controllers/activity_controller.dart';
 import 'package:intl/intl.dart';
+import 'package:filevo/constants/app_colors.dart';
 
 class ActivityLogPage extends StatefulWidget {
   const ActivityLogPage({Key? key}) : super(key: key);
@@ -158,11 +159,12 @@ class _ActivityLogPageState extends State<ActivityLogPage> {
 
   @override
   Widget build(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
-      backgroundColor: Colors.grey[100],
+      backgroundColor: AppColors.getBackground(isDarkMode),
       appBar: AppBar(
         title: Text(S.of(context).activityLog),
-        backgroundColor: const Color(0xff28336f),
+        backgroundColor: AppColors.getAppBar(isDarkMode),
         actions: [
           IconButton(
             icon: const Icon(Icons.filter_list),
@@ -179,7 +181,10 @@ class _ActivityLogPageState extends State<ActivityLogPage> {
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: Text(
               S.of(context).showingLast100Logs, // ✅ نص مترجم
-              style: const TextStyle(fontSize: 12, color: Colors.white70),
+              style: TextStyle(
+                fontSize: 12,
+                color: Colors.white70,
+              ),
               textAlign: TextAlign.center,
             ),
           ),
@@ -192,18 +197,25 @@ class _ActivityLogPageState extends State<ActivityLogPage> {
           }
 
           // واجهة الخطأ
+          final isDarkMode = Theme.of(context).brightness == Brightness.dark;
           if (controller.errorMessage != null &&
               controller.activities.isEmpty) {
             return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.error_outline, size: 64, color: Colors.red[300]),
+                  Icon(
+                    Icons.error_outline,
+                    size: 64,
+                    color: AppColors.error,
+                  ),
                   const SizedBox(height: 16),
                   Text(
                     controller.errorMessage?.toString() ??
                         S.of(context).errorOccurred.toString(),
-                    style: TextStyle(color: Colors.red[700]),
+                    style: TextStyle(
+                      color: AppColors.error,
+                    ),
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 16),
@@ -222,20 +234,27 @@ class _ActivityLogPageState extends State<ActivityLogPage> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.history, size: 64, color: Colors.grey[400]),
+                  Icon(
+                    Icons.history,
+                    size: 64,
+                    color: AppColors.getTextSecondary(isDarkMode),
+                  ),
                   const SizedBox(height: 16),
                   Text(
                     S.of(context).noActivities, // ✅ نص مترجم
                     style: TextStyle(
                       fontSize: 18,
-                      color: Colors.grey[600],
+                      color: AppColors.getTextPrimary(isDarkMode),
                       fontWeight: FontWeight.w500,
                     ),
                   ),
                   const SizedBox(height: 8),
                   Text(
                     S.of(context).activitiesWillShowHere, // ✅ نص مترجم
-                    style: TextStyle(fontSize: 14, color: Colors.grey[500]),
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: AppColors.getTextSecondary(isDarkMode),
+                    ),
                   ),
                 ],
               ),
@@ -286,6 +305,7 @@ class _ActivityLogPageState extends State<ActivityLogPage> {
   }
 
   Widget _buildStatisticsCard(Map<String, dynamic> statistics) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     final totalActivities = statistics['totalActivities'] ?? 0;
 
     // ✅ تحويل نص الفترة إذا كان قادماً من السيرفر كـ "30 days"
@@ -298,11 +318,11 @@ class _ActivityLogPageState extends State<ActivityLogPage> {
       margin: const EdgeInsets.all(16),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Theme.of(context).cardColor, // ✅ دعم الـ Dark Mode
+        color: AppColors.getCardColor(isDarkMode),
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: AppColors.getShadow(isDarkMode),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -323,25 +343,37 @@ class _ActivityLogPageState extends State<ActivityLogPage> {
   }
 
   Widget _buildStatItem(String label, String value, IconData icon) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     return Column(
       children: [
-        Icon(icon, color: const Color(0xff28336f), size: 24),
+        Icon(
+          icon,
+          color: AppColors.getPrimary(isDarkMode),
+          size: 24,
+        ),
         const SizedBox(height: 8),
         Text(
           value,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.bold,
-            color: Color(0xff28336f),
+            color: AppColors.getPrimary(isDarkMode),
           ),
         ),
         const SizedBox(height: 4),
-        Text(label, style: TextStyle(fontSize: 12, color: Colors.grey[600])),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 12,
+            color: AppColors.getTextSecondary(isDarkMode),
+          ),
+        ),
       ],
     );
   }
 
   Widget _buildActivityCard(Map<String, dynamic> activity) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     final action = activity['action'] as String? ?? '';
     final entityType = activity['entityType'] as String? ?? '';
     final entityName = activity['entityName'] as String?;
@@ -352,6 +384,7 @@ class _ActivityLogPageState extends State<ActivityLogPage> {
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       elevation: 2,
+      color: AppColors.getCardColor(isDarkMode),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: ListTile(
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -371,7 +404,11 @@ class _ActivityLogPageState extends State<ActivityLogPage> {
         ),
         title: Text(
           _getActionName(action),
-          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            color: AppColors.getTextPrimary(isDarkMode),
+          ),
         ),
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -382,7 +419,7 @@ class _ActivityLogPageState extends State<ActivityLogPage> {
                 entityName,
                 style: TextStyle(
                   fontSize: 14,
-                  color: Colors.grey[700],
+                  color: AppColors.getTextPrimary(isDarkMode),
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -410,7 +447,10 @@ class _ActivityLogPageState extends State<ActivityLogPage> {
                 const SizedBox(width: 8),
                 Text(
                   _formatDate(createdAt),
-                  style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: AppColors.getTextSecondary(isDarkMode),
+                  ),
                 ),
               ],
             ),
@@ -419,7 +459,7 @@ class _ActivityLogPageState extends State<ActivityLogPage> {
         trailing: Icon(
           Icons.arrow_forward_ios,
           size: 16,
-          color: Colors.grey[400],
+          color: AppColors.getTextSecondary(isDarkMode),
         ),
         onTap: () {
           _showActivityDetails(activity);
@@ -429,6 +469,7 @@ class _ActivityLogPageState extends State<ActivityLogPage> {
   }
 
   Widget _buildPagination(Map<String, dynamic> pagination) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     final currentPage = pagination['currentPage'] ?? 1;
     final totalPages = pagination['totalPages'] ?? 1;
     final hasNext = pagination['hasNext'] ?? false;
@@ -437,10 +478,10 @@ class _ActivityLogPageState extends State<ActivityLogPage> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Theme.of(context).cardColor, // دعم الوضع الليلي
+        color: AppColors.getCardColor(isDarkMode),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: AppColors.getShadow(isDarkMode),
             blurRadius: 10,
             offset: const Offset(0, -2),
           ),
@@ -458,7 +499,12 @@ class _ActivityLogPageState extends State<ActivityLogPage> {
                     _loadActivities();
                   }
                 : null,
-            child: Text(S.of(context).previous),
+            child: Text(
+              S.of(context).previous,
+              style: TextStyle(
+                color: AppColors.getPrimary(isDarkMode),
+              ),
+            ),
           ),
           Text(
             S
@@ -466,7 +512,7 @@ class _ActivityLogPageState extends State<ActivityLogPage> {
                 .pageOf(currentPage, totalPages), // ✅ نص ديناميكي مترجم
             style: TextStyle(
               fontSize: 14,
-              color: Colors.grey[700],
+              color: AppColors.getTextPrimary(isDarkMode),
               fontWeight: FontWeight.w500,
             ),
           ),
@@ -479,7 +525,12 @@ class _ActivityLogPageState extends State<ActivityLogPage> {
                     _loadActivities();
                   }
                 : null,
-            child: Text(S.of(context).next),
+            child: Text(
+              S.of(context).next,
+              style: TextStyle(
+                color: AppColors.getPrimary(isDarkMode),
+              ),
+            ),
           ),
         ],
       ),
@@ -487,21 +538,41 @@ class _ActivityLogPageState extends State<ActivityLogPage> {
   }
 
   void _showFilterDialog() {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text(S.of(context).filterActivity),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // حقل اختيار الإجراء
-              DropdownButtonFormField<String>(
-                value: _selectedAction,
-                decoration: InputDecoration(
-                  labelText: S.of(context).actionLabel, // ✅ نص مترجم
-                  border: const OutlineInputBorder(),
-                ),
+      builder: (context) {
+        final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+        return AlertDialog(
+          backgroundColor: AppColors.getCardColor(isDarkMode),
+          title: Text(
+            S.of(context).filterActivity,
+            style: TextStyle(
+              color: AppColors.getTextPrimary(isDarkMode),
+            ),
+          ),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // حقل اختيار الإجراء
+                DropdownButtonFormField<String>(
+                  value: _selectedAction,
+                  decoration: InputDecoration(
+                    labelText: S.of(context).actionLabel, // ✅ نص مترجم
+                    labelStyle: TextStyle(
+                      color: AppColors.getTextSecondary(isDarkMode),
+                    ),
+                    border: OutlineInputBorder(
+                      borderSide: BorderSide(
+                        color: AppColors.darkSurface,
+                      ),
+                    ),
+                  ),
+                  dropdownColor: AppColors.getCardColor(isDarkMode),
+                  style: TextStyle(
+                    color: AppColors.getTextPrimary(isDarkMode),
+                  ),
                 items: [
                   DropdownMenuItem(
                     value: null,
@@ -540,13 +611,24 @@ class _ActivityLogPageState extends State<ActivityLogPage> {
               ),
               const SizedBox(height: 16),
 
-              // حقل اختيار نوع العنصر
-              DropdownButtonFormField<String>(
-                value: _selectedEntityType,
-                decoration: InputDecoration(
-                  labelText: S.of(context).entityTypeLabel, // ✅ نص مترجم
-                  border: const OutlineInputBorder(),
-                ),
+                // حقل اختيار نوع العنصر
+                DropdownButtonFormField<String>(
+                  value: _selectedEntityType,
+                  decoration: InputDecoration(
+                    labelText: S.of(context).entityTypeLabel, // ✅ نص مترجم
+                    labelStyle: TextStyle(
+                      color: AppColors.getTextSecondary(isDarkMode),
+                    ),
+                    border: OutlineInputBorder(
+                      borderSide: BorderSide(
+                        color: AppColors.darkSurface,
+                      ),
+                    ),
+                  ),
+                  dropdownColor: AppColors.getCardColor(isDarkMode),
+                  style: TextStyle(
+                    color: AppColors.getTextPrimary(isDarkMode),
+                  ),
                 items: [
                   DropdownMenuItem(
                     value: null,
@@ -582,30 +664,44 @@ class _ActivityLogPageState extends State<ActivityLogPage> {
             ],
           ),
         ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              setState(() {
-                _selectedAction = null;
-                _selectedEntityType = null;
-              });
-            },
-            child: Text(S.of(context).reset),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(S.of(context).cancel),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              _currentPage = 1;
-              _loadActivities();
-            },
-            child: Text(S.of(context).apply),
-          ),
-        ],
-      ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                setState(() {
+                  _selectedAction = null;
+                  _selectedEntityType = null;
+                });
+              },
+              child: Text(
+                S.of(context).reset,
+                style: TextStyle(
+                  color: AppColors.getTextSecondary(isDarkMode),
+                ),
+              ),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text(
+                S.of(context).cancel,
+                style: TextStyle(
+                  color: AppColors.getTextSecondary(isDarkMode),
+                ),
+              ),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(context);
+                _currentPage = 1;
+                _loadActivities();
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.getPrimary(isDarkMode),
+              ),
+              child: Text(S.of(context).apply),
+            ),
+          ],
+        );
+      },
     );
   }
 
@@ -713,9 +809,12 @@ class _ActivityLogPageState extends State<ActivityLogPage> {
                       const SizedBox(height: 16),
                       Text(
                         S.of(context).detailsTitle, // ✅ "التفاصيل" مترجم
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
+                          color: AppColors.getTextPrimary(
+                            Theme.of(context).brightness == Brightness.dark,
+                          ),
                         ),
                       ),
                       const SizedBox(height: 8),
@@ -731,9 +830,12 @@ class _ActivityLogPageState extends State<ActivityLogPage> {
                         S
                             .of(context)
                             .additionalInfo, // ✅ "معلومات إضافية" مترجم
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
+                          color: AppColors.getTextPrimary(
+                            Theme.of(context).brightness == Brightness.dark,
+                          ),
                         ),
                       ),
                       const SizedBox(height: 8),
@@ -753,6 +855,7 @@ class _ActivityLogPageState extends State<ActivityLogPage> {
   }
 
   Widget _buildDetailRow(String label, String value) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Row(
@@ -764,7 +867,7 @@ class _ActivityLogPageState extends State<ActivityLogPage> {
               label,
               style: TextStyle(
                 fontSize: 14,
-                color: Colors.grey[600],
+                color: AppColors.getTextSecondary(isDarkMode),
                 fontWeight: FontWeight.w500,
               ),
             ),
@@ -772,7 +875,10 @@ class _ActivityLogPageState extends State<ActivityLogPage> {
           Expanded(
             child: Text(
               value,
-              style: const TextStyle(fontSize: 14, color: Colors.black87),
+              style: TextStyle(
+                fontSize: 14,
+                color: AppColors.getTextPrimary(isDarkMode),
+              ),
             ),
           ),
         ],

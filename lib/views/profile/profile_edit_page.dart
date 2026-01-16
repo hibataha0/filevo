@@ -35,13 +35,9 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: isDarkMode
-          ? const Color(0xFF121212)
-          : const Color(0xFFF8EFFE),
+      backgroundColor: AppColors.getBackground(isDarkMode),
       appBar: AppBar(
-        backgroundColor: isDarkMode
-            ? AppColors.darkAppBar
-            : AppColors.lightAppBar,
+        backgroundColor: AppColors.getAppBar(isDarkMode),
         title: Text(S.of(context).profile),
       ),
       body: Padding(
@@ -102,13 +98,18 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
     required Future<bool> Function(String value) onSave,
     bool isEmail = false,
   }) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     final controller = TextEditingController(text: initialValue);
     final formKey = GlobalKey<FormState>();
 
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text(title),
+        backgroundColor: AppColors.getCardColor(isDarkMode),
+        title: Text(
+          title,
+          style: TextStyle(color: AppColors.getTextPrimary(isDarkMode)),
+        ),
         content: Form(
           key: formKey,
           child: TextFormField(
@@ -136,9 +137,16 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: Text(S.of(context).cancel),
+            child: Text(
+              S.of(context).cancel,
+              style: TextStyle(color: AppColors.getTextPrimary(isDarkMode)),
+            ),
           ),
           ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.getPrimary(isDarkMode),
+              foregroundColor: Colors.white,
+            ),
             onPressed: () async {
               if (!formKey.currentState!.validate()) return;
 
@@ -153,6 +161,7 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Text('✅ ${S.of(context).updatedSuccessfully}'),
+                    backgroundColor: AppColors.success,
                   ),
                 );
               } else {
@@ -166,6 +175,7 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
                       profileController.errorMessage ??
                           S.of(context).failedToUpdate,
                     ),
+                    backgroundColor: AppColors.error,
                   ),
                 );
               }
@@ -181,6 +191,7 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
   // PASSWORD DIALOG
   // -------------------------
   void _showPasswordDialog(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     final profileController = Provider.of<ProfileController>(
       context,
       listen: false,
@@ -193,7 +204,11 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text(S.of(context).changePassword),
+        backgroundColor: AppColors.getCardColor(isDarkMode),
+        title: Text(
+          S.of(context).changePassword,
+          style: TextStyle(color: AppColors.getTextPrimary(isDarkMode)),
+        ),
         content: Form(
           key: formKey,
           child: Column(
@@ -255,9 +270,16 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: Text(S.of(context).cancel),
+            child: Text(
+              S.of(context).cancel,
+              style: TextStyle(color: AppColors.getTextPrimary(isDarkMode)),
+            ),
           ),
           ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.getPrimary(isDarkMode),
+              foregroundColor: Colors.white,
+            ),
             onPressed: () async {
               if (!formKey.currentState!.validate()) return;
 
@@ -276,6 +298,7 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
                     content: Text(
                       '✅ ${S.of(context).passwordUpdatedSuccessfully}',
                     ),
+                    backgroundColor: AppColors.success,
                   ),
                 );
               } else {
@@ -285,6 +308,7 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
                       profileController.errorMessage ??
                           S.of(context).failedToUpdatePassword,
                     ),
+                    backgroundColor: AppColors.error,
                   ),
                 );
               }
@@ -313,12 +337,17 @@ class _EditableFieldCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           label,
-          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            color: AppColors.getTextPrimary(isDarkMode),
+          ),
         ),
         const SizedBox(height: 8),
         InkWell(
@@ -326,11 +355,11 @@ class _EditableFieldCard extends StatelessWidget {
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: AppColors.getCardColor(isDarkMode),
               borderRadius: BorderRadius.circular(16),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
+                  color: AppColors.getShadow(isDarkMode),
                   blurRadius: 10,
                   offset: const Offset(0, 4),
                 ),
@@ -341,10 +370,16 @@ class _EditableFieldCard extends StatelessWidget {
                 Expanded(
                   child: Text(
                     value,
-                    style: const TextStyle(fontSize: 16, color: Colors.black87),
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: AppColors.getTextPrimary(isDarkMode),
+                    ),
                   ),
                 ),
-                const Icon(Icons.edit, color: Colors.black45),
+                Icon(
+                  Icons.edit,
+                  color: AppColors.getTextSecondary(isDarkMode),
+                ),
               ],
             ),
           ),

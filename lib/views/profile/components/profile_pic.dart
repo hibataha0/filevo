@@ -7,6 +7,7 @@ import 'package:filevo/controllers/profile/profile_controller.dart';
 import 'package:filevo/config/api_config.dart';
 import 'package:provider/provider.dart';
 import 'package:filevo/generated/l10n.dart';
+import 'package:filevo/constants/app_colors.dart';
 
 class ProfilePic extends StatefulWidget {
   const ProfilePic({Key? key}) : super(key: key);
@@ -38,7 +39,7 @@ class _ProfilePicState extends State<ProfilePic> {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Text(S.of(context).mustAllowPhotosAccess),
-                    backgroundColor: Colors.orange,
+                    backgroundColor: AppColors.warning,
                   ),
                 );
               }
@@ -73,7 +74,7 @@ class _ProfilePicState extends State<ProfilePic> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(S.of(context).fileNotFound),
-              backgroundColor: Colors.red,
+              backgroundColor: AppColors.error,
             ),
           );
         }
@@ -113,7 +114,7 @@ class _ProfilePicState extends State<ProfilePic> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(S.of(context).profileImageUploadedSuccessfully),
-              backgroundColor: Colors.green,
+              backgroundColor: AppColors.success,
             ),
           );
         }
@@ -126,7 +127,7 @@ class _ProfilePicState extends State<ProfilePic> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(errorMsg),
-              backgroundColor: Colors.red,
+              backgroundColor: AppColors.error,
               duration: const Duration(seconds: 5),
             ),
           );
@@ -158,7 +159,7 @@ class _ProfilePicState extends State<ProfilePic> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(S.of(context).mustAllowCameraAccess),
-              backgroundColor: Colors.orange,
+              backgroundColor: AppColors.warning,
             ),
           );
         }
@@ -190,7 +191,7 @@ class _ProfilePicState extends State<ProfilePic> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(S.of(context).fileNotFound),
-              backgroundColor: Colors.red,
+              backgroundColor: AppColors.error,
             ),
           );
         }
@@ -228,7 +229,7 @@ class _ProfilePicState extends State<ProfilePic> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(S.of(context).profileImageUploadedSuccessfully),
-              backgroundColor: Colors.green,
+              backgroundColor: AppColors.success,
             ),
           );
         }
@@ -240,7 +241,7 @@ class _ProfilePicState extends State<ProfilePic> {
               content: Text(
                 '${S.of(context).failedToUploadProfileImage}: ${profileController.errorMessage ?? S.of(context).unknownError}',
               ),
-              backgroundColor: Colors.red,
+              backgroundColor: AppColors.error,
             ),
           );
         }
@@ -248,45 +249,79 @@ class _ProfilePicState extends State<ProfilePic> {
     } catch (e) {
       print('Error in _pickImageFromCamera: $e');
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('${S.of(context).error}: ${e.toString()}'),
-            backgroundColor: Colors.red,
-          ),
-        );
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('${S.of(context).error}: ${e.toString()}'),
+              backgroundColor: AppColors.error,
+            ),
+          );
       }
     }
   }
 
   void _showImageSourceDialog() {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     showModalBottomSheet(
       context: context,
+      backgroundColor: Colors.transparent,
       builder: (BuildContext context) {
-        return SafeArea(
-          child: Wrap(
-            children: [
-              ListTile(
-                leading: const Icon(Icons.photo_library),
-                title: Text(S.of(context).chooseFromGallery),
-                onTap: () {
-                  Navigator.pop(context);
-                  _pickImageFromGallery();
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.camera_alt),
-                title: Text(S.of(context).takePhotoFromCamera),
-                onTap: () {
-                  Navigator.pop(context);
-                  _pickImageFromCamera();
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.cancel),
-                title: Text(S.of(context).cancel),
-                onTap: () => Navigator.pop(context),
-              ),
-            ],
+        return Container(
+          decoration: BoxDecoration(
+            color: AppColors.getCardColor(isDarkMode),
+            borderRadius: const BorderRadius.vertical(
+              top: Radius.circular(20),
+            ),
+          ),
+          child: SafeArea(
+            child: Wrap(
+              children: [
+                ListTile(
+                  leading: Icon(
+                    Icons.photo_library,
+                    color: AppColors.getTextPrimary(isDarkMode),
+                  ),
+                  title: Text(
+                    S.of(context).chooseFromGallery,
+                    style: TextStyle(
+                      color: AppColors.getTextPrimary(isDarkMode),
+                    ),
+                  ),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _pickImageFromGallery();
+                  },
+                ),
+                ListTile(
+                  leading: Icon(
+                    Icons.camera_alt,
+                    color: AppColors.getTextPrimary(isDarkMode),
+                  ),
+                  title: Text(
+                    S.of(context).takePhotoFromCamera,
+                    style: TextStyle(
+                      color: AppColors.getTextPrimary(isDarkMode),
+                    ),
+                  ),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _pickImageFromCamera();
+                  },
+                ),
+                ListTile(
+                  leading: Icon(
+                    Icons.cancel,
+                    color: AppColors.error,
+                  ),
+                  title: Text(
+                    S.of(context).cancel,
+                    style: TextStyle(
+                      color: AppColors.getTextPrimary(isDarkMode),
+                    ),
+                  ),
+                  onTap: () => Navigator.pop(context),
+                ),
+              ],
+            ),
           ),
         );
       },
@@ -449,14 +484,18 @@ class _ProfilePicState extends State<ProfilePic> {
                     borderRadius: BorderRadius.circular(50),
                     side: const BorderSide(color: Colors.white),
                   ),
-                  backgroundColor: const Color(0xFFF5F6F9),
+                  backgroundColor: AppColors.getCardColor(
+                    Theme.of(context).brightness == Brightness.dark,
+                  ),
                 ),
                 onPressed: profileController.isLoading
                     ? null
                     : _showImageSourceDialog,
-                child: const Icon(
+                child: Icon(
                   Icons.camera_alt,
-                  color: Colors.black,
+                  color: AppColors.getTextPrimary(
+                    Theme.of(context).brightness == Brightness.dark,
+                  ),
                   size: 20,
                 ),
               ),

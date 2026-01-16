@@ -13,6 +13,7 @@ import 'package:pull_to_refresh/pull_to_refresh.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:filevo/dialogs/folder_protection_dialogs.dart';
 import 'package:filevo/services/socket_service.dart';
+import 'package:filevo/constants/app_colors.dart';
 
 class RoomFoldersPage extends StatefulWidget {
   final String roomId;
@@ -95,7 +96,7 @@ class _RoomFoldersPageState extends State<RoomFoldersPage> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('📂 ${S.of(context).newFolderShared(folder['name'] ?? S.of(context).folder)}'),
-              backgroundColor: Colors.green,
+              backgroundColor: AppColors.success,
               duration: Duration(seconds: 3),
             ),
           );
@@ -211,7 +212,9 @@ class _RoomFoldersPageState extends State<RoomFoldersPage> {
             ),
           ),
         ),
-        backgroundColor: Color(0xff28336f),
+        backgroundColor: AppColors.getAppBar(
+          Theme.of(context).brightness == Brightness.dark,
+        ),
         // actions: [
         //   IconButton(
         //     icon: Icon(Icons.refresh),
@@ -263,7 +266,9 @@ class _RoomFoldersPageState extends State<RoomFoldersPage> {
                 tablet: 80.0,
                 desktop: 96.0,
               ),
-              color: Colors.grey,
+              color: AppColors.getTextSecondary(
+                Theme.of(context).brightness == Brightness.dark,
+              ),
             ),
             SizedBox(
               height: ResponsiveUtils.getResponsiveValue(
@@ -282,7 +287,9 @@ class _RoomFoldersPageState extends State<RoomFoldersPage> {
                   tablet: 20.0,
                   desktop: 22.0,
                 ),
-                color: Colors.grey[600],
+                color: AppColors.getTextSecondary(
+                  Theme.of(context).brightness == Brightness.dark,
+                ),
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -303,7 +310,9 @@ class _RoomFoldersPageState extends State<RoomFoldersPage> {
                   tablet: 16.0,
                   desktop: 18.0,
                 ),
-                color: Colors.grey[500],
+                color: AppColors.getTextSecondary(
+                  Theme.of(context).brightness == Brightness.dark,
+                ),
               ),
             ),
           ],
@@ -487,7 +496,7 @@ class _RoomFoldersPageState extends State<RoomFoldersPage> {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
                       content: Text(S.of(context).removeFolderPermissionError),
-                      backgroundColor: Colors.red,
+                      backgroundColor: AppColors.error,
                     ),
                   );
                 }
@@ -506,7 +515,7 @@ class _RoomFoldersPageState extends State<RoomFoldersPage> {
                         content: Text(
                           S.of(context).removeFolderPermissionError,
                         ),
-                        backgroundColor: Colors.red,
+                        backgroundColor: AppColors.error,
                       ),
                     );
                   }
@@ -588,7 +597,7 @@ class _RoomFoldersPageState extends State<RoomFoldersPage> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(S.of(context).removeFolderPermissionError),
-            backgroundColor: Colors.red,
+            backgroundColor: AppColors.error,
           ),
         );
         return;
@@ -614,7 +623,7 @@ class _RoomFoldersPageState extends State<RoomFoldersPage> {
             },
             child: Text(
               S.of(context).remove,
-              style: TextStyle(color: Colors.red),
+              style: TextStyle(color: AppColors.error),
             ),
           ),
         ],
@@ -663,7 +672,7 @@ class _RoomFoldersPageState extends State<RoomFoldersPage> {
               content: Text(
                 s.saveFolderSuccess(folderName),
               ), // ✅ تمرير اسم المجلد للترجمة
-              backgroundColor: Colors.green,
+              backgroundColor: AppColors.success,
               behavior: SnackBarBehavior.floating,
             ),
           );
@@ -674,7 +683,7 @@ class _RoomFoldersPageState extends State<RoomFoldersPage> {
                 roomController.errorMessage ??
                     s.saveFolderFailure, // ✅ رسالة الفشل المترجمة
               ),
-              backgroundColor: Colors.red,
+              backgroundColor: AppColors.error,
               behavior: SnackBarBehavior.floating,
             ),
           );
@@ -686,7 +695,7 @@ class _RoomFoldersPageState extends State<RoomFoldersPage> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(S.of(context).errorPrefix(e.toString())),
-            backgroundColor: Colors.red,
+            backgroundColor: AppColors.error,
           ),
         );
       }
@@ -775,7 +784,7 @@ class _RoomFoldersPageState extends State<RoomFoldersPage> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(S.of(context).removeFolderFromRoomSuccess),
-              backgroundColor: Colors.green,
+              backgroundColor: AppColors.success,
             ),
           );
           // ✅ إعادة تحميل بيانات الغرفة بعد إزالة المجلد
@@ -787,7 +796,7 @@ class _RoomFoldersPageState extends State<RoomFoldersPage> {
                 roomController.errorMessage ??
                     S.of(context).removeFolderFromRoomFailure,
               ),
-              backgroundColor: Colors.red,
+              backgroundColor: AppColors.error,
             ),
           );
         }
@@ -797,7 +806,7 @@ class _RoomFoldersPageState extends State<RoomFoldersPage> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(S.of(context).errorPrefix(e.toString())),
-            backgroundColor: Colors.red,
+            backgroundColor: AppColors.error,
           ),
         );
       }
@@ -870,8 +879,12 @@ class _RoomFoldersPageState extends State<RoomFoldersPage> {
         (index) => Padding(
           padding: EdgeInsets.only(bottom: 12),
           child: Shimmer.fromColors(
-            baseColor: Colors.grey[300]!,
-            highlightColor: Colors.grey[100]!,
+      baseColor: AppColors.getShimmerBase(
+        Theme.of(context).brightness == Brightness.dark,
+      ),
+      highlightColor: AppColors.getShimmerHighlight(
+        Theme.of(context).brightness == Brightness.dark,
+      ),
             child: Container(
               height: 80,
               decoration: BoxDecoration(

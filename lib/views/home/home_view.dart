@@ -391,7 +391,7 @@ class _HomeViewState extends State<HomeView> {
                 "fileCount": filesCount,
                 "size": _formatBytes(size),
                 "icon": Icons.folder,
-                "color": Color(0xff28336f),
+                "color": AppColors.lightPrimary,
                 "type": "folder",
                 "folderId": folderData['_id'],
                 "folderData":
@@ -598,7 +598,7 @@ class _HomeViewState extends State<HomeView> {
             SnackBar(
               content: Text(S.of(context).fileUrlNotAvailable),
               behavior: SnackBarBehavior.floating,
-              backgroundColor: Colors.orange,
+              backgroundColor: AppColors.warning,
             ),
           );
           return;
@@ -613,7 +613,7 @@ class _HomeViewState extends State<HomeView> {
         SnackBar(
           content: Text(S.of(context).invalidUrl),
           behavior: SnackBarBehavior.floating,
-          backgroundColor: Colors.red,
+          backgroundColor: AppColors.error,
         ),
       );
       return;
@@ -817,7 +817,7 @@ class _HomeViewState extends State<HomeView> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('${S.of(context).errorOpeningFile}: ${e.toString()}'),
-            backgroundColor: Colors.red,
+            backgroundColor: AppColors.error,
           ),
         );
       }
@@ -895,17 +895,18 @@ class _HomeViewState extends State<HomeView> {
   }
 
   Widget _buildFolderShimmerCard() {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     return Shimmer.fromColors(
-      baseColor: Colors.grey[300]!,
-      highlightColor: Colors.grey[100]!,
+      baseColor: AppColors.getShimmerBase(isDarkMode),
+      highlightColor: AppColors.getShimmerHighlight(isDarkMode),
       child: Container(
         padding: EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: AppColors.getCardColor(isDarkMode),
           borderRadius: BorderRadius.circular(12),
           boxShadow: [
             BoxShadow(
-              color: Colors.grey.withOpacity(0.1),
+              color: AppColors.getShadow(isDarkMode),
               spreadRadius: 1,
               blurRadius: 4,
               offset: Offset(0, 2),
@@ -919,7 +920,7 @@ class _HomeViewState extends State<HomeView> {
               width: 60,
               height: 60,
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: AppColors.getShimmerBase(isDarkMode),
                 borderRadius: BorderRadius.circular(8),
               ),
             ),
@@ -928,7 +929,7 @@ class _HomeViewState extends State<HomeView> {
               height: 14,
               width: double.infinity,
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: AppColors.getShimmerBase(isDarkMode),
                 borderRadius: BorderRadius.circular(4),
               ),
             ),
@@ -937,7 +938,7 @@ class _HomeViewState extends State<HomeView> {
               height: 12,
               width: 100,
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: AppColors.getShimmerBase(isDarkMode),
                 borderRadius: BorderRadius.circular(4),
               ),
             ),
@@ -948,17 +949,18 @@ class _HomeViewState extends State<HomeView> {
   }
 
   Widget _buildFileShimmerCard() {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     return Shimmer.fromColors(
-      baseColor: Colors.grey[300]!,
-      highlightColor: Colors.grey[100]!,
+      baseColor: AppColors.getShimmerBase(isDarkMode),
+      highlightColor: AppColors.getShimmerHighlight(isDarkMode),
       child: Container(
         height: 200,
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: AppColors.getCardColor(isDarkMode),
           borderRadius: BorderRadius.circular(12),
           boxShadow: [
             BoxShadow(
-              color: Colors.grey.withOpacity(0.1),
+              color: AppColors.getShadow(isDarkMode),
               spreadRadius: 1,
               blurRadius: 4,
               offset: Offset(0, 2),
@@ -972,7 +974,7 @@ class _HomeViewState extends State<HomeView> {
               flex: 3,
               child: Container(
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: AppColors.getShimmerBase(isDarkMode),
                   borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
                 ),
               ),
@@ -988,7 +990,7 @@ class _HomeViewState extends State<HomeView> {
                       height: 12,
                       width: double.infinity,
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: AppColors.getShimmerBase(isDarkMode),
                         borderRadius: BorderRadius.circular(4),
                       ),
                     ),
@@ -997,7 +999,7 @@ class _HomeViewState extends State<HomeView> {
                       height: 10,
                       width: 80,
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: AppColors.getShimmerBase(isDarkMode),
                         borderRadius: BorderRadius.circular(4),
                       ),
                     ),
@@ -1079,7 +1081,9 @@ class _HomeViewState extends State<HomeView> {
                           children: [
                             Text(
                               _errorMessage!,
-                              style: TextStyle(color: Colors.red),
+                              style: TextStyle(
+                                color: AppColors.error,
+                              ),
                               textAlign: TextAlign.center,
                             ),
                             const SizedBox(height: 16),
@@ -1127,6 +1131,9 @@ class _HomeViewState extends State<HomeView> {
                                             desktop: 28.0,
                                           ),
                                       fontWeight: FontWeight.bold,
+                                      color: isDarkMode 
+                                          ? AppColors.darkTextPrimary 
+                                          : AppColors.lightTextPrimary,
                                     ),
                                   ),
                                   TextButton(
@@ -1145,7 +1152,7 @@ class _HomeViewState extends State<HomeView> {
                                     child: Text(
                                       S.of(context).seeAll,
                                       style: TextStyle(
-                                        color: const Color(0xFF28336F),
+                                        color: AppColors.getPrimary(isDarkMode),
                                         fontSize:
                                             ResponsiveUtils.getResponsiveValue(
                                               context,
@@ -1171,13 +1178,15 @@ class _HomeViewState extends State<HomeView> {
                             // عرض المجلدات الحديثة
                             if (_recentFolders.isEmpty)
                               Center(
-                                child: Padding(
-                                  padding: const EdgeInsets.all(20.0),
-                                  child: Text(
-                                    S.of(context).noRecentFolders,
-                                    style: TextStyle(color: Colors.grey[600]),
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(20.0),
+                                    child: Text(
+                                      S.of(context).noRecentFolders,
+                                      style: TextStyle(
+                                        color: AppColors.getTextSecondary(isDarkMode),
+                                      ),
+                                    ),
                                   ),
-                                ),
                               )
                             else
                               FilesGridView(
@@ -1219,6 +1228,9 @@ class _HomeViewState extends State<HomeView> {
                                             desktop: 28.0,
                                           ),
                                       fontWeight: FontWeight.bold,
+                                      color: isDarkMode 
+                                          ? AppColors.darkTextPrimary 
+                                          : AppColors.lightTextPrimary,
                                     ),
                                   ),
                                   ViewToggleButtons(
@@ -1244,13 +1256,15 @@ class _HomeViewState extends State<HomeView> {
                             // عرض الملفات الحديثة
                             if (_recentFiles.isEmpty)
                               Center(
-                                child: Padding(
-                                  padding: const EdgeInsets.all(20.0),
-                                  child: Text(
-                                    S.of(context).noRecentFiles,
-                                    style: TextStyle(color: Colors.grey[600]),
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(20.0),
+                                    child: Text(
+                                      S.of(context).noRecentFiles,
+                                      style: TextStyle(
+                                        color: AppColors.getTextSecondary(isDarkMode),
+                                      ),
+                                    ),
                                   ),
-                                ),
                               )
                             else if (isFilesGridView)
                               FilesGrid(

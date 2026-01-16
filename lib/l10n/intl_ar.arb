@@ -1501,7 +1501,7 @@
   "speechRecognitionNotAvailable": "خدمة التعرف على الصوت غير متوفرة",
   "searchFailed": "فشل البحث",
   "listening": "جاري الاستماع...",
-  "searchHint": "ابحث... (مثال: صور من الأسبوع الماضي)",
+  "searchHint": "ابحث... (مثال: صور من الأسبوع الماضي أو #work)",
   "scopeAll": "الكل",
   "scopeMyFiles": "ملفاتي",
   "scopeShared": "مشتركة",

@@ -229,12 +229,37 @@ class _SmartSearchPageState extends State<SmartSearchPage>
     });
 
     try {
-      print('🔍 [SmartSearch] Calling FileSearchService.smartSearch...');
-      // ✅ استخدام البحث الجديد
-      final result = await _fileSearchService.smartSearch(
-        query: query,
-        limit: 50,
-      );
+      // ✅ التحقق من البحث عن طريق التاغات (#tag)
+      Map<String, dynamic> result;
+      if (query.startsWith('#')) {
+        // ✅ البحث عن طريق التاغات
+        final tag = query.substring(1).trim(); // إزالة # من البداية
+        if (tag.isEmpty) {
+          setState(() {
+            _searchResults = [];
+            _isSearchLoading = false;
+          });
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('يرجى إدخال تاغ للبحث (مثال: #work)'),
+              backgroundColor: Colors.orange,
+            ),
+          );
+          return;
+        }
+        print('🏷️ [SmartSearch] Searching by tag: $tag');
+        result = await _fileSearchService.searchByTags(
+          tag: tag,
+          limit: 50,
+        );
+      } else {
+        print('🔍 [SmartSearch] Calling FileSearchService.smartSearch...');
+        // ✅ استخدام البحث الجديد
+        result = await _fileSearchService.smartSearch(
+          query: query,
+          limit: 50,
+        );
+      }
 
       print('🔍 [SmartSearch] Search result received');
       print('🔍 [SmartSearch] Result success: ${result['success']}');
@@ -353,7 +378,7 @@ class _SmartSearchPageState extends State<SmartSearchPage>
                         decoration: InputDecoration(
                           hintText: _isListening
                               ? 'جاري الاستماع...'
-                              : 'ابحث... (مثال: صور من الأسبوع الماضي)',
+                              : 'ابحث... (مثال: صور من الأسبوع الماضي أو #work)',
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
@@ -436,134 +461,6 @@ class _SmartSearchPageState extends State<SmartSearchPage>
 
   /// بناء أيقونات suffix (الميكروفون ومسح النص)
   Widget? _buildSuffixIcons() {
-    @override
-    Widget build(BuildContext context) {
-      final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-
-      return Scaffold(
-        appBar: AppBar(
-          title: Text(S.of(context).smartSearch),
-          backgroundColor: isDarkMode
-              ? AppColors.darkAppBar
-              : AppColors.lightAppBar,
-          bottom: PreferredSize(
-            preferredSize: const Size.fromHeight(160),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16.0,
-                    vertical: 8.0,
-                  ),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: TextField(
-                          controller: _searchController,
-                          decoration: InputDecoration(
-                            hintText: _isListening
-                                ? S
-                                      .of(context)
-                                      .listening // ✅ نص مترجم
-                                : S.of(context).searchHint, // ✅ نص مترجم
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            filled: true,
-                            fillColor: isDarkMode
-                                ? AppColors.darkCardBackground
-                                : Colors.white,
-                            prefixIcon: const Icon(Icons.search),
-                            suffixIcon: _buildSuffixIcons(),
-                            contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 12,
-                            ),
-                          ),
-                          onChanged: (value) => setState(() {}),
-                          onSubmitted: (_) => _performSearch(),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      IconButton(
-                        icon: const Icon(Icons.search),
-                        onPressed: _performSearch,
-                        style: IconButton.styleFrom(
-                          backgroundColor: AppColors.accent,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.all(16),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                // Scope selector
-                Padding(
-                  padding: const EdgeInsets.only(
-                    left: 16.0,
-                    right: 16.0,
-                    bottom: 8.0,
-                  ),
-                  child: SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    child: Row(
-                      children: [
-                        _buildScopeChip(
-                          'all',
-                          S.of(context).scopeAll,
-                          Icons.search,
-                        ),
-                        const SizedBox(width: 8),
-                        _buildScopeChip(
-                          'my-files',
-                          S.of(context).scopeMyFiles,
-                          Icons.folder,
-                        ),
-                        const SizedBox(width: 8),
-                        _buildScopeChip(
-                          'shared',
-                          S.of(context).scopeShared,
-                          Icons.share,
-                        ),
-                        const SizedBox(width: 8),
-                        _buildScopeChip(
-                          'rooms',
-                          S.of(context).scopeRooms,
-                          Icons.meeting_room,
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-        body:
-            _isSearching || (_searchResults.isNotEmpty && _searchQuery != null)
-            ? _buildSearchResults()
-            : Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(Icons.search, size: 64, color: Colors.grey),
-                    const SizedBox(height: 16),
-                    Text(
-                      S.of(context).searchInFiles, // ✅ نص مترجم
-                      style: const TextStyle(fontSize: 16, color: Colors.grey),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      S.of(context).searchExample, // ✅ نص مترجم
-                      style: TextStyle(fontSize: 14, color: Colors.grey[600]),
-                    ),
-                  ],
-                ),
-              ),
-      );
-    }
-
     final hasText = _searchController.text.isNotEmpty;
 
     // ✅ إذا كان هناك نص وليس في حالة استماع، نعرض كلا الأيقونتين

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:filevo/controllers/folders/folders_controller.dart';
 import 'package:filevo/controllers/profile/profile_controller.dart';
+import 'package:filevo/constants/app_colors.dart';
 
 class TrashFoldersPage extends StatefulWidget {
   const TrashFoldersPage({super.key});
@@ -60,7 +61,7 @@ class _TrashFoldersPageState extends State<TrashFoldersPage> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text("❌ ${controller.errorMessage}"),
-          backgroundColor: Colors.red,
+          backgroundColor: AppColors.error,
         ),
       );
     }
@@ -105,7 +106,7 @@ class _TrashFoldersPageState extends State<TrashFoldersPage> {
               controller.errorMessage ?? 
               s.folderRestoredError
             ),
-            backgroundColor: Colors.red,
+            backgroundColor: AppColors.error,
             behavior: SnackBarBehavior.floating,
           ),
         );
@@ -155,7 +156,7 @@ class _TrashFoldersPageState extends State<TrashFoldersPage> {
               controller.errorMessage ?? 
               s.folderPermanentDeleteError,
             ),
-            backgroundColor: Colors.red,
+            backgroundColor: AppColors.error,
             behavior: SnackBarBehavior.floating,
           ),
         );
@@ -164,37 +165,58 @@ class _TrashFoldersPageState extends State<TrashFoldersPage> {
   }
 
   void _showFolderActions(BuildContext context, Map<String, dynamic> folder) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     final s = S.of(context); // ✅ مرجع الترجمة
 
     showModalBottomSheet(
       context: context,
+      backgroundColor: AppColors.getCardColor(isDarkMode),
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (context) => Container(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: const Icon(Icons.restore, color: Colors.green),
-              title: Text(s.restoreFolder), // ✅ نص مترجم
-              onTap: () {
-                Navigator.pop(context);
-                _restoreFolder(folder);
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.delete_forever, color: Colors.red),
-              title: Text(s.permanentDelete), // ✅ نص مترجم
-              onTap: () {
-                Navigator.pop(context);
-                _showDeleteConfirmation(folder);
-              },
-            ),
-          ],
-        ),
-      ),
+      builder: (context) {
+        final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+        return Container(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: Icon(
+                  Icons.restore,
+                  color: AppColors.success,
+                ),
+                title: Text(
+                  s.restoreFolder,
+                  style: TextStyle(
+                    color: AppColors.getTextPrimary(isDarkMode),
+                  ),
+                ),
+                onTap: () {
+                  Navigator.pop(context);
+                  _restoreFolder(folder);
+                },
+              ),
+              ListTile(
+                leading: Icon(
+                  Icons.delete_forever,
+                  color: AppColors.error,
+                ),
+                title: Text(
+                  s.permanentDelete,
+                  style: TextStyle(
+                    color: AppColors.getTextPrimary(isDarkMode),
+                  ),
+                ),
+                onTap: () {
+                  Navigator.pop(context);
+                  _showDeleteConfirmation(folder);
+                },
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 
@@ -252,10 +274,11 @@ class _TrashFoldersPageState extends State<TrashFoldersPage> {
         final isLoading = folderController.isLoading;
         final hasFolders = folders.isNotEmpty;
 
+        final isDarkMode = Theme.of(context).brightness == Brightness.dark;
         return Scaffold(
-          backgroundColor: const Color(0xff28336f),
+          backgroundColor: AppColors.getAppBar(isDarkMode),
           appBar: AppBar(
-            backgroundColor: const Color(0xff28336f),
+            backgroundColor: AppColors.getAppBar(isDarkMode),
             title: Text(
               s.deletedFoldersTitle, // ✅ نص مترجم
               style: const TextStyle(color: Colors.white),
@@ -264,9 +287,9 @@ class _TrashFoldersPageState extends State<TrashFoldersPage> {
             elevation: 0,
           ),
           body: Container(
-            decoration: const BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.vertical(top: Radius.circular(25)),
+            decoration: BoxDecoration(
+              color: AppColors.getBackground(isDarkMode),
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(25)),
             ),
             child: Column(
               children: [
@@ -287,13 +310,13 @@ class _TrashFoldersPageState extends State<TrashFoldersPage> {
                           Icons.folder_delete,
                           s.foldersCount, // ✅ "المجلدات" مترجم
                           "${folders.length}",
-                          Colors.orange,
+                          AppColors.warning,
                         ),
                         _buildStatItem(
                           Icons.schedule,
                           s.autoDeleteNoticeFolders, // ✅ نص مترجم
                           "",
-                          Colors.orange,
+                          AppColors.warning,
                         ),
                       ],
                     ),
@@ -383,7 +406,12 @@ class _TrashFoldersPageState extends State<TrashFoldersPage> {
           ),
         Text(
           title,
-          style: const TextStyle(fontSize: 12, color: Colors.grey),
+          style: TextStyle(
+            fontSize: 12,
+            color: AppColors.getTextSecondary(
+              Theme.of(context).brightness == Brightness.dark,
+            ),
+          ),
           textAlign: TextAlign.center,
         ),
       ],
@@ -401,11 +429,15 @@ class _TrashFoldersPageState extends State<TrashFoldersPage> {
       child: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: const Color(0xFFF1F1F1),
+          color: AppColors.getCardColor(
+            Theme.of(context).brightness == Brightness.dark,
+          ),
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: Colors.black12,
+              color: AppColors.getShadow(
+                Theme.of(context).brightness == Brightness.dark,
+              ),
               blurRadius: 4,
               offset: const Offset(0, 2),
             ),
@@ -434,7 +466,13 @@ class _TrashFoldersPageState extends State<TrashFoldersPage> {
               folder["name"] ?? S.of(context).unnamedFolder,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+              style: TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+                color: AppColors.getTextPrimary(
+                  Theme.of(context).brightness == Brightness.dark,
+                ),
+              ),
             ),
 
             const SizedBox(height: 6),
@@ -447,7 +485,12 @@ class _TrashFoldersPageState extends State<TrashFoldersPage> {
                   .deletedAta(
                     _formatDate(folder['deletedAt']?.toString() ?? '-'),
                   ),
-              style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+              style: TextStyle(
+                fontSize: 12,
+                color: AppColors.getTextSecondary(
+                  Theme.of(context).brightness == Brightness.dark,
+                ),
+              ),
             ),
 
             const Spacer(),
@@ -457,12 +500,18 @@ class _TrashFoldersPageState extends State<TrashFoldersPage> {
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
                 IconButton(
-                  icon: const Icon(Icons.restore, color: Colors.green),
+                  icon: const Icon(
+                    Icons.restore,
+                    color: AppColors.success,
+                  ),
                   onPressed: () => _restoreFolder(folder),
                   tooltip: S.of(context).restoreFolder,
                 ),
                 IconButton(
-                  icon: const Icon(Icons.delete_forever, color: Colors.red),
+                  icon: const Icon(
+                    Icons.delete_forever,
+                    color: AppColors.error,
+                  ),
                   onPressed: () => _showDeleteConfirmation(folder),
                   tooltip: S.of(context).permanentDelete,
                 ),

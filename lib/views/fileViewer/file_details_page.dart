@@ -8,6 +8,7 @@ import 'package:video_thumbnail/video_thumbnail.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:filevo/views/folders/share_file_with_room_page.dart';
 import 'package:filevo/generated/l10n.dart';
+import 'package:filevo/constants/app_colors.dart';
 
 class FileDetailsPage extends StatefulWidget {
   final String fileId;
@@ -72,7 +73,7 @@ class _FileDetailsPageState extends State<FileDetailsPage> {
                 data['error'] ??
                     S.of(context).errorLoadingFileData(data['error'] ?? ''),
               ),
-              backgroundColor: Colors.red,
+              backgroundColor: AppColors.error,
               duration: Duration(seconds: 3),
             ),
           );
@@ -198,8 +199,9 @@ class _FileDetailsPageState extends State<FileDetailsPage> {
 
   @override
   Widget build(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
-      backgroundColor: Color(0xFFF8FAFD),
+      backgroundColor: AppColors.getBackground(isDarkMode),
       appBar: AppBar(
         title: Text(
           S.of(context).fileDetails,
@@ -209,7 +211,7 @@ class _FileDetailsPageState extends State<FileDetailsPage> {
             fontSize: 18,
           ),
         ),
-        backgroundColor: Color(0xFF4F6BED),
+        backgroundColor: AppColors.getPrimary(isDarkMode),
         elevation: 0,
         centerTitle: true,
         iconTheme: IconThemeData(color: Colors.white),
@@ -273,6 +275,7 @@ class _FileDetailsPageState extends State<FileDetailsPage> {
   }
 
   Widget _buildBody() {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     if (isLoading) {
       return Center(
         child: Column(
@@ -282,12 +285,14 @@ class _FileDetailsPageState extends State<FileDetailsPage> {
               width: 60,
               height: 60,
               decoration: BoxDecoration(
-                color: Color(0xFF4F6BED).withOpacity(0.1),
+                color: AppColors.getPrimary(isDarkMode).withOpacity(0.1),
                 shape: BoxShape.circle,
               ),
               child: CircularProgressIndicator(
                 strokeWidth: 3,
-                valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF4F6BED)),
+                valueColor: AlwaysStoppedAnimation<Color>(
+                  AppColors.getPrimary(isDarkMode),
+                ),
               ),
             ),
             SizedBox(height: 20),
@@ -295,7 +300,7 @@ class _FileDetailsPageState extends State<FileDetailsPage> {
               S.of(context).loadingFileData,
               style: TextStyle(
                 fontSize: 16,
-                color: Color(0xFF6B7280),
+                color: AppColors.getTextSecondary(isDarkMode),
                 fontWeight: FontWeight.w500,
               ),
             ),
@@ -313,13 +318,13 @@ class _FileDetailsPageState extends State<FileDetailsPage> {
               width: 100,
               height: 100,
               decoration: BoxDecoration(
-                color: Color(0xFFFEE2E2),
+                color: AppColors.error.withOpacity(0.1),
                 shape: BoxShape.circle,
               ),
               child: Icon(
                 Icons.error_outline_rounded,
                 size: 50,
-                color: Color(0xFFDC2626),
+                color: AppColors.error,
               ),
             ),
             SizedBox(height: 20),
@@ -328,7 +333,7 @@ class _FileDetailsPageState extends State<FileDetailsPage> {
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
-                color: Color(0xFFDC2626),
+                color: AppColors.error,
               ),
             ),
             SizedBox(height: 12),
@@ -336,7 +341,9 @@ class _FileDetailsPageState extends State<FileDetailsPage> {
               S
                   .of(context)
                   .fileIdLabel(widget.fileId), // استخدم intl مع المتغير
-              style: const TextStyle(color: Color(0xFF6B7280)),
+              style: TextStyle(
+                color: AppColors.getTextSecondary(isDarkMode),
+              ),
               textAlign: TextAlign.center,
             ),
 
@@ -346,7 +353,7 @@ class _FileDetailsPageState extends State<FileDetailsPage> {
               icon: Icon(Icons.refresh_rounded, size: 20),
               label: Text(S.of(context).retry),
               style: ElevatedButton.styleFrom(
-                backgroundColor: Color(0xFF4F6BED),
+                backgroundColor: AppColors.getPrimary(isDarkMode),
                 foregroundColor: Colors.white,
                 padding: EdgeInsets.symmetric(horizontal: 24, vertical: 14),
                 shape: RoundedRectangleBorder(
@@ -396,18 +403,22 @@ class _FileDetailsPageState extends State<FileDetailsPage> {
   }
 
   Widget _buildFilePreview(String fileName, String fileType, String fileUrl) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     return Container(
       margin: EdgeInsets.all(20),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [Color(0xFF4F6BED), Color(0xFF6D8BFF)],
+          colors: [
+            AppColors.getPrimary(isDarkMode),
+            AppColors.getPrimary(isDarkMode).withOpacity(0.8),
+          ],
         ),
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: Color(0xFF4F6BED).withOpacity(0.3),
+            color: AppColors.getPrimary(isDarkMode).withOpacity(0.3),
             blurRadius: 20,
             offset: Offset(0, 8),
           ),
@@ -554,7 +565,9 @@ class _FileDetailsPageState extends State<FileDetailsPage> {
               ),
               child: Icon(
                 Icons.play_arrow_rounded,
-                color: Color(0xFF4F6BED),
+                color: AppColors.getPrimary(
+                  Theme.of(context).brightness == Brightness.dark,
+                ),
                 size: 40,
               ),
             ),
@@ -760,15 +773,16 @@ class _FileDetailsPageState extends State<FileDetailsPage> {
     }
 
     // ✅ عرض التفاصيل العادية للملفات/المجلدات العادية
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     return Container(
       margin: EdgeInsets.symmetric(horizontal: 20),
       padding: EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.getCardColor(isDarkMode),
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: Color(0xFF000000).withOpacity(0.05),
+            color: AppColors.getShadow(isDarkMode),
             blurRadius: 20,
             offset: Offset(0, 4),
           ),
@@ -785,7 +799,14 @@ class _FileDetailsPageState extends State<FileDetailsPage> {
                 height: 40,
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
-                    colors: [Color(0xFF4F6BED), Color(0xFF6D8BFF)],
+                    colors: [
+                      AppColors.getPrimary(
+                        Theme.of(context).brightness == Brightness.dark,
+                      ),
+                      AppColors.getPrimary(
+                        Theme.of(context).brightness == Brightness.dark,
+                      ).withOpacity(0.8),
+                    ],
                   ),
                   shape: BoxShape.circle,
                 ),
@@ -801,7 +822,9 @@ class _FileDetailsPageState extends State<FileDetailsPage> {
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.w700,
-                  color: Color(0xFF1F2937),
+                  color: AppColors.getTextPrimary(
+                    Theme.of(context).brightness == Brightness.dark,
+                  ),
                 ),
               ),
             ],
@@ -919,15 +942,16 @@ class _FileDetailsPageState extends State<FileDetailsPage> {
 
   // ✅ بناء قسم تفاصيل الملف/المجلد المشترك في الروم
   Widget _buildSharedInRoomDetails() {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     return Container(
       margin: EdgeInsets.symmetric(horizontal: 20),
       padding: EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.getCardColor(isDarkMode),
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: Color(0xFF000000).withOpacity(0.05),
+            color: AppColors.getShadow(isDarkMode),
             blurRadius: 20,
             offset: Offset(0, 4),
           ),
@@ -944,7 +968,14 @@ class _FileDetailsPageState extends State<FileDetailsPage> {
                 height: 40,
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
-                    colors: [Color(0xFF4F6BED), Color(0xFF6D8BFF)],
+                    colors: [
+                      AppColors.getPrimary(
+                        Theme.of(context).brightness == Brightness.dark,
+                      ),
+                      AppColors.getPrimary(
+                        Theme.of(context).brightness == Brightness.dark,
+                      ).withOpacity(0.8),
+                    ],
                   ),
                   shape: BoxShape.circle,
                 ),
@@ -960,7 +991,9 @@ class _FileDetailsPageState extends State<FileDetailsPage> {
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.w700,
-                  color: Color(0xFF1F2937),
+                  color: AppColors.getTextPrimary(
+                    Theme.of(context).brightness == Brightness.dark,
+                  ),
                 ),
               ),
             ],
@@ -1115,7 +1148,9 @@ class _FileDetailsPageState extends State<FileDetailsPage> {
                   label,
                   style: TextStyle(
                     fontSize: 14,
-                    color: Color(0xFF6B7280),
+                    color: AppColors.getTextSecondary(
+                      Theme.of(context).brightness == Brightness.dark,
+                    ),
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -1124,7 +1159,9 @@ class _FileDetailsPageState extends State<FileDetailsPage> {
                   value,
                   style: TextStyle(
                     fontSize: 16,
-                    color: Color(0xFF1F2937),
+                    color: AppColors.getTextPrimary(
+                      Theme.of(context).brightness == Brightness.dark,
+                    ),
                     fontWeight: FontWeight.w500,
                   ),
                 ),

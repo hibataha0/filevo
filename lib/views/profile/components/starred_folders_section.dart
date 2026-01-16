@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:filevo/generated/l10n.dart';
 import 'package:shimmer/shimmer.dart';
+import 'package:filevo/constants/app_colors.dart';
 
 class StarredFoldersSection extends StatefulWidget {
   const StarredFoldersSection({Key? key}) : super(key: key);
@@ -60,6 +61,7 @@ class _StarredFoldersSectionState extends State<StarredFoldersSection> {
   }
 
   Widget _buildHeader(List starred) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 8.0),
       child: Row(
@@ -70,7 +72,7 @@ class _StarredFoldersSectionState extends State<StarredFoldersSection> {
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w600,
-              color: Color(0xff28336f),
+              color: AppColors.getPrimary(isDarkMode),
             ),
           ),
           if (starred.isNotEmpty)
@@ -81,7 +83,7 @@ class _StarredFoldersSectionState extends State<StarredFoldersSection> {
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w500,
-                  color: Color(0xff28336f),
+                  color: AppColors.getPrimary(isDarkMode),
                 ),
               ),
             ),
@@ -118,23 +120,36 @@ class _StarredFoldersSectionState extends State<StarredFoldersSection> {
   }
 
   BoxDecoration _emptyBox() {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     return BoxDecoration(
-      color: Colors.grey[50],
+      color: isDarkMode ? AppColors.darkSurface : Colors.grey[50],
       borderRadius: BorderRadius.circular(12),
-      border: Border.all(color: Colors.grey[200]!),
+      border: Border.all(
+        color: isDarkMode 
+            ? AppColors.darkSurface 
+            : Colors.grey[200]!,
+      ),
     );
   }
 
   Widget _emptyContent() {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.star_border_rounded, size: 40, color: Colors.grey[400]),
+          Icon(
+            Icons.star_border_rounded,
+            size: 40,
+            color: AppColors.getTextSecondary(isDarkMode),
+          ),
           const SizedBox(height: 8),
           Text(
             S.of(context).noFavoriteFolders,
-            style: TextStyle(color: Colors.grey[600], fontSize: 14),
+            style: TextStyle(
+              color: AppColors.getTextSecondary(isDarkMode),
+              fontSize: 14,
+            ),
           ),
         ],
       ),
@@ -185,7 +200,9 @@ class _StarredFoldersSectionState extends State<StarredFoldersSection> {
                 Icon(
                   Icons.folder_rounded,
                   size: 32,
-                  color: const Color(0xff28336f),
+                  color: AppColors.getPrimary(
+                    Theme.of(context).brightness == Brightness.dark,
+                  ),
                 ),
                 const Positioned(
                   top: -2,
@@ -201,10 +218,13 @@ class _StarredFoldersSectionState extends State<StarredFoldersSection> {
             const SizedBox(height: 8),
             Text(
               displayName,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 11,
                 fontWeight: FontWeight.w500,
                 height: 1.2,
+                color: AppColors.getTextPrimary(
+                  Theme.of(context).brightness == Brightness.dark,
+                ),
               ),
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
@@ -213,7 +233,12 @@ class _StarredFoldersSectionState extends State<StarredFoldersSection> {
             const SizedBox(height: 4),
             Text(
               '$fileCount ${S.of(context).files}',
-              style: TextStyle(fontSize: 9, color: Colors.grey[600]),
+              style: TextStyle(
+                fontSize: 9,
+                color: AppColors.getTextSecondary(
+                  Theme.of(context).brightness == Brightness.dark,
+                ),
+              ),
             ),
           ],
         ),
@@ -222,17 +247,23 @@ class _StarredFoldersSectionState extends State<StarredFoldersSection> {
   }
 
   BoxDecoration _itemBox() {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     return BoxDecoration(
-      color: Colors.white,
+      color: AppColors.getCardColor(isDarkMode),
       borderRadius: BorderRadius.circular(12),
       boxShadow: [
-        BoxShadow(color: Colors.black12, blurRadius: 6, offset: Offset(0, 2)),
+        BoxShadow(
+          color: AppColors.getShadow(isDarkMode),
+          blurRadius: 6,
+          offset: Offset(0, 2),
+        ),
       ],
     );
   }
 
   // بطاقة "عرض الكل"
   Widget _buildViewAllCard(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     return GestureDetector(
       onTap: () => _navigateToAllStarredFolders(context),
       child: Container(
@@ -240,11 +271,11 @@ class _StarredFoldersSectionState extends State<StarredFoldersSection> {
         margin: const EdgeInsets.only(right: 12),
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: const Color(0xff28336f),
+          color: AppColors.getPrimary(isDarkMode),
           borderRadius: BorderRadius.circular(12),
           boxShadow: [
             BoxShadow(
-              color: Colors.black26,
+              color: AppColors.getShadow(isDarkMode),
               blurRadius: 6,
               offset: Offset(0, 2),
             ),
@@ -273,78 +304,115 @@ class _StarredFoldersSectionState extends State<StarredFoldersSection> {
 
   // خيارات المجلد
   void _showFolderOptions(Map<String, dynamic> folder) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     final name = folder['name'] as String? ?? S.of(context).unnamedFolder;
     final fileCount = folder['filesCount'] ?? 0;
     final size = folder['size'] as int? ?? 0;
 
     showModalBottomSheet(
       context: context,
+      backgroundColor: Colors.transparent,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
       builder: (_) {
-        return Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ListTile(
-                leading: Icon(
-                  Icons.folder_rounded,
-                  color: const Color(0xff28336f),
+        return Container(
+          decoration: BoxDecoration(
+            color: AppColors.getCardColor(isDarkMode),
+            borderRadius: const BorderRadius.vertical(
+              top: Radius.circular(16),
+            ),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                ListTile(
+                  leading: Icon(
+                    Icons.folder_rounded,
+                    color: AppColors.getPrimary(isDarkMode),
+                  ),
+                  title: Text(
+                    name,
+                    style: TextStyle(
+                      color: AppColors.getTextPrimary(isDarkMode),
+                    ),
+                  ),
+                  subtitle: Text(
+                    '$fileCount ${S.of(context).files} • ${_formatBytes(size)}',
+                    style: TextStyle(
+                      color: AppColors.getTextSecondary(isDarkMode),
+                    ),
+                  ),
                 ),
-                title: Text(name),
-                subtitle: Text(
-                  '$fileCount ${S.of(context).files} • ${_formatBytes(size)}',
+                Divider(
+                  color: isDarkMode 
+                      ? AppColors.darkSurface 
+                      : Colors.grey[300],
                 ),
-              ),
-              const Divider(),
-              ListTile(
-                leading: const Icon(
-                  Icons.open_in_new_rounded,
-                  color: Colors.blue,
-                ),
-                title: Text(S.of(context).openFolder),
-                onTap: () {
-                  Navigator.pop(context);
-                  final folderId = folder['_id'] as String?;
-                  if (folderId != null) {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => ChangeNotifierProvider.value(
-                          value: Provider.of<FolderController>(
-                            context,
-                            listen: false,
-                          ),
-                          child: FolderContentsPage(
-                            folderId: folderId,
-                            folderName: name,
-                            folderColor: const Color(0xff28336f),
+                ListTile(
+                  leading: Icon(
+                    Icons.open_in_new_rounded,
+                    color: AppColors.getPrimary(isDarkMode),
+                  ),
+                  title: Text(
+                    S.of(context).openFolder,
+                    style: TextStyle(
+                      color: AppColors.getTextPrimary(isDarkMode),
+                    ),
+                  ),
+                  onTap: () {
+                    Navigator.pop(context);
+                    final folderId = folder['_id'] as String?;
+                    if (folderId != null) {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => ChangeNotifierProvider.value(
+                            value: Provider.of<FolderController>(
+                              context,
+                              listen: false,
+                            ),
+                            child: FolderContentsPage(
+                              folderId: folderId,
+                              folderName: name,
+                              folderColor: AppColors.getPrimary(isDarkMode),
+                            ),
                           ),
                         ),
-                      ),
-                    );
-                  }
-                },
-              ),
-              ListTile(
-                leading: const Icon(
-                  Icons.info_outline_rounded,
-                  color: Colors.teal,
+                      );
+                    }
+                  },
                 ),
-                title: Text(S.of(context).viewDetails),
-                onTap: () => Navigator.pop(context),
-              ),
-              ListTile(
-                leading: const Icon(Icons.star_rounded, color: Colors.amber),
-                title: Text(S.of(context).removeFromFavorites),
-                onTap: () {
-                  Navigator.pop(context);
-                  _removeFromFavorites(folder);
-                },
-              ),
-            ],
+                ListTile(
+                  leading: Icon(
+                    Icons.info_outline_rounded,
+                    color: AppColors.getTextSecondary(isDarkMode),
+                  ),
+                  title: Text(
+                    S.of(context).viewDetails,
+                    style: TextStyle(
+                      color: AppColors.getTextPrimary(isDarkMode),
+                    ),
+                  ),
+                  onTap: () => Navigator.pop(context),
+                ),
+                ListTile(
+                  leading: const Icon(Icons.star_rounded, color: Colors.amber),
+                  title: Text(
+                    S.of(context).removeFromFavorites,
+                    style: TextStyle(
+                      color: AppColors.getTextPrimary(isDarkMode),
+                    ),
+                  ),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _removeFromFavorites(folder);
+                  },
+                ),
+              ],
+            ),
           ),
         );
       },
@@ -373,7 +441,9 @@ class _StarredFoldersSectionState extends State<StarredFoldersSection> {
             Text(S.of(context).removingFromFavorites),
           ],
         ),
-        backgroundColor: Colors.blue,
+        backgroundColor: AppColors.getPrimary(
+          Theme.of(context).brightness == Brightness.dark,
+        ),
         duration: const Duration(seconds: 2),
       ),
     );
@@ -386,13 +456,13 @@ class _StarredFoldersSectionState extends State<StarredFoldersSection> {
       await controller.getStarredFolders(limit: 6);
       _showSnack(
         S.of(context).removedFromFavorites, // ✅ نص مترجم
-        Colors.green,
+        AppColors.success,
       );
     } else {
       _showSnack(
         controller.errorMessage ??
             S.of(context).failedToRemoveFromFavorites, // ✅ نص مترجم
-        Colors.red,
+        AppColors.error,
       );
     }
   }
@@ -409,6 +479,7 @@ class _StarredFoldersSectionState extends State<StarredFoldersSection> {
 
   // ✅ بناء shimmer loading لقسم المجلدات المفضلة
   Widget _buildShimmerLoading() {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     return SizedBox(
       height: 120,
       child: ListView(
@@ -417,18 +488,18 @@ class _StarredFoldersSectionState extends State<StarredFoldersSection> {
         children: List.generate(
           6,
           (index) => Shimmer.fromColors(
-            baseColor: Colors.grey[300]!,
-            highlightColor: Colors.grey[100]!,
+            baseColor: AppColors.getShimmerBase(isDarkMode),
+            highlightColor: AppColors.getShimmerHighlight(isDarkMode),
             child: Container(
               width: 100,
               margin: const EdgeInsets.only(right: 12),
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: AppColors.getCardColor(isDarkMode),
                 borderRadius: BorderRadius.circular(12),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black12,
+                    color: AppColors.getShadow(isDarkMode),
                     blurRadius: 6,
                     offset: Offset(0, 2),
                   ),
@@ -442,7 +513,7 @@ class _StarredFoldersSectionState extends State<StarredFoldersSection> {
                     width: 32,
                     height: 32,
                     decoration: BoxDecoration(
-                      color: Colors.grey[300],
+                      color: AppColors.getShimmerBase(isDarkMode),
                       borderRadius: BorderRadius.circular(8),
                     ),
                   ),
@@ -452,7 +523,7 @@ class _StarredFoldersSectionState extends State<StarredFoldersSection> {
                     width: double.infinity,
                     height: 10,
                     decoration: BoxDecoration(
-                      color: Colors.grey[300],
+                      color: AppColors.getShimmerBase(isDarkMode),
                       borderRadius: BorderRadius.circular(4),
                     ),
                   ),
@@ -461,7 +532,7 @@ class _StarredFoldersSectionState extends State<StarredFoldersSection> {
                     width: 60,
                     height: 10,
                     decoration: BoxDecoration(
-                      color: Colors.grey[300],
+                      color: AppColors.getShimmerBase(isDarkMode),
                       borderRadius: BorderRadius.circular(4),
                     ),
                   ),

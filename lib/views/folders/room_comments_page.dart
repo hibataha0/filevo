@@ -8,6 +8,7 @@ import 'package:filevo/utils/room_permissions.dart';
 import 'package:pull_to_refresh/pull_to_refresh.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:intl/intl.dart';
+import 'package:filevo/constants/app_colors.dart';
 
 class RoomCommentsPage extends StatefulWidget {
   final String roomId;
@@ -134,7 +135,7 @@ class _RoomCommentsPageState extends State<RoomCommentsPage> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(S.of(context).noPermissionAddComment),
-            backgroundColor: Colors.red,
+            backgroundColor: AppColors.error,
           ),
         );
         return;
@@ -182,7 +183,7 @@ class _RoomCommentsPageState extends State<RoomCommentsPage> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(S.of(context).addCommentSuccess),
-            backgroundColor: Colors.green,
+            backgroundColor: AppColors.success,
           ),
         );
       } else {
@@ -191,7 +192,7 @@ class _RoomCommentsPageState extends State<RoomCommentsPage> {
             content: Text(
               roomController.errorMessage ?? S.of(context).addCommentFailure,
             ),
-            backgroundColor: Colors.red,
+            backgroundColor: AppColors.error,
           ),
         );
       }
@@ -213,7 +214,7 @@ class _RoomCommentsPageState extends State<RoomCommentsPage> {
             onPressed: () => Navigator.pop(context, true),
             child: Text(
               S.of(context).delete,
-              style: TextStyle(color: Colors.red),
+              style: TextStyle(color: AppColors.error),
             ),
           ),
         ],
@@ -235,7 +236,7 @@ class _RoomCommentsPageState extends State<RoomCommentsPage> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(S.of(context).deleteCommentSuccess),
-              backgroundColor: Colors.green,
+              backgroundColor: AppColors.success,
             ),
           );
           _loadComments();
@@ -246,7 +247,7 @@ class _RoomCommentsPageState extends State<RoomCommentsPage> {
                 roomController.errorMessage ??
                     S.of(context).deleteCommentFailure,
               ),
-              backgroundColor: Colors.red,
+              backgroundColor: AppColors.error,
             ),
           );
         }
@@ -259,7 +260,9 @@ class _RoomCommentsPageState extends State<RoomCommentsPage> {
     return Scaffold(
       appBar: AppBar(
         title: Text(S.of(context).comments),
-        backgroundColor: Color(0xff28336f),
+        backgroundColor: AppColors.getAppBar(
+          Theme.of(context).brightness == Brightness.dark,
+        ),
         // actions: [
         //   IconButton(
         //     icon: Icon(Icons.refresh),
@@ -276,7 +279,9 @@ class _RoomCommentsPageState extends State<RoomCommentsPage> {
           if (widget.targetId == null && _selectedTargetType != 'room')
             Container(
               padding: EdgeInsets.all(16),
-              color: Colors.grey[100],
+              color: AppColors.getBackground(
+                Theme.of(context).brightness == Brightness.dark,
+              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -347,7 +352,9 @@ class _RoomCommentsPageState extends State<RoomCommentsPage> {
                         IconButton(
                           icon: Icon(Icons.search),
                           onPressed: _loadComments,
-                          color: Color(0xff28336f),
+                          color: AppColors.getPrimary(
+                            Theme.of(context).brightness == Brightness.dark,
+                          ),
                         ),
                       ],
                     ],
@@ -370,14 +377,18 @@ class _RoomCommentsPageState extends State<RoomCommentsPage> {
                         Icon(
                           Icons.comment_outlined,
                           size: 64,
-                          color: Colors.grey,
+                          color: AppColors.getTextSecondary(
+                            Theme.of(context).brightness == Brightness.dark,
+                          ),
                         ),
                         SizedBox(height: 16),
                         Text(
                           S.of(context).pleaseSelectFileOrFolder,
                           style: TextStyle(
                             fontSize: 16,
-                            color: Colors.grey[600],
+                            color: AppColors.getTextSecondary(
+                            Theme.of(context).brightness == Brightness.dark,
+                          ),
                           ),
                         ),
                       ],
@@ -391,14 +402,18 @@ class _RoomCommentsPageState extends State<RoomCommentsPage> {
                         Icon(
                           Icons.comment_outlined,
                           size: 64,
-                          color: Colors.grey,
+                          color: AppColors.getTextSecondary(
+                            Theme.of(context).brightness == Brightness.dark,
+                          ),
                         ),
                         SizedBox(height: 16),
                         Text(
                           S.of(context).noCommentsYet,
                           style: TextStyle(
                             fontSize: 18,
-                            color: Colors.grey[600],
+                            color: AppColors.getTextSecondary(
+                            Theme.of(context).brightness == Brightness.dark,
+                          ),
                             fontWeight: FontWeight.w600,
                           ),
                         ),
@@ -407,7 +422,9 @@ class _RoomCommentsPageState extends State<RoomCommentsPage> {
                           S.of(context).beTheFirstToComment,
                           style: TextStyle(
                             fontSize: 14,
-                            color: Colors.grey[500],
+                            color: AppColors.getTextSecondary(
+                            Theme.of(context).brightness == Brightness.dark,
+                          ),
                           ),
                         ),
                       ],
@@ -446,10 +463,14 @@ class _RoomCommentsPageState extends State<RoomCommentsPage> {
                 return Container(
                   padding: EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: AppColors.getCardColor(
+                      Theme.of(context).brightness == Brightness.dark,
+                    ),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
+                        color: AppColors.getShadow(
+                          Theme.of(context).brightness == Brightness.dark,
+                        ),
                         blurRadius: 10,
                         offset: Offset(0, -2),
                       ),
@@ -486,7 +507,12 @@ class _RoomCommentsPageState extends State<RoomCommentsPage> {
                                         strokeWidth: 2,
                                       ),
                                     )
-                                  : Icon(Icons.send, color: Color(0xff28336f)),
+                                  : Icon(
+                                      Icons.send, 
+                                      color: AppColors.getPrimary(
+                                        Theme.of(context).brightness == Brightness.dark,
+                                      ),
+                                    ),
                               onPressed: roomController.isLoading
                                   ? null
                                   : _addComment,
@@ -525,9 +551,11 @@ class _RoomCommentsPageState extends State<RoomCommentsPage> {
     // ✅ استخراج commentUserId للتحقق من الصلاحيات
     String? commentUserId = user['_id']?.toString() ?? user['id']?.toString();
 
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     return Card(
       margin: EdgeInsets.only(bottom: 12),
       elevation: 1,
+      color: AppColors.getCardColor(isDarkMode),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: Padding(
         padding: EdgeInsets.all(16),
@@ -550,11 +578,15 @@ class _RoomCommentsPageState extends State<RoomCommentsPage> {
                         style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.bold,
+                          color: AppColors.getTextPrimary(isDarkMode),
                         ),
                       ),
                       Text(
                         _formatDate(createdAt, context),
-                        style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                        style: TextStyle(
+                          fontSize: 12, 
+                          color: AppColors.getTextSecondary(isDarkMode),
+                        ),
                       ),
                     ],
                   ),
@@ -574,7 +606,7 @@ class _RoomCommentsPageState extends State<RoomCommentsPage> {
                       icon: Icon(
                         Icons.delete_outline,
                         size: 20,
-                        color: Colors.red,
+                        color: AppColors.error,
                       ),
                       onPressed: () => _deleteComment(comment['_id']),
                     );
@@ -583,7 +615,13 @@ class _RoomCommentsPageState extends State<RoomCommentsPage> {
               ],
             ),
             SizedBox(height: 12),
-            Text(content, style: TextStyle(fontSize: 14)),
+            Text(
+              content, 
+              style: TextStyle(
+                fontSize: 14,
+                color: AppColors.getTextPrimary(isDarkMode),
+              ),
+            ),
           ],
         ),
       ),
@@ -703,7 +741,9 @@ class _RoomCommentsPageState extends State<RoomCommentsPage> {
             height: 40,
             placeholder: (context, url) => CircleAvatar(
               radius: 20,
-              backgroundColor: Color(0xff28336f).withOpacity(0.1),
+              backgroundColor: AppColors.getPrimary(
+                Theme.of(context).brightness == Brightness.dark,
+              ).withOpacity(0.1),
               child: CircularProgressIndicator(strokeWidth: 2),
             ),
             errorWidget: (context, url, error) {
@@ -712,11 +752,15 @@ class _RoomCommentsPageState extends State<RoomCommentsPage> {
               );
               return CircleAvatar(
                 radius: 20,
-                backgroundColor: Color(0xff28336f).withOpacity(0.1),
+                backgroundColor: AppColors.getPrimary(
+                Theme.of(context).brightness == Brightness.dark,
+              ).withOpacity(0.1),
                 child: Text(
                   firstLetter,
                   style: TextStyle(
-                    color: Color(0xff28336f),
+                    color: AppColors.getPrimary(
+                      Theme.of(context).brightness == Brightness.dark,
+                    ),
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -729,7 +773,9 @@ class _RoomCommentsPageState extends State<RoomCommentsPage> {
       print('🖼️ [RoomCommentsPage] No profile image, using default avatar');
       return CircleAvatar(
         radius: 20,
-        backgroundColor: Color(0xff28336f).withOpacity(0.1),
+              backgroundColor: AppColors.getPrimary(
+                Theme.of(context).brightness == Brightness.dark,
+              ).withOpacity(0.1),
         child: Text(
           firstLetter,
           style: TextStyle(
@@ -750,8 +796,12 @@ class _RoomCommentsPageState extends State<RoomCommentsPage> {
         (index) => Padding(
           padding: EdgeInsets.only(bottom: 16),
           child: Shimmer.fromColors(
-            baseColor: Colors.grey[300]!,
-            highlightColor: Colors.grey[100]!,
+            baseColor: AppColors.getShimmerBase(
+              Theme.of(context).brightness == Brightness.dark,
+            ),
+            highlightColor: AppColors.getShimmerHighlight(
+              Theme.of(context).brightness == Brightness.dark,
+            ),
             child: Container(
               padding: EdgeInsets.all(16),
               decoration: BoxDecoration(

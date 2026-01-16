@@ -130,9 +130,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 Expanded(
                   child: Container(
                     decoration: BoxDecoration(
-                      color: isDarkMode
-                          ? const Color(0xFF121212)
-                          : const Color(0xFFE9E9E9),
+                      color: AppColors.getBackground(isDarkMode),
                       borderRadius: const BorderRadius.vertical(
                         top: Radius.circular(30),
                       ),
@@ -213,13 +211,13 @@ class _ProfilePageState extends State<ProfilePage> {
             children: [
               // ✅ Profile picture shimmer
               Shimmer.fromColors(
-                baseColor: Colors.grey[300]!,
-                highlightColor: Colors.grey[100]!,
+                baseColor: AppColors.getShimmerBase(isDarkMode),
+                highlightColor: AppColors.getShimmerHighlight(isDarkMode),
                 child: Container(
                   width: 100,
                   height: 100,
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: AppColors.getCardColor(isDarkMode),
                     shape: BoxShape.circle,
                   ),
                 ),
@@ -227,13 +225,13 @@ class _ProfilePageState extends State<ProfilePage> {
               const SizedBox(height: 20),
               // ✅ Username shimmer
               Shimmer.fromColors(
-                baseColor: Colors.grey[300]!,
-                highlightColor: Colors.grey[100]!,
+                baseColor: AppColors.getShimmerBase(isDarkMode),
+                highlightColor: AppColors.getShimmerHighlight(isDarkMode),
                 child: Container(
                   width: 150,
                   height: 24,
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: AppColors.getCardColor(isDarkMode),
                     borderRadius: BorderRadius.circular(8),
                   ),
                 ),
@@ -245,9 +243,7 @@ class _ProfilePageState extends State<ProfilePage> {
         Expanded(
           child: Container(
             decoration: BoxDecoration(
-              color: isDarkMode
-                  ? const Color(0xFF121212)
-                  : const Color(0xFFE9E9E9),
+              color: AppColors.getBackground(isDarkMode),
               borderRadius: const BorderRadius.vertical(
                 top: Radius.circular(30),
               ),
@@ -274,13 +270,14 @@ class _ProfilePageState extends State<ProfilePage> {
 
   // ✅ بناء shimmer لبطاقة التخزين
   Widget _buildStorageCardShimmer() {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     return Shimmer.fromColors(
-      baseColor: Colors.grey[300]!,
-      highlightColor: Colors.grey[100]!,
+      baseColor: AppColors.getShimmerBase(isDarkMode),
+      highlightColor: AppColors.getShimmerHighlight(isDarkMode),
       child: Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: AppColors.getCardColor(isDarkMode),
           borderRadius: BorderRadius.circular(16),
         ),
         child: Column(
@@ -290,7 +287,7 @@ class _ProfilePageState extends State<ProfilePage> {
               width: 120,
               height: 20,
               decoration: BoxDecoration(
-                color: Colors.grey[300],
+                color: AppColors.getShimmerBase(isDarkMode),
                 borderRadius: BorderRadius.circular(8),
               ),
             ),
@@ -299,7 +296,7 @@ class _ProfilePageState extends State<ProfilePage> {
               width: double.infinity,
               height: 12,
               decoration: BoxDecoration(
-                color: Colors.grey[300],
+                color: AppColors.getShimmerBase(isDarkMode),
                 borderRadius: BorderRadius.circular(6),
               ),
             ),
@@ -308,7 +305,7 @@ class _ProfilePageState extends State<ProfilePage> {
               width: double.infinity,
               height: 12,
               decoration: BoxDecoration(
-                color: Colors.grey[300],
+                color: AppColors.getShimmerBase(isDarkMode),
                 borderRadius: BorderRadius.circular(6),
               ),
             ),
@@ -321,7 +318,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     margin: EdgeInsets.only(right: index < 3 ? 8 : 0),
                     height: 60,
                     decoration: BoxDecoration(
-                      color: Colors.grey[300],
+                      color: AppColors.getShimmerBase(isDarkMode),
                       borderRadius: BorderRadius.circular(8),
                     ),
                   ),
@@ -336,6 +333,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
   // ✅ بناء shimmer لقسم المفضلة
   Widget _buildFavoritesSectionShimmer() {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -346,25 +344,25 @@ class _ProfilePageState extends State<ProfilePage> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Shimmer.fromColors(
-                baseColor: Colors.grey[300]!,
-                highlightColor: Colors.grey[100]!,
+                baseColor: AppColors.getShimmerBase(isDarkMode),
+                highlightColor: AppColors.getShimmerHighlight(isDarkMode),
                 child: Container(
                   width: 120,
                   height: 20,
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: AppColors.getCardColor(isDarkMode),
                     borderRadius: BorderRadius.circular(8),
                   ),
                 ),
               ),
               Shimmer.fromColors(
-                baseColor: Colors.grey[300]!,
-                highlightColor: Colors.grey[100]!,
+                baseColor: AppColors.getShimmerBase(isDarkMode),
+                highlightColor: AppColors.getShimmerHighlight(isDarkMode),
                 child: Container(
                   width: 60,
                   height: 16,
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: AppColors.getCardColor(isDarkMode),
                     borderRadius: BorderRadius.circular(8),
                   ),
                 ),
@@ -375,8 +373,8 @@ class _ProfilePageState extends State<ProfilePage> {
         const SizedBox(height: 15),
         // ✅ Files grid shimmer
         Shimmer.fromColors(
-          baseColor: Colors.grey[300]!,
-          highlightColor: Colors.grey[100]!,
+          baseColor: AppColors.getShimmerBase(isDarkMode),
+          highlightColor: AppColors.getShimmerHighlight(isDarkMode),
           child: Wrap(
             spacing: 12,
             runSpacing: 12,
@@ -386,7 +384,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 width: (MediaQuery.of(context).size.width - 64) / 3,
                 height: 100,
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: AppColors.getCardColor(isDarkMode),
                   borderRadius: BorderRadius.circular(12),
                 ),
               ),
@@ -399,6 +397,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
   // ✅ بناء shimmer لقسم المجلدات المفضلة
   Widget _buildStarredFoldersSectionShimmer() {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -409,25 +408,25 @@ class _ProfilePageState extends State<ProfilePage> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Shimmer.fromColors(
-                baseColor: Colors.grey[300]!,
-                highlightColor: Colors.grey[100]!,
+                baseColor: AppColors.getShimmerBase(isDarkMode),
+                highlightColor: AppColors.getShimmerHighlight(isDarkMode),
                 child: Container(
                   width: 140,
                   height: 20,
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: AppColors.getCardColor(isDarkMode),
                     borderRadius: BorderRadius.circular(8),
                   ),
                 ),
               ),
               Shimmer.fromColors(
-                baseColor: Colors.grey[300]!,
-                highlightColor: Colors.grey[100]!,
+                baseColor: AppColors.getShimmerBase(isDarkMode),
+                highlightColor: AppColors.getShimmerHighlight(isDarkMode),
                 child: Container(
                   width: 60,
                   height: 16,
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: AppColors.getCardColor(isDarkMode),
                     borderRadius: BorderRadius.circular(8),
                   ),
                 ),
@@ -438,8 +437,8 @@ class _ProfilePageState extends State<ProfilePage> {
         const SizedBox(height: 15),
         // ✅ Folders grid shimmer
         Shimmer.fromColors(
-          baseColor: Colors.grey[300]!,
-          highlightColor: Colors.grey[100]!,
+          baseColor: AppColors.getShimmerBase(isDarkMode),
+          highlightColor: AppColors.getShimmerHighlight(isDarkMode),
           child: Wrap(
             spacing: 12,
             runSpacing: 12,
@@ -449,7 +448,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 width: (MediaQuery.of(context).size.width - 64) / 3,
                 height: 100,
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: AppColors.getCardColor(isDarkMode),
                   borderRadius: BorderRadius.circular(12),
                 ),
               ),

@@ -286,15 +286,21 @@ class FileSearchService {
         // ✅ تحويل النتائج إلى نفس format المستخدم في smartSearch
         final results = List<Map<String, dynamic>>.from(data['results'] ?? []);
         final processedResults = results.map<Map<String, dynamic>>((r) {
-          final item = Map<String, dynamic>.from(r);
-          // ✅ إضافة معلومات إضافية للتوافق مع smartSearch format
-          if (item['_id'] != null) {
-            item['item'] = item; // ✅ للتوافق مع format الموجود
-            item['type'] = item['type'] ?? 'file';
-            item['searchType'] = item['searchType'] ?? 'tags';
-            item['relevanceScore'] = item['relevanceScore'] ?? 0.95;
+          // ✅ الباك إند يرسل: { type, _id, name, category, ... }
+          // ✅ نحتاج إلى نفس format المستخدم في smartSearch
+          final file = Map<String, dynamic>.from(r);
+          
+          // ✅ التأكد من وجود _id و name
+          if (file['_id'] == null && file['id'] != null) {
+            file['_id'] = file['id'];
           }
-          return item;
+          
+          // ✅ إضافة معلومات إضافية للتوافق مع smartSearch format
+          file['type'] = file['type'] ?? 'file';
+          file['searchType'] = file['searchType'] ?? 'tags';
+          file['relevanceScore'] = file['relevanceScore'] ?? 0.95;
+          
+          return file;
         }).toList();
         
         return {

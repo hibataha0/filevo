@@ -4,6 +4,7 @@ import 'package:filevo/views/home/components/StorageChartPainter.dart';
 import 'package:provider/provider.dart';
 import 'package:filevo/controllers/profile/profile_controller.dart';
 import 'package:filevo/generated/l10n.dart';
+import 'package:filevo/constants/app_colors.dart';
 
 class StorageCard extends StatefulWidget {
   const StorageCard({super.key});
@@ -51,8 +52,6 @@ class _StorageCardState extends State<StorageCard> {
     
     // ✅ استخدام البيانات المنسقة من storageInfo أو تنسيقها محلياً
     final String usedFormatted = storageInfo?['usedFormatted'] as String? ?? _formatBytes(usedStorage);
-    // ✅ المساحة المتاحة = المساحة الكلية (10 GB) - المساحة المستخدمة
-    final int availableStorage = totalStorage - usedStorage;
     // ✅ عرض المساحة المتاحة دائماً كـ 10.00 GB - المساحة المستخدمة (أو فقط "10.00 GB" إذا كانت المساحة المستخدمة صغيرة)
     final String availableFormatted = _formatBytes(totalStorage); // ✅ دائماً 10.00 GB
     
@@ -127,6 +126,8 @@ class _StorageCardState extends State<StorageCard> {
       tablet: screenWidth * 0.7,
       desktop: screenWidth * 0.5,
     );
+    
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
     return Center(
       child: Container(
@@ -138,15 +139,15 @@ class _StorageCardState extends State<StorageCard> {
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [
-              Colors.white.withOpacity(0.6),
-              Colors.white.withOpacity(0.001),
-            ],
+            colors: AppColors.getStorageGradient(isDarkMode),
           ),
-          border: Border.all(color: Colors.white.withOpacity(0.2), width: 1),
+          border: Border.all(
+            color: AppColors.getStorageBorder(isDarkMode),
+            width: 1,
+          ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.3),
+              color: AppColors.getShadow(isDarkMode),
               blurRadius: 20,
               offset: Offset(0, 10),
             ),
@@ -169,7 +170,7 @@ class _StorageCardState extends State<StorageCard> {
                     height: innerCircleSize,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: Color(0xFF26A69A),
+                      color: AppColors.storageCircle,
                     ),
                     child: Center(
                       child: Column(
@@ -178,7 +179,7 @@ class _StorageCardState extends State<StorageCard> {
                           Text(
                             '$percentageText%',
                             style: TextStyle(
-                              color: Colors.white,
+                              color: AppColors.storageTextLight,
                               fontSize: textSizeValue,
                               fontWeight: FontWeight.bold,
                             ),
@@ -186,7 +187,7 @@ class _StorageCardState extends State<StorageCard> {
                           Text(
                             usedFormatted,
                             style: TextStyle(
-                              color: Colors.white,
+                              color: AppColors.storageTextLight,
                               fontSize: textSizeLabel * 0.8,
                               fontWeight: FontWeight.w500,
                             ),
@@ -212,7 +213,7 @@ class _StorageCardState extends State<StorageCard> {
                       height: iconSizeSmall,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: Colors.white.withOpacity(0.7),
+                        color: AppColors.getStorageAvailableIndicator(isDarkMode),
                       ),
                     ),
                     SizedBox(width: spacing),
@@ -222,7 +223,7 @@ class _StorageCardState extends State<StorageCard> {
                         Text(
                           S.of(context).storageAvailable,
                           style: TextStyle(
-                            color: Colors.white.withOpacity(0.8),
+                            color: AppColors.getStorageTextSecondary(isDarkMode),
                             fontSize: textSizeLabel,
                             fontWeight: FontWeight.w500,
                           ),
@@ -230,7 +231,7 @@ class _StorageCardState extends State<StorageCard> {
                         Text(
                           availableFormatted,
                           style: TextStyle(
-                            color: Colors.white,
+                            color: AppColors.getStorageText(isDarkMode),
                             fontSize: textSizeValue,
                             fontWeight: FontWeight.bold,
                           ),
@@ -247,7 +248,7 @@ class _StorageCardState extends State<StorageCard> {
                       height: iconSizeSmall,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: Color(0xFF00BFA5),
+                        color: AppColors.storageUsedIndicator,
                       ),
                     ),
                     SizedBox(width: spacing),
@@ -257,7 +258,7 @@ class _StorageCardState extends State<StorageCard> {
                         Text(
                           S.of(context).storageUsed,
                           style: TextStyle(
-                            color: Colors.white.withOpacity(0.8),
+                            color: AppColors.getStorageTextSecondary(isDarkMode),
                             fontSize: textSizeLabel,
                             fontWeight: FontWeight.w500,
                           ),
@@ -265,7 +266,7 @@ class _StorageCardState extends State<StorageCard> {
                         Text(
                           usedFormatted,
                           style: TextStyle(
-                            color: Colors.white,
+                            color: AppColors.getStorageText(isDarkMode),
                             fontSize: textSizeValue,
                             fontWeight: FontWeight.bold,
                           ),

@@ -192,7 +192,7 @@ class _CategoryPageState extends State<CategoryPage> {
               '${S.of(context).errorFetchingData}: ${e.toString()}',
             ),
             behavior: SnackBarBehavior.floating,
-            backgroundColor: Colors.red,
+            backgroundColor: AppColors.error,
           ),
         );
       }
@@ -252,10 +252,11 @@ class _CategoryPageState extends State<CategoryPage> {
   }
 
   Widget _buildHeader(int fileCount) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     return Container(
       padding: const EdgeInsets.only(top: 50, bottom: 20, left: 20, right: 20),
       decoration: BoxDecoration(
-        color: AppColors.lightAppBar,
+        color: AppColors.getAppBar(isDarkMode),
         borderRadius: const BorderRadius.only(
           bottomLeft: Radius.circular(20),
           bottomRight: Radius.circular(20),
@@ -267,7 +268,12 @@ class _CategoryPageState extends State<CategoryPage> {
           Row(
             children: [
               IconButton(
-                icon: const Icon(Icons.arrow_back, color: Colors.white),
+                icon: Icon(
+                  Icons.arrow_back, 
+                  color: isDarkMode 
+                      ? AppColors.darkTextPrimary 
+                      : Colors.white,
+                ),
                 onPressed: () => Navigator.pop(context),
               ),
               const Spacer(),
@@ -282,7 +288,9 @@ class _CategoryPageState extends State<CategoryPage> {
               IconButton(
                 icon: Icon(
                   _isGridView ? Icons.list : Icons.grid_view,
-                  color: Colors.white,
+                  color: isDarkMode 
+                      ? AppColors.darkTextPrimary 
+                      : Colors.white,
                 ),
                 onPressed: () {
                   setState(() {
@@ -296,8 +304,10 @@ class _CategoryPageState extends State<CategoryPage> {
           const SizedBox(height: 15),
           Text(
             widget.category,
-            style: const TextStyle(
-              color: Colors.white,
+            style: TextStyle(
+              color: isDarkMode 
+                  ? AppColors.darkTextPrimary 
+                  : Colors.white,
               fontSize: 28,
               fontWeight: FontWeight.bold,
             ),
@@ -310,6 +320,7 @@ class _CategoryPageState extends State<CategoryPage> {
 
   // ✅ Shimmer للـ Grid View
   Widget _buildGridShimmer() {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     return Padding(
       padding: const EdgeInsets.all(16.0),
       child: GridView.builder(
@@ -324,11 +335,11 @@ class _CategoryPageState extends State<CategoryPage> {
         itemCount: 6,
         itemBuilder: (context, index) {
           return Shimmer.fromColors(
-            baseColor: Colors.grey[300]!,
-            highlightColor: Colors.grey[100]!,
+            baseColor: AppColors.getShimmerBase(isDarkMode),
+            highlightColor: AppColors.getShimmerHighlight(isDarkMode),
             child: Container(
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: AppColors.getCardColor(isDarkMode),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Column(
@@ -337,7 +348,7 @@ class _CategoryPageState extends State<CategoryPage> {
                   Expanded(
                     child: Container(
                       decoration: BoxDecoration(
-                        color: Colors.grey[300],
+                        color: AppColors.getShimmerBase(isDarkMode),
                         borderRadius: const BorderRadius.vertical(
                           top: Radius.circular(12),
                         ),
@@ -353,7 +364,7 @@ class _CategoryPageState extends State<CategoryPage> {
                           width: double.infinity,
                           height: 12,
                           decoration: BoxDecoration(
-                            color: Colors.grey[300],
+                            color: AppColors.getShimmerBase(isDarkMode),
                             borderRadius: BorderRadius.circular(4),
                           ),
                         ),
@@ -362,7 +373,7 @@ class _CategoryPageState extends State<CategoryPage> {
                           width: 80,
                           height: 10,
                           decoration: BoxDecoration(
-                            color: Colors.grey[300],
+                            color: AppColors.getShimmerBase(isDarkMode),
                             borderRadius: BorderRadius.circular(4),
                           ),
                         ),
@@ -380,6 +391,7 @@ class _CategoryPageState extends State<CategoryPage> {
 
   // ✅ Shimmer للـ List View
   Widget _buildListShimmer() {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     return Padding(
       padding: const EdgeInsets.all(16.0),
       child: ListView.builder(
@@ -388,13 +400,13 @@ class _CategoryPageState extends State<CategoryPage> {
         itemCount: 8,
         itemBuilder: (context, index) {
           return Shimmer.fromColors(
-            baseColor: Colors.grey[300]!,
-            highlightColor: Colors.grey[100]!,
+            baseColor: AppColors.getShimmerBase(isDarkMode),
+            highlightColor: AppColors.getShimmerHighlight(isDarkMode),
             child: Container(
               margin: const EdgeInsets.only(bottom: 12),
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: AppColors.getCardColor(isDarkMode),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Row(
@@ -403,7 +415,7 @@ class _CategoryPageState extends State<CategoryPage> {
                     width: 50,
                     height: 50,
                     decoration: BoxDecoration(
-                      color: Colors.grey[300],
+                      color: AppColors.getShimmerBase(isDarkMode),
                       borderRadius: BorderRadius.circular(8),
                     ),
                   ),
@@ -416,7 +428,7 @@ class _CategoryPageState extends State<CategoryPage> {
                           width: double.infinity,
                           height: 14,
                           decoration: BoxDecoration(
-                            color: Colors.grey[300],
+                            color: AppColors.getShimmerBase(isDarkMode),
                             borderRadius: BorderRadius.circular(4),
                           ),
                         ),
@@ -425,7 +437,7 @@ class _CategoryPageState extends State<CategoryPage> {
                           width: 100,
                           height: 12,
                           decoration: BoxDecoration(
-                            color: Colors.grey[300],
+                            color: AppColors.getShimmerBase(isDarkMode),
                             borderRadius: BorderRadius.circular(4),
                           ),
                         ),
@@ -442,9 +454,10 @@ class _CategoryPageState extends State<CategoryPage> {
   }
 
   Widget _buildErrorState(String error) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     return Container(
       height: MediaQuery.of(context).size.height * 0.6,
-      color: const Color(0xff28336f),
+      color: AppColors.getBackground(isDarkMode),
       child: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -453,12 +466,12 @@ class _CategoryPageState extends State<CategoryPage> {
               width: 100,
               height: 100,
               decoration: BoxDecoration(
-                color: Colors.red.withOpacity(0.1),
+                color: AppColors.error.withOpacity(0.1),
                 shape: BoxShape.circle,
               ),
               child: Icon(
                 Icons.error_outline,
-                color: Colors.red.withOpacity(0.7),
+                color: AppColors.error,
                 size: 50,
               ),
             ),
@@ -467,7 +480,10 @@ class _CategoryPageState extends State<CategoryPage> {
               padding: const EdgeInsets.symmetric(horizontal: 40),
               child: Text(
                 error,
-                style: const TextStyle(color: Colors.white, fontSize: 16),
+                style: TextStyle(
+                  color: AppColors.getTextPrimary(isDarkMode), 
+                  fontSize: 16,
+                ),
                 textAlign: TextAlign.center,
               ),
             ),
@@ -494,6 +510,7 @@ class _CategoryPageState extends State<CategoryPage> {
   }
 
   Widget _buildEmptyState() {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -502,12 +519,16 @@ class _CategoryPageState extends State<CategoryPage> {
             width: 120,
             height: 120,
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.1),
+              color: isDarkMode 
+                  ? AppColors.darkSurface 
+                  : Colors.white.withOpacity(0.1),
               shape: BoxShape.circle,
             ),
             child: Icon(
               Icons.folder_open,
-              color: Colors.white.withOpacity(0.5),
+              color: isDarkMode 
+                  ? AppColors.darkTextSecondary 
+                  : Colors.white.withOpacity(0.5),
               size: 60,
             ),
           ),
@@ -515,7 +536,7 @@ class _CategoryPageState extends State<CategoryPage> {
           Text(
             S.of(context).noFilesInCategory,
             style: TextStyle(
-              color: Colors.white.withOpacity(0.7),
+              color: AppColors.getTextSecondary(isDarkMode),
               fontSize: 18,
             ),
             textAlign: TextAlign.center,
@@ -698,10 +719,12 @@ class _CategoryPageState extends State<CategoryPage> {
   Widget build(BuildContext context) {
     final fileController = Provider.of<FileController>(context);
 
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    
     // ✅ عرض Shimmer أثناء تحميل التوكن
     if (_isLoadingToken) {
       return Scaffold(
-        backgroundColor: AppColors.lightBackground,
+        backgroundColor: AppColors.getBackground(isDarkMode),
         body: CustomScrollView(
           slivers: [
             SliverToBoxAdapter(child: _buildHeader(0)),
@@ -715,7 +738,7 @@ class _CategoryPageState extends State<CategoryPage> {
 
     if (_token == null || _token!.isEmpty) {
       return Scaffold(
-        backgroundColor: const Color(0xff28336f),
+        backgroundColor: AppColors.getAppBar(isDarkMode),
         appBar: AppBar(
           backgroundColor: widget.color,
           title: Text(widget.category),
@@ -727,14 +750,17 @@ class _CategoryPageState extends State<CategoryPage> {
         body: Center(
           child: Text(
             S.of(context).loginRequiredToAccessFiles,
-            style: const TextStyle(color: Colors.white, fontSize: 16),
+            style: TextStyle(
+              color: AppColors.getTextPrimary(isDarkMode), 
+              fontSize: 16,
+            ),
           ),
         ),
       );
     }
 
     return Scaffold(
-      backgroundColor: AppColors.lightBackground,
+      backgroundColor: AppColors.getBackground(isDarkMode),
       body: SmartRefresher(
         controller: _refreshController,
         enablePullDown: true,
@@ -765,7 +791,7 @@ class _CategoryPageState extends State<CategoryPage> {
         SnackBar(
           content: Text(S.of(context).fileLinkNotAvailable),
           behavior: SnackBarBehavior.floating,
-          backgroundColor: Colors.orange,
+              backgroundColor: AppColors.warning,
         ),
       );
       return;
@@ -982,7 +1008,7 @@ class _CategoryPageState extends State<CategoryPage> {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
                       content: Text(S.of(context).failedToCreateTempFile),
-                      backgroundColor: Colors.red,
+                      backgroundColor: AppColors.error,
                     ),
                   );
                 }
@@ -1029,7 +1055,7 @@ class _CategoryPageState extends State<CategoryPage> {
                             fullResponse.statusCode.toString(),
                           ),
                     ),
-                    backgroundColor: Colors.red,
+                    backgroundColor: AppColors.error,
                   ),
                 );
               }
@@ -1040,7 +1066,7 @@ class _CategoryPageState extends State<CategoryPage> {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content: Text(S.of(context).errorOpeningFile(e.toString())),
-                  backgroundColor: Colors.red,
+                  backgroundColor: AppColors.error,
                 ),
               );
             }
@@ -1080,7 +1106,7 @@ class _CategoryPageState extends State<CategoryPage> {
                   .fileNotAvailableError(response.statusCode.toString()),
             ),
             behavior: SnackBarBehavior.floating,
-            backgroundColor: Colors.red,
+            backgroundColor: AppColors.error,
           ),
         );
       }
@@ -1091,7 +1117,7 @@ class _CategoryPageState extends State<CategoryPage> {
           SnackBar(
             content: Text(S.of(context).errorLoadingFile(e.toString())),
             behavior: SnackBarBehavior.floating,
-            backgroundColor: Colors.red,
+            backgroundColor: AppColors.error,
           ),
         );
       }
@@ -1122,6 +1148,7 @@ class _CategoryPageState extends State<CategoryPage> {
   }
 
   void _showLoadingDialog(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -1131,11 +1158,11 @@ class _CategoryPageState extends State<CategoryPage> {
         child: Container(
           padding: const EdgeInsets.all(24),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: AppColors.getCardColor(isDarkMode),
             borderRadius: BorderRadius.circular(20),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.2),
+                color: AppColors.getShadow(isDarkMode),
                 blurRadius: 10,
                 offset: const Offset(0, 4),
               ),
@@ -1152,7 +1179,7 @@ class _CategoryPageState extends State<CategoryPage> {
               Text(
                 S.of(context).loadingFile, // ✅ نص مترجم
                 style: TextStyle(
-                  color: Colors.grey[700],
+                  color: AppColors.getTextPrimary(isDarkMode),
                   fontWeight: FontWeight.bold,
                   fontSize: 16,
                 ),

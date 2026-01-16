@@ -7,6 +7,7 @@ import 'package:filevo/utils/room_permissions.dart';
 import 'package:filevo/generated/l10n.dart';
 import 'package:pull_to_refresh/pull_to_refresh.dart';
 import 'package:shimmer/shimmer.dart';
+import 'package:filevo/constants/app_colors.dart';
 
 class RoomMembersPage extends StatefulWidget {
   final String roomId;
@@ -80,7 +81,7 @@ class _RoomMembersPageState extends State<RoomMembersPage> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(S.of(context).updateRoleSuccess),
-            backgroundColor: Colors.green,
+            backgroundColor: AppColors.success,
           ),
         );
         _loadRoomData();
@@ -91,7 +92,7 @@ class _RoomMembersPageState extends State<RoomMembersPage> {
             content: Text(
               roomController.errorMessage ?? S.of(context).updateRoleFailure,
             ),
-            backgroundColor: Colors.red,
+            backgroundColor: AppColors.error,
           ),
         );
       }
@@ -135,7 +136,7 @@ class _RoomMembersPageState extends State<RoomMembersPage> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(S.of(context).removeMemberSuccess),
-              backgroundColor: Colors.green,
+              backgroundColor: AppColors.success,
             ),
           );
           // ✅ تحديث بيانات الصفحة الحالية أولاً
@@ -151,7 +152,7 @@ class _RoomMembersPageState extends State<RoomMembersPage> {
                 roomController.errorMessage ??
                     S.of(context).removeMemberFailure,
               ),
-              backgroundColor: Colors.red,
+              backgroundColor: AppColors.error,
             ),
           );
         }
@@ -221,7 +222,9 @@ class _RoomMembersPageState extends State<RoomMembersPage> {
                           currentRole,
                           style: TextStyle(
                             fontSize: 14,
-                            color: Colors.grey[600],
+                            color: AppColors.getTextSecondary(
+                              Theme.of(context).brightness == Brightness.dark,
+                            ),
                           ),
                         ),
                       ],
@@ -267,7 +270,11 @@ class _RoomMembersPageState extends State<RoomMembersPage> {
                   Container(
                     padding: EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      border: Border.all(color: Colors.grey[300]!),
+                      border: Border.all(
+                        color: AppColors.getShadow(
+                          Theme.of(context).brightness == Brightness.dark,
+                        ),
+                      ),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Row(
@@ -299,7 +306,9 @@ class _RoomMembersPageState extends State<RoomMembersPage> {
                                 S.of(context).allowSharingDescription,
                                 style: TextStyle(
                                   fontSize: 12,
-                                  color: Colors.grey[600],
+                                  color: AppColors.getTextSecondary(
+                              Theme.of(context).brightness == Brightness.dark,
+                            ),
                                 ),
                               ),
                             ],
@@ -315,10 +324,13 @@ class _RoomMembersPageState extends State<RoomMembersPage> {
                 // ✅ إزالة من الغرفة - owner فقط
                 if (canRemoveMembers)
                   ListTile(
-                    leading: Icon(Icons.person_remove, color: Colors.red),
+                    leading: Icon(
+                      Icons.person_remove, 
+                      color: AppColors.error,
+                    ),
                     title: Text(
                       S.of(context).removeFromRoom,
-                      style: TextStyle(color: Colors.red),
+                      style: TextStyle(color: AppColors.error),
                     ),
                     onTap: () {
                       Navigator.pop(context);
@@ -364,7 +376,11 @@ class _RoomMembersPageState extends State<RoomMembersPage> {
       selectedColor: _getRoleColor(role).withOpacity(0.2),
       checkmarkColor: _getRoleColor(role),
       labelStyle: TextStyle(
-        color: isSelected ? _getRoleColor(role) : Colors.black,
+        color: isSelected 
+            ? _getRoleColor(role) 
+            : AppColors.getTextPrimary(
+                Theme.of(context).brightness == Brightness.dark,
+              ),
         fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
       ),
     );
@@ -375,7 +391,9 @@ class _RoomMembersPageState extends State<RoomMembersPage> {
     return Scaffold(
       appBar: AppBar(
         title: Text(S.of(context).roomMembers),
-        backgroundColor: Color(0xff28336f),
+        backgroundColor: AppColors.getAppBar(
+          Theme.of(context).brightness == Brightness.dark,
+        ),
         leading: IconButton(
           icon: Icon(Icons.arrow_back),
           onPressed: () {
@@ -432,15 +450,20 @@ class _RoomMembersPageState extends State<RoomMembersPage> {
     print('👤 [RoomMembersPage] Member user keys: ${user.keys.toList()}');
     print('👤 [RoomMembersPage] Member user profileImg: ${user['profileImg']}');
 
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     return Card(
       margin: EdgeInsets.only(bottom: 12),
       elevation: 2,
+      color: AppColors.getCardColor(isDarkMode),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: ListTile(
         leading: _buildMemberAvatar(user, role),
         title: Text(
           user['name'] ?? user['email'] ?? '—',
-          style: TextStyle(fontWeight: FontWeight.bold),
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: AppColors.getTextPrimary(isDarkMode),
+          ),
         ),
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -626,12 +649,18 @@ class _RoomMembersPageState extends State<RoomMembersPage> {
         (index) => Padding(
           padding: EdgeInsets.only(bottom: 12),
           child: Shimmer.fromColors(
-            baseColor: Colors.grey[300]!,
-            highlightColor: Colors.grey[100]!,
+            baseColor: AppColors.getShimmerBase(
+              Theme.of(context).brightness == Brightness.dark,
+            ),
+            highlightColor: AppColors.getShimmerHighlight(
+              Theme.of(context).brightness == Brightness.dark,
+            ),
             child: Container(
               height: 80,
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: AppColors.getCardColor(
+                  Theme.of(context).brightness == Brightness.dark,
+                ),
                 borderRadius: BorderRadius.circular(12),
               ),
             ),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:filevo/constants/app_colors.dart';
 
 class SettingsItem extends StatelessWidget {
   final IconData icon;
@@ -18,18 +19,19 @@ class SettingsItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.getCardColor(isDarkMode),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: Colors.grey[200]!,
+          color: AppColors.darkSurface,
           width: 1,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: AppColors.getShadow(isDarkMode),
             blurRadius: 5,
             offset: const Offset(0, 3),
           ),
@@ -40,34 +42,34 @@ class SettingsItem extends StatelessWidget {
           width: 40,
           height: 40,
           decoration: BoxDecoration(
-            color: const Color(0xff28336f).withOpacity(0.1),
+            color: AppColors.getPrimary(isDarkMode).withOpacity(0.1),
             borderRadius: BorderRadius.circular(10),
           ),
           child: Icon(
             icon,
-            color: const Color(0xff28336f),
+            color: AppColors.getPrimary(isDarkMode),
             size: 20,
           ),
         ),
         title: Text(
           title,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w500,
-            color: Colors.black87,
+            color: AppColors.getTextPrimary(isDarkMode),
           ),
         ),
         subtitle: Text(
           subtitle,
           style: TextStyle(
             fontSize: 12,
-            color: Colors.grey[600],
+            color: AppColors.getTextSecondary(isDarkMode),
           ),
         ),
         trailing: trailing ??
             Icon(
               Icons.arrow_forward_ios,
-              color: Colors.grey[600],
+              color: AppColors.getTextSecondary(isDarkMode),
               size: 16,
             ),
         onTap: onTap,

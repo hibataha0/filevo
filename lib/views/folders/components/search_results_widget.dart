@@ -7,6 +7,7 @@ import 'package:filevo/views/fileViewer/FilesGridView1.dart';
 import 'package:filevo/responsive.dart';
 import 'package:filevo/config/api_config.dart';
 import 'package:filevo/services/api_endpoints.dart';
+import 'package:filevo/constants/app_colors.dart';
 
 /// ✅ Widget لعرض نتائج البحث (مجلدات + ملفات)
 class SearchResultsWidget extends StatelessWidget {
@@ -39,6 +40,8 @@ class SearchResultsWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    
     // ✅ فصل الملفات عن المجلدات
     final searchFiles = <Map<String, dynamic>>[];
     final searchFolders = <Map<String, dynamic>>[];
@@ -153,7 +156,7 @@ class SearchResultsWidget extends StatelessWidget {
           ),
         ),
       ),
-      color: const Color(0xFFE9E9E9),
+      color: AppColors.getBackground(isDarkMode),
       child: Padding(
         padding: const EdgeInsets.all(16.0),
         child: SingleChildScrollView(
@@ -179,7 +182,7 @@ class SearchResultsWidget extends StatelessWidget {
                         desktop: 32.0,
                       ),
                       fontWeight: FontWeight.bold,
-                      color: const Color(0xff28336f),
+                      color: AppColors.getTextPrimary(isDarkMode),
                     ),
                   ),
                   ViewToggleButtons(
@@ -202,11 +205,18 @@ class SearchResultsWidget extends StatelessWidget {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.search_off, size: 64, color: Colors.grey[400]),
+                      Icon(
+                        Icons.search_off, 
+                        size: 64, 
+                        color: AppColors.getTextSecondary(isDarkMode),
+                      ),
                       SizedBox(height: 16),
                       Text(
                         S.of(context).noSearchResults, // ✅ نص مترجم
-                        style: TextStyle(fontSize: 18, color: Colors.grey[600]),
+                        style: TextStyle(
+                          fontSize: 18, 
+                          color: AppColors.getTextSecondary(isDarkMode),
+                        ),
                       ),
                     ],
                   ),
@@ -225,7 +235,7 @@ class SearchResultsWidget extends StatelessWidget {
                         desktop: 22.0,
                       ),
                       fontWeight: FontWeight.bold,
-                      color: const Color(0xff28336f),
+                      color: AppColors.getTextPrimary(isDarkMode),
                     ),
                   ),
                   SizedBox(height: 16),
@@ -257,7 +267,7 @@ class SearchResultsWidget extends StatelessWidget {
                         desktop: 22.0,
                       ),
                       fontWeight: FontWeight.bold,
-                      color: const Color(0xff28336f),
+                      color: AppColors.getTextPrimary(isDarkMode),
                     ),
                   ),
                   SizedBox(height: 16),

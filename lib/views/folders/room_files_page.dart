@@ -110,7 +110,7 @@ class _RoomFilesPageState extends State<RoomFilesPage> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('📁 ${S.of(context).newFileShared(file['name'] ?? S.of(context).file)}'),
-              backgroundColor: Colors.green,
+              backgroundColor: AppColors.success,
               duration: Duration(seconds: 3),
             ),
           );
@@ -189,7 +189,7 @@ class _RoomFilesPageState extends State<RoomFilesPage> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(S.of(context).pleaseLoginAgain),
-              backgroundColor: Colors.red,
+              backgroundColor: AppColors.error,
             ),
           );
         }
@@ -319,7 +319,7 @@ class _RoomFilesPageState extends State<RoomFilesPage> {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content: Text(S.of(context).failedToOpenFile(e.toString())),
-                  backgroundColor: Colors.red,
+                  backgroundColor: AppColors.error,
                 ),
               );
             }
@@ -354,7 +354,7 @@ class _RoomFilesPageState extends State<RoomFilesPage> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(S.of(context).errorOpeningFile(e.toString())),
-            backgroundColor: Colors.red,
+            backgroundColor: AppColors.error,
           ),
         );
       }
@@ -517,7 +517,7 @@ class _RoomFilesPageState extends State<RoomFilesPage> {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content: Text('❌ ${S.of(context).fileAlreadyAccessed}'),
-                  backgroundColor: Colors.red,
+                  backgroundColor: AppColors.error,
                   duration: Duration(seconds: 3),
                 ),
               );
@@ -526,7 +526,7 @@ class _RoomFilesPageState extends State<RoomFilesPage> {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content: Text(S.of(context).fileExpired),
-                  backgroundColor: Colors.red,
+                  backgroundColor: AppColors.error,
                   duration: Duration(seconds: 3),
                 ),
               );
@@ -538,7 +538,7 @@ class _RoomFilesPageState extends State<RoomFilesPage> {
                   content: Text(
                     '❌ ${S.of(context).errorAccessingFile}: ${e.toString()}',
                   ),
-                  backgroundColor: Colors.red,
+                  backgroundColor: AppColors.error,
                   duration: Duration(seconds: 3),
                 ),
               );
@@ -727,7 +727,7 @@ class _RoomFilesPageState extends State<RoomFilesPage> {
                     .of(context)
                     .fileNotAvailableError(response.statusCode.toString()),
               ),
-              backgroundColor: Colors.red,
+              backgroundColor: AppColors.error,
             ),
           );
         }
@@ -738,7 +738,7 @@ class _RoomFilesPageState extends State<RoomFilesPage> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(S.of(context).errorLoadingFile(e.toString())),
-            backgroundColor: Colors.red,
+            backgroundColor: AppColors.error,
           ),
         );
       }
@@ -787,7 +787,7 @@ class _RoomFilesPageState extends State<RoomFilesPage> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(S.of(context).errorOpeningFile(e.toString())),
-            backgroundColor: Colors.red,
+            backgroundColor: AppColors.error,
           ),
         );
       }
@@ -1018,7 +1018,9 @@ class _RoomFilesPageState extends State<RoomFilesPage> {
             ),
           ),
         ),
-        backgroundColor: AppColors.lightAppBar,
+        backgroundColor: AppColors.getAppBar(
+          Theme.of(context).brightness == Brightness.dark,
+        ),
         actions: [
           // IconButton(
           //   icon: Icon(Icons.create_new_folder),
@@ -1082,7 +1084,9 @@ class _RoomFilesPageState extends State<RoomFilesPage> {
                 tablet: 80.0,
                 desktop: 96.0,
               ),
-              color: Colors.grey,
+              color: AppColors.getTextSecondary(
+                Theme.of(context).brightness == Brightness.dark,
+              ),
             ),
             SizedBox(
               height: ResponsiveUtils.getResponsiveValue(
@@ -1122,7 +1126,9 @@ class _RoomFilesPageState extends State<RoomFilesPage> {
                   tablet: 16.0,
                   desktop: 18.0,
                 ),
-                color: Colors.grey[500],
+                color: AppColors.getTextSecondary(
+                  Theme.of(context).brightness == Brightness.dark,
+                ),
               ),
             ),
           ],
@@ -1243,7 +1249,7 @@ class _RoomFilesPageState extends State<RoomFilesPage> {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Text('⚠️ ${S.of(context).pleaseEnterFolderName}'),
-                    backgroundColor: Colors.orange,
+                    backgroundColor: AppColors.warning,
                   ),
                 );
                 return;
@@ -1344,12 +1350,18 @@ class _RoomFilesPageState extends State<RoomFilesPage> {
         (index) => Padding(
           padding: EdgeInsets.only(bottom: 12),
           child: Shimmer.fromColors(
-            baseColor: Colors.grey[300]!,
-            highlightColor: Colors.grey[100]!,
+      baseColor: AppColors.getShimmerBase(
+        Theme.of(context).brightness == Brightness.dark,
+      ),
+      highlightColor: AppColors.getShimmerHighlight(
+        Theme.of(context).brightness == Brightness.dark,
+      ),
             child: Container(
               height: 80,
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: AppColors.getCardColor(
+                  Theme.of(context).brightness == Brightness.dark,
+                ),
                 borderRadius: BorderRadius.circular(12),
               ),
             ),

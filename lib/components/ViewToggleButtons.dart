@@ -1,5 +1,6 @@
 import 'package:filevo/responsive.dart';
 import 'package:flutter/material.dart';
+import 'package:filevo/constants/app_colors.dart';
 
 class ViewToggleButtons extends StatelessWidget {
   final bool isGridView;
@@ -27,10 +28,15 @@ class ViewToggleButtons extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bgColor = backgroundColor ?? Colors.grey[200];
-    final iconClr = iconColor ?? Colors.grey[600];
-    final activeBg = activeBackgroundColor ?? Colors.white;
-    final activeIconClr = activeIconColor ?? Colors.blue;
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final bgColor = backgroundColor ?? 
+        (isDarkMode ? AppColors.darkSurface : Colors.grey[200]);
+    final iconClr = iconColor ?? 
+        AppColors.getTextSecondary(isDarkMode);
+    final activeBg = activeBackgroundColor ?? 
+        (isDarkMode ? AppColors.getCardColor(isDarkMode) : Colors.white);
+    final activeIconClr = activeIconColor ?? 
+        AppColors.getPrimary(isDarkMode);
     final defaultIconSize =
         iconSize ??
         ResponsiveUtils.getResponsiveValue(
@@ -75,7 +81,7 @@ class ViewToggleButtons extends StatelessWidget {
                   tablet: 13.0,
                   desktop: 14.0,
                 ),
-                color: Colors.grey[700],
+                color: AppColors.getTextSecondary(isDarkMode),
               ),
             ),
             SizedBox(width: 8),

@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:filevo/services/storage_service.dart';
 import 'package:filevo/generated/l10n.dart';
 import 'package:shimmer/shimmer.dart';
+import 'package:filevo/constants/app_colors.dart';
 
 class FavoritesSection extends StatefulWidget {
   const FavoritesSection({Key? key}) : super(key: key);
@@ -124,6 +125,7 @@ class _FavoritesSectionState extends State<FavoritesSection> {
   }
 
   Widget _buildHeader(List starred) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 8.0),
       child: Row(
@@ -131,10 +133,10 @@ class _FavoritesSectionState extends State<FavoritesSection> {
         children: [
           Text(
             S.of(context).favoriteFiles, // ✅ نص مترجم
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w600,
-              color: Color(0xff28336f),
+              color: AppColors.getPrimary(isDarkMode),
             ),
           ),
 
@@ -143,10 +145,10 @@ class _FavoritesSectionState extends State<FavoritesSection> {
               onTap: () => _navigateToAllFavorites(context),
               child: Text(
                 S.of(context).viewAll, // ✅ نص مترجم
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w500,
-                  color: Color(0xff28336f),
+                  color: AppColors.getPrimary(isDarkMode),
                 ),
               ),
             ),
@@ -186,23 +188,36 @@ class _FavoritesSectionState extends State<FavoritesSection> {
   }
 
   BoxDecoration _emptyBox() {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     return BoxDecoration(
-      color: Colors.grey[50],
+      color: isDarkMode ? AppColors.darkSurface : Colors.grey[50],
       borderRadius: BorderRadius.circular(12),
-      border: Border.all(color: Colors.grey[200]!),
+      border: Border.all(
+        color: isDarkMode 
+            ? AppColors.darkSurface 
+            : Colors.grey[200]!,
+      ),
     );
   }
 
   Widget _emptyContent() {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.star_border_rounded, size: 40, color: Colors.grey[400]),
+          Icon(
+            Icons.star_border_rounded,
+            size: 40,
+            color: AppColors.getTextSecondary(isDarkMode),
+          ),
           const SizedBox(height: 8),
           Text(
             S.of(context).noFavoriteFiles, // ✅ نص مترجم
-            style: TextStyle(color: Colors.grey[600], fontSize: 14),
+            style: TextStyle(
+              color: AppColors.getTextSecondary(isDarkMode),
+              fontSize: 14,
+            ),
           ),
         ],
       ),
@@ -241,10 +256,13 @@ class _FavoritesSectionState extends State<FavoritesSection> {
             const SizedBox(height: 8),
             Text(
               info['displayName'],
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 11,
                 fontWeight: FontWeight.w500,
                 height: 1.2,
+                color: AppColors.getTextPrimary(
+                  Theme.of(context).brightness == Brightness.dark,
+                ),
               ),
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
@@ -257,17 +275,23 @@ class _FavoritesSectionState extends State<FavoritesSection> {
   }
 
   BoxDecoration _itemBox() {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     return BoxDecoration(
-      color: Colors.white,
+      color: AppColors.getCardColor(isDarkMode),
       borderRadius: BorderRadius.circular(12),
       boxShadow: [
-        BoxShadow(color: Colors.black12, blurRadius: 6, offset: Offset(0, 2)),
+        BoxShadow(
+          color: AppColors.getShadow(isDarkMode),
+          blurRadius: 6,
+          offset: Offset(0, 2),
+        ),
       ],
     );
   }
 
   // بطاقة "عرض الكل"
   Widget _buildViewAllCard(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     return GestureDetector(
       onTap: () => _navigateToAllFavorites(context),
       child: Container(
@@ -275,11 +299,11 @@ class _FavoritesSectionState extends State<FavoritesSection> {
         margin: const EdgeInsets.only(right: 12),
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: const Color(0xff28336f),
+          color: AppColors.getPrimary(isDarkMode),
           borderRadius: BorderRadius.circular(12),
           boxShadow: [
             BoxShadow(
-              color: Colors.black26,
+              color: AppColors.getShadow(isDarkMode),
               blurRadius: 6,
               offset: Offset(0, 2),
             ),
@@ -308,48 +332,87 @@ class _FavoritesSectionState extends State<FavoritesSection> {
 
   // خيارات الملف
   void _showFileOptions(info, file) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     showModalBottomSheet(
       context: context,
+      backgroundColor: Colors.transparent,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
       builder: (_) {
-        return Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ListTile(
-                leading: Icon(info['icon'], color: info['color']),
-                title: Text(info['fileName']),
-                subtitle: Text(_formatFileSize(info['fileSize'])),
-              ),
-              const Divider(),
-              ListTile(
-                leading: const Icon(
-                  Icons.open_in_new_rounded,
-                  color: Colors.blue,
+        return Container(
+          decoration: BoxDecoration(
+            color: AppColors.getCardColor(isDarkMode),
+            borderRadius: const BorderRadius.vertical(
+              top: Radius.circular(16),
+            ),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                ListTile(
+                  leading: Icon(info['icon'], color: info['color']),
+                  title: Text(
+                    info['fileName'],
+                    style: TextStyle(
+                      color: AppColors.getTextPrimary(isDarkMode),
+                    ),
+                  ),
+                  subtitle: Text(
+                    _formatFileSize(info['fileSize']),
+                    style: TextStyle(
+                      color: AppColors.getTextSecondary(isDarkMode),
+                    ),
+                  ),
                 ),
-                title: Text(S.of(context).openFile),
-                onTap: () => Navigator.pop(context),
-              ),
-              ListTile(
-                leading: const Icon(
-                  Icons.info_outline_rounded,
-                  color: Colors.teal,
+                Divider(
+                  color: isDarkMode 
+                      ? AppColors.darkSurface 
+                      : Colors.grey[300],
                 ),
-                title: Text(S.of(context).viewDetails),
-                onTap: () => Navigator.pop(context),
-              ),
-              ListTile(
-                leading: const Icon(Icons.star_rounded, color: Colors.amber),
-                title: Text(S.of(context).removeFromFavorites),
-                onTap: () {
-                  Navigator.pop(context);
-                  _removeFromFavorites(file);
-                },
-              ),
-            ],
+                ListTile(
+                  leading: Icon(
+                    Icons.open_in_new_rounded,
+                    color: AppColors.getPrimary(isDarkMode),
+                  ),
+                  title: Text(
+                    S.of(context).openFile,
+                    style: TextStyle(
+                      color: AppColors.getTextPrimary(isDarkMode),
+                    ),
+                  ),
+                  onTap: () => Navigator.pop(context),
+                ),
+                ListTile(
+                  leading: Icon(
+                    Icons.info_outline_rounded,
+                    color: AppColors.getTextSecondary(isDarkMode),
+                  ),
+                  title: Text(
+                    S.of(context).viewDetails,
+                    style: TextStyle(
+                      color: AppColors.getTextPrimary(isDarkMode),
+                    ),
+                  ),
+                  onTap: () => Navigator.pop(context),
+                ),
+                ListTile(
+                  leading: const Icon(Icons.star_rounded, color: Colors.amber),
+                  title: Text(
+                    S.of(context).removeFromFavorites,
+                    style: TextStyle(
+                      color: AppColors.getTextPrimary(isDarkMode),
+                    ),
+                  ),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _removeFromFavorites(file);
+                  },
+                ),
+              ],
+            ),
           ),
         );
       },
@@ -378,7 +441,9 @@ class _FavoritesSectionState extends State<FavoritesSection> {
             Text(S.of(context).removingFromFavorites),
           ],
         ),
-        backgroundColor: Colors.blue,
+        backgroundColor: AppColors.getPrimary(
+          Theme.of(context).brightness == Brightness.dark,
+        ),
         duration: const Duration(seconds: 2),
       ),
     );
@@ -396,12 +461,12 @@ class _FavoritesSectionState extends State<FavoritesSection> {
                   .of(context)
                   .addedToFavorites // ✅ نص مترجم
             : S.of(context).removedFromFavorites, // ✅ نص مترجم
-        Colors.green,
+        AppColors.success,
       );
     } else {
       _showSnack(
         result['message'] ?? S.of(context).favoriteUpdateFailed,
-        Colors.red,
+        AppColors.error,
       );
     }
   }
@@ -432,6 +497,7 @@ class _FavoritesSectionState extends State<FavoritesSection> {
 
   // ✅ بناء shimmer loading لقسم المفضلة
   Widget _buildShimmerLoading() {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     return SizedBox(
       height: 120,
       child: ListView(
@@ -440,18 +506,18 @@ class _FavoritesSectionState extends State<FavoritesSection> {
         children: List.generate(
           6,
           (index) => Shimmer.fromColors(
-            baseColor: Colors.grey[300]!,
-            highlightColor: Colors.grey[100]!,
+            baseColor: AppColors.getShimmerBase(isDarkMode),
+            highlightColor: AppColors.getShimmerHighlight(isDarkMode),
             child: Container(
               width: 100,
               margin: const EdgeInsets.only(right: 12),
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: AppColors.getCardColor(isDarkMode),
                 borderRadius: BorderRadius.circular(12),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black12,
+                    color: AppColors.getShadow(isDarkMode),
                     blurRadius: 6,
                     offset: Offset(0, 2),
                   ),
@@ -465,7 +531,7 @@ class _FavoritesSectionState extends State<FavoritesSection> {
                     width: 32,
                     height: 32,
                     decoration: BoxDecoration(
-                      color: Colors.grey[300],
+                      color: AppColors.getShimmerBase(isDarkMode),
                       borderRadius: BorderRadius.circular(8),
                     ),
                   ),
@@ -475,7 +541,7 @@ class _FavoritesSectionState extends State<FavoritesSection> {
                     width: double.infinity,
                     height: 10,
                     decoration: BoxDecoration(
-                      color: Colors.grey[300],
+                      color: AppColors.getShimmerBase(isDarkMode),
                       borderRadius: BorderRadius.circular(4),
                     ),
                   ),
@@ -484,7 +550,7 @@ class _FavoritesSectionState extends State<FavoritesSection> {
                     width: 60,
                     height: 10,
                     decoration: BoxDecoration(
-                      color: Colors.grey[300],
+                      color: AppColors.getShimmerBase(isDarkMode),
                       borderRadius: BorderRadius.circular(4),
                     ),
                   ),

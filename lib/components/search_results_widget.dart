@@ -39,6 +39,8 @@ class SearchResultsWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    
     if (isLoading) {
       return Center(
         child: Column(
@@ -46,7 +48,12 @@ class SearchResultsWidget extends StatelessWidget {
           children: [
             CircularProgressIndicator(),
             SizedBox(height: 16),
-            Text(S.of(context).searching),
+            Text(
+              S.of(context).searching,
+              style: TextStyle(
+                color: AppColors.getTextPrimary(isDarkMode),
+              ),
+            ),
           ],
         ),
       );
@@ -57,16 +64,26 @@ class SearchResultsWidget extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.search_off, size: 64, color: Colors.grey[400]),
+            Icon(
+              Icons.search_off, 
+              size: 64, 
+              color: AppColors.getTextSecondary(isDarkMode),
+            ),
             SizedBox(height: 16),
             Text(
               ' "${S.of(context).noResultsFor}  $searchQuery "',
-              style: TextStyle(fontSize: 18, color: Colors.grey[600]),
+              style: TextStyle(
+                fontSize: 18, 
+                color: AppColors.getTextSecondary(isDarkMode),
+              ),
             ),
             SizedBox(height: 8),
             Text(
               S.of(context).tryDifferentKeywords,
-              style: TextStyle(fontSize: 14, color: Colors.grey[500]),
+              style: TextStyle(
+                fontSize: 14, 
+                color: AppColors.getTextSecondary(isDarkMode),
+              ),
             ),
           ],
         ),
@@ -78,11 +95,18 @@ class SearchResultsWidget extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.search, size: 64, color: Colors.grey),
+            Icon(
+              Icons.search, 
+              size: 64, 
+              color: AppColors.getTextSecondary(isDarkMode),
+            ),
             SizedBox(height: 16),
             Text(
               S.of(context).searchYourFiles,
-              style: TextStyle(fontSize: 16, color: Colors.grey),
+              style: TextStyle(
+                fontSize: 16, 
+                color: AppColors.getTextSecondary(isDarkMode),
+              ),
             ),
           ],
         ),
@@ -183,6 +207,7 @@ class SearchResultsWidget extends StatelessWidget {
         S.of(context).unnamedFolder;
     final folderType = folder['type']?.toString() ?? 'folder';
     final isCategory = folderType == 'category';
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
     return GestureDetector(
       onTap: () {
@@ -192,31 +217,32 @@ class SearchResultsWidget extends StatelessWidget {
       },
       child: Container(
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: AppColors.getCardColor(isDarkMode),
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.08),
+              color: AppColors.getShadow(isDarkMode),
               blurRadius: 12,
               offset: const Offset(0, 4),
             ),
           ],
         ),
         child: isList
-            ? _buildFolderListCard(folderName, isCategory)
-            : _buildFolderGridCard(folderName, isCategory),
+            ? _buildFolderListCard(context, folderName, isCategory)
+            : _buildFolderGridCard(context, folderName, isCategory),
       ),
     );
   }
 
-  Widget _buildFolderGridCard(String folderName, bool isCategory) {
+  Widget _buildFolderGridCard(BuildContext context, String folderName, bool isCategory) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Expanded(
           child: Container(
             decoration: BoxDecoration(
-              color: Colors.blue.withOpacity(0.1),
+              color: AppColors.getPrimary(isDarkMode).withOpacity(0.1),
               borderRadius: const BorderRadius.only(
                 topLeft: Radius.circular(16),
                 topRight: Radius.circular(16),
@@ -226,7 +252,7 @@ class SearchResultsWidget extends StatelessWidget {
               child: Icon(
                 isCategory ? Icons.category : Icons.folder,
                 size: 48,
-                color: Colors.blue,
+                color: AppColors.getPrimary(isDarkMode),
               ),
             ),
           ),
@@ -237,10 +263,10 @@ class SearchResultsWidget extends StatelessWidget {
             folderName,
             overflow: TextOverflow.ellipsis,
             maxLines: 2,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w600,
-              color: Color(0xFF1A1A1A),
+              color: AppColors.getTextPrimary(isDarkMode),
               height: 1.3,
             ),
           ),
@@ -249,21 +275,22 @@ class SearchResultsWidget extends StatelessWidget {
     );
   }
 
-  Widget _buildFolderListCard(String folderName, bool isCategory) {
+  Widget _buildFolderListCard(BuildContext context, String folderName, bool isCategory) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     return Row(
       children: [
         Container(
           width: 80,
           height: 80,
           decoration: BoxDecoration(
-            color: Colors.blue.withOpacity(0.1),
+            color: AppColors.getPrimary(isDarkMode).withOpacity(0.1),
             borderRadius: BorderRadius.circular(12),
           ),
           child: Center(
             child: Icon(
               isCategory ? Icons.category : Icons.folder,
               size: 32,
-              color: Colors.blue,
+              color: AppColors.getPrimary(isDarkMode),
             ),
           ),
         ),
@@ -273,10 +300,10 @@ class SearchResultsWidget extends StatelessWidget {
             folderName,
             overflow: TextOverflow.ellipsis,
             maxLines: 1,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 15,
               fontWeight: FontWeight.w600,
-              color: Color(0xFF1A1A1A),
+              color: AppColors.getTextPrimary(isDarkMode),
             ),
           ),
         ),
@@ -289,6 +316,7 @@ class SearchResultsWidget extends StatelessWidget {
     Map<String, dynamic> file, {
     bool isList = false,
   }) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     final fileName = file['name']?.toString() ?? S.of(context).unnamedfile;
     final filePath = file['path']?.toString() ?? '';
     final fileId = file['_id']?.toString() ?? file['id']?.toString();
@@ -328,11 +356,11 @@ class SearchResultsWidget extends StatelessWidget {
       },
       child: Container(
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: AppColors.getCardColor(isDarkMode),
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.08),
+              color: AppColors.getShadow(isDarkMode),
               blurRadius: 12,
               offset: const Offset(0, 4),
             ),
@@ -340,6 +368,7 @@ class SearchResultsWidget extends StatelessWidget {
         ),
         child: isList
             ? _buildListCard(
+                context,
                 fileName,
                 fileType,
                 fileUrl,
@@ -349,6 +378,7 @@ class SearchResultsWidget extends StatelessWidget {
                 isStarred,
               )
             : _buildGridCard(
+                context,
                 fileName,
                 fileType,
                 fileUrl,
@@ -362,6 +392,7 @@ class SearchResultsWidget extends StatelessWidget {
   }
 
   Widget _buildGridCard(
+    BuildContext context,
     String fileName,
     String fileType,
     String fileUrl,
@@ -370,6 +401,7 @@ class SearchResultsWidget extends StatelessWidget {
     String? category,
     bool isStarred,
   ) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -378,13 +410,15 @@ class SearchResultsWidget extends StatelessWidget {
             children: [
               Container(
                 decoration: BoxDecoration(
-                  color: Colors.grey[50],
+                  color: isDarkMode 
+                      ? AppColors.darkSurface 
+                      : Colors.grey[50]!,
                   borderRadius: const BorderRadius.only(
                     topLeft: Radius.circular(16),
                     topRight: Radius.circular(16),
                   ),
                 ),
-                child: _buildFilePreview(fileType, fileUrl, fileName),
+                child: _buildFilePreview(context, fileType, fileUrl, fileName),
               ),
               if (isStarred)
                 Positioned(
@@ -422,10 +456,10 @@ class SearchResultsWidget extends StatelessWidget {
                 fileName,
                 overflow: TextOverflow.ellipsis,
                 maxLines: 2,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
-                  color: Color(0xFF1A1A1A),
+                  color: AppColors.getTextPrimary(isDarkMode),
                   height: 1.3,
                 ),
               ),
@@ -435,14 +469,17 @@ class SearchResultsWidget extends StatelessWidget {
                   Icon(
                     Icons.calendar_today_outlined,
                     size: 11,
-                    color: Colors.grey[600],
+                    color: AppColors.getTextSecondary(isDarkMode),
                   ),
                   const SizedBox(width: 4),
                   Expanded(
                     child: Text(
                       _formatDate(createdAt),
                       overflow: TextOverflow.ellipsis,
-                      style: TextStyle(fontSize: 10, color: Colors.grey[600]),
+                      style: TextStyle(
+                        fontSize: 10, 
+                        color: AppColors.getTextSecondary(isDarkMode),
+                      ),
                     ),
                   ),
                 ],
@@ -455,6 +492,7 @@ class SearchResultsWidget extends StatelessWidget {
   }
 
   Widget _buildListCard(
+    BuildContext context,
     String fileName,
     String fileType,
     String fileUrl,
@@ -463,18 +501,21 @@ class SearchResultsWidget extends StatelessWidget {
     String? category,
     bool isStarred,
   ) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     return Row(
       children: [
         Container(
           width: 80,
           height: 80,
           decoration: BoxDecoration(
-            color: Colors.grey[50],
+            color: isDarkMode 
+                ? AppColors.darkSurface 
+                : Colors.grey[50]!,
             borderRadius: BorderRadius.circular(12),
           ),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(12),
-            child: _buildFilePreview(fileType, fileUrl, fileName),
+            child: _buildFilePreview(context, fileType, fileUrl, fileName),
           ),
         ),
         const SizedBox(width: 12),
@@ -489,10 +530,10 @@ class SearchResultsWidget extends StatelessWidget {
                       fileName,
                       overflow: TextOverflow.ellipsis,
                       maxLines: 1,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w600,
-                        color: Color(0xFF1A1A1A),
+                        color: AppColors.getTextPrimary(isDarkMode),
                       ),
                     ),
                   ),
@@ -506,23 +547,29 @@ class SearchResultsWidget extends StatelessWidget {
                   Icon(
                     Icons.calendar_today_outlined,
                     size: 12,
-                    color: Colors.grey[600],
+                    color: AppColors.getTextSecondary(isDarkMode),
                   ),
                   const SizedBox(width: 4),
                   Text(
                     _formatDate(createdAt),
-                    style: TextStyle(fontSize: 11, color: Colors.grey[600]),
+                    style: TextStyle(
+                      fontSize: 11, 
+                      color: AppColors.getTextSecondary(isDarkMode),
+                    ),
                   ),
                   const SizedBox(width: 12),
                   Icon(
                     Icons.insert_drive_file,
                     size: 12,
-                    color: Colors.grey[600],
+                    color: AppColors.getTextSecondary(isDarkMode),
                   ),
                   const SizedBox(width: 4),
                   Text(
                     fileSize,
-                    style: TextStyle(fontSize: 11, color: Colors.grey[600]),
+                    style: TextStyle(
+                      fontSize: 11, 
+                      color: AppColors.getTextSecondary(isDarkMode),
+                    ),
                   ),
                 ],
               ),
@@ -533,7 +580,8 @@ class SearchResultsWidget extends StatelessWidget {
     );
   }
 
-  Widget _buildFilePreview(String fileType, String fileUrl, String fileName) {
+  Widget _buildFilePreview(BuildContext context, String fileType, String fileUrl, String fileName) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     switch (fileType.toLowerCase()) {
       case 'image':
         // ✅ معاينة الصور - عرض الصورة مباشرة
@@ -552,7 +600,7 @@ class SearchResultsWidget extends StatelessWidget {
                 fit: BoxFit.cover,
                 httpHeaders: snapshot.data,
                 placeholder: (context, url) => Container(
-                  color: Colors.grey[200],
+                  color: AppColors.getShimmerBase(isDarkMode),
                   child: const Center(
                     child: CircularProgressIndicator(strokeWidth: 2),
                   ),
@@ -560,10 +608,10 @@ class SearchResultsWidget extends StatelessWidget {
                 errorWidget: (context, url, error) {
                   print('❌ Error loading image preview: $error, URL: $url');
                   return Container(
-                    color: Colors.grey[200],
+                    color: AppColors.getShimmerBase(isDarkMode),
                     child: Icon(
                       Icons.image_not_supported,
-                      color: Colors.grey[400],
+                      color: AppColors.getTextSecondary(isDarkMode),
                       size: 32,
                     ),
                   );
@@ -574,41 +622,42 @@ class SearchResultsWidget extends StatelessWidget {
         }
         // ✅ إذا كان fileUrl فارغاً، عرض أيقونة
         print('⚠️ Image preview: fileUrl is empty or invalid. fileName: $fileName, fileUrl: $fileUrl');
-        return _buildFileIcon(Icons.image, Colors.blue);
+        return _buildFileIcon(context, Icons.image, Colors.blue);
       case 'pdf':
         // ✅ معاينة PDF - محاولة عرض الصفحة الأولى
         if (fileUrl.isNotEmpty) {
-          return _buildPdfPreview(fileUrl);
+          return _buildPdfPreview(context, fileUrl);
         }
-        return _buildFileIcon(Icons.picture_as_pdf, Colors.red);
+        return _buildFileIcon(context, Icons.picture_as_pdf, Colors.red);
       case 'video':
         // ✅ معاينة الفيديو - عرض thumbnail
         if (fileUrl.isNotEmpty && _isValidUrl(fileUrl)) {
-          return _buildVideoPreview(fileUrl, fileName);
+          return _buildVideoPreview(context, fileUrl, fileName);
         }
         // ✅ إذا كان fileUrl فارغاً، عرض أيقونة
         print('⚠️ Video preview: fileUrl is empty or invalid. fileName: $fileName, fileUrl: $fileUrl');
-        return _buildFileIcon(Icons.video_library, Colors.purple);
+        return _buildFileIcon(context, Icons.video_library, Colors.purple);
       case 'audio':
         // ✅ معاينة الصوت - أيقونة مع معلومات
-        return _buildAudioPreview(fileName);
+        return _buildAudioPreview(context, fileName);
       default:
         // ✅ معاينة النصوص - محاولة عرض أول سطور
         if (_isTextFile(fileName) && fileUrl.isNotEmpty) {
-          return _buildTextPreview(fileUrl, fileName);
+          return _buildTextPreview(context, fileUrl, fileName);
         }
-        return _buildFileIcon(Icons.insert_drive_file, Colors.grey);
+        return _buildFileIcon(context, Icons.insert_drive_file, Colors.grey);
     }
   }
 
   // ✅ معاينة PDF
-  Widget _buildPdfPreview(String fileUrl) {
+  Widget _buildPdfPreview(BuildContext context, String fileUrl) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     return FutureBuilder<String?>(
       future: _getPdfThumbnail(fileUrl),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return Container(
-            color: Colors.grey[200],
+            color: AppColors.getShimmerBase(isDarkMode),
             child: const Center(
               child: CircularProgressIndicator(strokeWidth: 2),
             ),
@@ -621,7 +670,7 @@ class SearchResultsWidget extends StatelessWidget {
                 File(snapshot.data!),
                 fit: BoxFit.cover,
                 errorBuilder: (context, error, stack) =>
-                    _buildFileIcon(Icons.picture_as_pdf, Colors.red),
+                    _buildFileIcon(context, Icons.picture_as_pdf, Colors.red),
               ),
               Positioned(
                 top: 8,
@@ -642,19 +691,20 @@ class SearchResultsWidget extends StatelessWidget {
             ],
           );
         }
-        return _buildFileIcon(Icons.picture_as_pdf, Colors.red);
+        return _buildFileIcon(context, Icons.picture_as_pdf, Colors.red);
       },
     );
   }
 
   // ✅ معاينة الفيديو
-  Widget _buildVideoPreview(String fileUrl, String fileName) {
+  Widget _buildVideoPreview(BuildContext context, String fileUrl, String fileName) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     return FutureBuilder<String?>(
       future: _getVideoThumbnail(fileUrl),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return Container(
-            color: Colors.grey[200],
+            color: AppColors.getShimmerBase(isDarkMode),
             child: const Center(
               child: CircularProgressIndicator(strokeWidth: 2),
             ),
@@ -672,7 +722,7 @@ class SearchResultsWidget extends StatelessWidget {
                   fit: BoxFit.cover,
                   errorBuilder: (context, error, stack) {
                     print('❌ Error loading video thumbnail: $error');
-                    return _buildFileIcon(Icons.video_library, Colors.purple);
+                    return _buildFileIcon(context, Icons.video_library, Colors.purple);
                   },
                 ),
                 Positioned.fill(
@@ -708,17 +758,17 @@ class SearchResultsWidget extends StatelessWidget {
           }
         }
         // ✅ إذا فشل إنشاء thumbnail، عرض أيقونة
-        return _buildFileIcon(Icons.video_library, Colors.purple);
+        return _buildFileIcon(context, Icons.video_library, Colors.purple);
       },
     );
   }
 
   // ✅ معاينة الصوت
-  Widget _buildAudioPreview(String fileName) {
+  Widget _buildAudioPreview(BuildContext context, String fileName) {
     return Stack(
       fit: StackFit.expand,
       children: [
-        _buildFileIcon(Icons.audiotrack, Colors.orange),
+        _buildFileIcon(context, Icons.audiotrack, Colors.orange),
         Positioned(
           bottom: 8,
           left: 8,
@@ -756,13 +806,14 @@ class SearchResultsWidget extends StatelessWidget {
   }
 
   // ✅ معاينة النصوص
-  Widget _buildTextPreview(String fileUrl, String fileName) {
+  Widget _buildTextPreview(BuildContext context, String fileUrl, String fileName) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     return FutureBuilder<String?>(
       future: _getTextPreview(fileUrl),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return Container(
-            color: Colors.grey[200],
+            color: AppColors.getShimmerBase(isDarkMode),
             child: const Center(
               child: CircularProgressIndicator(strokeWidth: 2),
             ),
@@ -772,7 +823,9 @@ class SearchResultsWidget extends StatelessWidget {
           return Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: Colors.grey[50],
+              color: isDarkMode 
+                  ? AppColors.darkSurface 
+                  : Colors.grey[50]!,
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -780,7 +833,7 @@ class SearchResultsWidget extends StatelessWidget {
               children: [
                 Icon(
                   Icons.description,
-                  color: Colors.blue,
+                  color: AppColors.getPrimary(isDarkMode),
                   size: 24,
                 ),
                 const SizedBox(height: 8),
@@ -790,7 +843,7 @@ class SearchResultsWidget extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     fontSize: 10,
-                    color: Colors.grey[700],
+                    color: AppColors.getTextSecondary(isDarkMode),
                     height: 1.4,
                   ),
                 ),
@@ -798,7 +851,7 @@ class SearchResultsWidget extends StatelessWidget {
             ),
           );
         }
-        return _buildFileIcon(Icons.description, Colors.blue);
+        return _buildFileIcon(context, Icons.description, Colors.blue);
       },
     );
   }
@@ -932,7 +985,7 @@ class SearchResultsWidget extends StatelessWidget {
     }
   }
 
-  Widget _buildFileIcon(IconData icon, Color color) {
+  Widget _buildFileIcon(BuildContext context, IconData icon, Color color) {
     return Container(
       decoration: BoxDecoration(
         gradient: LinearGradient(
@@ -1060,7 +1113,7 @@ class SearchResultsWidget extends StatelessWidget {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(S.of(context).fileLinkNotAvailable),
-          backgroundColor: Colors.orange,
+              backgroundColor: AppColors.warning,
         ),
       );
       return;
@@ -1093,7 +1146,7 @@ class SearchResultsWidget extends StatelessWidget {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(S.of(context).mustLoginFirst),
-              backgroundColor: Colors.red,
+              backgroundColor: AppColors.error,
             ),
           );
         }
@@ -1203,7 +1256,7 @@ class SearchResultsWidget extends StatelessWidget {
                   content: Text(
                     S.of(context).errorLoadingTextFile(e.toString()),
                   ),
-                  backgroundColor: Colors.red,
+                  backgroundColor: AppColors.error,
                 ),
               );
             }
