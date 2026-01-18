@@ -118,8 +118,10 @@ class AuthService {
 
     final result = await _apiService.post(ApiEndpoints.logout, token: token);
 
-    // احذف الـ token المحفوظ محليًا
+    // ✅ احذف الـ token والـ userId المحفوظين محلياً
     await StorageService.deleteToken();
+    await StorageService.deleteUserId();
+    print('🧹 AuthService: Token and userId deleted on logout');
 
     return result;
   }

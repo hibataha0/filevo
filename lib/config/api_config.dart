@@ -5,48 +5,66 @@ class ApiConfig {
   // ============================================================================
   // ⚙️ إعدادات السيرفر - عدّل هنا حسب بيئتك
   // ============================================================================
-  
-  // 🔧 خيار 1: استخدام IP محلي (للتطوير على نفس الشبكة)
-  // اطلع IP جهازك: افتح CMD واكتب ipconfig وشوف IPv4 Address
-  static const String _localIP = '192.168.0.81';  // 👈 غيّر هنا لـ IP جهازك!
-  
+
+  // 🔧 خيار 1: استخدام IP محلي (للتطوير على نفس الشبكة WiFi فقط!)
+  //
+  // متى تستخدمه؟
+  // - عندما الباك والفرونت على نفس الشبكة (WiFi مشترك)
+  // - التلفون والكمبيوتر متصلين بنفس الراوتر
+  //
+  // كيف تحصل على IP جهازك؟
+  // 1. افتح CMD (Windows) أو Terminal (Mac/Linux)
+  // 2. اكتب: ipconfig (Windows) أو ifconfig (Mac/Linux)
+  // 3. شوف IPv4 Address (مثال: 192.168.0.81)
+  // 4. غيّر الرقم هنا ⬇️
+  static const String _localIP = '192.168.0.81'; // 👈 غيّر هنا لـ IP جهازك!
+
   // 🔧 خيار 2: استخدام 10.0.2.2 للـ Android Emulator فقط
   static const String _emulatorIP = '10.0.2.2';
-  
+
   // 🔧 خيار 3: استخدام localhost للتطوير على نفس الجهاز (iOS Simulator)
   static const String _localhost = 'localhost';
-  
+
   // 🔧 خيار 4: استخدام ngrok أو domain حقيقي (للإنتاج أو الاختبار عن بعد)
-  // غيّر هنا بالـ URL اللي ngrok يعطيك إياه
-  static const String _ngrokURL = 'https://your-url-here.ngrok-free.app/api/v1';
-  
+  // غيّر هنا بالـ URL اللي ngrok يعطيك إياه (بدون /api/v1)
+  static const String _ngrokURL = 'https://your-url-here.ngrok-free.app';
+
   // رقم البورت اللي السيرفر شغّال عليه
   static const String _port = '8000';
-  
+
   // ============================================================================
-  
+
   // ============================================================================
   // 🎯 اختر الطريقة اللي تبيها (true = مفعّل، false = معطّل)
   // ============================================================================
-  static const bool _useNgrok = false;  // 👈 غيّر لـ true عشان تستخدم ngrok
-  static const bool _useEmulator = false;  // 👈 غيّر لـ true إذا تستخدم Emulator
-  
+  //
+  // ⚠️ ملاحظة مهمة:
+  // - استخدم ngrok للاختبار على أجهزة خارج الشبكة المحلية
+  // - استخدم _localIP للاختبار على نفس الشبكة (WiFi مشترك)
+  // - استخدم _emulatorIP فقط للـ Android Emulator
+  // 💡 نصيحة: استخدم ngrok للاختبار على أي جهاز (حتى خارج الشبكة)!
+  // الخطوات:
+  // 1. حمّل ngrok من https://ngrok.com/download
+  // 2. شغله: ngrok http 8000
+  // 3. انسخ الـ URL وحطه في _ngrokURL أعلاه
+  // 4. غيّر هذا الـ flag لـ true ⬇️
+  static const bool _useNgrok = false; // 👈 غيّر لـ true عشان تستخدم ngrok
+  static const bool _useEmulator = false; // 👈 غيّر لـ true إذا تستخدم Emulator
+
   // Base URL للباك إند (متوافق مع المنصات)
   static String get baseUrl {
     String url;
-    
+
     // ✅ أولوية 1: استخدام ngrok (الحل الأسهل والأضمن!)
     if (_useNgrok) {
       url = _ngrokURL;
       print('🚀 [ApiConfig] Using ngrok URL');
     }
-    
     // ✅ أولوية 2: حسب المنصة
     else if (kIsWeb) {
       // للـ Web: استخدام نفس الـ host أو localhost
       final host = Uri.base.host.isEmpty ? _localhost : Uri.base.host;
       url = 'http://$host:$_port';
-      
     } else if (defaultTargetPlatform == TargetPlatform.android) {
       if (_useEmulator) {
         // 🖥️ Android Emulator
@@ -57,11 +75,9 @@ class ApiConfig {
         url = 'http://$_localIP:$_port';
         print('📱 [ApiConfig] Using Local IP');
       }
-      
     } else if (defaultTargetPlatform == TargetPlatform.iOS) {
       // للـ iOS Simulator: localhost يشتغل مباشرة
       url = 'http://$_localhost:$_port';
-      
     } else {
       // للمنصات الثانية: استخدام IP المحلي
       url = 'http://$_localIP:$_port';

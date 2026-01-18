@@ -8,7 +8,7 @@ class ApiEndpoints {
   // Auth endpoints
   static const String login = '$_basePath/auth/login';
   static const String register = '$_basePath/auth/registerUser';
-  static const String logout = '$_basePath/auth/logout';
+  static const String logout = '$_basePath/users/logout';  // ✅ تصحيح: logout موجود في users
   static const String refreshToken = '$_basePath/auth/refresh';
   static const String forgotPassword = '$_basePath/auth/forgotPassword';
   static const String verifyResetCode = '$_basePath/auth/verifyResetCode';

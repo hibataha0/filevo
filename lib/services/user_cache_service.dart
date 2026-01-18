@@ -141,8 +141,14 @@ class UserCacheService {
   /// مسح الـ cache (عند تحديث بيانات المستخدم مثلاً)
   void clearCache() {
     print('🧹 [UserCacheService] Clearing cache...');
+    print('   - Old cached data: ${_cachedUserData != null ? "exists" : "null"}');
+    print('   - Old cache age: ${_lastFetchTime != null ? DateTime.now().difference(_lastFetchTime!).inMinutes : "N/A"} minutes');
+    
     _cachedUserData = null;
     _lastFetchTime = null;
+    _pendingRequest = null;  // ✅ امسح الـ pending request أيضاً
+    
+    print('✅ [UserCacheService] Cache cleared successfully!');
   }
 
   /// الحصول على البيانات المخزنة (بدون API call)

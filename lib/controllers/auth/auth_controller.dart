@@ -1,10 +1,12 @@
 import 'package:filevo/services/storage_service.dart';
+import 'package:filevo/services/user_cache_service.dart';
 import 'package:flutter/material.dart';
 import 'package:filevo/services/auth_service.dart';
 import 'package:filevo/generated/l10n.dart';
 
 class AuthController extends ChangeNotifier {
   final AuthService _authService = AuthService();
+  final UserCacheService _userCacheService = UserCacheService();
 
   bool _isLoading = false;
   String? _errorMessage;
@@ -38,9 +40,39 @@ class AuthController extends ChangeNotifier {
     print('AuthController: Login result: $result');
 
     if (result['success'] == true) {
+      print('🎯 AuthController: Login successful! Starting cleanup...');
+      
+      // ✅ 1. مسح كل البيانات القديمة أولاً
+      print('🧹 [Step 1/5] Clearing old user cache...');
+      _userCacheService.clearCache();
+      
+      print('🧹 [Step 2/5] Deleting old token...');
+      await StorageService.deleteToken();
+      
+      print('🧹 [Step 3/5] Deleting old userId...');
+      await StorageService.deleteUserId();
+      
+      // ✅ 2. حفظ التوكن الجديد
       if (result['token'] != null) {
-        await StorageService.saveToken(result['token']);
+        final newToken = result['token'] as String;
+        print('💾 [Step 4/5] Saving new token (length: ${newToken.length})...');
+        await StorageService.saveToken(newToken);
+        
+        // ✅ التحقق من أن التوكن تم حفظه فعلاً
+        final savedToken = await StorageService.getToken();
+        if (savedToken == newToken) {
+          print('✅ [Step 5/5] New token verified and saved correctly!');
+        } else {
+          print('❌ [Step 5/5] ERROR: Token verification failed!');
+          print('   Expected: ${newToken.substring(0, 20)}...');
+          print('   Got: ${savedToken?.substring(0, 20)}...');
+        }
+      } else {
+        print('⚠️ WARNING: No token in login response!');
+        print('   Response keys: ${result.keys.toList()}');
       }
+      
+      print('✅ AuthController: Login process completed successfully!');
       return true;
     } else {
       final errorMsg =
@@ -184,7 +216,12 @@ class AuthController extends ChangeNotifier {
   }
 
   Future<void> logout() async {
+    // ✅ مسح الـ cache قبل تسجيل الخروج
+    print('🧹 AuthController: Clearing user cache on logout...');
+    _userCacheService.clearCache();
+    
     await _authService.logout();
+    print('✅ AuthController: Logout completed');
   }
 
   void _setLoading(bool value) {
