@@ -1,5 +1,5 @@
 import 'package:filevo/services/storage_service.dart';
-import 'package:filevo/services/user_service.dart';
+import 'package:filevo/services/user_cache_service.dart';
 
 /// ✅ Utility class للتحقق من صلاحيات الأعضاء في الغرف
 class RoomPermissions {
@@ -85,8 +85,9 @@ class RoomPermissions {
   static Future<String?> _getCurrentUserIdFromAPI() async {
     try {
       // ✅ محاولة جلب userId من API مباشرة للتأكد من أنه صحيح
-      final userService = UserService();
-      final result = await userService.getLoggedUserData();
+      // ✅ استخدام UserCacheService بدلاً من UserService لمنع multiple requests
+      final userCacheService = UserCacheService();
+      final result = await userCacheService.getLoggedUserData();
 
       if (result['success'] == true) {
         Map<String, dynamic>? data;

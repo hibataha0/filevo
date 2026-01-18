@@ -58,6 +58,7 @@ dev_dependencies:
     sdk: flutter
   flutter_lints: ^5.0.0
   intl_utils: ^2.8.7
+  flutter_native_splash: ^2.4.3
 flutter:
   uses-material-design: true
   generate: true
@@ -72,6 +73,41 @@ flutter_intl:
   main_locale: en
   arb_dir: lib/l10n
   output_dir: lib/generated
+
+# ============================================================================
+# 🎨 Splash Screen Configuration
+# ============================================================================
+flutter_native_splash:
+  # الصورة اللي بتظهر في شاشة البداية (الوضع العادي)
+  image: assets/images/FilevoBackground.jpeg
+  
+  # لون الخلفية (أبيض للوضع العادي)
+  color: "#FFFFFF"
+  
+  # لون الخلفية للوضع المظلم (أسود داكن)
+  color_dark: "#0A0E27"
+  
+  # الصورة للوضع المظلم
+  image_dark: assets/images/FilevoBackgroundDark.jpeg
+  
+  # تفعيل fullscreen (ملء الشاشة)
+  fullscreen: true
+  
+  # دعم Android
+  android: true
+  
+  # دعم iOS
+  ios: true
+  
+  # دعم Web
+  web: false
+  
+  # Android 12+ (splash screen API الجديد)
+  android_12:
+    image: assets/images/FilevoBackground.jpeg
+    color: "#FFFFFF"
+    image_dark: assets/images/FilevoBackgroundDark.jpeg
+    color_dark: "#0A0E27"
 # An image asset can refer to one or more resolution-specific "variants", see
 # https://flutter.dev/assets-and-images/#resolution-aware.
 # For details regarding adding assets from package dependencies, see

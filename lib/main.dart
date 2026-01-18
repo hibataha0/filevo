@@ -21,9 +21,12 @@ import 'package:provider/provider.dart';
 import 'package:filevo/services/storage_service.dart'; // ✅ إضافة خدمة التخزين
 import 'package:filevo/generated/l10n.dart';
 import 'package:filevo/constants/app_colors.dart';
+import 'package:flutter_native_splash/flutter_native_splash.dart'; // ✅ إضافة Splash Screen
 
 void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
+  // ✅ تهيئة Flutter مع الحفاظ على Splash Screen
+  WidgetsBinding widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
+  FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
 
   runApp(DevicePreview(enabled: !kReleaseMode, builder: (context) => MyApp()));
 }
@@ -49,6 +52,18 @@ class _MyAppState extends State<MyApp> {
     super.initState();
     // ✅ تحميل حالة تسجيل الدخول مرة واحدة فقط
     _loginCheckFuture = StorageService.isLoggedIn();
+    
+    // ✅ إزالة Splash Screen بعد تحميل التطبيق
+    // يمكنك إضافة تأخير (delay) هنا إذا بدك Splash Screen يبقى أطول:
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      // عرض Splash Screen لمدة 2 ثانية إضافية (اختياري)
+      Future.delayed(const Duration(seconds: 2), () {
+        FlutterNativeSplash.remove();
+      });
+      
+      // أو إزالته مباشرة (الافتراضي):
+      // FlutterNativeSplash.remove();
+    });
   }
 
   void setLocale(Locale locale) {

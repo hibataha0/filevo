@@ -45,31 +45,32 @@ class ApiConfig {
     else if (kIsWeb) {
       // للـ Web: استخدام نفس الـ host أو localhost
       final host = Uri.base.host.isEmpty ? _localhost : Uri.base.host;
-      url = 'http://$host:$_port/api/v1';
+      url = 'http://$host:$_port';
       
     } else if (defaultTargetPlatform == TargetPlatform.android) {
       if (_useEmulator) {
         // 🖥️ Android Emulator
-        url = 'http://$_emulatorIP:$_port/api/v1';
+        url = 'http://$_emulatorIP:$_port';
         print('🖥️ [ApiConfig] Using Emulator IP');
       } else {
         // 📱 تلفون حقيقي (على نفس الشبكة)
-        url = 'http://$_localIP:$_port/api/v1';
+        url = 'http://$_localIP:$_port';
         print('📱 [ApiConfig] Using Local IP');
       }
       
     } else if (defaultTargetPlatform == TargetPlatform.iOS) {
       // للـ iOS Simulator: localhost يشتغل مباشرة
-      url = 'http://$_localhost:$_port/api/v1';
+      url = 'http://$_localhost:$_port';
       
     } else {
       // للمنصات الثانية: استخدام IP المحلي
-      url = 'http://$_localIP:$_port/api/v1';
+      url = 'http://$_localIP:$_port';
     }
 
     // طباعة الـ URL للـ debug
     print('🌐 [ApiConfig] Platform: ${defaultTargetPlatform.name}');
     print('🌐 [ApiConfig] Using baseUrl = $url');
+    print('📍 [ApiConfig] Full API path will be: $url/api/v1/...');
 
     return url;
   }

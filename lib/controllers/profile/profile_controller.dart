@@ -1,10 +1,12 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:filevo/services/user_service.dart';
+import 'package:filevo/services/user_cache_service.dart';
 import 'package:filevo/services/file_service.dart';
 
 class ProfileController with ChangeNotifier {
   final UserService _userService = UserService();
+  final UserCacheService _userCacheService = UserCacheService();
   final FileService _fileService = FileService();
 
   bool _isLoading = false;
@@ -40,13 +42,18 @@ class ProfileController with ChangeNotifier {
   }
 
   /// جلب بيانات المستخدم
-  Future<void> getLoggedUserData() async {
+  /// 
+  /// [forceRefresh] - إذا true، يتم تجاهل الـ cache وجلب البيانات من السيرفر مباشرة
+  Future<void> getLoggedUserData({bool forceRefresh = false}) async {
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
 
     try {
-      final result = await _userService.getLoggedUserData();
+      // ✅ استخدام UserCacheService بدلاً من UserService لمنع multiple requests
+      final result = await _userCacheService.getLoggedUserData(
+        forceRefresh: forceRefresh,
+      );
 
       if (result['success'] == true) {
         _userData = _extractUserData(result['data']);
@@ -129,7 +136,7 @@ class ProfileController with ChangeNotifier {
         
         // ✅ إعادة جلب البيانات من السيرفر للتأكد من التحديث
         print('🔄 ProfileController: Refetching user data from server...');
-        await getLoggedUserData();
+        await getLoggedUserData(forceRefresh: true);
         
         _errorMessage = null;
         return {'success': true};
@@ -170,7 +177,7 @@ class ProfileController with ChangeNotifier {
         }
         
         // ✅ إعادة جلب البيانات من السيرفر
-        await getLoggedUserData();
+        await getLoggedUserData(forceRefresh: true);
         
         _errorMessage = null;
         return true;
@@ -275,7 +282,7 @@ class ProfileController with ChangeNotifier {
         }
         // ✅ إعادة جلب البيانات من السيرفر للتأكد من التحديث
         print('🔄 ProfileController: Refetching user data from server...');
-        await getLoggedUserData();
+        await getLoggedUserData(forceRefresh: true);
         
         // ✅ التحقق من أن profileImg تم حفظه
         if (_userData != null) {

@@ -1,11 +1,11 @@
 import 'package:filevo/services/room_service.dart';
 import 'package:filevo/services/storage_service.dart';
-import 'package:filevo/services/user_service.dart';
+import 'package:filevo/services/user_cache_service.dart';
 import 'package:flutter/material.dart';
 
 class RoomController with ChangeNotifier {
   final RoomService _service = RoomService();
-  final UserService _userService = UserService();
+  final UserCacheService _userCacheService = UserCacheService();
 
   bool isLoading = false;
   String? errorMessage;
@@ -36,7 +36,8 @@ class RoomController with ChangeNotifier {
     print('⚠️ [getCurrentUserId] No cached ID, fetching from API...');
 
     try {
-      final result = await _userService.getLoggedUserData();
+      // ✅ استخدام UserCacheService بدلاً من UserService لمنع multiple requests
+      final result = await _userCacheService.getLoggedUserData();
       print('📥 [getCurrentUserId] API Response: $result');
 
       if (result['success'] == true) {

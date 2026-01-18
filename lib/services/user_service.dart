@@ -10,7 +10,9 @@ import 'package:http_parser/http_parser.dart';
 class UserService {
   final ApiService _apiService = ApiService();
 
-  /// الحصول على بيانات المستخدم المسجل
+  /// الحصول على بيانات المستخدم المسجل (بدون cache - للاستخدام الداخلي)
+  /// 
+  /// ⚠️ استخدم UserCacheService.getLoggedUserData() بدلاً من هذه الدالة
   Future<Map<String, dynamic>> getLoggedUserData() async {
     final token = await StorageService.getToken();
     if (token == null) {
