@@ -146,16 +146,17 @@ class _RoomFoldersPageState extends State<RoomFoldersPage> {
 
         if (folderId == null || folderId.isEmpty) return;
 
-        // ✅ محاولة جلب تفاصيل المجلد المشترك في الروم أولاً
+        // ✅ محاولة جلب تفاصيل المجلد العادية أولاً (أكثر دقة للحماية)
+        // ✅ getFolderDetails يعيد معلومات الحماية الصحيحة دائماً
         Map<String, dynamic>? details;
         try {
-          details = await folderController.getSharedFolderDetailsInRoom(
+          details = await folderController.getFolderDetails(
             folderId: folderId,
           );
         } catch (e) {
-          // ✅ إذا فشل، حاول جلب تفاصيل المجلد العادية
+          // ✅ إذا فشل، حاول جلب تفاصيل المجلد المشترك في الروم كبديل
           try {
-            details = await folderController.getFolderDetails(
+            details = await folderController.getSharedFolderDetailsInRoom(
               folderId: folderId,
             );
           } catch (e2) {
@@ -168,14 +169,17 @@ class _RoomFoldersPageState extends State<RoomFoldersPage> {
           final folderInfo = details['folder'] as Map<String, dynamic>;
           final filesCount = folderInfo['filesCount'];
           final size = folderInfo['size'];
+          final isProtected = folderInfo['isProtected'] ?? false;
+          final protectionType = folderInfo['protectionType']?.toString() ?? 'none';
 
-          // ✅ تحديث الـ cache فقط إذا كانت القيم موجودة
-          // ✅ حتى لو كان filesCount = 0، نحدث القيمة
+          // ✅ تحديث الـ cache مع معلومات الحماية
           if (mounted) {
             setState(() {
               _folderDetailsCache[folderId] = {
                 'filesCount': filesCount ?? 0,
                 'size': size ?? 0,
+                'isProtected': isProtected,
+                'protectionType': protectionType,
               };
             });
           }
@@ -321,18 +325,8 @@ class _RoomFoldersPageState extends State<RoomFoldersPage> {
     }
 
     // ✅ تحويل المجلدات إلى format مناسب لـ FilesGridView
-    // ✅ تصفية المجلدات المحمية من العرض في الروم
-    final filteredFolders = folders.where((folder) {
-      final folderIdRef = folder['folderId'];
-      final folderData = folderIdRef is Map<String, dynamic>
-          ? folderIdRef
-          : <String, dynamic>{};
-      // ✅ استبعاد المجلدات المحمية من العرض في الروم
-      final isProtected = folderData['isProtected'] == true;
-      return !isProtected; // ✅ إرجاع false للمجلدات المحمية (لن تظهر)
-    }).toList();
-    
-    final displayFolders = filteredFolders.map((folder) {
+    // ✅ نعرض جميع المجلدات بما فيها المحمية (يتم طلب كلمة السر عند فتحها)
+    final displayFolders = folders.map((folder) {
       final folderIdRef = folder['folderId'];
       final folderData = folderIdRef is Map<String, dynamic>
           ? folderIdRef
@@ -410,14 +404,109 @@ class _RoomFoldersPageState extends State<RoomFoldersPage> {
             return;
           }
 
-          // ✅ التحقق من أن المجلد محمي
-          final folderData = itemData['folderData'] ?? itemData;
-          final isProtected = folderData['isProtected'] == true;
-          final protectionType =
-              folderData['protectionType']?.toString() ?? 'none';
+          // ✅ دائماً التحقق من معلومات الحماية قبل الفتح (مثل المجلدات العادية)
+          print('🔐 [RoomFoldersPage] onItemTap - Checking folder protection...');
+          print('   - folderId: $folderId');
+          print('   - folderName: $folderName');
+          
+          bool isProtected = false;
+          String protectionType = 'none';
+          
+          // ✅ دائماً التحقق من معلومات الحماية من الباك إند للتأكد
+          // ✅ لأن البيانات المحلية قد تكون غير دقيقة (خاصة من getSharedFolderDetailsInRoom)
+          // ✅ لأن getSharedFolderDetailsInRoom قد يعيد معلومات غير صحيحة
+          try {
+            final folderController = Provider.of<FolderController>(
+              context,
+              listen: false,
+            );
+            
+            // ✅ محاولة جلب تفاصيل المجلد العادية أولاً (أكثر دقة)
+            // ✅ getFolderDetails يعيد معلومات الحماية الصحيحة دائماً
+            try {
+              print('🔐 [RoomFoldersPage] Getting folder details from backend for protection check...');
+              final folderDetails = await folderController.getFolderDetails(
+                folderId: folderId,
+              );
+              
+              if (folderDetails != null && folderDetails['folder'] != null) {
+                final folderInfo = folderDetails['folder'] as Map<String, dynamic>;
+                final backendIsProtected = folderInfo['isProtected'] == true;
+                final backendProtectionType = folderInfo['protectionType']?.toString() ?? 'none';
+                
+                // ✅ استخدام معلومات الحماية من getFolderDetails (الأكثر دقة)
+                isProtected = backendIsProtected;
+                protectionType = backendProtectionType;
+                
+                // ✅ تحديث الـ cache مع معلومات الحماية الصحيحة
+                if (mounted) {
+                  setState(() {
+                    _folderDetailsCache[folderId] = {
+                      ...(_folderDetailsCache[folderId] ?? {}),
+                      'isProtected': isProtected,
+                      'protectionType': protectionType,
+                    };
+                  });
+                }
+                
+                print('🔐 [RoomFoldersPage] Protection from getFolderDetails (accurate):');
+                print('   - isProtected: $isProtected');
+                print('   - protectionType: $protectionType');
+              }
+            } catch (e2) {
+              print('⚠️ [RoomFoldersPage] Error in getFolderDetails: $e2');
+              // ✅ إذا كان هناك خطأ 403، المجلد محمي بالتأكيد
+              final errorString = e2.toString().toLowerCase();
+              if (errorString.contains('403') || 
+                  errorString.contains('protected') || 
+                  errorString.contains('verify access')) {
+                isProtected = true;
+                protectionType = 'password';
+                print('🔐 [RoomFoldersPage] Detected 403 - folder is protected');
+              } else {
+                // ✅ إذا فشل getFolderDetails، حاول getSharedFolderDetailsInRoom كبديل
+                try {
+                  print('🔐 [RoomFoldersPage] Trying getSharedFolderDetailsInRoom as fallback...');
+                  final folderDetails = await folderController.getSharedFolderDetailsInRoom(
+                    folderId: folderId,
+                  );
+                  
+                  if (folderDetails != null && folderDetails['folder'] != null) {
+                    final folderInfo = folderDetails['folder'] as Map<String, dynamic>;
+                    isProtected = folderInfo['isProtected'] == true;
+                    protectionType = folderInfo['protectionType']?.toString() ?? 'none';
+                    
+                    // ✅ تحديث الـ cache
+                    if (mounted) {
+                      setState(() {
+                        _folderDetailsCache[folderId] = {
+                          ...(_folderDetailsCache[folderId] ?? {}),
+                          'isProtected': isProtected,
+                          'protectionType': protectionType,
+                        };
+                      });
+                    }
+                    
+                    print('🔐 [RoomFoldersPage] Protection from getSharedFolderDetailsInRoom (fallback):');
+                    print('   - isProtected: $isProtected');
+                    print('   - protectionType: $protectionType');
+                  }
+                } catch (e) {
+                  print('⚠️ [RoomFoldersPage] Error in getSharedFolderDetailsInRoom: $e');
+                }
+              }
+            }
+          } catch (e) {
+            print('⚠️ [RoomFoldersPage] General error in protection check: $e');
+          }
 
-          // ✅ إذا كان المجلد محمي، نطلب كلمة السر أولاً
+          print('🔐 [RoomFoldersPage] Final check result:');
+          print('   - isProtected: $isProtected');
+          print('   - protectionType: $protectionType');
+
+          // ✅ إذا كان المجلد محمي، نطلب كلمة السر أولاً (مثل المجلدات العادية)
           if (isProtected && protectionType != 'none') {
+            print('🔐 [RoomFoldersPage] Folder is protected - requesting password...');
             final result = await showVerifyFolderAccessDialog(
               context,
               folderId,
@@ -427,8 +516,12 @@ class _RoomFoldersPageState extends State<RoomFoldersPage> {
 
             // ✅ إذا لم يتم التحقق بنجاح، نوقف العملية
             if (result['success'] != true) {
+              print('❌ [RoomFoldersPage] Password verification failed');
               return;
             }
+            print('✅ [RoomFoldersPage] Password verified - opening folder');
+          } else {
+            print('✅ [RoomFoldersPage] Folder is not protected - opening directly');
           }
 
           // ✅ بعد التحقق (إذا كان محمياً) أو مباشرة (إذا لم يكن محمياً)، نفتح المجلد

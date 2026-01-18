@@ -1995,22 +1995,7 @@ class _FilesListViewState extends State<FilesListView> {
       return;
     }
 
-    // ✅ التحقق من أن المجلد محمي - منع المشاركة
-    final folderData = folder['folderData'] ?? folder['originalData'] ?? folder;
-    final isProtected = folderData['isProtected'] == true;
-    final protectionType = folderData['protectionType']?.toString() ?? 'none';
-
-    if (isProtected && protectionType != 'none') {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(S.of(context).cannotShareProtectedFolder),
-          backgroundColor: AppColors.warning,
-          duration: const Duration(seconds: 3),
-        ),
-      );
-      return;
-    }
-
+    // ✅ تم السماح بمشاركة المجلدات المحمية في الرومات (يتم طلب كلمة السر عند فتحها)
     if (!context.mounted) return;
 
     final result = await Navigator.push(

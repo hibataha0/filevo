@@ -696,6 +696,9 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "email": MessageLookupByLibrary.simpleMessage("البريد الإلكتروني"),
     "emailAddress": MessageLookupByLibrary.simpleMessage(" البريد الإلكتروني"),
+    "emailChangedSuccessfully": MessageLookupByLibrary.simpleMessage(
+      "✅ تم تغيير البريد الإلكتروني بنجاح",
+    ),
     "emailVerification": MessageLookupByLibrary.simpleMessage(
       "التحقق من البريد الإلكتروني",
     ),
@@ -1873,7 +1876,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "searchFailed": MessageLookupByLibrary.simpleMessage("فشل البحث"),
     "searchHelp": MessageLookupByLibrary.simpleMessage("مساعدة البحث"),
     "searchHint": MessageLookupByLibrary.simpleMessage(
-      "ابحث... (مثال: صور من الأسبوع الماضي)",
+      "ابحث... (مثال: صور من الأسبوع الماضي أو #work)",
     ),
     "searchInDocument": MessageLookupByLibrary.simpleMessage("بحث في المستند"),
     "searchInFiles": MessageLookupByLibrary.simpleMessage("ابحث في ملفاتك"),

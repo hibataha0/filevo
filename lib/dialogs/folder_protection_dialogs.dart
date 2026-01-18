@@ -19,15 +19,18 @@ Future<void> showSetFolderProtectionDialog(
   print('🔐 [showSetFolderProtectionDialog] Checking protection status:');
   print('   - isCurrentlyProtected: $isCurrentlyProtected');
   print('   - currentProtectionType: $currentProtectionType');
-  
+
   if (isCurrentlyProtected) {
     // ✅ استخدام protectionType من البيانات أو افتراض 'password' إذا لم يكن محدداً
-    final protectionType = (currentProtectionType != null && currentProtectionType != 'none')
+    final protectionType =
+        (currentProtectionType != null && currentProtectionType != 'none')
         ? currentProtectionType
         : 'password'; // ✅ افتراض password إذا لم يكن محدداً
-    
-    print('🔓 [showSetFolderProtectionDialog] Opening remove protection dialog with type: $protectionType');
-    
+
+    print(
+      '🔓 [showSetFolderProtectionDialog] Opening remove protection dialog with type: $protectionType',
+    );
+
     await showRemoveFolderProtectionDialog(
       context,
       folderId,
@@ -37,7 +40,7 @@ Future<void> showSetFolderProtectionDialog(
     );
     return;
   }
-  
+
   print('🔒 [showSetFolderProtectionDialog] Opening set protection dialog');
 
   // ✅ إذا لم يكن محمياً، استخدم الـ dialog العادي لتعيين الحماية
@@ -205,11 +208,15 @@ Future<void> showSetFolderProtectionDialog(
                 // ✅ استخدام WidgetsBinding للتأكد من أن الـ dialog تم إغلاقه والـ Scaffold جاهز
                 WidgetsBinding.instance.addPostFrameCallback((_) {
                   if (scaffoldContext.mounted) {
-                    final messenger = ScaffoldMessenger.maybeOf(scaffoldContext);
+                    final messenger = ScaffoldMessenger.maybeOf(
+                      scaffoldContext,
+                    );
                     if (messenger != null) {
                       messenger.showSnackBar(
                         SnackBar(
-                          content: Text(S.of(scaffoldContext).folderProtectionEnabled),
+                          content: Text(
+                            S.of(scaffoldContext).folderProtectionEnabled,
+                          ),
                           backgroundColor: Colors.green,
                           duration: Duration(seconds: 2),
                         ),
@@ -623,7 +630,7 @@ Future<Map<String, dynamic>> showVerifyFolderAccessDialog(
                       SizedBox(width: 8),
                       Expanded(
                         child: Text(
-                          errorMessage!,
+                          S.of(context).incorrectPassword,
                           style: TextStyle(
                             color: Colors.red[700],
                             fontSize: 14,
@@ -810,6 +817,9 @@ Future<void> _verifyAccess(
     setResult(true, password); // ✅ إرجاع success و password
     Navigator.pop(dialogContext);
   } else {
+    // ✅ عرض رسالة الخطأ داخل dialog
+    setResult(false, null);
+
     // ✅ عرض رسالة الخطأ داخل dialog
     setResult(false, null);
     setErrorMessage(

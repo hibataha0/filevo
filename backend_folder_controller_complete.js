@@ -453,59 +453,101 @@ exports.uploadFolder = asyncHandler(async (req, res, next) => {
 exports.getFolderDetails = asyncHandler(async (req, res, next) => {
   const folderId = req.params.id;
   const userId = req.user._id;
+  const Room = require("../models/roomModel");
+  const User = require("../models/userModel");
 
-  // Find folder (owned by user OR shared with user)
-  let folder = await Folder.findById(folderId)
-    .populate("userId", "name email")
-    .populate("sharedWith.user", "name email");
+  // ✅ تشغيل folder query و count queries بشكل متوازي
+  // ✅ استخدام req.folder من checkFolderAccess middleware (يحتوي على معلومات الحماية)
+  const folderFromMiddleware = req.folder;
+  const [folderDoc, subfoldersCount, directFilesCount] = await Promise.all([
+    Folder.findById(folderId)
+      .select(
+        "name path size filesCount description tags isShared isStarred parentId userId sharedWith createdAt updatedAt isProtected protectionType"
+      )
+      .populate("userId", "name email")
+      .populate("sharedWith.user", "name email"),
+    Folder.countDocuments({
+      parentId: folderId,
+      isDeleted: false,
+    }),
+    File.countDocuments({
+      parentFolderId: folderId,
+      isDeleted: false,
+    }),
+  ]);
 
-  if (!folder) {
+  if (!folderDoc) {
     return next(new ApiError("Folder not found", 404));
   }
 
+  const folder = folderDoc.toObject();
+
   // Check if user has access
-  const isOwner = folder.userId._id.toString() === userId.toString();
-  const isSharedWith = folder.sharedWith.some((sw) => {
-    const userIdInShared = sw.user?._id?.toString() || sw.user?.toString();
-    return userIdInShared === userId.toString();
-  });
+  const isOwner =
+    (folder.userId._id || folder.userId).toString() === userId.toString();
+  const isSharedWith =
+    folder.sharedWith && folder.sharedWith.some
+      ? folder.sharedWith.some((sw) => {
+          const userIdInShared =
+            sw.user && sw.user._id
+              ? sw.user._id.toString()
+              : sw.user
+                ? sw.user.toString()
+                : null;
+          return userIdInShared === userId.toString();
+        })
+      : false;
 
   // Check if folder is shared in a room where user is a member
   let isSharedInRoom = false;
   let roomInfo = null;
   let sharedInRoomInfo = null;
+  let parentFolder = null;
+
+  // ✅ تشغيل Room query و parentFolder query بشكل متوازي
+  const parallelQueries = [];
 
   if (!isOwner && !isSharedWith) {
-    const Room = require("../models/roomModel");
-    const room = await Room.findOne({
-      "folders.folderId": folderId,
-      "members.user": userId,
-      isActive: true,
-    })
-      .populate("owner", "name email")
-      .populate("members.user", "name email");
+    parallelQueries.push(
+      Room.findOne({
+        "folders.folderId": folderId,
+        "members.user": userId,
+        isActive: true,
+      })
+        .select("name description folders")
+        .lean()
+    );
+  }
 
+  if (folder.parentId) {
+    parallelQueries.push(
+      Folder.findById(folder.parentId).select("name").lean()
+    );
+  }
+
+  const parallelResults = await Promise.all(parallelQueries);
+
+  if (!isOwner && !isSharedWith) {
+    const room = parallelResults[0];
     isSharedInRoom = !!room;
 
     if (room) {
-      // Get folder sharing info from room
-      const folderInRoom = room.folders.find(
-        (f) => f.folderId.toString() === folderId
-      );
+      const folderInRoom =
+        room.folders && room.folders.find
+          ? room.folders.find(
+              (f) => (f.folderId ? f.folderId.toString() : null) === folderId
+            )
+          : null;
       roomInfo = {
         _id: room._id,
         name: room.name,
         description: room.description,
       };
 
-      if (folderInRoom) {
-        // Populate sharedBy if it exists
-        let sharedByUser = null;
-        if (folderInRoom.sharedBy) {
-          sharedByUser = await User.findById(folderInRoom.sharedBy).select(
-            "name email"
-          );
-        }
+      if (folderInRoom && folderInRoom.sharedBy) {
+        const sharedByUser = await User.findById(folderInRoom.sharedBy)
+          .select("name email")
+          .lean();
 
         sharedInRoomInfo = {
           sharedAt: folderInRoom.sharedAt,
@@ -518,6 +560,12 @@ exports.getFolderDetails = asyncHandler(async (req, res, next) => {
             : null,
           room: roomInfo,
         };
+      } else if (folderInRoom) {
+        sharedInRoomInfo = {
+          sharedAt: folderInRoom.sharedAt,
+          sharedBy: null,
+          room: roomInfo,
+        };
       }
     }
 
@@ -526,25 +574,16 @@ exports.getFolderDetails = asyncHandler(async (req, res, next) => {
     }
   }
 
-  const subfoldersCount = await Folder.countDocuments({
-    parentId: folderId,
-    isDeleted: false,
-  });
-
-  // ✅ حساب الحجم وعدد الملفات بشكل recursive
-  const totalSize = await calculateFolderSizeRecursive(folderId);
-  const totalFilesCount = await calculateFolderFilesCountRecursive(folderId);
-
-  // ✅ عدد الملفات المباشرة (في المجلد نفسه فقط)
-  const directFilesCount = await File.countDocuments({
-    parentFolderId: folderId,
-    isDeleted: false,
-  });
-
-  let parentFolder = null;
   if (folder.parentId) {
-    parentFolder = await Folder.findById(folder.parentId);
+    parentFolder = parallelResults[!isOwner && !isSharedWith ? 1 : 0];
   }
+
+  // ✅ نعرض جميع المجلدات الفرعية بما فيها المحمية (يتم طلب كلمة السر عند فتحها)
+  const finalSubfoldersCount = subfoldersCount;
+
+  // ✅ استخدام الحقول المحفوظة مباشرة بدلاً من الحساب recursive
+  const totalSize = folder.size || 0;
+  const totalFilesCount = folder.filesCount || 0;
 
   const formatBytes = (bytes) => {
     if (bytes === 0) return "0 Bytes";
@@ -578,10 +617,12 @@ exports.getFolderDetails = asyncHandler(async (req, res, next) => {
     isShared: folder.isShared,
     sharedWith: folder.sharedWith,
     sharedWithCount: folder.sharedWith.length,
-    subfoldersCount: subfoldersCount,
+    subfoldersCount: finalSubfoldersCount,
     filesCount: totalFilesCount, // ✅ عدد الملفات الكلي (recursive)
-    totalItems: subfoldersCount + directFilesCount, // ✅ العناصر المباشرة فقط
+    totalItems: finalSubfoldersCount + directFilesCount, // ✅ العناصر المباشرة فقط
     isStarred: folder.isStarred,
+    isProtected: folder.isProtected || false, // ✅ إضافة معلومات الحماية
+    protectionType: folder.protectionType || "none", // ✅ إضافة نوع الحماية
     createdAt: folder.createdAt,
     updatedAt: folder.updatedAt,
     lastModified: folder.updatedAt,
@@ -1607,6 +1648,8 @@ exports.getSharedFolderDetailsInRoom = asyncHandler(async (req, res, next) => {
       subfoldersCount: subfoldersCount,
       filesCount: filesCount,
       totalItems: subfoldersCount + filesCount,
+      isProtected: folder.isProtected || false, // ✅ إضافة معلومات الحماية
+      protectionType: folder.protectionType || "none", // ✅ إضافة نوع الحماية
     },
   });
 });

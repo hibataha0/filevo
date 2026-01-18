@@ -940,25 +940,8 @@ class FolderFileCard extends StatelessWidget {
                           icon: Icons.share,
                           title: S.of(context).share,
                           onTap: () {
-                            // ✅ التحقق من أن المجلد محمي - منع المشاركة
-                            final isProtected = _isFolderProtected();
                             Navigator.pop(context);
-
-                            if (isProtected) {
-                              // ✅ استخدام scaffoldContext الأصلي
-                              ScaffoldMessenger.of(
-                                scaffoldContext,
-                              ).showSnackBar(
-                                SnackBar(
-                                  content: Text(
-                                    S.of(scaffoldContext).cannotShareProtectedFolder,
-                                  ),
-                                  backgroundColor: AppColors.warning,
-                                  duration: const Duration(seconds: 3),
-                                ),
-                              );
-                              return;
-                            }
+                            // ✅ تم السماح بمشاركة المجلدات المحمية في الرومات (يتم طلب كلمة السر عند فتحها)
                             onShareTap?.call();
                           },
                         ),

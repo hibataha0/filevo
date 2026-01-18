@@ -748,6 +748,9 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "email": MessageLookupByLibrary.simpleMessage("Email"),
     "emailAddress": MessageLookupByLibrary.simpleMessage("Email Address*"),
+    "emailChangedSuccessfully": MessageLookupByLibrary.simpleMessage(
+      "✅ Email changed successfully",
+    ),
     "emailVerification": MessageLookupByLibrary.simpleMessage(
       "Email Verification",
     ),
@@ -2023,7 +2026,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "searchFailed": MessageLookupByLibrary.simpleMessage("Search failed"),
     "searchHelp": MessageLookupByLibrary.simpleMessage("Search Help"),
     "searchHint": MessageLookupByLibrary.simpleMessage(
-      "Search... (e.g., photos from last week)",
+      "Search... (e.g., photos from last week or #work)",
     ),
     "searchInDocument": MessageLookupByLibrary.simpleMessage(
       "Search in document",

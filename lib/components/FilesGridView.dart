@@ -685,22 +685,7 @@ void _showShareDialog(BuildContext context, Map<String, dynamic> folder) async {
     return;
   }
 
-  // ✅ التحقق من أن المجلد محمي - منع المشاركة
-  final folderData = folder['folderData'] ?? folder;
-  final isProtected = folderData['isProtected'] == true;
-  final protectionType = folderData['protectionType']?.toString() ?? 'none';
-
-  if (isProtected && protectionType != 'none') {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(S.of(context).cannotShareProtectedFolder),
-        backgroundColor: Colors.orange,
-        duration: const Duration(seconds: 3),
-      ),
-    );
-    return;
-  }
-
+  // ✅ تم السماح بمشاركة المجلدات المحمية في الرومات (يتم طلب كلمة السر عند فتحها)
   final result = await Navigator.push(
     context,
     MaterialPageRoute(

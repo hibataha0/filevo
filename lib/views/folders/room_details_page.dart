@@ -29,6 +29,7 @@ import 'package:filevo/services/storage_service.dart';
 import 'package:filevo/utils/room_permissions.dart';
 import 'package:pull_to_refresh/pull_to_refresh.dart';
 import 'package:shimmer/shimmer.dart';
+import 'package:filevo/dialogs/folder_protection_dialogs.dart';
 
 class RoomDetailsPage extends StatefulWidget {
   final String roomId;
@@ -2437,8 +2438,118 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
     );
 
     return InkWell(
-      onTap: () {
-        if (folderId != null && folderId.isNotEmpty) {
+      onTap: () async {
+        if (folderId == null || folderId.isEmpty) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(S.of(context).folderIdNotAvailable)),
+          );
+          return;
+        }
+
+        // ✅ التحقق من معلومات الحماية قبل فتح المجلد (مثل RoomFoldersPage)
+        print('🔐 [RoomDetailsPage] onFolderTap - Checking folder protection...');
+        print('   - folderId: $folderId');
+        print('   - folderName: $folderName');
+        
+        bool isProtected = false;
+        String protectionType = 'none';
+        
+        try {
+          final folderController = Provider.of<FolderController>(
+            context,
+            listen: false,
+          );
+          
+          // ✅ محاولة جلب تفاصيل المجلد العادية أولاً (أكثر دقة)
+          try {
+            print('🔐 [RoomDetailsPage] Getting folder details from backend for protection check...');
+            final folderDetails = await folderController.getFolderDetails(
+              folderId: folderId,
+            );
+            
+            if (folderDetails != null && folderDetails['folder'] != null) {
+              final folderInfo = folderDetails['folder'] as Map<String, dynamic>;
+              final backendIsProtected = folderInfo['isProtected'] == true;
+              final backendProtectionType = folderInfo['protectionType']?.toString() ?? 'none';
+              
+              isProtected = backendIsProtected;
+              protectionType = backendProtectionType;
+              
+              print('🔐 [RoomDetailsPage] Protection from getFolderDetails (accurate):');
+              print('   - isProtected: $isProtected');
+              print('   - protectionType: $protectionType');
+            }
+          } catch (e2) {
+            print('⚠️ [RoomDetailsPage] Error in getFolderDetails: $e2');
+            // ✅ إذا كان هناك خطأ 403، المجلد محمي بالتأكيد
+            final errorString = e2.toString().toLowerCase();
+            if (errorString.contains('403') || 
+                errorString.contains('protected') || 
+                errorString.contains('verify access')) {
+              isProtected = true;
+              protectionType = 'password';
+              print('🔐 [RoomDetailsPage] Detected 403 - folder is protected');
+            } else {
+              // ✅ إذا فشل getFolderDetails، حاول getSharedFolderDetailsInRoom كبديل
+              try {
+                print('🔐 [RoomDetailsPage] Trying getSharedFolderDetailsInRoom as fallback...');
+                final folderDetails = await folderController.getSharedFolderDetailsInRoom(
+                  folderId: folderId,
+                );
+                
+                if (folderDetails != null && folderDetails['folder'] != null) {
+                  final folderInfo = folderDetails['folder'] as Map<String, dynamic>;
+                  isProtected = folderInfo['isProtected'] == true;
+                  protectionType = folderInfo['protectionType']?.toString() ?? 'none';
+                  
+                  print('🔐 [RoomDetailsPage] Protection from getSharedFolderDetailsInRoom (fallback):');
+                  print('   - isProtected: $isProtected');
+                  print('   - protectionType: $protectionType');
+                }
+              } catch (e) {
+                print('⚠️ [RoomDetailsPage] Error in getSharedFolderDetailsInRoom: $e');
+                // ✅ إذا فشل كل شيء، استخدام البيانات المحلية كـ fallback
+                isProtected = folderData['isProtected'] == true;
+                protectionType = folderData['protectionType']?.toString() ?? 'none';
+                print('🔐 [RoomDetailsPage] Using local data fallback:');
+                print('   - isProtected: $isProtected');
+                print('   - protectionType: $protectionType');
+              }
+            }
+          }
+        } catch (e) {
+          print('⚠️ [RoomDetailsPage] General error in protection check: $e');
+          // ✅ في حالة فشل، استخدام البيانات المحلية
+          isProtected = folderData['isProtected'] == true;
+          protectionType = folderData['protectionType']?.toString() ?? 'none';
+        }
+
+        print('🔐 [RoomDetailsPage] Final check result:');
+        print('   - isProtected: $isProtected');
+        print('   - protectionType: $protectionType');
+
+        // ✅ إذا كان المجلد محمي، نطلب كلمة السر أولاً
+        if (isProtected && protectionType != 'none') {
+          print('🔐 [RoomDetailsPage] Folder is protected - requesting password...');
+          final result = await showVerifyFolderAccessDialog(
+            context,
+            folderId,
+            folderName,
+            protectionType,
+          );
+
+          // ✅ إذا لم يتم التحقق بنجاح، نوقف العملية
+          if (result['success'] != true) {
+            print('❌ [RoomDetailsPage] Password verification failed');
+            return;
+          }
+          print('✅ [RoomDetailsPage] Password verified - opening folder');
+        } else {
+          print('✅ [RoomDetailsPage] Folder is not protected - opening directly');
+        }
+
+        // ✅ بعد التحقق (إذا كان محمياً) أو مباشرة (إذا لم يكن محمياً)، نفتح المجلد
+        if (mounted) {
           Navigator.push(
             context,
             MaterialPageRoute(
@@ -2448,13 +2559,10 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
                   folderId: folderId,
                   folderName: folderName,
                   folderColor: Color(0xFF8B5CF6),
+                  roomId: widget.roomId, // ✅ تمرير roomId للمجلدات المشتركة
                 ),
               ),
             ),
-          );
-        } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(S.of(context).folderIdNotAvailable)),
           );
         }
       },

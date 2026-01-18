@@ -394,10 +394,10 @@ class S {
     );
   }
 
-  /// `Search... (e.g., photos from last week)`
+  /// `Search... (e.g., photos from last week or #work)`
   String get searchHint {
     return Intl.message(
-      'Search... (e.g., photos from last week)',
+      'Search... (e.g., photos from last week or #work)',
       name: 'searchHint',
       desc: '',
       args: [],
@@ -3607,6 +3607,16 @@ class S {
   /// `Resend`
   String get resend {
     return Intl.message('Resend', name: 'resend', desc: '', args: []);
+  }
+
+  /// `✅ Email changed successfully`
+  String get emailChangedSuccessfully {
+    return Intl.message(
+      '✅ Email changed successfully',
+      name: 'emailChangedSuccessfully',
+      desc: '',
+      args: [],
+    );
   }
 
   /// `Open file as text: {fileName}`

@@ -103,7 +103,8 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
 
       if (!mounted) return;
       
-      // ✅ التحقق من خطأ 403 (مجلد محمي)
+      // ✅ التحقق من خطأ 403 (مجلد محمي) - فقط للمجلدات غير المشتركة في الروم
+      // ✅ المجلدات المشتركة في الروم يتم التحقق منها في RoomFoldersPage قبل الفتح
       if (result == null && folderController.errorMessage != null) {
         final errorMessage = folderController.errorMessage!.toLowerCase();
         if (errorMessage.contains('403') || 
@@ -189,17 +190,7 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
         if (result['contents'] != null) {
           newContents = List<Map<String, dynamic>>.from(result['contents']);
           
-          // ✅ إذا كان المجلد مشترك في الروم، تصفية المجلدات المحمية
-          if (widget.roomId != null && widget.roomId!.isNotEmpty) {
-            newContents = newContents.where((item) {
-              if (item['type'] == 'folder') {
-                final isProtected = item['isProtected'] == true;
-                // ✅ استبعاد المجلدات المحمية من العرض في الروم
-                return !isProtected;
-              }
-              return true; // ✅ الملفات تظهر دائماً
-            }).toList();
-          }
+          // ✅ نعرض جميع المجلدات الفرعية بما فيها المحمية (يتم طلب كلمة السر عند فتحها)
           
           newContents.sort((a, b) {
             final aType = a['type'] as String?;
@@ -214,18 +205,9 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
           );
           final files = List<Map<String, dynamic>>.from(result['files'] ?? []);
           
-          // ✅ إذا كان المجلد مشترك في الروم، تصفية المجلدات المحمية
-          List<Map<String, dynamic>> filteredSubfolders = subfolders;
-          if (widget.roomId != null && widget.roomId!.isNotEmpty) {
-            filteredSubfolders = subfolders.where((f) {
-              final isProtected = f['isProtected'] == true;
-              // ✅ استبعاد المجلدات المحمية من العرض في الروم
-              return !isProtected;
-            }).toList();
-          }
-          
+          // ✅ نعرض جميع المجلدات الفرعية بما فيها المحمية (يتم طلب كلمة السر عند فتحها)
           newContents = [
-            ...filteredSubfolders.map((f) => {...f, 'type': 'folder'}),
+            ...subfolders.map((f) => {...f, 'type': 'folder'}),
             ...files.map((f) => {...f, 'type': 'file'}),
           ];
         }
@@ -2099,21 +2081,7 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
                         title: S.of(context).share,
                         onTap: () async {
                           Navigator.pop(context);
-                          // ✅ التحقق من أن المجلد محمي - منع المشاركة
-                          final folderData = folder['folderData'] ?? folder;
-                          final isProtected = folderData['isProtected'] == true;
-                          final protectionType = folderData['protectionType']?.toString() ?? 'none';
-
-                          if (isProtected && protectionType != 'none') {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(S.of(context).cannotShareProtectedFolder),
-                                backgroundColor: AppColors.warning,
-                                duration: Duration(seconds: 3),
-                              ),
-                            );
-                            return;
-                          }
+                          // ✅ تم السماح بمشاركة المجلدات المحمية في الرومات (يتم طلب كلمة السر عند فتحها)
                           await _showShareDialog();
                         },
                       ),
