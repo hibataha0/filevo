@@ -14,18 +14,39 @@ class UserService {
   /// 
   /// ⚠️ استخدم UserCacheService.getLoggedUserData() بدلاً من هذه الدالة
   Future<Map<String, dynamic>> getLoggedUserData() async {
+    print('🔑 [UserService] Getting token from storage...');
     final token = await StorageService.getToken();
+    
     if (token == null) {
+      print('❌ [UserService] No token found!');
       return {
         'success': false,
         'error': 'لا يوجد token. يرجى تسجيل الدخول',
       };
     }
+    
+    print('✅ [UserService] Token found (length: ${token.length})');
+    print('   Token preview: ${token.substring(0, 20)}...');
 
+    print('📡 [UserService] Calling API: ${ApiEndpoints.getMe}');
     final result = await _apiService.get(
       ApiEndpoints.getMe,
       token: token,
     );
+    
+    // ✅ طباعة البيانات المرجعة
+    if (result['success'] == true) {
+      final data = result['data'];
+      if (data is Map) {
+        final userId = data['_id'] ?? data['id'] ?? data['user']?['_id'];
+        final userName = data['name'] ?? data['user']?['name'];
+        print('✅ [UserService] API returned user data:');
+        print('   User ID: $userId');
+        print('   User Name: $userName');
+      }
+    } else {
+      print('❌ [UserService] API failed: ${result['error']}');
+    }
 
     return result;
   }

@@ -117,13 +117,13 @@ class _ProfilePageState extends State<ProfilePage> {
                           fontWeight: FontWeight.w600,
                         ),
                       ),
-                      // if (profileController.userEmail != null) ...[
-                      //   const SizedBox(height: 6),
-                      //   Text(
-                      //     profileController.userEmail!,
-                      //     style: const TextStyle(color: Colors.white70, fontSize: 14),
-                      //   ),
-                      // ],
+                      if (profileController.userEmail != null) ...[
+                        const SizedBox(height: 6),
+                        Text(
+                          profileController.userEmail!,
+                          style: const TextStyle(color: Colors.white70, fontSize: 14),
+                        ),
+                      ],
                     ],
                   ),
                 ),

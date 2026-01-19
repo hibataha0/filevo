@@ -45,6 +45,10 @@ class ProfileController with ChangeNotifier {
   ///
   /// [forceRefresh] - إذا true، يتم تجاهل الـ cache وجلب البيانات من السيرفر مباشرة
   Future<void> getLoggedUserData({bool forceRefresh = false}) async {
+    print(
+      '📥 [ProfileController] getLoggedUserData called (forceRefresh: $forceRefresh)',
+    );
+
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
@@ -55,18 +59,39 @@ class ProfileController with ChangeNotifier {
         forceRefresh: forceRefresh,
       );
 
+      print('📦 [ProfileController] API result received: ${result['success']}');
+
       if (result['success'] == true) {
+        print('🎯 ProfileController: API success! Processing data...');
+
         _userData = _extractUserData(result['data']);
-        print('✅ ProfileController: Fetched user data: $_userData');
+
         if (_userData != null) {
           print(
             '✅ ProfileController: User data keys: ${_userData!.keys.toList()}',
           );
           print('✅ ProfileController: User name: ${_userData!['name']}');
           print('✅ ProfileController: User email: ${_userData!['email']}');
+
+          print('✅ ProfileController: User data extracted successfully!');
+          print('   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+          print('   📋 Full User Data:');
+          print('   User ID: ${_userData!['_id']}');
+          print('   Name: ${_userData!['name']}');
+          print('   Email: ${_userData!['email']}');
+          print('   Phone: ${_userData!['phone']}');
+          print('   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+          print('   🔍 Getters Check:');
+          print('   userName: $userName');
+          print('   userEmail: $userEmail');
+          print('   userPhone: $userPhone');
+          print('   profileImage: $profileImage');
+          print('   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
         } else {
-          print('⚠️ ProfileController: User data is null after extraction');
+          print('❌ ProfileController: User data is NULL after extraction!');
+          print('   Raw data: ${result['data']}');
         }
+
         _errorMessage = null;
       } else {
         final errorMsg =

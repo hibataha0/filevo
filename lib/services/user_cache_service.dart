@@ -9,13 +9,13 @@ class UserCacheService {
 
   /// البيانات المخزنة في الذاكرة
   Map<String, dynamic>? _cachedUserData;
-  
+
   /// وقت آخر تحديث للبيانات
   DateTime? _lastFetchTime;
-  
+
   /// مدة صلاحية الـ cache (دقيقة واحدة فقط)
   final Duration _cacheDuration = const Duration(seconds: 30);
-  
+
   /// طلب شغال حالياً
   Future<Map<String, dynamic>>? _pendingRequest;
 
@@ -41,16 +41,16 @@ class UserCacheService {
 
     // ارسل طلب جديد
     _pendingRequest = _fetchFromAPI();
-    
+
     try {
       final result = await _pendingRequest!;
-      
+
       // احفظ البيانات في الـ cache
       if (result['success'] == true) {
         _cachedUserData = result;
         _lastFetchTime = DateTime.now();
       }
-      
+
       return result;
     } finally {
       _pendingRequest = null;
@@ -81,8 +81,31 @@ class UserCacheService {
 
   /// مسح الـ cache
   void clearCache() {
+    print('🧹 [UserCacheService] Clearing cache...');
+    print(
+      '   - Old cached data: ${_cachedUserData != null ? "exists" : "null"}',
+    );
+    print(
+      '   - Old cache age: ${_lastFetchTime != null ? DateTime.now().difference(_lastFetchTime!).inMinutes : "N/A"} minutes',
+    );
+
     _cachedUserData = null;
     _lastFetchTime = null;
-    _pendingRequest = null;
+    _pendingRequest = null; // ✅ امسح الـ pending request أيضاً
+
+    print('✅ [UserCacheService] Cache cleared successfully!');
+  }
+
+  /// الحصول على البيانات المخزنة (بدون API call)
+  Map<String, dynamic>? getCachedData() {
+    if (_isCacheValid()) {
+      return _cachedUserData;
+    }
+    return null;
+  }
+
+  /// التحقق من وجود بيانات صالحة في الـ cache
+  bool hasCachedData() {
+    return _isCacheValid();
   }
 }
