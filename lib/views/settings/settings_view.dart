@@ -1,4 +1,6 @@
+import 'package:filevo/controllers/profile/profile_controller.dart';
 import 'package:filevo/main.dart';
+import 'package:filevo/services/user_cache_service.dart';
 import 'package:filevo/views/settings/AboutPage.dart';
 import 'package:filevo/views/settings/HelpSupportPage.dart';
 import 'package:filevo/views/settings/LegalPolicyPage.dart';
@@ -37,24 +39,18 @@ class _SettingsPageState extends State<SettingsPage> {
           backgroundColor: AppColors.getCardColor(isDarkMode),
           title: Text(
             S.of(context).logout,
-            style: TextStyle(
-              color: AppColors.getTextPrimary(isDarkMode),
-            ),
+            style: TextStyle(color: AppColors.getTextPrimary(isDarkMode)),
           ),
           content: Text(
             S.of(context).signOut,
-            style: TextStyle(
-              color: AppColors.getTextPrimary(isDarkMode),
-            ),
+            style: TextStyle(color: AppColors.getTextPrimary(isDarkMode)),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(false),
               child: Text(
                 S.of(context).cancel,
-                style: TextStyle(
-                  color: AppColors.getTextSecondary(isDarkMode),
-                ),
+                style: TextStyle(color: AppColors.getTextSecondary(isDarkMode)),
               ),
             ),
             TextButton(
@@ -71,8 +67,22 @@ class _SettingsPageState extends State<SettingsPage> {
 
     if (confirm == true) {
       final authController = context.read<AuthController>();
+      final profileController = context.read<ProfileController>();
+
+      // 🔹 1. إرسال request للـ backend
       await authController.logout();
 
+      // 🔹 2. مسح cache المستخدم
+      UserCacheService().clearCache();
+
+      // 🔹 3. مسح بيانات المستخدم من ProfileController
+      profileController.clearUserData();
+
+      // 🔹 4. حذف token و userId
+      await StorageService.deleteToken();
+      await StorageService.deleteUserId();
+
+      // 🔹 5. إظهار SnackBar تأكيد
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -81,6 +91,7 @@ class _SettingsPageState extends State<SettingsPage> {
           ),
         );
 
+        // 🔹 6. إعادة التوجيه لشاشة تسجيل الدخول مع مسح الـ navigation stack
         Navigator.of(
           context,
         ).pushNamedAndRemoveUntil('LogInPage', (route) => false);
@@ -119,15 +130,10 @@ class _SettingsPageState extends State<SettingsPage> {
                 ),
                 title: Text(
                   S.of(context).english,
-                  style: TextStyle(
-                    color: AppColors.getTextPrimary(isDarkMode),
-                  ),
+                  style: TextStyle(color: AppColors.getTextPrimary(isDarkMode)),
                 ),
                 trailing: _selectedLocale.languageCode == 'en'
-                    ? Icon(
-                        Icons.check,
-                        color: AppColors.getPrimary(isDarkMode),
-                      )
+                    ? Icon(Icons.check, color: AppColors.getPrimary(isDarkMode))
                     : null,
                 onTap: () {
                   setState(() => _selectedLocale = const Locale('en'));
@@ -142,15 +148,10 @@ class _SettingsPageState extends State<SettingsPage> {
                 ),
                 title: Text(
                   S.of(context).arabic,
-                  style: TextStyle(
-                    color: AppColors.getTextPrimary(isDarkMode),
-                  ),
+                  style: TextStyle(color: AppColors.getTextPrimary(isDarkMode)),
                 ),
                 trailing: _selectedLocale.languageCode == 'ar'
-                    ? Icon(
-                        Icons.check,
-                        color: AppColors.getPrimary(isDarkMode),
-                      )
+                    ? Icon(Icons.check, color: AppColors.getPrimary(isDarkMode))
                     : null,
                 onTap: () {
                   setState(() => _selectedLocale = const Locale('ar'));
@@ -205,9 +206,7 @@ class _SettingsPageState extends State<SettingsPage> {
                         top: Radius.circular(30),
                       ),
                     ),
-                    color: AppColors.getBackground(
-                      themeController.isDarkMode,
-                    ),
+                    color: AppColors.getBackground(themeController.isDarkMode),
                     child: SingleChildScrollView(
                       physics: const BouncingScrollPhysics(),
                       padding: const EdgeInsets.all(20.0),
@@ -324,15 +323,17 @@ class _SettingsPageState extends State<SettingsPage> {
                                     builder: (context) {
                                       final isDarkMode =
                                           Theme.of(context).brightness ==
-                                              Brightness.dark;
+                                          Brightness.dark;
                                       return AlertDialog(
-                                        backgroundColor:
-                                            AppColors.getCardColor(isDarkMode),
+                                        backgroundColor: AppColors.getCardColor(
+                                          isDarkMode,
+                                        ),
                                         title: Text(
                                           S.of(context).trash,
                                           style: TextStyle(
                                             color: AppColors.getTextPrimary(
-                                                isDarkMode),
+                                              isDarkMode,
+                                            ),
                                           ),
                                         ),
                                         content: Column(
@@ -341,14 +342,18 @@ class _SettingsPageState extends State<SettingsPage> {
                                             ListTile(
                                               leading: Icon(
                                                 Icons.insert_drive_file,
-                                                color: AppColors.getTextSecondary(
-                                                    isDarkMode),
+                                                color:
+                                                    AppColors.getTextSecondary(
+                                                      isDarkMode,
+                                                    ),
                                               ),
                                               title: Text(
                                                 S.of(context).deletedFiles,
                                                 style: TextStyle(
-                                                  color: AppColors.getTextPrimary(
-                                                      isDarkMode),
+                                                  color:
+                                                      AppColors.getTextPrimary(
+                                                        isDarkMode,
+                                                      ),
                                                 ),
                                               ),
                                               onTap: () {
@@ -367,14 +372,18 @@ class _SettingsPageState extends State<SettingsPage> {
                                             ListTile(
                                               leading: Icon(
                                                 Icons.folder,
-                                                color: AppColors.getTextSecondary(
-                                                    isDarkMode),
+                                                color:
+                                                    AppColors.getTextSecondary(
+                                                      isDarkMode,
+                                                    ),
                                               ),
                                               title: Text(
                                                 S.of(context).deletedFolders,
                                                 style: TextStyle(
-                                                  color: AppColors.getTextPrimary(
-                                                      isDarkMode),
+                                                  color:
+                                                      AppColors.getTextPrimary(
+                                                        isDarkMode,
+                                                      ),
                                                 ),
                                               ),
                                               onTap: () {

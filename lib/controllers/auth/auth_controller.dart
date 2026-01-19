@@ -1,10 +1,12 @@
 import 'package:filevo/services/storage_service.dart';
+import 'package:filevo/services/user_cache_service.dart';
 import 'package:flutter/material.dart';
 import 'package:filevo/services/auth_service.dart';
 import 'package:filevo/generated/l10n.dart';
 
 class AuthController extends ChangeNotifier {
   final AuthService _authService = AuthService();
+  final UserCacheService _userCacheService = UserCacheService();
 
   bool _isLoading = false;
   String? _errorMessage;
@@ -38,6 +40,9 @@ class AuthController extends ChangeNotifier {
     print('AuthController: Login result: $result');
 
     if (result['success'] == true) {
+      // ✅ مسح الـ cache عند تسجيل دخول جديد
+      _userCacheService.clearCache();
+      
       if (result['token'] != null) {
         await StorageService.saveToken(result['token']);
       }
@@ -184,6 +189,8 @@ class AuthController extends ChangeNotifier {
   }
 
   Future<void> logout() async {
+    // ✅ مسح الـ cache عند تسجيل الخروج
+    _userCacheService.clearCache();
     await _authService.logout();
   }
 

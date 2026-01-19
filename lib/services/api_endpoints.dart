@@ -4,11 +4,12 @@
 class ApiEndpoints {
   // Base path
   static const String _basePath = '/api/v1';
-  
+
   // Auth endpoints
   static const String login = '$_basePath/auth/login';
   static const String register = '$_basePath/auth/registerUser';
   static const String logout = '$_basePath/auth/logout';
+
   static const String refreshToken = '$_basePath/auth/refresh';
   static const String forgotPassword = '$_basePath/auth/forgotPassword';
   static const String verifyResetCode = '$_basePath/auth/verifyResetCode';
@@ -34,17 +35,20 @@ class ApiEndpoints {
       '$_basePath/folders/$id/share'; // ✅ مشاركة المجلد
   static const String foldersSharedWithMe =
       '$_basePath/folders/shared-with-me'; // ✅ المجلدات المشتركة معي
-  static String deleteFolder(String id) => '$_basePath/folders/$id'; // ✅ حذف مجلد
+  static String deleteFolder(String id) =>
+      '$_basePath/folders/$id'; // ✅ حذف مجلد
   static String restoreFolder(String id) =>
       '$_basePath/folders/$id/restore'; // ✅ استعادة مجلد
   static String deleteFolderPermanent(String id) =>
       '$_basePath/folders/$id/permanent'; // ✅ حذف نهائي لمجلد
-  static const String trashFolders = '$_basePath/folders/trash'; // ✅ المجلدات المحذوفة
+  static const String trashFolders =
+      '$_basePath/folders/trash'; // ✅ المجلدات المحذوفة
   static const String cleanExpiredFolders =
       '$_basePath/folders/clean-expired'; // ✅ تنظيف المجلدات المنتهية
   static String toggleStarFolder(String id) =>
       '$_basePath/folders/$id/star'; // ✅ إضافة/إزالة علامة النجمة من المجلد
-  static const String starredFolders = '$_basePath/folders/starred'; // ✅ المجلدات المميزة
+  static const String starredFolders =
+      '$_basePath/folders/starred'; // ✅ المجلدات المميزة
   static String folderSize(String id) =>
       '$_basePath/folders/$id/size'; // ✅ حساب حجم المجلد
   static String folderFilesCount(String id) =>
@@ -53,7 +57,8 @@ class ApiEndpoints {
       '$_basePath/folders/$id/stats'; // ✅ حساب إحصائيات المجلد (الحجم + عدد الملفات)
   static String downloadFolder(String id) =>
       '$_basePath/folders/$id/download'; // ✅ تحميل مجلد كـ ZIP
-  static const String recentFolders = '$_basePath/folders/recent'; // ✅ المجلدات الحديثة
+  static const String recentFolders =
+      '$_basePath/folders/recent'; // ✅ المجلدات الحديثة
   // 🔒 Folder Protection endpoints
   static String protectFolder(String id) =>
       '$_basePath/folders/$id/protect'; // ✅ قفل/تعيين حماية المجلد
@@ -68,7 +73,8 @@ class ApiEndpoints {
   static const String uploadFile = '$_basePath/files/upload';
   static const String uploadSingleFile = '$_basePath/files/upload-single';
   static const String uploadMultipleFiles = '$_basePath/files/upload-multiple';
-  static String filesByCategory(String category) => '$_basePath/files/category/$category';
+  static String filesByCategory(String category) =>
+      '$_basePath/files/category/$category';
   static const String categoriesStats =
       '$_basePath/files/categories/stats'; // ✅ إحصائيات التصنيفات
   static const String rootCategoriesStats =
@@ -80,26 +86,33 @@ class ApiEndpoints {
   static String moveFile(String fileId) =>
       "$_basePath/files/$fileId/move"; // ✅ نقل ملف من مجلد إلى آخر
   static String deleteFile(String fileId) => "$_basePath/files/$fileId";
-  static String downloadFile(String fileId) => "$_basePath/files/$fileId/download";
+  static String downloadFile(String fileId) =>
+      "$_basePath/files/$fileId/download";
   static String viewFile(String fileId) =>
       "$_basePath/files/$fileId/view"; // ✅ للفتح المباشر (inline)
   static const String starredFiles = '$_basePath/files/starred';
-  static String toggleStarFile(String fileId) => "$_basePath/files/$fileId/star";
+  static String toggleStarFile(String fileId) =>
+      "$_basePath/files/$fileId/star";
   static const String trashFiles = '$_basePath/files/trash';
-  static String restoreTrashFile(String fileId) => "$_basePath/files/$fileId/restore";
+  static String restoreTrashFile(String fileId) =>
+      "$_basePath/files/$fileId/restore";
   static String deleteFilePermanent(String fileId) =>
       "$_basePath/files/$fileId/permanent";
   static const String emptyTrash = '$_basePath/files/trash/empty';
-  static const String recentFiles = '$_basePath/files/recent'; // ✅ الملفات الحديثة
-  static const String storageInfo = '$_basePath/files/storage'; // ✅ معلومات المساحة التخزينية للمستخدم
-  static const String totalStorageInfo = '$_basePath/files/storage/total'; // ✅ المساحة الإجمالية المستخدمة في التطبيق
+  static const String recentFiles =
+      '$_basePath/files/recent'; // ✅ الملفات الحديثة
+  static const String storageInfo =
+      '$_basePath/files/storage'; // ✅ معلومات المساحة التخزينية للمستخدم
+  static const String totalStorageInfo =
+      '$_basePath/files/storage'; // ✅ المساحة الإجمالية المستخدمة في التطبيق
 
   // User endpoints
   static const String getMe = '$_basePath/users/getMe';
   static const String updateMe = '$_basePath/users/updateMe';
   static const String changeMyPassword = '$_basePath/users/changeMyPassword';
   static const String deleteMe = '$_basePath/users/deleteMe';
-  static const String verifyEmailChange = '$_basePath/users/verifyEmailChange'; // ✅ التحقق من كود تغيير الإيميل
+  static const String verifyEmailChange =
+      '$_basePath/users/verifyEmailChange'; // ✅ التحقق من كود تغيير الإيميل
 
   // Shared files endpoints
   static const String sharedFiles = '$_basePath/files/shared';
@@ -116,16 +129,21 @@ class ApiEndpoints {
   static String roomMembers(String id) => '$_basePath/rooms/$id/members';
   static String roomMemberById(String roomId, String memberId) =>
       '$_basePath/rooms/$roomId/members/$memberId';
-  static String roomInvitations(String id) => '$_basePath/rooms/$id/invitations';
-  static String sendInvitation(String roomId) => '$_basePath/rooms/$roomId/invite';
-  static const String pendingInvitations = '$_basePath/rooms/invitations/pending';
+  static String roomInvitations(String id) =>
+      '$_basePath/rooms/$id/invitations';
+  static String sendInvitation(String roomId) =>
+      '$_basePath/rooms/$roomId/invite';
+  static const String pendingInvitations =
+      '$_basePath/rooms/invitations/pending';
   static String acceptInvitation(String invitationId) =>
       '$_basePath/rooms/invitations/$invitationId/accept';
   static String rejectInvitation(String invitationId) =>
       '$_basePath/rooms/invitations/$invitationId/reject';
-  static const String cleanupInvitations = '$_basePath/rooms/invitations/cleanup';
+  static const String cleanupInvitations =
+      '$_basePath/rooms/invitations/cleanup';
   static const String invitationStats = '$_basePath/rooms/invitations/stats';
-  static String shareFileWithRoom(String roomId) => '$_basePath/rooms/$roomId/share-file';
+  static String shareFileWithRoom(String roomId) =>
+      '$_basePath/rooms/$roomId/share-file';
   static String shareFileWithRoomOneTime(String roomId) =>
       '$_basePath/rooms/$roomId/share-file-onetime';
   static String accessOneTimeFile(String roomId, String fileId) =>
@@ -138,7 +156,8 @@ class ApiEndpoints {
       '$_basePath/rooms/$roomId/share-folder';
   static String unshareFolderFromRoom(String roomId, String folderId) =>
       '$_basePath/rooms/$roomId/folders/$folderId';
-  static String roomComments(String roomId) => '$_basePath/rooms/$roomId/comments';
+  static String roomComments(String roomId) =>
+      '$_basePath/rooms/$roomId/comments';
   static String deleteComment(String roomId, String commentId) =>
       '$_basePath/rooms/$roomId/comments/$commentId';
   static String leaveRoom(String roomId) => '$_basePath/rooms/$roomId/leave';
@@ -164,12 +183,15 @@ class ApiEndpoints {
   static const String aiSearchContent = '$_basePath/search/content';
   static const String aiSearchFilename = '$_basePath/search/filename';
   static const String aiSearchByTags = '$_basePath/search/tags';
-  static String aiProcessFile(String fileId) => '$_basePath/search/process/$fileId';
-  static String aiReprocessFile(String fileId) => '$_basePath/search/reprocess/$fileId';
+  static String aiProcessFile(String fileId) =>
+      '$_basePath/search/process/$fileId';
+  static String aiReprocessFile(String fileId) =>
+      '$_basePath/search/reprocess/$fileId';
   static const String aiHFStatus = '$_basePath/search/hf-status';
 
   // Activity log endpoints
   static const String activityLog = '$_basePath/activity-log';
   static const String activityStatistics = '$_basePath/activity-log/statistics';
-  static const String clearOldActivityLogs = '$_basePath/activity-log/clear-old';
+  static const String clearOldActivityLogs =
+      '$_basePath/activity-log/clear-old';
 }

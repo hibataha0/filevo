@@ -1,6 +1,7 @@
 import 'package:filevo/services/api_service.dart';
 import 'package:filevo/services/api_endpoints.dart';
 import 'package:filevo/services/storage_service.dart';
+import 'package:filevo/services/user_cache_service.dart';
 
 class AuthService {
   final ApiService _apiService = ApiService();
@@ -118,8 +119,12 @@ class AuthService {
 
     final result = await _apiService.post(ApiEndpoints.logout, token: token);
 
-    // احذف الـ token المحفوظ محليًا
+    // ✅ احذف الـ token والـ userId
     await StorageService.deleteToken();
+    await StorageService.deleteUserId();
+
+    // 🔥 امسح كاش المستخدم (المهم)
+    UserCacheService().clearCache();
 
     return result;
   }

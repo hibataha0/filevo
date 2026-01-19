@@ -42,7 +42,7 @@ class ProfileController with ChangeNotifier {
   }
 
   /// جلب بيانات المستخدم
-  /// 
+  ///
   /// [forceRefresh] - إذا true، يتم تجاهل الـ cache وجلب البيانات من السيرفر مباشرة
   Future<void> getLoggedUserData({bool forceRefresh = false}) async {
     _isLoading = true;
@@ -59,16 +59,20 @@ class ProfileController with ChangeNotifier {
         _userData = _extractUserData(result['data']);
         print('✅ ProfileController: Fetched user data: $_userData');
         if (_userData != null) {
-          print('✅ ProfileController: User data keys: ${_userData!.keys.toList()}');
+          print(
+            '✅ ProfileController: User data keys: ${_userData!.keys.toList()}',
+          );
           print('✅ ProfileController: User name: ${_userData!['name']}');
           print('✅ ProfileController: User email: ${_userData!['email']}');
         } else {
           print('⚠️ ProfileController: User data is null after extraction');
         }
         _errorMessage = null;
-
       } else {
-        final errorMsg = result['error'] ?? result['message'] ?? 'فشل في جلب بيانات المستخدم';
+        final errorMsg =
+            result['error'] ??
+            result['message'] ??
+            'فشل في جلب بيانات المستخدم';
         _errorMessage = errorMsg;
         print('❌ ProfileController: Failed to fetch user data: $errorMsg');
         // ✅ عدم حذف userData الموجودة عند الفشل - قد تكون البيانات موجودة من قبل
@@ -105,17 +109,25 @@ class ProfileController with ChangeNotifier {
 
       print('🔵 ProfileController: updateLoggedUserData result: $result');
       print('🔵 ProfileController: result keys: ${result.keys.toList()}');
-      
+
       // ✅ الـ response من api_service يكون في result['data']
       final responseData = result['data'] as Map<String, dynamic>? ?? {};
-      print('🔵 ProfileController: responseData keys: ${responseData.keys.toList()}');
-      print('🔵 ProfileController: requiresVerification = ${responseData['requiresVerification']}');
-      print('🔵 ProfileController: pendingEmail = ${responseData['pendingEmail']}');
+      print(
+        '🔵 ProfileController: responseData keys: ${responseData.keys.toList()}',
+      );
+      print(
+        '🔵 ProfileController: requiresVerification = ${responseData['requiresVerification']}',
+      );
+      print(
+        '🔵 ProfileController: pendingEmail = ${responseData['pendingEmail']}',
+      );
 
       if (result['success'] == true) {
         // ✅ التحقق من وجود requiresVerification في الـ response (في data)
         if (responseData['requiresVerification'] == true) {
-          print('✅ ProfileController: requiresVerification is true, returning verification info');
+          print(
+            '✅ ProfileController: requiresVerification is true, returning verification info',
+          );
           // ✅ إرجاع معلومات التحقق من الإيميل
           return {
             'success': true,
@@ -133,11 +145,11 @@ class ProfileController with ChangeNotifier {
             print('✅ ProfileController: Updated user data from response');
           }
         }
-        
+
         // ✅ إعادة جلب البيانات من السيرفر للتأكد من التحديث
         print('🔄 ProfileController: Refetching user data from server...');
         await getLoggedUserData(forceRefresh: true);
-        
+
         _errorMessage = null;
         return {'success': true};
       } else {
@@ -154,9 +166,7 @@ class ProfileController with ChangeNotifier {
   }
 
   /// التحقق من كود تغيير الإيميل
-  Future<bool> verifyEmailChange({
-    required String verificationCode,
-  }) async {
+  Future<bool> verifyEmailChange({required String verificationCode}) async {
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
@@ -175,10 +185,10 @@ class ProfileController with ChangeNotifier {
             print('✅ ProfileController: Email verified and updated');
           }
         }
-        
+
         // ✅ إعادة جلب البيانات من السيرفر
         await getLoggedUserData(forceRefresh: true);
-        
+
         _errorMessage = null;
         return true;
       } else {
@@ -253,9 +263,7 @@ class ProfileController with ChangeNotifier {
   }
 
   /// رفع صورة البروفايل
-  Future<bool> uploadProfileImage({
-    required File imageFile,
-  }) async {
+  Future<bool> uploadProfileImage({required File imageFile}) async {
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
@@ -275,7 +283,7 @@ class ProfileController with ChangeNotifier {
             print('  - profileImg: ${userData['profileImg']}');
             print('  - profileImgUrl: ${userData['profileImgUrl']}');
             print('  - All keys: ${userData.keys.toList()}');
-            
+
             _userData = userData;
             print('✅ ProfileController: Updated user data after image upload');
           }
@@ -283,23 +291,25 @@ class ProfileController with ChangeNotifier {
         // ✅ إعادة جلب البيانات من السيرفر للتأكد من التحديث
         print('🔄 ProfileController: Refetching user data from server...');
         await getLoggedUserData(forceRefresh: true);
-        
+
         // ✅ التحقق من أن profileImg تم حفظه
         if (_userData != null) {
           print('✅ ProfileController: User data after refetch:');
           print('  - profileImg: ${_userData!['profileImg']}');
           print('  - profileImgUrl: ${_userData!['profileImgUrl']}');
-          if (_userData!['profileImg'] == null && _userData!['profileImgUrl'] == null) {
+          if (_userData!['profileImg'] == null &&
+              _userData!['profileImgUrl'] == null) {
             print('⚠️ WARNING: profileImg is still null after refetch!');
             print('⚠️ This means the backend did not save the profile image.');
             print('⚠️ Please check the backend code.');
           }
         }
-        
+
         _errorMessage = null;
         return true;
       } else {
-        final errorMsg = result['error'] ?? result['message'] ?? 'فشل في رفع الصورة';
+        final errorMsg =
+            result['error'] ?? result['message'] ?? 'فشل في رفع الصورة';
         _errorMessage = errorMsg;
         print('❌ ProfileController: Upload failed: $errorMsg');
         return false;
@@ -322,24 +332,31 @@ class ProfileController with ChangeNotifier {
       print('⏳ [ProfileController] Storage info already loading, skipping...');
       return;
     }
-    
+
     try {
       _isLoadingStorage = true;
-      print('📊 [ProfileController] Getting storage info... (forceRefresh: $forceRefresh)');
+      print(
+        '📊 [ProfileController] Getting storage info... (forceRefresh: $forceRefresh)',
+      );
       final result = await _fileService.getStorageInfo();
-      
-      print('📊 [ProfileController] Storage info result success: ${result['success']}');
-      
+
+      print(
+        '📊 [ProfileController] Storage info result success: ${result['success']}',
+      );
+
       if (result['success'] == true && result['storage'] != null) {
         final newStorageInfo = result['storage'] as Map<String, dynamic>?;
         // ✅ تحديث فقط إذا تغيرت البيانات (لتجنب rebuilds غير ضرورية)
-        if (_storageInfo == null || 
-            (_storageInfo!['used'] as int? ?? 0) != (newStorageInfo?['used'] as int? ?? 0)) {
+        if (_storageInfo == null ||
+            (_storageInfo!['used'] as int? ?? 0) !=
+                (newStorageInfo?['used'] as int? ?? 0)) {
           _storageInfo = newStorageInfo;
           print('✅ [ProfileController] Storage info updated: $_storageInfo');
           notifyListeners();
         } else {
-          print('ℹ️ [ProfileController] Storage info unchanged, skipping notify');
+          print(
+            'ℹ️ [ProfileController] Storage info unchanged, skipping notify',
+          );
         }
       } else {
         print('⚠️ [ProfileController] Storage info failed: ${result['error']}');
@@ -384,5 +401,14 @@ class ProfileController with ChangeNotifier {
   void clearError() {
     _errorMessage = null;
     notifyListeners();
+  }
+
+  /// مسح بيانات المستخدم بالكامل
+  void clearUserData() {
+    _userData = null;
+    _storageInfo = null;
+    _errorMessage = null;
+    notifyListeners();
+    print('🧹 ProfileController: User data cleared');
   }
 }
