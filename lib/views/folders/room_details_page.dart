@@ -241,11 +241,7 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(
-                    Icons.error_outline, 
-                    size: 64, 
-                    color: AppColors.error,
-                  ),
+                  Icon(Icons.error_outline, size: 64, color: AppColors.error),
                   SizedBox(height: 16),
                   Text(
                     S.of(context).failedToLoadRoomDetails,
@@ -434,8 +430,8 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
                 child: Icon(
                   Icons.meeting_room,
                   color: AppColors.getCardColor(
-                  Theme.of(context).brightness == Brightness.dark,
-                ),
+                    Theme.of(context).brightness == Brightness.dark,
+                  ),
                   size: iconInnerSize,
                 ),
               ),
@@ -450,8 +446,8 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
                         fontSize: titleFontSize,
                         fontWeight: FontWeight.bold,
                         color: AppColors.getCardColor(
-                  Theme.of(context).brightness == Brightness.dark,
-                ),
+                          Theme.of(context).brightness == Brightness.dark,
+                        ),
                       ),
                     ),
                     SizedBox(height: 4),
@@ -495,8 +491,8 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
                 style: TextStyle(
                   fontSize: descriptionFontSize,
                   color: AppColors.getCardColor(
-                  Theme.of(context).brightness == Brightness.dark,
-                ),
+                    Theme.of(context).brightness == Brightness.dark,
+                  ),
                 ),
               ),
             ),
@@ -962,8 +958,8 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
                 child: Icon(
                   Icons.info_outline,
                   color: AppColors.getCardColor(
-                  Theme.of(context).brightness == Brightness.dark,
-                ),
+                    Theme.of(context).brightness == Brightness.dark,
+                  ),
                   size: iconInnerSize,
                 ),
               ),
@@ -1172,8 +1168,8 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
                     child: Icon(
                       Icons.people,
                       color: AppColors.getCardColor(
-                  Theme.of(context).brightness == Brightness.dark,
-                ),
+                        Theme.of(context).brightness == Brightness.dark,
+                      ),
                       size: iconInnerSize,
                     ),
                   ),
@@ -1408,8 +1404,8 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
                       child: Icon(
                         Icons.insert_drive_file,
                         color: AppColors.getCardColor(
-                  Theme.of(context).brightness == Brightness.dark,
-                ),
+                          Theme.of(context).brightness == Brightness.dark,
+                        ),
                         size: iconInnerSize,
                       ),
                     ),
@@ -1509,38 +1505,38 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
                   // ✅ زر إضافة ملف - owner فقط
                   // ✅ ملاحظة: المشاركة تتم من صفحة الملفات/المجلدات
                   // ✅ هذا الزر يظهر فقط للمالك كتذكير
-                  FutureBuilder<bool>(
-                    future: RoomPermissions.canShareFiles(roomData!),
-                    builder: (context, snapshot) {
-                      final canShare = snapshot.data ?? false;
-                      if (!canShare) return SizedBox.shrink();
+                  // FutureBuilder<bool>(
+                  //   future: RoomPermissions.canShareFiles(roomData!),
+                  //   builder: (context, snapshot) {
+                  //     final canShare = snapshot.data ?? false;
+                  //     if (!canShare) return SizedBox.shrink();
 
-                      return IconButton(
-                        icon: Icon(
-                          Icons.add_circle_outline,
-                          color: Color(0xFFF59E0B),
-                          size: ResponsiveUtils.getResponsiveValue(
-                            context,
-                            mobile: 24.0,
-                            tablet: 28.0,
-                            desktop: 32.0,
-                          ),
-                        ),
-                        tooltip: S.of(context).addFile,
-                        onPressed: () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(S.of(context).shareInstruction),
-                              backgroundColor: AppColors.getPrimary(
-                                Theme.of(context).brightness == Brightness.dark,
-                              ),
-                              duration: Duration(seconds: 4),
-                            ),
-                          );
-                        },
-                      );
-                    },
-                  ),
+                  //     return IconButton(
+                  //       icon: Icon(
+                  //         Icons.add_circle_outline,
+                  //         color: Color(0xFFF59E0B),
+                  //         size: ResponsiveUtils.getResponsiveValue(
+                  //           context,
+                  //           mobile: 24.0,
+                  //           tablet: 28.0,
+                  //           desktop: 32.0,
+                  //         ),
+                  //       ),
+                  //       tooltip: S.of(context).addFile,
+                  //       onPressed: () {
+                  //         ScaffoldMessenger.of(context).showSnackBar(
+                  //           SnackBar(
+                  //             content: Text(S.of(context).shareInstruction),
+                  //             backgroundColor: AppColors.getPrimary(
+                  //               Theme.of(context).brightness == Brightness.dark,
+                  //             ),
+                  //             duration: Duration(seconds: 4),
+                  //           ),
+                  //         );
+                  //       },
+                  //     );
+                  //   },
+                  // ),
                 ],
               ),
             ],
@@ -1647,7 +1643,7 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
             ),
             Expanded(
               child: Text(
-                fileName, 
+                fileName,
                 style: TextStyle(
                   fontSize: fontSize,
                   color: AppColors.getTextPrimary(
@@ -2228,8 +2224,8 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
                       child: Icon(
                         Icons.folder,
                         color: AppColors.getCardColor(
-                  Theme.of(context).brightness == Brightness.dark,
-                ),
+                          Theme.of(context).brightness == Brightness.dark,
+                        ),
                         size: iconInnerSize,
                       ),
                     ),
@@ -2328,40 +2324,40 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
                   // ✅ زر إضافة مجلد - owner فقط
                   // ✅ ملاحظة: المشاركة تتم من صفحة الملفات/المجلدات
                   // ✅ هذا الزر يظهر فقط للمالك كتذكير
-                  FutureBuilder<bool>(
-                    future: RoomPermissions.canShareFiles(roomData!),
-                    builder: (context, snapshot) {
-                      final canShare = snapshot.data ?? false;
-                      if (!canShare) return SizedBox.shrink();
+                  // FutureBuilder<bool>(
+                  //   future: RoomPermissions.canShareFiles(roomData!),
+                  //   builder: (context, snapshot) {
+                  //     final canShare = snapshot.data ?? false;
+                  //     if (!canShare) return SizedBox.shrink();
 
-                      return IconButton(
-                        icon: Icon(
-                          Icons.add_circle_outline,
-                          color: Color(0xFF8B5CF6),
-                          size: ResponsiveUtils.getResponsiveValue(
-                            context,
-                            mobile: 24.0,
-                            tablet: 28.0,
-                            desktop: 32.0,
-                          ),
-                        ),
-                        tooltip: S.of(context).addFolder,
-                        onPressed: () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(
-                                S.of(context).folderShareInstruction,
-                              ),
-                              backgroundColor: AppColors.getPrimary(
-                                Theme.of(context).brightness == Brightness.dark,
-                              ),
-                              duration: Duration(seconds: 4),
-                            ),
-                          );
-                        },
-                      );
-                    },
-                  ),
+                  //     return IconButton(
+                  //       icon: Icon(
+                  //         Icons.add_circle_outline,
+                  //         color: Color(0xFF8B5CF6),
+                  //         size: ResponsiveUtils.getResponsiveValue(
+                  //           context,
+                  //           mobile: 24.0,
+                  //           tablet: 28.0,
+                  //           desktop: 32.0,
+                  //         ),
+                  //       ),
+                  //       tooltip: S.of(context).addFolder,
+                  //       onPressed: () {
+                  //         ScaffoldMessenger.of(context).showSnackBar(
+                  //           SnackBar(
+                  //             content: Text(
+                  //               S.of(context).folderShareInstruction,
+                  //             ),
+                  //             backgroundColor: AppColors.getPrimary(
+                  //               Theme.of(context).brightness == Brightness.dark,
+                  //             ),
+                  //             duration: Duration(seconds: 4),
+                  //           ),
+                  //         );
+                  //       },
+                  //     );
+                  //   },
+                  // ),
                 ],
               ),
             ],
@@ -2447,35 +2443,43 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
         }
 
         // ✅ التحقق من معلومات الحماية قبل فتح المجلد (مثل RoomFoldersPage)
-        print('🔐 [RoomDetailsPage] onFolderTap - Checking folder protection...');
+        print(
+          '🔐 [RoomDetailsPage] onFolderTap - Checking folder protection...',
+        );
         print('   - folderId: $folderId');
         print('   - folderName: $folderName');
-        
+
         bool isProtected = false;
         String protectionType = 'none';
-        
+
         try {
           final folderController = Provider.of<FolderController>(
             context,
             listen: false,
           );
-          
+
           // ✅ محاولة جلب تفاصيل المجلد العادية أولاً (أكثر دقة)
           try {
-            print('🔐 [RoomDetailsPage] Getting folder details from backend for protection check...');
+            print(
+              '🔐 [RoomDetailsPage] Getting folder details from backend for protection check...',
+            );
             final folderDetails = await folderController.getFolderDetails(
               folderId: folderId,
             );
-            
+
             if (folderDetails != null && folderDetails['folder'] != null) {
-              final folderInfo = folderDetails['folder'] as Map<String, dynamic>;
+              final folderInfo =
+                  folderDetails['folder'] as Map<String, dynamic>;
               final backendIsProtected = folderInfo['isProtected'] == true;
-              final backendProtectionType = folderInfo['protectionType']?.toString() ?? 'none';
-              
+              final backendProtectionType =
+                  folderInfo['protectionType']?.toString() ?? 'none';
+
               isProtected = backendIsProtected;
               protectionType = backendProtectionType;
-              
-              print('🔐 [RoomDetailsPage] Protection from getFolderDetails (accurate):');
+
+              print(
+                '🔐 [RoomDetailsPage] Protection from getFolderDetails (accurate):',
+              );
               print('   - isProtected: $isProtected');
               print('   - protectionType: $protectionType');
             }
@@ -2483,8 +2487,8 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
             print('⚠️ [RoomDetailsPage] Error in getFolderDetails: $e2');
             // ✅ إذا كان هناك خطأ 403، المجلد محمي بالتأكيد
             final errorString = e2.toString().toLowerCase();
-            if (errorString.contains('403') || 
-                errorString.contains('protected') || 
+            if (errorString.contains('403') ||
+                errorString.contains('protected') ||
                 errorString.contains('verify access')) {
               isProtected = true;
               protectionType = 'password';
@@ -2492,25 +2496,33 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
             } else {
               // ✅ إذا فشل getFolderDetails، حاول getSharedFolderDetailsInRoom كبديل
               try {
-                print('🔐 [RoomDetailsPage] Trying getSharedFolderDetailsInRoom as fallback...');
-                final folderDetails = await folderController.getSharedFolderDetailsInRoom(
-                  folderId: folderId,
+                print(
+                  '🔐 [RoomDetailsPage] Trying getSharedFolderDetailsInRoom as fallback...',
                 );
-                
+                final folderDetails = await folderController
+                    .getSharedFolderDetailsInRoom(folderId: folderId);
+
                 if (folderDetails != null && folderDetails['folder'] != null) {
-                  final folderInfo = folderDetails['folder'] as Map<String, dynamic>;
+                  final folderInfo =
+                      folderDetails['folder'] as Map<String, dynamic>;
                   isProtected = folderInfo['isProtected'] == true;
-                  protectionType = folderInfo['protectionType']?.toString() ?? 'none';
-                  
-                  print('🔐 [RoomDetailsPage] Protection from getSharedFolderDetailsInRoom (fallback):');
+                  protectionType =
+                      folderInfo['protectionType']?.toString() ?? 'none';
+
+                  print(
+                    '🔐 [RoomDetailsPage] Protection from getSharedFolderDetailsInRoom (fallback):',
+                  );
                   print('   - isProtected: $isProtected');
                   print('   - protectionType: $protectionType');
                 }
               } catch (e) {
-                print('⚠️ [RoomDetailsPage] Error in getSharedFolderDetailsInRoom: $e');
+                print(
+                  '⚠️ [RoomDetailsPage] Error in getSharedFolderDetailsInRoom: $e',
+                );
                 // ✅ إذا فشل كل شيء، استخدام البيانات المحلية كـ fallback
                 isProtected = folderData['isProtected'] == true;
-                protectionType = folderData['protectionType']?.toString() ?? 'none';
+                protectionType =
+                    folderData['protectionType']?.toString() ?? 'none';
                 print('🔐 [RoomDetailsPage] Using local data fallback:');
                 print('   - isProtected: $isProtected');
                 print('   - protectionType: $protectionType');
@@ -2530,7 +2542,9 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
 
         // ✅ إذا كان المجلد محمي، نطلب كلمة السر أولاً
         if (isProtected && protectionType != 'none') {
-          print('🔐 [RoomDetailsPage] Folder is protected - requesting password...');
+          print(
+            '🔐 [RoomDetailsPage] Folder is protected - requesting password...',
+          );
           final result = await showVerifyFolderAccessDialog(
             context,
             folderId,
@@ -2545,7 +2559,9 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
           }
           print('✅ [RoomDetailsPage] Password verified - opening folder');
         } else {
-          print('✅ [RoomDetailsPage] Folder is not protected - opening directly');
+          print(
+            '✅ [RoomDetailsPage] Folder is not protected - opening directly',
+          );
         }
 
         // ✅ بعد التحقق (إذا كان محمياً) أو مباشرة (إذا لم يكن محمياً)، نفتح المجلد
@@ -2597,7 +2613,7 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
             ),
             Expanded(
               child: Text(
-                folderName, 
+                folderName,
                 style: TextStyle(
                   fontSize: fontSize,
                   color: AppColors.getTextPrimary(
@@ -3199,49 +3215,53 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
   Future<void> _showLeaveRoomDialog() async {
     if (roomData == null) return;
     final roomName = roomData!['name'] ?? S.of(context).room;
-    
+
     // ✅ حساب عدد الملفات والمجلدات المشتركة من قبل المستخدم الحالي
     final currentUserId = await StorageService.getUserId();
     int sharedFilesCount = 0;
     int sharedFoldersCount = 0;
-    
+
     if (currentUserId != null) {
       final files = roomData!['files'] as List? ?? [];
       final folders = roomData!['folders'] as List? ?? [];
-      
+
       // ✅ حساب الملفات المشتركة من قبل المستخدم الحالي
       for (final fileEntry in files) {
         final sharedBy = fileEntry['sharedBy'];
         if (sharedBy != null) {
           String? sharedById;
           if (sharedBy is Map<String, dynamic>) {
-            sharedById = sharedBy['_id']?.toString() ?? 
-                        sharedBy['id']?.toString() ?? 
-                        sharedBy.toString();
+            sharedById =
+                sharedBy['_id']?.toString() ??
+                sharedBy['id']?.toString() ??
+                sharedBy.toString();
           } else {
             sharedById = sharedBy.toString();
           }
-          
-          if (sharedById.trim().toLowerCase() == currentUserId.trim().toLowerCase()) {
+
+          if (sharedById.trim().toLowerCase() ==
+              currentUserId.trim().toLowerCase()) {
             sharedFilesCount++;
           }
         }
       }
-      
+
       // ✅ حساب المجلدات المشتركة من قبل المستخدم الحالي
       for (final folderEntry in folders) {
         final sharedBy = folderEntry['sharedBy'];
         if (sharedBy != null) {
           String? sharedById;
           if (sharedBy is Map<String, dynamic>) {
-            sharedById = sharedBy['_id']?.toString() ?? 
-                        sharedBy['id']?.toString() ?? 
-                        sharedBy.toString();
+            sharedById =
+                sharedBy['_id']?.toString() ??
+                sharedBy['id']?.toString() ??
+                sharedBy.toString();
           } else {
             sharedById = sharedBy.toString();
           }
-          
-          if (sharedById.trim().toLowerCase() == currentUserId.trim().toLowerCase()) {
+
+          if (sharedById.trim().toLowerCase() ==
+              currentUserId.trim().toLowerCase()) {
             sharedFoldersCount++;
           }
         }
@@ -3251,15 +3271,19 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
     // ✅ بناء رسالة التحذير
     String warningMessage = S.of(context).leaveRoomConfirm(roomName);
     if (sharedFilesCount > 0 || sharedFoldersCount > 0) {
-      final filesText = sharedFilesCount > 0 
+      final filesText = sharedFilesCount > 0
           ? '${sharedFilesCount} ${sharedFilesCount == 1 ? S.of(context).file : S.of(context).files}'
           : '';
-      final foldersText = sharedFoldersCount > 0 
+      final foldersText = sharedFoldersCount > 0
           ? '${sharedFoldersCount} ${sharedFoldersCount == 1 ? S.of(context).folder : S.of(context).folders}'
           : '';
-      
-      final itemsText = [filesText, foldersText].where((t) => t.isNotEmpty).join(' و ');
-      warningMessage += '\n\n⚠️ سيتم حذف $itemsText تلقائياً من الغرفة عند المغادرة';
+
+      final itemsText = [
+        filesText,
+        foldersText,
+      ].where((t) => t.isNotEmpty).join(' و ');
+      warningMessage +=
+          '\n\n⚠️ سيتم حذف $itemsText تلقائياً من الغرفة عند المغادرة';
     }
 
     if (!mounted) return;
@@ -3353,10 +3377,14 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
           if (filesRemoved > 0 || foldersRemoved > 0) {
             final removedItems = [];
             if (filesRemoved > 0) {
-              removedItems.add('$filesRemoved ${filesRemoved == 1 ? S.of(context).file : S.of(context).files}');
+              removedItems.add(
+                '$filesRemoved ${filesRemoved == 1 ? S.of(context).file : S.of(context).files}',
+              );
             }
             if (foldersRemoved > 0) {
-              removedItems.add('$foldersRemoved ${foldersRemoved == 1 ? S.of(context).folder : S.of(context).folders}');
+              removedItems.add(
+                '$foldersRemoved ${foldersRemoved == 1 ? S.of(context).folder : S.of(context).folders}',
+              );
             }
             successMessage += '\nتم حذف: ${removedItems.join(' و ')}.';
           }
@@ -3374,9 +3402,7 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(
-                result['message'] ?? S.of(context).roomLeaveFailed,
-              ),
+              content: Text(result['message'] ?? S.of(context).roomLeaveFailed),
               backgroundColor: AppColors.error,
             ),
           );
@@ -3441,8 +3467,8 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
                   height: 60,
                   decoration: BoxDecoration(
                     color: AppColors.getShimmerBase(
-                  Theme.of(context).brightness == Brightness.dark,
-                ),
+                      Theme.of(context).brightness == Brightness.dark,
+                    ),
                     shape: BoxShape.circle,
                   ),
                 ),
@@ -3456,8 +3482,8 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
                         height: 24,
                         decoration: BoxDecoration(
                           color: AppColors.getShimmerBase(
-                  Theme.of(context).brightness == Brightness.dark,
-                ),
+                            Theme.of(context).brightness == Brightness.dark,
+                          ),
                           borderRadius: BorderRadius.circular(8),
                         ),
                       ),
@@ -3467,8 +3493,8 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
                         height: 16,
                         decoration: BoxDecoration(
                           color: AppColors.getShimmerBase(
-                  Theme.of(context).brightness == Brightness.dark,
-                ),
+                            Theme.of(context).brightness == Brightness.dark,
+                          ),
                           borderRadius: BorderRadius.circular(8),
                         ),
                       ),
@@ -3572,8 +3598,8 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
                     height: 60,
                     decoration: BoxDecoration(
                       color: AppColors.getShimmerBase(
-                  Theme.of(context).brightness == Brightness.dark,
-                ),
+                        Theme.of(context).brightness == Brightness.dark,
+                      ),
                       borderRadius: BorderRadius.circular(8),
                     ),
                   ),
@@ -3623,8 +3649,8 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
                   margin: EdgeInsets.only(right: 12),
                   decoration: BoxDecoration(
                     color: AppColors.getCardColor(
-                  Theme.of(context).brightness == Brightness.dark,
-                ),
+                      Theme.of(context).brightness == Brightness.dark,
+                    ),
                     borderRadius: BorderRadius.circular(12),
                   ),
                 ),
@@ -3673,8 +3699,8 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
                   margin: EdgeInsets.only(right: 12),
                   decoration: BoxDecoration(
                     color: AppColors.getCardColor(
-                  Theme.of(context).brightness == Brightness.dark,
-                ),
+                      Theme.of(context).brightness == Brightness.dark,
+                    ),
                     borderRadius: BorderRadius.circular(12),
                   ),
                 ),
@@ -3723,8 +3749,8 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
                   margin: EdgeInsets.only(right: 12),
                   decoration: BoxDecoration(
                     color: AppColors.getCardColor(
-                  Theme.of(context).brightness == Brightness.dark,
-                ),
+                      Theme.of(context).brightness == Brightness.dark,
+                    ),
                     borderRadius: BorderRadius.circular(12),
                   ),
                 ),

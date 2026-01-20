@@ -144,22 +144,15 @@ exports.updateFileContent = asyncHandler(async (req, res) => {
   }
 
   // ✅ تحديد وضع التحديث: replace (استبدال) أو new (نسخة جديدة)
-  // للملفات النصية: دائماً replace
   // للملفات المشتركة: دائماً replace (حتى للصور) حتى يظهر التحديث للمستخدمين المشاركين
-  // للملفات الأخرى: حسب replaceMode في body
-  const isTextFile =
-    file.category === "Documents" ||
-    (file.type && file.type.startsWith("text/")) ||
-    [".txt", ".md", ".json", ".xml", ".csv"].some(
-      (ext) => file.name && file.name.toLowerCase().endsWith(ext)
-    );
-
-  // ✅ إذا كان الملف مشاركاً، استخدم replace mode تلقائياً حتى للصور
+  // للملفات الأخرى (بما في ذلك النصية): حسب replaceMode في body
+  
+  // ✅ إذا كان الملف مشاركاً، استخدم replace mode تلقائياً
   const isShared =
     file.isShared === true || (file.sharedWith && file.sharedWith.length > 0);
 
   const replaceMode =
-    isTextFile || isShared
+    isShared
       ? true
       : req.body.replaceMode === "true" || req.body.replaceMode === true;
 
@@ -177,7 +170,7 @@ exports.updateFileContent = asyncHandler(async (req, res) => {
   console.log("📄 Old file path:", oldFilePath);
   console.log("📄 New file path:", newFilePath);
   console.log("📄 Replace mode:", replaceMode);
-  console.log("📄 Is text file:", isTextFile);
+
   console.log("📄 Is shared:", isShared);
 
   try {
@@ -223,7 +216,9 @@ exports.updateFileContent = asyncHandler(async (req, res) => {
       }
 
       finalFilePath = finalPath;
-      finalFileName = oldFileName; // ✅ الحفاظ على نفس الاسم
+      // ✅ إذا كان الملف مشتركاً، قم بتحديث الاسم إلى الاسم الجديد لضمان ظهور التغييرات للجميع
+      // إذا لم يكن مشتركاً، حافظ على الاسم القديم (السلوك الافتراضي للاستبدال)
+      finalFileName = isShared ? newFileName : oldFileName;
 
     } else {
       // ✅ وضع النسخة الجديدة: حذف القديم فقط، الملف الجديد يبقى في مكانه الجديد

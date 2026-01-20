@@ -40,6 +40,15 @@ class FolderController with ChangeNotifier {
   int _starredCurrentPage = 1;
   bool _starredHasMore = true;
 
+  // ✅ Refresh trigger for updating views
+  int _refreshTrigger = 0;
+  int get refreshTrigger => _refreshTrigger;
+
+  void triggerRefresh() {
+    _refreshTrigger++;
+    _safeNotifyListeners();
+  }
+
   @override
   void dispose() {
     _isDisposed = true;

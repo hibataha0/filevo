@@ -98,6 +98,31 @@ class _FoldersPageState extends State<FoldersPage>
     initialRefresh: false,
   );
 
+  FolderController? _folderController;
+  int _lastRefreshTrigger = 0;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final newController = Provider.of<FolderController>(context, listen: false);
+    if (_folderController != newController) {
+      _folderController?.removeListener(_onFolderControllerChange);
+      _folderController = newController;
+      _folderController?.addListener(_onFolderControllerChange);
+      _lastRefreshTrigger = _folderController!.refreshTrigger;
+    }
+  }
+
+  void _onFolderControllerChange() {
+    if (_folderController != null &&
+        _folderController!.refreshTrigger != _lastRefreshTrigger) {
+      _lastRefreshTrigger = _folderController!.refreshTrigger;
+      // ✅ تحديث البيانات عند استلام إشارة التحديث
+      _loadCategoriesAndFolders();
+      _loadSharedFolders();
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -614,6 +639,7 @@ class _FoldersPageState extends State<FoldersPage>
 
   @override
   void dispose() {
+    _folderController?.removeListener(_onFolderControllerChange);
     _tabController?.dispose();
     _searchDebounceTimer?.cancel();
     _searchHttpClient?.close();

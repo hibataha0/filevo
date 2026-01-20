@@ -338,44 +338,124 @@ class _TextViewerPageState extends State<TextViewerPage> {
         _isEditing = false;
       });
 
-      // ✅ إذا كان هناك fileId، ارفع الملف المحدث إلى السيرفر مباشرة
+      // ✅ إذا كان هناك fileId، اعرض خيارات الحفظ
       if (widget.fileId != null && widget.fileId!.isNotEmpty) {
-        final uploadSuccess = await _uploadUpdatedFile(file);
-        if (mounted) {
-          if (uploadSuccess) {
-            // ✅ إعادة تحميل محتوى الملف من السيرفر بعد التحديث الناجح
-            // ✅ لضمان أن البيانات محدثة عند فتح الملف مرة أخرى
+        final saveOption = await _showSaveOptionDialog();
+
+        if (saveOption == null) {
+          // إلغاء
+          return;
+        }
+
+        if (saveOption == 'replace') {
+          // ✅ استبدال النسخة الحالية (زي الصور بالضبط: رفع جديد + حذف القديم)
+          try {
+            final token = await StorageService.getToken();
+            if (token == null) return;
+
+            // 1. الحصول على parentFolderId
+            String? parentFolderId;
             try {
-              final reloadToken = await StorageService.getToken();
-              if (reloadToken != null) {
-                await _reloadFileFromServer(reloadToken);
+              final fileService = FileService();
+              final details = await fileService.getFileDetails(
+                fileId: widget.fileId!,
+                token: token,
+              );
+              if (details != null && details['file'] != null) {
+                parentFolderId = details['file']['parentFolderId'];
               }
             } catch (e) {
-              print('⚠️ Could not reload file from server: $e');
-              // لا نوقف العملية - الملف محفوظ على السيرفر
+              print('⚠️ Could not get parent folder ID: $e');
             }
 
+            if (!mounted) return;
+            final fileController = Provider.of<FileController>(
+              context,
+              listen: false,
+            );
+
+            // 2. رفع الملف الجديد
+            final uploadSuccess = await fileController.uploadSingleFile(
+              file: file,
+              token: token,
+              parentFolderId: parentFolderId,
+            );
+
+            if (uploadSuccess) {
+              // 3. حذف الملف القديم
+              final deleteResult = await fileController.deleteFile(
+                fileId: widget.fileId!,
+                token: token,
+              );
+
+              if (mounted) {
+                if (deleteResult['success'] == true) {
+                  // ✅ نجاح الرفع والحذف
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        '✅ ${S.of(context).fileReplacedSuccessfully}',
+                      ),
+                      backgroundColor: Colors.green,
+                      duration: Duration(seconds: 2),
+                    ),
+                  );
+                  // ✅ إغلاق العارض لأن الملف القديم (ID) لم يعد موجوداً
+                  Navigator.pop(context, true);
+                } else {
+                  // ✅ نجح الرفع ولكن فشل الحذف
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        '⚠️ ${S.of(context).fileUploadedButDeleteFailed}',
+                      ),
+                      backgroundColor: Colors.orange,
+                      duration: Duration(seconds: 4),
+                    ),
+                  );
+                  // نغلق أيضاً ليعود للقائمة ويرى الملفين (القديم والجديد)
+                  Navigator.pop(context, true);
+                }
+              }
+            } else {
+              // ❌ فشل الرفع
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      fileController.errorMessage ??
+                          S.of(context).failedToUploadFile,
+                    ),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+              }
+            }
+          } catch (e) {
+            print('❌ Error in replace flow: $e');
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('${S.of(context).errorOccurred(e.toString())}'),
+                  backgroundColor: Colors.red,
+                ),
+              );
+            }
+          }
+        } else if (saveOption == 'new') {
+          final uploadSuccess = await _uploadAsNewFile(file);
+          if (mounted && uploadSuccess) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: Text('✅ ${S.of(context).fileSavedAndUploaded}'),
+                content: Text(S.of(context).newCopySavedSuccessfully),
                 backgroundColor: Colors.green,
                 duration: Duration(seconds: 2),
-              ),
-            );
-            // ✅ حفظ حالة أن الملف تم تحديثه بنجاح
-            _fileWasUpdated = true;
-          } else {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('⚠️ ${S.of(context).fileSavedLocallyOnly}'),
-                backgroundColor: Colors.orange,
-                duration: Duration(seconds: 3),
               ),
             );
           }
         }
       } else {
-        // ✅ إذا لم يكن هناك fileId، ارجع الملف المعدل إلى EditFilePage (مثل الصور)
+        // ✅ إذا لم يكن هناك fileId، ارجع الملف المعدل إلى EditFilePage
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -402,7 +482,7 @@ class _TextViewerPageState extends State<TextViewerPage> {
 
   /// ✅ رفع الملف المحدث إلى السيرفر باستخدام route الجديد
   /// ✅ ترجع true إذا نجح التحديث، false إذا فشل
-  Future<bool> _uploadUpdatedFile(File file) async {
+  Future<bool> _uploadUpdatedFile(File file, {bool replaceMode = true}) async {
     try {
       final token = await StorageService.getToken();
       if (token == null || token.isEmpty) {
@@ -427,7 +507,8 @@ class _TextViewerPageState extends State<TextViewerPage> {
         fileId: widget.fileId!,
         file: file,
         token: token,
-        replaceMode: true, // ✅ للملفات النصية، دائماً true (استبدال بنفس الاسم)
+        replaceMode:
+            replaceMode, // ✅ استخدام القيمة الممرة (true للاستبدال، false نسخة جديدة)
       );
 
       if (result['success'] == true) {
@@ -505,6 +586,102 @@ class _TextViewerPageState extends State<TextViewerPage> {
       }
       return false; // ✅ فشل التحديث
     }
+  }
+
+  /// ✅ رفع الملف كنسخة جديدة (Save as new copy)
+  Future<bool> _uploadAsNewFile(File file) async {
+    try {
+      final token = await StorageService.getToken();
+      if (token == null || token.isEmpty) {
+        throw Exception(S.of(context).accessTokenNotFound);
+      }
+
+      // ✅ محاولة الحصول على parentFolderId من تفاصيل الملف الحالي
+      String? parentFolderId;
+      try {
+        final fileService = FileService();
+        final details = await fileService.getFileDetails(
+          fileId: widget.fileId!,
+          token: token,
+        );
+        if (details != null && details['file'] != null) {
+          parentFolderId = details['file']['parentFolderId'];
+        }
+      } catch (e) {
+        print('⚠️ Could not get parent folder ID: $e');
+      }
+
+      print('📤 Uploading as new file...');
+
+      // ✅ استخدام FileController لرفع الملف
+      final fileController = Provider.of<FileController>(
+        context,
+        listen: false,
+      );
+      final success = await fileController.uploadSingleFile(
+        file: file,
+        token: token,
+        parentFolderId: parentFolderId,
+      );
+
+      if (success) {
+        print('✅ Uploaded as new file successfully');
+        return true;
+      } else {
+        print('❌ Failed to upload as new file: ${fileController.errorMessage}');
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                '${S.of(context).failedToUploadFile}: ${fileController.errorMessage ?? ""}',
+              ),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+        return false;
+      }
+    } catch (e) {
+      print('❌ Error uploading new file: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('${S.of(context).failedToUploadFile}: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+      return false;
+    }
+  }
+
+  /// ✅ عرض خيارات الحفظ (استبدال أو نسخة جديدة)
+  Future<String?> _showSaveOptionDialog() async {
+    return showDialog<String>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text(S.of(context).saveOptions),
+          content: Text(S.of(context).saveOptionsDescription),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(null),
+              child: Text(S.of(context).cancel),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop('new'),
+              child: Text(S.of(context).saveNewCopy),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.of(
+                context,
+              ).pop('replace'), // ✅ الخيار الذي تحدث عنه المستخدم
+              child: Text(S.of(context).replaceOldVersion),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   /// ✅ إلغاء التعديلات

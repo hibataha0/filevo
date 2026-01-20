@@ -50,12 +50,36 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
   List<Map<String, dynamic>> contents = [];
   bool isLoading = false;
 
+  FolderController? _folderController;
+  int _lastRefreshTrigger = 0;
+
   Future<void> _loadViewPreference() async {
     final saved = await StorageService.getFolderViewIsGrid();
     if (saved != null && mounted) {
       setState(() {
         isGridView = saved;
       });
+    }
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final newController = Provider.of<FolderController>(context, listen: false);
+    if (_folderController != newController) {
+      _folderController?.removeListener(_onFolderControllerChange);
+      _folderController = newController;
+      _folderController?.addListener(_onFolderControllerChange);
+      _lastRefreshTrigger = _folderController!.refreshTrigger;
+    }
+  }
+
+  void _onFolderControllerChange() {
+    if (_folderController != null &&
+        _folderController!.refreshTrigger != _lastRefreshTrigger) {
+      _lastRefreshTrigger = _folderController!.refreshTrigger;
+      // ✅ تحديث محتويات المجلد عند استلام إشارة التحديث
+      _loadFolderContents(resetPage: true);
     }
   }
 
@@ -1441,6 +1465,12 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
     if (result == true) {
       _loadFolderContents(resetPage: true);
     }
+  }
+
+  @override
+  void dispose() {
+    _folderController?.removeListener(_onFolderControllerChange);
+    super.dispose();
   }
 
   @override

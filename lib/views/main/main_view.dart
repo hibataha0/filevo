@@ -269,6 +269,9 @@ class _MainPageState extends State<MainPage> {
       if (response != null && response['folder'] != null) {
         final profileController = Provider.of<ProfileController>(context, listen: false);
         profileController.getStorageInfo(forceRefresh: true);
+        
+        // ✅ تحديث قائمة المجلدات
+        folderController.triggerRefresh();
       }
 
       if (response != null && response['folder'] != null) {
@@ -978,6 +981,10 @@ class _MainPageState extends State<MainPage> {
             if (success) {
               final profileController = Provider.of<ProfileController>(context, listen: false);
               profileController.getStorageInfo(forceRefresh: true);
+              
+              // ✅ تحديث قائمة المجلدات والإحصائيات
+              final folderController = Provider.of<FolderController>(context, listen: false);
+              folderController.triggerRefresh();
             }
           }
         } else {
@@ -1005,6 +1012,13 @@ class _MainPageState extends State<MainPage> {
                         .uploadSuccessWithErrors(uploadedCount, errorsCount)
                   : S.of(context).uploadSuccessCount(uploadedCount),
             );
+
+            // ✅ تحديث المعلومات بعد رفع ملفات متعددة
+            final profileController = Provider.of<ProfileController>(context, listen: false);
+            profileController.getStorageInfo(forceRefresh: true);
+            
+            final folderController = Provider.of<FolderController>(context, listen: false);
+            folderController.triggerRefresh();
 
             if (errorsCount > 0) {
               final errorNames = errors
@@ -1186,6 +1200,9 @@ class _MainPageState extends State<MainPage> {
     if (success) {
       final profileController = Provider.of<ProfileController>(context, listen: false);
       profileController.getStorageInfo();
+      
+      // ✅ تحديث قائمة المجلدات
+      folderController.triggerRefresh();
     }
 
     if (success) {

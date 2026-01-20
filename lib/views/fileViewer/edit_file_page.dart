@@ -2234,7 +2234,7 @@ class _EditFilePageState extends State<EditFilePage> {
       await tempFile.writeAsBytes(response.bodyBytes);
 
       // ✅ فتح محرر النص - مثل الصور، نستقبل الملف المعدل عند الحفظ
-      final editedTextFile = await Navigator.push<File?>(
+      final result = await Navigator.push(
         context,
         MaterialPageRoute(
           builder: (context) => TextViewerPage(
@@ -2242,27 +2242,31 @@ class _EditFilePageState extends State<EditFilePage> {
             fileName: fileName,
             fileId: null, // ✅ لا نرفع مباشرة، نعيد الملف إلى EditFilePage
             fileUrl: null,
+            isOneTimeShare: false,
           ),
         ),
       );
 
       // ✅ إذا تم حفظ الملف المعدل، احفظه في _editedFile مثل الصور
-      if (editedTextFile != null && await editedTextFile.exists()) {
-        final fileSize = await editedTextFile.length();
-        if (fileSize > 0) {
-          setState(() {
-            _editedFile = editedTextFile;
-          });
+      if (result is File) {
+        if (await result.exists()) {
+          final fileSize = await result.length();
+          if (fileSize > 0) {
+            setState(() {
+              _editedFile = result;
+            });
 
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(S.of(context).textEditedSuccessfully),
-              backgroundColor: Colors.green,
-              duration: Duration(seconds: 3),
-            ),
-          );
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(S.of(context).textEditedSuccessfully),
+                backgroundColor: Colors.green,
+                duration: Duration(seconds: 3),
+              ),
+            );
+          }
         }
       }
+
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(S.of(context).error(e.toString()))),
@@ -2366,128 +2370,66 @@ class _EditFilePageState extends State<EditFilePage> {
         );
 
         if (saveOption == 'replace') {
-          // ✅ التحقق من نوع الملف
-          final category =
-              originalData['category']?.toString().toLowerCase() ?? '';
-          final fileType = originalData['type']?.toString().toLowerCase() ?? '';
-          final isImage =
-              category == 'images' ||
-              fileType.startsWith('image/') ||
-              _fileType == 'image';
+          // ✅ استبدال النسخة الحالية: حسب طلب المستخدم، نستخدم طريقة "رفع جديد + حذف قديم"
+          // ✅ هذه الطريقة تعمل مع الصور والنصوص وكل شيء، لكنها تغير الـ ID
+          print('📝 [EditFilePage] Replacing file using Upload New + Delete Old');
 
-          // ✅ للصور: استخدام الطريقة البديلة (رفع ملف جديد + حذف القديم)
-          // ✅ لأن route updateFileContent غير موجود في الباك إند
-          if (isImage) {
-            print(
-              '📝 [EditFilePage] File is image, using upload + delete method',
-            );
-            print('   - isImage: $isImage');
-            print('   - parentFolderId: ${originalData['parentFolderId']}');
-            
-            // ✅ استخدام الطريقة البديلة (رفع ملف جديد + حذف القديم)
-            final uploadSuccess = await fileController.uploadSingleFile(
-              file: _editedFile!,
+          // 1. رفع الملف الجديد
+          final uploadSuccess = await fileController.uploadSingleFile(
+            file: _editedFile!,
+            token: token,
+            parentFolderId: originalData['parentFolderId'],
+          );
+
+          if (uploadSuccess) {
+            // 2. حذف الملف القديم
+            final deleteResult = await fileController.deleteFile(
+              fileId: fileId,
               token: token,
-              parentFolderId: originalData['parentFolderId'],
             );
 
-            if (uploadSuccess) {
-              // ✅ حذف الملف القديم
-              final deleteResult = await fileController.deleteFile(
-                fileId: fileId,
-                token: token,
-              );
+            if (deleteResult['success'] == true) {
+              // ✅ مسح cache الصور في Flutter
+              PaintingBinding.instance.imageCache.clear();
+              PaintingBinding.instance.imageCache.clearLiveImages();
+              print('✅ [EditFilePage] Image cache cleared');
 
-              if (deleteResult['success'] == true) {
-                // ✅ مسح cache الصور في Flutter بعد التحديث الناجح
-                PaintingBinding.instance.imageCache.clear();
-                PaintingBinding.instance.imageCache.clearLiveImages();
-                print('✅ [EditFilePage] Image cache cleared');
-
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(S.of(context).fileReplacedSuccessfully),
-                    backgroundColor: Colors.green,
-                  ),
-                );
-                Navigator.pop(context, true);
-                return;
-              } else {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      '${S.of(context).fileUploadedButDeleteFailed} ${fileController.errorMessage ?? S.of(context).unknownError}',
-                    ),
-                    backgroundColor: Colors.orange,
-                  ),
-                );
-              }
-            } else {
-              String errorMessage = fileController.errorMessage ?? S.of(context).updateFileError;
-              
-              // ✅ معالجة خطأ rate limiting (429)
-              if (fileController.errorMessage?.contains('429') == true ||
-                  fileController.errorMessage?.toLowerCase().contains('too many requests') == true) {
-                errorMessage = 'تم إرسال طلبات كثيرة. يرجى الانتظار قليلاً والمحاولة مرة أخرى';
-              }
-              
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: Text(errorMessage),
-                  backgroundColor: Colors.red,
-                  duration: const Duration(seconds: 5),
+                  content: Text(S.of(context).fileReplacedSuccessfully),
+                  backgroundColor: Colors.green,
+                ),
+              );
+              Navigator.pop(context, true);
+              return;
+            } else {
+              // رفعنا الجديد لكن فشل حذف القديم
+               ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    '${S.of(context).fileUploadedButDeleteFailed} ${fileController.errorMessage ?? S.of(context).unknownError}',
+                  ),
+                  backgroundColor: Colors.orange,
                 ),
               );
             }
           } else {
-            // ✅ للملفات غير المشتركة وغير الصور: استخدام الطريقة القديمة (رفع ملف جديد وحذف القديم)
-            print(
-              '📝 [EditFilePage] File is not image/shared, using upload + delete',
-            );
-            // أولاً: رفع الملف الجديد
-            final uploadSuccess = await fileController.uploadSingleFile(
-              file: _editedFile!,
-              token: token,
-              parentFolderId: originalData['parentFolderId'],
-            );
-
-            if (uploadSuccess) {
-              // ثانياً: حذف الملف القديم
-              final deleteResult = await fileController.deleteFile(
-                fileId: fileId,
-                token: token,
-              );
-
-              if (deleteResult['success'] == true) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(S.of(context).fileReplacedSuccessfully),
-                    backgroundColor: Colors.green,
-                  ),
-                );
-                Navigator.pop(context, true);
-                return;
-              } else {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      ' ${S.of(context).fileUploadedButDeleteFailed} ${fileController.errorMessage ?? S.of(context).unknownError}',
-                    ),
-                    backgroundColor: Colors.orange,
-                  ),
-                );
-              }
-            } else {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    fileController.errorMessage ??
-                        S.of(context).fileUpdateFailed,
-                  ),
-                  backgroundColor: Colors.red,
-                ),
-              );
+             // فشل رفع الملف الجديد
+            String errorMessage = fileController.errorMessage ??
+                S.of(context).fileUpdateFailed;
+            
+             // ✅ معالجة خطأ rate limiting (429)
+            if (errorMessage.contains('429') ||
+                errorMessage.toLowerCase().contains('too many requests')) {
+              errorMessage = 'تم إرسال طلبات كثيرة. يرجى الانتظار قليلاً والمحاولة مرة أخرى';
             }
+
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(errorMessage),
+                backgroundColor: Colors.red,
+              ),
+            );
           }
         } else if (saveOption == 'new') {
           // ✅ حفظ نسخة جديدة
