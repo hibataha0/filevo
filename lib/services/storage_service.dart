@@ -47,8 +47,21 @@ class StorageService {
 
   // حذف الـ token (للخروج)
   static Future<void> deleteToken() async {
+    print('🗑️ [StorageService] Deleting token...');
     final prefs = await SharedPreferences.getInstance();
+    final oldToken = prefs.getString(_tokenKey);
+    if (oldToken != null) {
+      print('   - Old token exists (length: ${oldToken.length})');
+    }
     await prefs.remove(_tokenKey);
+    
+    // ✅ التحقق من أن التوكن تم حذفه فعلاً
+    final checkToken = prefs.getString(_tokenKey);
+    if (checkToken == null) {
+      print('✅ [StorageService] Token deleted successfully');
+    } else {
+      print('⚠️ [StorageService] Failed to delete token!');
+    }
   }
 
   // حفظ معرف المستخدم
@@ -65,8 +78,21 @@ class StorageService {
 
   // حذف معرف المستخدم
   static Future<void> deleteUserId() async {
+    print('🗑️ [StorageService] Deleting userId...');
     final prefs = await SharedPreferences.getInstance();
+    final oldUserId = prefs.getString(_userIdKey);
+    if (oldUserId != null) {
+      print('   - Old userId exists: ${oldUserId.substring(0, 10)}...');
+    }
     await prefs.remove(_userIdKey);
+    
+    // ✅ التحقق من أن userId تم حذفه فعلاً
+    final checkUserId = prefs.getString(_userIdKey);
+    if (checkUserId == null) {
+      print('✅ [StorageService] UserId deleted successfully');
+    } else {
+      print('⚠️ [StorageService] Failed to delete userId!');
+    }
   }
 
   // التحقق من وجود token (المستخدم مسجل دخول)

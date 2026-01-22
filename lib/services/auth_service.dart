@@ -126,6 +126,11 @@ class AuthService {
     // 🔥 امسح كاش المستخدم (المهم)
     UserCacheService().clearCache();
 
+    // ✅ احذف الـ token والـ userId المحفوظين محلياً
+    await StorageService.deleteToken();
+    await StorageService.deleteUserId();
+    print('🧹 AuthService: Token and userId deleted on logout');
+
     return result;
   }
 
