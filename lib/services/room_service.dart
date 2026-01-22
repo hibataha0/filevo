@@ -518,6 +518,33 @@ class RoomService {
     }
   }
 
+  /// ✅ إخفاء ملف من الغرفة (للملفات داخل مجلدات مشتركة)
+  Future<Map<String, dynamic>> excludeFileFromRoom({
+    required String roomId,
+    required String fileId,
+  }) async {
+    final token = await StorageService.getToken();
+
+    final response = await http.post(
+      Uri.parse(
+        "${ApiConfig.baseUrl}${ApiEndpoints.excludeFileFromRoom(roomId, fileId)}",
+      ),
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+    );
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    } else {
+      final errorBody = jsonDecode(response.body);
+      throw Exception(
+        errorBody['message'] ?? 'Failed to exclude file from room',
+      );
+    }
+  }
+
   /// ✅ مشاركة مجلد مع الغرفة
   Future<Map<String, dynamic>> shareFolderWithRoom({
     required String roomId,
@@ -568,6 +595,33 @@ class RoomService {
       final errorBody = jsonDecode(response.body);
       throw Exception(
         errorBody['message'] ?? 'Failed to remove folder from room',
+      );
+    }
+  }
+
+  /// ✅ إخفاء مجلد من الغرفة (للمجلدات داخل مجلدات مشتركة)
+  Future<Map<String, dynamic>> excludeFolderFromRoom({
+    required String roomId,
+    required String folderId,
+  }) async {
+    final token = await StorageService.getToken();
+
+    final response = await http.post(
+      Uri.parse(
+        "${ApiConfig.baseUrl}${ApiEndpoints.excludeFolderFromRoom(roomId, folderId)}",
+      ),
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+    );
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    } else {
+      final errorBody = jsonDecode(response.body);
+      throw Exception(
+        errorBody['message'] ?? 'Failed to exclude folder from room',
       );
     }
   }
@@ -690,7 +744,7 @@ class RoomService {
     final response = await http.post(
       Uri.parse(
         "${ApiConfig.baseUrl}${ApiEndpoints.saveFileFromRoom(roomId, fileId)}",
-      ),
+      ).replace(queryParameters: {'roomId': roomId}),
       headers: {
         'Authorization': 'Bearer $token',
         'Content-Type': 'application/json',
@@ -698,11 +752,15 @@ class RoomService {
       body: body,
     );
 
+    final responseData = jsonDecode(response.body);
     if (response.statusCode == 200) {
-      return jsonDecode(response.body);
+      return {...responseData, 'success': true};
     } else {
-      final errorBody = jsonDecode(response.body);
-      throw Exception(errorBody['message'] ?? 'Failed to save file from room');
+      return {
+        'success': false,
+        'message': responseData['message'] ?? 'Failed to save file from room',
+        ...responseData
+      };
     }
   }
 
@@ -722,7 +780,7 @@ class RoomService {
     final response = await http.post(
       Uri.parse(
         "${ApiConfig.baseUrl}${ApiEndpoints.saveFolderFromRoom(roomId, folderId)}",
-      ),
+      ).replace(queryParameters: {'roomId': roomId}),
       headers: {
         'Authorization': 'Bearer $token',
         'Content-Type': 'application/json',
@@ -730,13 +788,15 @@ class RoomService {
       body: body,
     );
 
+    final responseData = jsonDecode(response.body);
     if (response.statusCode == 200) {
-      return jsonDecode(response.body);
+      return {...responseData, 'success': true};
     } else {
-      final errorBody = jsonDecode(response.body);
-      throw Exception(
-        errorBody['message'] ?? 'Failed to save folder from room',
-      );
+      return {
+        'success': false,
+        'message': responseData['message'] ?? 'Failed to save folder from room',
+        ...responseData
+      };
     }
   }
 
@@ -1211,25 +1271,73 @@ class RoomService {
       }
 
       final url =
-          "${ApiConfig.baseUrl}${ApiEndpoints.downloadRoomFolder(roomId, folderId)}";
+          "${ApiConfig.baseUrl}${ApiEndpoints.downloadFolder(folderId)}";
       print("Downloading room folder from: $url");
 
       final dio = Dio();
       dio.options.headers['Authorization'] = 'Bearer $token';
 
-      // ✅ الحصول على مجلد التحميلات
-      final directory = await getExternalStorageDirectory();
-      if (directory == null) {
+      // ✅ الحصول على مجلد التحميلات العام
+      Directory? downloadDir;
+      String? downloadPath;
+
+      if (Platform.isAndroid) {
+        // ✅ Android: استخدام مجلد التحميلات العام
+        try {
+          // ✅ محاولة استخدام getDownloadsDirectory أولاً
+          downloadDir = await getDownloadsDirectory();
+          if (downloadDir != null && await downloadDir.exists()) {
+            downloadPath = downloadDir.path;
+            print('✅ Using getDownloadsDirectory: $downloadPath');
+          } else {
+            // ✅ Fallback: بناء المسار يدوياً لمجلد التحميلات العام
+            final externalStorage = await getExternalStorageDirectory();
+            if (externalStorage != null) {
+              String basePath = externalStorage.path;
+              if (basePath.contains('/Android/')) {
+                basePath = basePath.split('/Android/')[0];
+              }
+              downloadPath = '$basePath/Download';
+              downloadDir = Directory(downloadPath);
+              print('✅ Using manual path: $downloadPath');
+            }
+          }
+        } catch (e) {
+          print('❌ Error getting downloads directory: $e');
+          final directory = await getExternalStorageDirectory();
+          if (directory != null) {
+            downloadPath = '${directory.path}/Downloads';
+            downloadDir = Directory(downloadPath);
+          }
+        }
+      } else if (Platform.isIOS) {
+        downloadDir = await getApplicationDocumentsDirectory();
+        downloadPath = downloadDir.path;
+      } else {
+        downloadDir = await getDownloadsDirectory();
+        if (downloadDir != null) {
+          downloadPath = downloadDir.path;
+        } else {
+          final directory = await getApplicationDocumentsDirectory();
+          downloadPath = directory.path;
+          downloadDir = directory;
+        }
+      }
+
+      if (downloadDir == null || downloadPath == null) {
         return {'success': false, 'error': 'فشل في الحصول على مجلد التحميلات'};
       }
 
-      final downloadPath = '${directory.path}/Downloads';
-      final downloadDir = Directory(downloadPath);
+      // ✅ إنشاء المجلد إذا لم يكن موجوداً
       if (!await downloadDir.exists()) {
         await downloadDir.create(recursive: true);
       }
 
-      final finalFileName = folderName ?? 'folder_$folderId.zip';
+      // ✅ التأكد من أن اسم الملف ينتهي بـ .zip
+      String finalFileName = folderName ?? 'folder_$folderId';
+      if (!finalFileName.toLowerCase().endsWith('.zip')) {
+        finalFileName = '$finalFileName.zip';
+      }
       final filePath = '$downloadPath/$finalFileName';
 
       // ✅ تحميل الملف

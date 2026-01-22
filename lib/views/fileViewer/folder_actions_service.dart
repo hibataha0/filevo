@@ -34,11 +34,11 @@ class FolderActionsService {
           if (room != null) {
             // ✅ إذا كان هناك room واحد
             final roomName = room['name'] ?? 'Unknown';
-            roomWarning = '⚠️ هذا المجلد مشارك في غرفة: $roomName';
+            roomWarning = S.of(context).folderSharedInRoom(roomName);
           } else if (rooms != null && rooms.isNotEmpty) {
             // ✅ إذا كان هناك قائمة rooms
             final roomNames = rooms.map((r) => r['name'] ?? 'Unknown').join(', ');
-            roomWarning = '⚠️ هذا المجلد مشارك في ${rooms.length} غرفة: $roomNames';
+            roomWarning = S.of(context).folderSharedInMultipleRooms(rooms.length, roomNames);
           }
         }
       }
@@ -78,7 +78,7 @@ class FolderActionsService {
                 ),
                 SizedBox(height: 8),
                 Text(
-                  'سيتم إزالة المجلد من جميع الغرف تلقائياً عند الحذف.',
+                  S.of(context).folderWillBeRemovedFromAllRooms,
                   style: TextStyle(
                     fontSize: 12,
                     color: Colors.grey[600],
@@ -216,7 +216,7 @@ class FolderActionsService {
         String successMessage = S.of(context).folderRestoredSuccessfully(folder['name'] ?? '');
         
         if (filesRestored > 0) {
-          successMessage += '\nتم استعادة $filesRestored ملف مع المجلد.';
+          successMessage += S.of(context).filesRestoredWithFolder(filesRestored);
         }
 
         ScaffoldMessenger.of(context).showSnackBar(
@@ -362,9 +362,17 @@ class FolderActionsService {
     BuildContext context,
     Map<String, dynamic> folder,
   ) async {
-    final folderId = folder['_id'] ?? folder['folderData']?['_id'];
-    final folderName =
-        folder['name'] ?? folder['folderData']?['name'] ?? 'folder';
+    // ✅ الحصول على folderId من جميع الأماكن المحتملة (للمجلدات الأصلية، الفرعية، والمشتركة)
+    final folderId = folder['folderId'] ??
+        folder['_id'] ??
+        folder['folderData']?['_id'] ??
+        folder['originalData']?['_id'];
+
+    final folderName = folder['name'] ??
+        folder['title'] ??
+        folder['folderData']?['name'] ??
+        folder['originalData']?['name'] ??
+        'folder';
 
     if (folderId == null) {
       if (!context.mounted) return;

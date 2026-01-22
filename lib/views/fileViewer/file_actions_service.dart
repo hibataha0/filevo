@@ -272,11 +272,11 @@ class FileActionsService {
             if (room != null) {
               // ✅ إذا كان هناك room واحد
               final roomName = room['name'] ?? 'Unknown';
-              roomWarning = '⚠️ هذا الملف مشارك في غرفة: $roomName';
+              roomWarning = S.of(context).fileSharedInRoom(roomName);
             } else if (rooms != null && rooms.isNotEmpty) {
               // ✅ إذا كان هناك قائمة rooms
               final roomNames = rooms.map((r) => r['name'] ?? 'Unknown').join(', ');
-              roomWarning = '⚠️ هذا الملف مشارك في ${rooms.length} غرفة: $roomNames';
+              roomWarning = S.of(context).fileSharedInMultipleRooms(rooms.length, roomNames);
             }
           }
         }
@@ -315,7 +315,7 @@ class FileActionsService {
                 ),
                 SizedBox(height: 8),
                 Text(
-                  'سيتم إزالة الملف من جميع الغرف تلقائياً عند الحذف.',
+                  S.of(context).fileWillBeRemovedFromAllRooms,
                   style: TextStyle(
                     fontSize: 12,
                     color: Colors.grey[600],

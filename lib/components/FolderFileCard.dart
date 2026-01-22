@@ -109,7 +109,12 @@ class FolderFileCard extends StatelessWidget {
   }
 
   // ✅ بناء كارد الغرفة بتصميم خاص
-  Widget _buildRoomCard(BuildContext context, double w, double h, bool isDarkMode) {
+  Widget _buildRoomCard(
+    BuildContext context,
+    double w,
+    double h,
+    bool isDarkMode,
+  ) {
     // ✅ تدرج لوني جميل للغرف
     final roomGradient = LinearGradient(
       begin: Alignment.topLeft,
@@ -157,15 +162,13 @@ class FolderFileCard extends StatelessWidget {
               child: Container(
                 padding: EdgeInsets.all(w * 0.03),
                 decoration: BoxDecoration(
-                  color: isDarkMode 
-                      ? AppColors.darkSurface 
-                      : Colors.grey[100]!,
+                  color: isDarkMode ? AppColors.darkSurface : Colors.grey[100]!,
                   shape: BoxShape.circle,
                 ),
                 child: Icon(
                   Icons.more_vert,
-                  color: isDarkMode 
-                      ? AppColors.darkTextSecondary 
+                  color: isDarkMode
+                      ? AppColors.darkTextSecondary
                       : Colors.grey[700]!,
                   size: w * 0.10,
                 ),
@@ -253,8 +256,14 @@ class FolderFileCard extends StatelessWidget {
   }
 
   // ✅ بناء الكارد العادي (للمجلدات والملفات)
-  Widget _buildNormalCard(BuildContext context, double w, double h, bool isDarkMode) {
+  Widget _buildNormalCard(
+    BuildContext context,
+    double w,
+    double h,
+    bool isDarkMode,
+  ) {
     print('FILE COUNT =====================$fileCount');
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -282,10 +291,8 @@ class FolderFileCard extends StatelessWidget {
                 }
               },
               child: Icon(
-                Icons.more_vert, 
-                color: isDarkMode 
-                    ? AppColors.darkTextSecondary 
-                    : Colors.grey, 
+                Icons.more_vert,
+                color: isDarkMode ? AppColors.darkTextSecondary : Colors.grey,
                 size: w * 0.12,
               ),
             ),
@@ -295,7 +302,7 @@ class FolderFileCard extends StatelessWidget {
         Text(
           title,
           style: TextStyle(
-            fontSize: w * 0.12, 
+            fontSize: w * 0.12,
             fontWeight: FontWeight.bold,
             color: AppColors.getTextPrimary(isDarkMode),
           ),
@@ -321,7 +328,7 @@ class FolderFileCard extends StatelessWidget {
                 Text(
                   size,
                   style: TextStyle(
-                    fontSize: w * 0.10, 
+                    fontSize: w * 0.10,
                     color: AppColors.getTextSecondary(isDarkMode),
                   ),
                 ),
@@ -508,9 +515,7 @@ class FolderFileCard extends StatelessWidget {
                 desktop: 6.0,
               ),
               decoration: BoxDecoration(
-                color: isDarkMode 
-                    ? AppColors.darkSurface 
-                    : Colors.grey[300],
+                color: isDarkMode ? AppColors.darkSurface : Colors.grey[300],
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -604,9 +609,7 @@ class FolderFileCard extends StatelessWidget {
                 desktop: 6.0,
               ),
               decoration: BoxDecoration(
-                color: isDarkMode 
-                    ? AppColors.darkSurface 
-                    : Colors.grey[300],
+                color: isDarkMode ? AppColors.darkSurface : Colors.grey[300],
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -711,9 +714,7 @@ class FolderFileCard extends StatelessWidget {
                 desktop: 6.0,
               ),
               decoration: BoxDecoration(
-                color: isDarkMode 
-                    ? AppColors.darkSurface 
-                    : Colors.grey[300],
+                color: isDarkMode ? AppColors.darkSurface : Colors.grey[300],
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -756,9 +757,7 @@ class FolderFileCard extends StatelessWidget {
             if (onFavoriteTap != null) ...[
               Divider(
                 height: 1,
-                color: isDarkMode 
-                    ? AppColors.darkSurface 
-                    : Colors.grey[300],
+                color: isDarkMode ? AppColors.darkSurface : Colors.grey[300],
               ),
               _buildMenuItem(
                 context,
@@ -801,9 +800,7 @@ class FolderFileCard extends StatelessWidget {
             if (onRemoveFromRoomTap != null) ...[
               Divider(
                 height: 1,
-                color: isDarkMode 
-                    ? AppColors.darkSurface 
-                    : Colors.grey[300],
+                color: isDarkMode ? AppColors.darkSurface : Colors.grey[300],
               ),
               _buildMenuItem(
                 context,
@@ -946,17 +943,16 @@ class FolderFileCard extends StatelessWidget {
                           },
                         ),
 
-                      // if (onDownloadTap != null && roomId == null)
-                      //   _buildMenuItem(
-                      //     context,
-                      //     icon: Icons.download,
-                      //     title: 'تحميل',
-                      //     iconColor: Colors.blue,
-                      //     onTap: () {
-                      //       Navigator.pop(context);
-                      //       onDownloadTap?.call();
-                      //     },
-                      //   ),
+                      if (onDownloadTap != null)
+                        _buildMenuItem(
+                          context,
+                          icon: Icons.download_rounded,
+                          title: S.of(context).download,
+                          onTap: () {
+                            Navigator.pop(context);
+                            onDownloadTap?.call();
+                          },
+                        ),
                       if (onMoveTap != null)
                         _buildMenuItem(
                           context,
@@ -986,8 +982,8 @@ class FolderFileCard extends StatelessWidget {
                       if (onProtectTap != null) ...[
                         Divider(
                           height: 1,
-                          color: isDarkMode 
-                              ? AppColors.darkSurface 
+                          color: isDarkMode
+                              ? AppColors.darkSurface
                               : Colors.grey[300],
                         ),
                         _buildMenuItem(
@@ -1008,8 +1004,8 @@ class FolderFileCard extends StatelessWidget {
                       if (onDeleteTap != null) ...[
                         Divider(
                           height: 1,
-                          color: isDarkMode 
-                              ? AppColors.darkSurface 
+                          color: isDarkMode
+                              ? AppColors.darkSurface
                               : Colors.grey[300],
                         ),
                         _buildMenuItem(
@@ -1093,11 +1089,11 @@ class FolderFileCard extends StatelessWidget {
       desktop: 20.0,
     );
 
-    final defaultIconColor = isDarkMode 
-        ? AppColors.darkTextSecondary 
+    final defaultIconColor = isDarkMode
+        ? AppColors.darkTextSecondary
         : Colors.grey[700];
-    final defaultTextColor = isDarkMode 
-        ? AppColors.getTextPrimary(isDarkMode) 
+    final defaultTextColor = isDarkMode
+        ? AppColors.getTextPrimary(isDarkMode)
         : Colors.black87;
 
     return ListTile(
@@ -1109,11 +1105,7 @@ class FolderFileCard extends StatelessWidget {
           color: (iconColor ?? defaultIconColor)!.withOpacity(0.1),
           shape: BoxShape.circle,
         ),
-        child: Icon(
-          icon, 
-          color: iconColor ?? defaultIconColor, 
-          size: iconSize,
-        ),
+        child: Icon(icon, color: iconColor ?? defaultIconColor, size: iconSize),
       ),
       title: Text(
         title,

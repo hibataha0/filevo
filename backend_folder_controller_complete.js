@@ -1646,8 +1646,8 @@ exports.getSharedFolderDetailsInRoom = asyncHandler(async (req, res, next) => {
         email: folder.userId.email,
       },
       subfoldersCount: subfoldersCount,
-      filesCount: filesCount,
-      totalItems: subfoldersCount + filesCount,
+      filesCount: totalFilesCount,
+      totalItems: subfoldersCount + directFilesCount,
       isProtected: folder.isProtected || false, // ✅ إضافة معلومات الحماية
       protectionType: folder.protectionType || "none", // ✅ إضافة نوع الحماية
     },

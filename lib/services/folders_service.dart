@@ -7,6 +7,7 @@ import '../services/storage_service.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:dio/dio.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:flutter/services.dart';
 
 class FolderService {
   Future<Map<String, dynamic>> createFolder({
@@ -892,10 +893,49 @@ class FolderService {
       final token = await StorageService.getToken();
 
       // ✅ طلب صلاحية الكتابة للتخزين
-      if (Platform.isAndroid || Platform.isIOS) {
-        final status = await Permission.storage.request();
+      if (Platform.isAndroid) {
+        // ✅ للـ Android 13+ (API 33+)
+        bool hasPermission = false;
+        if (await Permission.photos.isGranted ||
+            await Permission.videos.isGranted ||
+            await Permission.audio.isGranted) {
+          hasPermission = true;
+        }
+        // ✅ للـ Android 11-12 (API 30-32) - SAF يغطيها
+        // ✅ للـ Android 10 وأقل (API 29-)
+        else if (await Permission.storage.isGranted) {
+          hasPermission = true;
+        }
+
+        // ✅ إذا لم تكن الصلاحية موجودة، اطلبها
+        if (!hasPermission) {
+          // ✅ محاولة طلب صلاحيات Media أولاً (Android 13+)
+          if (await Permission.photos.request().isGranted ||
+              await Permission.videos.request().isGranted ||
+              await Permission.audio.request().isGranted) {
+            hasPermission = true;
+          }
+          // ✅ إذا فشل، جرب storage (Android 10-)
+          else {
+            final status = await Permission.storage.request();
+            if (!status.isGranted) {
+              return {
+                'success': false,
+                'error':
+                    'تم رفض صلاحية التخزين. يرجى منح الصلاحية من الإعدادات',
+              };
+            }
+            hasPermission = true;
+          }
+        }
+      } else if (Platform.isIOS) {
+        // ✅ iOS - استخدام Photos permission
+        final status = await Permission.photos.request();
         if (!status.isGranted) {
-          return {'success': false, 'error': 'تم رفض صلاحية التخزين'};
+          return {
+            'success': false,
+            'error': 'تم رفض صلاحية التخزين. يرجى منح الصلاحية من الإعدادات',
+          };
         }
       }
 
@@ -932,6 +972,37 @@ class FolderService {
           }
         },
       );
+
+      // ✅ إضافة الملف إلى MediaStore للظهور في التحميلات (Android فقط)
+      if (Platform.isAndroid) {
+        bool addedToMediaStore = false;
+        try {
+          const platform = MethodChannel('com.example.filevo/download');
+          final result = await platform.invokeMethod('addToDownloads', {
+            'filePath': filePath,
+            'fileName': finalFileName,
+          });
+          final success = result as bool? ?? false;
+          if (success) {
+            print('✅ Folder added to MediaStore successfully');
+            addedToMediaStore = true;
+          } else {
+            print(
+              '⚠️ Failed to add folder to MediaStore, but file is saved at: $filePath',
+            );
+          }
+        } on MissingPluginException catch (e) {
+          print('⚠️ MethodChannel not registered. File saved at: $filePath');
+          print('⚠️ Error: $e');
+        } catch (e) {
+          print('⚠️ Error adding folder to MediaStore: $e');
+        }
+
+        if (!addedToMediaStore) {
+          print('ℹ️ Folder is saved at: $filePath');
+          print('ℹ️ Please rebuild the app to enable MediaStore integration');
+        }
+      }
 
       return {'success': true, 'filePath': filePath, 'fileName': finalFileName};
     } on DioException catch (e) {

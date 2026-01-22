@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:filevo/dialogs/folder_protection_dialogs.dart';
 import 'package:filevo/views/fileViewer/file_actions_service.dart';
 import 'package:filevo/controllers/folders/files_controller.dart';
+import 'package:filevo/controllers/folders/room_controller.dart';
 import 'package:filevo/views/fileViewer/file_details_page.dart';
 import 'package:filevo/constants/app_colors.dart';
 
@@ -1239,7 +1240,11 @@ class FilesGridView extends StatelessWidget {
                       ? () {
                           _downloadFolder(context, item);
                         }
-                      : null, // ✅ إزالة خيار التحميل للمجلدات المشتركة في الروم
+                      : (type == 'folder' && roomId != null && onDownloadFolderFromRoomTap != null)
+                      ? () {
+                          onDownloadFolderFromRoomTap!(item);
+                        }
+                      : null,
                   onMoveTap: (type == 'folder' && roomId == null)
                       ? () {
                           _showMoveFolderDialog(context, item, onFileRemoved);
@@ -1430,11 +1435,15 @@ class FilesGridView extends StatelessWidget {
                     _showShareDialog(context, item);
                   }
                 : null,
-            onDownloadTap: (type == 'folder' && roomId == null)
+            onDownloadTap: (type == 'folder')
                 ? () {
-                    _downloadFolder(context, item);
+                    if (roomId != null && onDownloadFolderFromRoomTap != null) {
+                      onDownloadFolderFromRoomTap!(item);
+                    } else if (roomId == null) {
+                      _downloadFolder(context, item);
+                    }
                   }
-                : null, // ✅ إزالة خيار التحميل للمجلدات المشتركة في الروم
+                : null,
             onMoveTap: (type == 'folder' && roomId == null)
                 ? () {
                     _showMoveFolderDialog(context, item, onFileRemoved);
@@ -1739,7 +1748,94 @@ void _handleSharedFileMenuAction(
       // TODO: Implement save file from room
       break;
     case 'remove_from_room':
-      // TODO: Implement remove file from room
+      if (fileId != null && roomId != null) {
+        final roomController = Provider.of<RoomController>(
+          context,
+          listen: false,
+        );
+        
+        // عرض ديالوج التأكيد
+        showDialog(
+          context: context,
+          builder: (dialogContext) => AlertDialog(
+            title: Text(S.of(context).removeFromRoom),
+            content: Text(
+              S.of(context).removeFileFromRoomConfirm(item['title'] ?? S.of(context).file),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(dialogContext),
+                child: Text(S.of(context).cancel),
+              ),
+              TextButton(
+                onPressed: () async {
+                  Navigator.pop(dialogContext);
+                  
+                  // محاولة جلب بيانات الغرفة للتحقق من المشاركة المباشرة
+                  final response = await roomController.getRoomById(roomId);
+                  final roomData = response?['room'];
+                  
+                  bool isDirectlyShared = false;
+                  if (roomData != null && roomData['files'] != null) {
+                    final roomFiles = roomData['files'] as List;
+                    isDirectlyShared = roomFiles.any((f) {
+                      final fId = f['file'] is Map ? f['file']['_id'] : f['file'];
+                      return fId.toString() == fileId.toString();
+                    });
+                  }
+
+                  if (!isDirectlyShared) {
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            '⚠️ ${S.of(context).cannotRemoveSubItemFromRoom}',
+                          ),
+                          backgroundColor: AppColors.warning,
+                        ),
+                      );
+                    }
+                    return;
+                  }
+
+                  final success = await roomController.unshareFileFromRoom(
+                    roomId: roomId,
+                    fileId: fileId,
+                  );
+
+                  if (context.mounted) {
+                    if (success) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('✅ ${S.of(context).fileRemovedFromRoom}'),
+                          backgroundColor: Colors.green,
+                        ),
+                      );
+                      // إعادة تحميل البيانات
+                      // في هذا الكومبوننت لا نملك callback مباشر لتحديث الصفحة الأم بسهولة 
+                      // لكن notifyListeners في الكنترولر سيقوم بالمهمة إذا كانت الصفحة تستمع له
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            roomController.errorMessage ??
+                                '❌ ${S.of(context).failedToRemoveFile}',
+                          ),
+                          backgroundColor: Colors.red,
+                        ),
+                      );
+                    }
+                  }
+                },
+                child: Text(
+                  S.of(context).remove,
+                  style: const TextStyle(color: Colors.red),
+                ),
+              ),
+            ],
+          ),
+        );
+      }
       break;
   }
 }

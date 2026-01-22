@@ -659,13 +659,13 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
                     onPressed: _retryLoading,
                     tooltip: S.of(context).retry,
                   ),
-                // زر البحث
-                if (localPath != null)
-                  IconButton(
-                    icon: const Icon(Icons.search),
-                    onPressed: _toggleSearchBar,
-                    tooltip: S.of(context).searchInDocument,
-                  ),
+                // // زر البحث
+                // if (localPath != null)
+                //   IconButton(
+                //     icon: const Icon(Icons.search),
+                //     onPressed: _toggleSearchBar,
+                //     tooltip: S.of(context).searchInDocument,
+                //   ),
                 // ✅ زر عرض النص/PDF
                 // if (localPath != null)
                 //   IconButton(

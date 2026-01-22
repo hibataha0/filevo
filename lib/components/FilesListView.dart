@@ -42,6 +42,7 @@ class FilesListView extends StatefulWidget {
 }
 
 class _FilesListViewState extends State<FilesListView> {
+  Map<String, dynamic>? _roomData;
   final Map<String, bool> _starStates = {};
   final Map<String, bool> _hoverStates = {};
 
@@ -49,6 +50,20 @@ class _FilesListViewState extends State<FilesListView> {
   void initState() {
     super.initState();
     _initializeStarStates();
+    if (widget.roomId != null) {
+      _loadRoomData();
+    }
+  }
+
+  void _loadRoomData() async {
+    if (widget.roomId == null) return;
+    final roomController = Provider.of<RoomController>(context, listen: false);
+    final response = await roomController.getRoomById(widget.roomId!);
+    if (mounted) {
+      setState(() {
+        _roomData = response?['room'];
+      });
+    }
   }
 
   @override
@@ -257,11 +272,7 @@ class _FilesListViewState extends State<FilesListView> {
             children: [
               // Thumbnail
               if (thumbnailUrl != null || url != null)
-                _buildNetworkImage(
-                  thumbnailUrl ?? url!,
-                  type,
-                  iconSize,
-                ),
+                _buildNetworkImage(thumbnailUrl ?? url!, type, iconSize),
 
               // Play icon for videos
               if (type == 'video')
@@ -320,10 +331,11 @@ class _FilesListViewState extends State<FilesListView> {
   /// ✅ بناء صورة من الشبكة مع headers للـ Authorization
   Widget _buildNetworkImage(String imageUrl, String? type, double iconSize) {
     // ✅ التحقق من أن الصورة تحتاج إلى token
-    final needsToken = imageUrl.contains('/api/') || 
-                       imageUrl.contains('/download/') || 
-                       imageUrl.contains('/view');
-    
+    final needsToken =
+        imageUrl.contains('/api/') ||
+        imageUrl.contains('/download/') ||
+        imageUrl.contains('/view');
+
     return FutureBuilder<Map<String, String>?>(
       future: needsToken ? _getImageHeaders() : Future.value(null),
       builder: (context, snapshot) {
@@ -341,9 +353,7 @@ class _FilesListViewState extends State<FilesListView> {
               height: 20,
               child: CircularProgressIndicator(
                 strokeWidth: 2,
-                valueColor: AlwaysStoppedAnimation<Color>(
-                  _getTypeColor(type),
-                ),
+                valueColor: AlwaysStoppedAnimation<Color>(_getTypeColor(type)),
               ),
             ),
           ),
@@ -687,24 +697,24 @@ class _FilesListViewState extends State<FilesListView> {
         ),
       ),
       const PopupMenuDivider(),
-      PopupMenuItem<String>(
-        value: 'favorite',
-        child: Row(
-          children: [
-            Icon(
-              isStarred ? Icons.star_rounded : Icons.star_border_rounded,
-              color: Colors.amber[700],
-              size: 20,
-            ),
-            const SizedBox(width: 8),
-            Text(
-              isStarred
-                  ? S.of(context).removeFromFavorites
-                  : S.of(context).addToFavorites,
-            ),
-          ],
-        ),
-      ),
+      // PopupMenuItem<String>(
+      //   value: 'favorite',
+      //   child: Row(
+      //     children: [
+      //       Icon(
+      //         isStarred ? Icons.star_rounded : Icons.star_border_rounded,
+      //         color: Colors.amber[700],
+      //         size: 20,
+      //       ),
+      //       const SizedBox(width: 8),
+      //       Text(
+      //         isStarred
+      //             ? S.of(context).removeFromFavorites
+      //             : S.of(context).addToFavorites,
+      //       ),
+      //     ],
+      //   ),
+      // ),
       PopupMenuItem<String>(
         value: 'save',
         child: Row(
@@ -975,23 +985,31 @@ class _FilesListViewState extends State<FilesListView> {
         break;
 
       case 'edit':
-        FileActionsService.editFile(context, fileData).then((updated) {
-          // ✅ إذا تم تحديث الملف، استدعي callback لإعادة تحميل البيانات
-          print('🔄 [FilesListView] Edit file result: $updated');
-          print('🔄 [FilesListView] onFileRemoved is null: ${widget.onFileRemoved == null}');
-          if (updated == true) {
-            print('✅ [FilesListView] File updated, calling onFileRemoved callback');
-            if (widget.onFileRemoved != null) {
-              widget.onFileRemoved!();
-            } else {
-              print('⚠️ [FilesListView] onFileRemoved is null, cannot refresh');
-            }
-          } else {
-            print('❌ [FilesListView] File not updated, skipping refresh');
-          }
-        }).catchError((error) {
-          print('❌ [FilesListView] Error in editFile: $error');
-        });
+        FileActionsService.editFile(context, fileData)
+            .then((updated) {
+              // ✅ إذا تم تحديث الملف، استدعي callback لإعادة تحميل البيانات
+              print('🔄 [FilesListView] Edit file result: $updated');
+              print(
+                '🔄 [FilesListView] onFileRemoved is null: ${widget.onFileRemoved == null}',
+              );
+              if (updated == true) {
+                print(
+                  '✅ [FilesListView] File updated, calling onFileRemoved callback',
+                );
+                if (widget.onFileRemoved != null) {
+                  widget.onFileRemoved!();
+                } else {
+                  print(
+                    '⚠️ [FilesListView] onFileRemoved is null, cannot refresh',
+                  );
+                }
+              } else {
+                print('❌ [FilesListView] File not updated, skipping refresh');
+              }
+            })
+            .catchError((error) {
+              print('❌ [FilesListView] Error in editFile: $error');
+            });
         break;
 
       case 'share':
@@ -1133,17 +1151,292 @@ class _FilesListViewState extends State<FilesListView> {
     );
   }
 
+  void _showSharedFolderMenu(
+    BuildContext context,
+    Map<String, dynamic> folder,
+  ) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final folderId =
+        (folder['folderId'] ?? folder['_id'] ?? folder['originalData']?['_id'])
+            .toString();
+    final folderName =
+        folder['title'] ??
+        folder['name'] ??
+        folder['originalData']?['name'] ??
+        S.of(context).folder;
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) => ConstrainedBox(
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.of(context).size.height * 0.7,
+        ),
+        child: Container(
+          decoration: BoxDecoration(
+            color: AppColors.getCardColor(isDarkMode),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Handle bar
+              Container(
+                margin: const EdgeInsets.only(top: 12, bottom: 8),
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: isDarkMode ? AppColors.darkSurface : Colors.grey[300],
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+
+              Flexible(
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // فتح المجلد
+                      _buildBottomSheetItem(
+                        context,
+                        icon: Icons.open_in_new,
+                        title: S.of(context).open,
+                        onTap: () {
+                          Navigator.pop(context);
+                          _handleItemTap(folder);
+                        },
+                      ),
+
+                      // عرض التفاصيل
+                      _buildBottomSheetItem(
+                        context,
+                        icon: Icons.info_outline,
+                        title: S.of(context).viewDetails,
+                        onTap: () async {
+                          Navigator.pop(context);
+                          _showFolderInfo(context, folder);
+                        },
+                      ),
+
+                       // تحميل المجلد (كـ ZIP)
+                       _buildBottomSheetItem(
+                         context,
+                         icon: Icons.download_rounded,
+                         title: S.of(context).download,
+                         onTap: () {
+                           Navigator.pop(context);
+                           // ✅ دائماً استخدم التحميل العادي للمجلدات حتى لو كنا في روم
+                           // لضمان عمل التحميل بشكل صحيح للمجلدات التي قد لا يدعمها endpoint الرومات
+                           FolderActionsService.downloadFolder(context, folder);
+                         },
+                       ),
+
+                      // التعليقات
+                      _buildBottomSheetItem(
+                        context,
+                        icon: Icons.comment_outlined,
+                        title: S.of(context).comments,
+                        onTap: () {
+                          Navigator.pop(context);
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => RoomCommentsPage(
+                                roomId: widget.roomId!,
+                                targetType: 'folder',
+                                targetId: folderId,
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+
+                      // المفضلة
+                      _buildBottomSheetItem(
+                        context,
+                        icon: folder['isStarred'] == true
+                            ? Icons.star
+                            : Icons.star_border,
+                        title: folder['isStarred'] == true
+                            ? S.of(context).removeFromFavorites
+                            : S.of(context).addToFavorites,
+                        iconColor: Colors.amber[700],
+                        onTap: () {
+                          Navigator.pop(context);
+                          _toggleFavorite(context, folder);
+                        },
+                      ),
+
+                      const Divider(height: 1),
+
+                      // حفظ إلى حسابي
+                      _buildBottomSheetItem(
+                        context,
+                        icon: Icons.save_alt,
+                        title: S.of(context).saveToMyAccount,
+                        iconColor: Colors.green,
+                        onTap: () {
+                          Navigator.pop(context);
+                          _showSaveFolderDialog(folderId, folderName);
+                        },
+                      ),
+
+                      // إزالة من الغرفة
+                      _buildBottomSheetItem(
+                        context,
+                        icon: Icons.link_off,
+                        title: S.of(context).removeFromRoom,
+                        iconColor: Colors.red,
+                        textColor: Colors.red,
+                        onTap: () {
+                          Navigator.pop(context);
+                          _showRemoveFolderFromRoomDialog(folderId, folderName);
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showRemoveFolderFromRoomDialog(String folderId, String folderName) {
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(S.of(context).removeFromRoom),
+        content: Text(
+          S.of(context).confirmRemoveFolderFromRoomWithName(folderName),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: Text(S.of(context).cancel),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(dialogContext);
+              final roomController = Provider.of<RoomController>(
+                context,
+                listen: false,
+              );
+
+              // ✅ تحديد إذا كان المجلد مشير بشكل مباشر للغرفة أو هو مجلد فرعي داخل مجلد مشترك
+              bool isDirectlyShared = false;
+              if (_roomData != null && _roomData!['folders'] != null) {
+                final roomFolders = _roomData!['folders'] as List;
+                isDirectlyShared = roomFolders.any((f) {
+                  final fId = f['folderId'] is Map
+                      ? f['folderId']['_id']
+                      : f['folderId'];
+                  return fId.toString() == folderId.toString();
+                });
+              }
+
+              if (!isDirectlyShared) {
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        '⚠️ ${S.of(context).cannotRemoveSubItemFromRoom}',
+                      ),
+                      backgroundColor: AppColors.warning,
+                    ),
+                  );
+                }
+                return;
+              }
+
+              final success = await roomController.unshareFolderFromRoom(
+                roomId: widget.roomId!,
+                folderId: folderId,
+              );
+
+              if (mounted) {
+                if (success) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(S.of(context).removeFolderFromRoomSuccess),
+                      backgroundColor: Colors.green,
+                    ),
+                  );
+                  if (widget.onFileRemoved != null) {
+                    widget.onFileRemoved!();
+                  }
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        roomController.errorMessage ??
+                            S.of(context).failedToRemoveFolderFromRoom,
+                      ),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
+              }
+            },
+            child: Text(
+              S.of(context).remove,
+              style: const TextStyle(color: Colors.red),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _showSaveFolderDialog(String folderId, String folderName) async {
+    final roomController = Provider.of<RoomController>(context, listen: false);
+    final success = await roomController.saveFolderFromRoom(
+      roomId: widget.roomId!,
+      folderId: folderId,
+    );
+
+    if (mounted) {
+      if (success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(S.of(context).changesSavedSuccessfully),
+            backgroundColor: Colors.green,
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              roomController.errorMessage ?? S.of(context).saveFolderFailure,
+            ),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
   void _showFolderMenu(BuildContext context, Map<String, dynamic> folder) {
+    if (widget.roomId != null) {
+      _showSharedFolderMenu(context, folder);
+      return;
+    }
     final parentContext = context; // ✅ حفظ الـ context الأصلي
     // ✅ الحصول على حالة المفضلة الحالية
-    final folderId = folder['folderId'] as String? ??
+    final folderId =
+        folder['folderId'] as String? ??
         folder['_id'] as String? ??
         folder['folderData']?['_id'] as String? ??
         folder['originalData']?['_id'] as String?;
-    final folderData = folder['folderData'] as Map<String, dynamic>? ??
+    final folderData =
+        folder['folderData'] as Map<String, dynamic>? ??
         folder['originalData'] as Map<String, dynamic>? ??
         folder;
-    
+
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(
@@ -1157,7 +1450,7 @@ class _FilesListViewState extends State<FilesListView> {
             final currentIsStarred = folderId != null
                 ? (_starStates[folderId] ?? folderData['isStarred'] ?? false)
                 : (folderData['isStarred'] ?? false);
-            
+
             return SafeArea(
               child: Container(
                 constraints: BoxConstraints(
@@ -1206,6 +1499,16 @@ class _FilesListViewState extends State<FilesListView> {
                             if (widget.roomId == null)
                               _buildBottomSheetItem(
                                 context,
+                                icon: Icons.download_rounded,
+                                title: S.of(context).download,
+                                onTap: () {
+                                  Navigator.pop(context);
+                                  _downloadFolder(parentContext, folder);
+                                },
+                              ),
+                            if (widget.roomId == null)
+                              _buildBottomSheetItem(
+                                context,
                                 icon: Icons.share,
                                 title: S.of(context).share,
                                 onTap: () {
@@ -1239,6 +1542,17 @@ class _FilesListViewState extends State<FilesListView> {
                                 _toggleFavorite(parentContext, folder);
                               },
                             ),
+                            if (widget.roomId == null)
+                              _buildBottomSheetItem(
+                                context,
+                                icon: Icons.lock_outline,
+                                title: S.of(context).lockFolder,
+                                iconColor: Colors.orange,
+                                onTap: () {
+                                  Navigator.pop(context);
+                                  _showProtectFolderDialog(parentContext, folder);
+                                },
+                              ),
                             const Divider(height: 1),
                             _buildBottomSheetItem(
                               context,
@@ -1436,6 +1750,29 @@ class _FilesListViewState extends State<FilesListView> {
         context,
         listen: false,
       );
+
+      // ✅ تحديد إذا كان الملف مشير بشكل مباشر للغرفة أو هو ملف داخل مجلد مشترك
+      bool isDirectlyShared = false;
+      if (_roomData != null && _roomData!['files'] != null) {
+        final roomFiles = _roomData!['files'] as List;
+        isDirectlyShared = roomFiles.any((f) {
+          final fId = f['file'] is Map ? f['file']['_id'] : f['file'];
+          return fId.toString() == fileId.toString();
+        });
+      }
+
+      if (!isDirectlyShared) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('⚠️ ${S.of(context).cannotRemoveSubItemFromRoom}'),
+              backgroundColor: AppColors.warning,
+            ),
+          );
+        }
+        return;
+      }
+
       final success = await roomController.unshareFileFromRoom(
         roomId: widget.roomId!,
         fileId: fileId,
@@ -1477,34 +1814,40 @@ class _FilesListViewState extends State<FilesListView> {
 
   // ==================== FOLDER SPECIFIC METHODS ====================
 
-  void _showFolderInfo(BuildContext context, Map<String, dynamic> folder) async {
+  void _showFolderInfo(
+    BuildContext context,
+    Map<String, dynamic> folder,
+  ) async {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-    
+
     // ✅ التحقق من كلمة السر إذا كان المجلد محمياً
     final hasAccess = await _verifyProtectedFolderAccess(context, folder);
     if (!hasAccess) {
       return; // ✅ إيقاف العملية إذا لم يتم التحقق
     }
-    
+
     // ✅ الحصول على folderId من جميع الأماكن المحتملة
-    final folderId = folder['folderId'] as String? ??
+    final folderId =
+        folder['folderId'] as String? ??
         folder['_id'] as String? ??
         folder['folderData']?['_id'] as String? ??
         folder['originalData']?['_id'] as String?;
-    
-    final folderName = folder['title'] as String? ??
+
+    final folderName =
+        folder['title'] as String? ??
         folder['name'] as String? ??
         folder['folderData']?['name'] as String? ??
         folder['originalData']?['name'] as String? ??
         S.of(context).folder;
-    
-    final folderColor = folder['color'] as Color? ?? AppColors.getPrimary(isDarkMode);
+
+    final folderColor =
+        folder['color'] as Color? ?? AppColors.getPrimary(isDarkMode);
 
     if (folderId == null) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(S.of(context).folderIdNotFound)),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(S.of(context).folderIdNotFound)));
       }
       return;
     }
@@ -1514,7 +1857,7 @@ class _FilesListViewState extends State<FilesListView> {
       context,
       listen: false,
     );
-    
+
     Map<String, dynamic>? folderDetails;
     if (widget.roomId != null && widget.roomId!.isNotEmpty) {
       try {
@@ -1666,14 +2009,14 @@ class _FilesListViewState extends State<FilesListView> {
                             '👥',
                             S.of(context).sharedWith,
                             (folderData['sharedWith'] as List)
-                                    .map<String>(
-                                      (u) =>
-                                          u['user']?['email']?.toString() ??
-                                          u['email']?.toString() ??
-                                          '',
-                                    )
-                                    .where((email) => email.isNotEmpty)
-                                    .join(', '),
+                                .map<String>(
+                                  (u) =>
+                                      u['user']?['email']?.toString() ??
+                                      u['email']?.toString() ??
+                                      '',
+                                )
+                                .where((email) => email.isNotEmpty)
+                                .join(', '),
                           ),
                         ],
                       ),
@@ -1717,7 +2060,13 @@ class _FilesListViewState extends State<FilesListView> {
     }
   }
 
-  Widget _buildDetailItem(BuildContext context, String type, String emoji, String label, String value) {
+  Widget _buildDetailItem(
+    BuildContext context,
+    String type,
+    String emoji,
+    String label,
+    String value,
+  ) {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     Color getIconColor() {
       switch (type) {
@@ -1748,14 +2097,10 @@ class _FilesListViewState extends State<FilesListView> {
       margin: EdgeInsets.only(bottom: 20),
       padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: isDarkMode 
-            ? AppColors.darkSurface 
-            : Colors.grey[50],
+        color: isDarkMode ? AppColors.darkSurface : Colors.grey[50],
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: isDarkMode 
-              ? AppColors.darkSurface 
-              : Colors.grey[200]!,
+          color: isDarkMode ? AppColors.darkSurface : Colors.grey[200]!,
         ),
       ),
       child: Row(
@@ -1799,7 +2144,10 @@ class _FilesListViewState extends State<FilesListView> {
     );
   }
 
-  void _showRenameDialog(BuildContext context, Map<String, dynamic> folder) async {
+  void _showRenameDialog(
+    BuildContext context,
+    Map<String, dynamic> folder,
+  ) async {
     if (!context.mounted) return;
     // ✅ التحقق من كلمة السر إذا كان المجلد محمياً
     final hasAccess = await _verifyProtectedFolderAccess(context, folder);
@@ -1808,18 +2156,21 @@ class _FilesListViewState extends State<FilesListView> {
     }
 
     // ✅ الحصول على folderId من جميع الأماكن المحتملة (للمجلدات الفرعية)
-    final folderId = folder['folderId'] as String? ??
+    final folderId =
+        folder['folderId'] as String? ??
         folder['_id'] as String? ??
         folder['folderData']?['_id'] as String? ??
         folder['originalData']?['_id'] as String?;
 
-    final folderName = folder['title'] as String? ??
+    final folderName =
+        folder['title'] as String? ??
         folder['name'] as String? ??
         folder['folderData']?['name'] as String? ??
         folder['originalData']?['name'] as String? ??
         S.of(context).folder;
 
-    final folderData = folder['folderData'] as Map<String, dynamic>? ??
+    final folderData =
+        folder['folderData'] as Map<String, dynamic>? ??
         folder['originalData'] as Map<String, dynamic>? ??
         folder;
 
@@ -1835,9 +2186,9 @@ class _FilesListViewState extends State<FilesListView> {
 
     if (folderId == null) {
       if (scaffoldContext.mounted) {
-        ScaffoldMessenger.of(scaffoldContext).showSnackBar(
-          SnackBar(content: Text(S.of(context).folderIdNotFound)),
-        );
+        ScaffoldMessenger.of(
+          scaffoldContext,
+        ).showSnackBar(SnackBar(content: Text(S.of(context).folderIdNotFound)));
       }
       return;
     }
@@ -1905,10 +2256,10 @@ class _FilesListViewState extends State<FilesListView> {
               final tagsString = tagsController.text.trim();
               final tags = tagsString.isNotEmpty
                   ? tagsString
-                      .split(',')
-                      .map((t) => t.trim())
-                      .where((t) => t.isNotEmpty)
-                      .toList()
+                        .split(',')
+                        .map((t) => t.trim())
+                        .where((t) => t.isNotEmpty)
+                        .toList()
                   : <String>[];
 
               _performUpdate(
@@ -1975,23 +2326,28 @@ class _FilesListViewState extends State<FilesListView> {
     }
   }
 
-  void _showShareDialog(BuildContext context, Map<String, dynamic> folder) async {
+  void _showShareDialog(
+    BuildContext context,
+    Map<String, dynamic> folder,
+  ) async {
     if (!context.mounted) return;
-    final folderId = folder['folderId'] as String? ??
+    final folderId =
+        folder['folderId'] as String? ??
         folder['_id'] as String? ??
         folder['folderData']?['_id'] as String? ??
         folder['originalData']?['_id'] as String?;
-    
-    final folderName = folder['title'] as String? ??
+
+    final folderName =
+        folder['title'] as String? ??
         folder['name'] as String? ??
         folder['folderData']?['name'] as String? ??
         folder['originalData']?['name'] as String? ??
         S.of(context).folder;
 
     if (folderId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(S.of(context).folderIdNotFound)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(S.of(context).folderIdNotFound)));
       return;
     }
 
@@ -2027,27 +2383,30 @@ class _FilesListViewState extends State<FilesListView> {
     final scaffoldContext = context;
 
     // ✅ الحصول على folderId من جميع الأماكن المحتملة (للمجلدات الفرعية)
-    final folderId = folder['folderId'] as String? ??
+    final folderId =
+        folder['folderId'] as String? ??
         folder['_id'] as String? ??
         folder['folderData']?['_id'] as String? ??
         folder['originalData']?['_id'] as String?;
 
-    final folderName = folder['title'] as String? ??
+    final folderName =
+        folder['title'] as String? ??
         folder['name'] as String? ??
         folder['folderData']?['name'] as String? ??
         folder['originalData']?['name'] as String? ??
         S.of(context).folder;
 
-    final folderData = folder['folderData'] as Map<String, dynamic>? ??
+    final folderData =
+        folder['folderData'] as Map<String, dynamic>? ??
         folder['originalData'] as Map<String, dynamic>? ??
         folder;
 
     final currentParentId = folderData['parentId']?.toString();
     if (folderId == null) {
       if (scaffoldContext.mounted) {
-        ScaffoldMessenger.of(scaffoldContext).showSnackBar(
-          SnackBar(content: Text(S.of(context).folderIdNotFound)),
-        );
+        ScaffoldMessenger.of(
+          scaffoldContext,
+        ).showSnackBar(SnackBar(content: Text(S.of(context).folderIdNotFound)));
       }
       return;
     }
@@ -2139,10 +2498,14 @@ class _FilesListViewState extends State<FilesListView> {
     }
   }
 
-  void _toggleFavorite(BuildContext context, Map<String, dynamic> folder) async {
+  void _toggleFavorite(
+    BuildContext context,
+    Map<String, dynamic> folder,
+  ) async {
     if (!context.mounted) return;
     // ✅ الحصول على folderId من جميع الأماكن المحتملة (للمجلدات الفرعية)
-    final folderId = folder['folderId'] as String? ??
+    final folderId =
+        folder['folderId'] as String? ??
         folder['_id'] as String? ??
         folder['folderData']?['_id'] as String? ??
         folder['originalData']?['_id'] as String?;
@@ -2207,7 +2570,8 @@ class _FilesListViewState extends State<FilesListView> {
         // ✅ تحديث itemData أيضاً إذا كان موجوداً
         final itemData = folder['itemData'] as Map<String, dynamic>?;
         if (itemData != null) {
-          final itemFolderData = itemData['folderData'] as Map<String, dynamic>?;
+          final itemFolderData =
+              itemData['folderData'] as Map<String, dynamic>?;
           if (itemFolderData != null) {
             itemFolderData['isStarred'] = updatedIsStarred;
           }
@@ -2218,7 +2582,8 @@ class _FilesListViewState extends State<FilesListView> {
         // ✅ تحديث itemData أيضاً إذا كان موجوداً
         final itemData = folder['itemData'] as Map<String, dynamic>?;
         if (itemData != null) {
-          final itemFolderData = itemData['folderData'] as Map<String, dynamic>?;
+          final itemFolderData =
+              itemData['folderData'] as Map<String, dynamic>?;
           if (itemFolderData != null) {
             itemFolderData['isStarred'] = updatedIsStarred;
           }
@@ -2229,10 +2594,11 @@ class _FilesListViewState extends State<FilesListView> {
       if (folderId != null && mounted) {
         setState(() {
           _starStates[folderId] = updatedIsStarred;
-          
+
           // ✅ تحديث البيانات في widget.items أيضاً لضمان استمرار التحديث
           for (var item in widget.items) {
-            final itemFolderId = item['folderId'] as String? ??
+            final itemFolderId =
+                item['folderId'] as String? ??
                 item['_id'] as String? ??
                 item['folderData']?['_id'] as String? ??
                 item['originalData']?['_id'] as String?;
@@ -2279,7 +2645,10 @@ class _FilesListViewState extends State<FilesListView> {
     }
   }
 
-  void _showDeleteDialog(BuildContext context, Map<String, dynamic> folder) async {
+  void _showDeleteDialog(
+    BuildContext context,
+    Map<String, dynamic> folder,
+  ) async {
     if (!context.mounted) return;
     // ✅ التحقق من كلمة السر إذا كان المجلد محمياً
     final hasAccess = await _verifyProtectedFolderAccess(context, folder);
@@ -2310,12 +2679,119 @@ class _FilesListViewState extends State<FilesListView> {
     );
   }
 
-  void _showMoveFileDialog(BuildContext context, Map<String, dynamic> file) {
+  void _showMoveFileDialog(BuildContext context, Map<String, dynamic> file) async {
     if (!context.mounted) return;
-    // TODO: Implement move file dialog
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Move File: ${file['title']}')),
+    
+    // ✅ حفظ context الأصلي قبل فتح الـ modal
+    final scaffoldContext = context;
+
+    final originalData = file['originalData'] ?? file;
+    final fileId = originalData['_id']?.toString();
+    final fileName =
+        file['name'] as String? ??
+        originalData['name'] as String? ??
+        S.of(context).file;
+    final currentParentId = originalData['parentFolderId']?.toString();
+
+    if (fileId == null) {
+      if (scaffoldContext.mounted) {
+        ScaffoldMessenger.of(
+          scaffoldContext,
+        ).showSnackBar(SnackBar(content: Text(S.of(context).fileIdNotFound)));
+      }
+      return;
+    }
+
+    if (!scaffoldContext.mounted) return;
+
+    showModalBottomSheet(
+      context: scaffoldContext,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (modalContext) => _FolderNavigationDialog(
+        title: S.of(context).moveFileTitle(fileName),
+
+        excludeFolderId:
+            null, // ✅ الملف ليس مجلداً، لذا لا نحتاج لاستبعاد أي مجلد
+        excludeParentId:
+            currentParentId, // ✅ استبعاد المجلد الحالي فقط (لتجنب النقل لنفس المكان)
+        onSelect: (targetFolderId) {
+          Navigator.pop(modalContext);
+          if (scaffoldContext.mounted) {
+            _moveFile(scaffoldContext, fileId, targetFolderId, fileName);
+          }
+        },
+      ),
     );
+  }
+
+  /// ✅ دالة لنقل الملف
+  Future<void> _moveFile(
+    BuildContext context, // ✅ نمرر context لأننا في دالة منفصلة
+    String fileId,
+    String? targetFolderId,
+    String fileName,
+  ) async {
+    if (!mounted) return;
+
+    final fileController = Provider.of<FileController>(context, listen: false);
+    final token = await StorageService.getToken();
+
+    if (token == null || !mounted) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(S.of(context).mustLoginFirst)));
+      }
+      return;
+    }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            CircularProgressIndicator(color: Colors.white),
+            SizedBox(width: 16),
+            Text(S.of(context).movingFile),
+          ],
+        ),
+        // duration: Duration(seconds: 30),
+      ),
+    );
+
+    final success = await fileController.moveFile(
+      fileId: fileId,
+      token: token,
+      targetFolderId: targetFolderId,
+    );
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+
+      if (success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('✅ ${S.of(context).fileMovedSuccessfully}'),
+            backgroundColor: Colors.green,
+          ),
+        );
+
+        // ✅ إعادة تحميل البيانات إذا كان هناك callback
+        if (widget.onFileRemoved != null) {
+          widget.onFileRemoved!();
+        }
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              fileController.errorMessage ??
+                  '❌ ${S.of(context).failedToMoveFile}',
+            ),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    }
   }
 
   void _showCategoryDetails(
@@ -2324,10 +2800,12 @@ class _FilesListViewState extends State<FilesListView> {
   ) {
     if (!context.mounted) return;
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-    final categoryTitle = category['title'] as String? ?? S.of(context).category;
+    final categoryTitle =
+        category['title'] as String? ?? S.of(context).category;
     final fileCount = category['fileCount'] as int? ?? 0;
     final size = category['size'] as String? ?? '0';
-    final color = category['color'] as Color? ?? AppColors.getPrimary(isDarkMode);
+    final color =
+        category['color'] as Color? ?? AppColors.getPrimary(isDarkMode);
     final icon = category['icon'] as IconData? ?? Icons.folder;
 
     showModalBottomSheet(
@@ -2454,7 +2932,8 @@ class _FilesListViewState extends State<FilesListView> {
         final itemFolderData = itemData['folderData'] as Map<String, dynamic>?;
         if (itemFolderData != null) {
           isProtected = itemFolderData['isProtected'] == true;
-          protectionType = itemFolderData['protectionType']?.toString() ?? 'none';
+          protectionType =
+              itemFolderData['protectionType']?.toString() ?? 'none';
           if (isProtected) {
             folderData = itemFolderData;
           }
@@ -2468,12 +2947,14 @@ class _FilesListViewState extends State<FilesListView> {
     }
 
     // ✅ الحصول على folderId و folderName من جميع الأماكن المحتملة
-    final folderId = folder['folderId'] as String? ??
+    final folderId =
+        folder['folderId'] as String? ??
         folderData?['_id'] as String? ??
         folder['_id'] as String? ??
         folder['originalData']?['_id'] as String?;
 
-    final folderName = folder['title'] as String? ??
+    final folderName =
+        folder['title'] as String? ??
         folderData?['name'] as String? ??
         folder['name'] as String? ??
         folder['originalData']?['name'] as String? ??
@@ -2493,6 +2974,138 @@ class _FilesListViewState extends State<FilesListView> {
 
     // ✅ إرجاع true إذا تم التحقق بنجاح
     return result['success'] == true;
+  }
+
+  /// ✅ تحميل مجلد عادي كـ ZIP
+  Future<void> _downloadFolder(
+    BuildContext context,
+    Map<String, dynamic> folder,
+  ) async {
+    if (!context.mounted) return;
+
+    // ✅ التحقق من كلمة السر إذا كان المجلد محمياً
+    final hasAccess = await _verifyProtectedFolderAccess(context, folder);
+    if (!hasAccess) {
+      return; // ✅ إيقاف العملية إذا لم يتم التحقق
+    }
+
+    // ✅ الحصول على folderId من جميع الأماكن المحتملة
+    final folderId =
+        folder['folderId'] as String? ??
+        folder['_id'] as String? ??
+        folder['folderData']?['_id'] as String? ??
+        folder['originalData']?['_id'] as String?;
+
+    final folderName =
+        folder['title'] as String? ??
+        folder['name'] as String? ??
+        folder['folderData']?['name'] as String? ??
+        folder['originalData']?['name'] as String? ??
+        S.of(context).folder;
+
+    if (folderId == null) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(S.of(context).folderIdNotFound)));
+      }
+      return;
+    }
+
+    final folderController = Provider.of<FolderController>(
+      context,
+      listen: false,
+    );
+
+    FolderActionsService.downloadFolder(
+      context,
+      folder,
+    );
+  }
+
+  /// 🔒 عرض dialog لقفل/إلغاء قفل المجلد
+  Future<void> _showProtectFolderDialog(
+    BuildContext context,
+    Map<String, dynamic> folder,
+  ) async {
+    if (!context.mounted) return;
+
+    // ✅ التحقق من كلمة السر إذا كان المجلد محمياً
+    final hasAccess = await _verifyProtectedFolderAccess(context, folder);
+    if (!hasAccess) {
+      return; // ✅ إيقاف العملية إذا لم يتم التحقق
+    }
+
+    final scaffoldContext = context;
+
+    final folderData =
+        folder['folderData'] as Map<String, dynamic>? ??
+        folder['originalData'] as Map<String, dynamic>? ??
+        folder;
+    final folderId =
+        folder['folderId'] as String? ??
+        folder['_id'] as String? ??
+        folderData['_id'] as String?;
+    final folderName =
+        folder['title'] as String? ??
+        folder['name'] as String? ??
+        folderData['name'] as String? ??
+        S.of(context).folder;
+
+    if (folderId == null) {
+      if (scaffoldContext.mounted) {
+        ScaffoldMessenger.of(
+          scaffoldContext,
+        ).showSnackBar(SnackBar(content: Text(S.of(context).folderIdNotFound)));
+      }
+      return;
+    }
+
+    // ✅ جلب معلومات الحماية الحالية من السيرفر
+    final folderController = Provider.of<FolderController>(
+      scaffoldContext,
+      listen: false,
+    );
+
+    bool isCurrentlyProtected = false;
+    String currentProtectionType = 'none';
+
+    // ✅ التحقق من البيانات المحلية أولاً
+    isCurrentlyProtected = folderData['isProtected'] == true;
+    currentProtectionType = folderData['protectionType']?.toString() ?? 'none';
+
+    // ✅ محاولة جلب أحدث البيانات من السيرفر
+    try {
+      final folderDetails = await folderController.getFolderDetails(
+        folderId: folderId,
+      );
+
+      if (folderDetails != null && folderDetails['folder'] != null) {
+        final serverFolderData =
+            folderDetails['folder'] as Map<String, dynamic>;
+        final serverIsProtected = serverFolderData['isProtected'] == true;
+        final serverProtectionType =
+            serverFolderData['protectionType']?.toString() ?? 'none';
+
+        // ✅ استخدام بيانات السيرفر إذا كانت متوفرة
+        if (serverIsProtected || serverProtectionType != 'none') {
+          isCurrentlyProtected = serverIsProtected;
+          currentProtectionType = serverProtectionType;
+        }
+      }
+    } catch (e) {
+      print('⚠️ [FilesListView] Error fetching folder details: $e');
+    }
+
+    // ✅ فتح dialog الحماية
+    await showSetFolderProtectionDialog(
+      scaffoldContext,
+      folderId,
+      folderName,
+      isCurrentlyProtected,
+      currentProtectionType,
+      widget.onFileRemoved,
+    );
   }
 }
 
@@ -2761,9 +3374,7 @@ class _FolderNavigationDialogState extends State<_FolderNavigationDialog> {
           if (_breadcrumb.length > 1)
             Container(
               padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              color: isDarkMode 
-                  ? AppColors.darkSurface 
-                  : Colors.grey[100],
+              color: isDarkMode ? AppColors.darkSurface : Colors.grey[100],
               child: Row(
                 children: [
                   Expanded(
@@ -2785,16 +3396,20 @@ class _FolderNavigationDialogState extends State<_FolderNavigationDialog> {
                                   Icon(
                                     Icons.chevron_left,
                                     size: 16,
-                                    color: AppColors.getTextSecondary(isDarkMode),
+                                    color: AppColors.getTextSecondary(
+                                      isDarkMode,
+                                    ),
                                   ),
                                   SizedBox(width: 4),
                                 ],
                                 Text(
                                   item['name'] ?? S.of(context).root,
                                   style: TextStyle(
-                                    color: isLast 
-                                        ? AppColors.getPrimary(isDarkMode) 
-                                        : AppColors.getPrimary(isDarkMode).withOpacity(0.8),
+                                    color: isLast
+                                        ? AppColors.getPrimary(isDarkMode)
+                                        : AppColors.getPrimary(
+                                            isDarkMode,
+                                          ).withOpacity(0.8),
                                     fontWeight: isLast
                                         ? FontWeight.bold
                                         : FontWeight.normal,
@@ -2823,7 +3438,7 @@ class _FolderNavigationDialogState extends State<_FolderNavigationDialog> {
                   ListTile(
                     tileColor: AppColors.getCardColor(isDarkMode),
                     leading: Icon(
-                      Icons.home_rounded, 
+                      Icons.home_rounded,
                       color: AppColors.getPrimary(isDarkMode),
                     ),
                     title: Text(
@@ -2844,10 +3459,7 @@ class _FolderNavigationDialogState extends State<_FolderNavigationDialog> {
                 if (_currentFolderId != null)
                   ListTile(
                     tileColor: AppColors.getCardColor(isDarkMode),
-                    leading: Icon(
-                      Icons.check_circle, 
-                      color: AppColors.success,
-                    ),
+                    leading: Icon(Icons.check_circle, color: AppColors.success),
                     title: Text(
                       s.selectFolderNamed(folderName),
                       style: TextStyle(
@@ -2864,9 +3476,7 @@ class _FolderNavigationDialogState extends State<_FolderNavigationDialog> {
                   ),
                 // ✅ Divider بين الخيارات وقائمة المجلدات
                 Divider(
-                  color: isDarkMode 
-                      ? AppColors.darkSurface 
-                      : Colors.grey[300],
+                  color: isDarkMode ? AppColors.darkSurface : Colors.grey[300],
                 ),
 
                 // ✅ قائمة المجلدات
@@ -2925,13 +3535,17 @@ class _FolderNavigationDialogState extends State<_FolderNavigationDialog> {
                                   title: Text(
                                     folderName,
                                     style: TextStyle(
-                                      color: AppColors.getTextPrimary(isDarkMode),
+                                      color: AppColors.getTextPrimary(
+                                        isDarkMode,
+                                      ),
                                     ),
                                   ),
                                   subtitle: Text(
                                     '${folder['filesCount'] ?? 0} ${S.of(context).file}',
                                     style: TextStyle(
-                                      color: AppColors.getTextSecondary(isDarkMode),
+                                      color: AppColors.getTextSecondary(
+                                        isDarkMode,
+                                      ),
                                     ),
                                   ),
                                   trailing: Row(
@@ -2945,7 +3559,9 @@ class _FolderNavigationDialogState extends State<_FolderNavigationDialog> {
                                             // ✅ اختيار المجلد مباشرة
                                             widget.onSelect(folderId);
                                           },
-                                          borderRadius: BorderRadius.circular(20),
+                                          borderRadius: BorderRadius.circular(
+                                            20,
+                                          ),
                                           child: Container(
                                             padding: EdgeInsets.all(8),
                                             child: Icon(
@@ -2960,7 +3576,9 @@ class _FolderNavigationDialogState extends State<_FolderNavigationDialog> {
                                       // ✅ أيقونة chevron للإشارة إلى إمكانية فتح المجلد
                                       Icon(
                                         Icons.chevron_right,
-                                        color: AppColors.getTextSecondary(isDarkMode),
+                                        color: AppColors.getTextSecondary(
+                                          isDarkMode,
+                                        ),
                                       ),
                                     ],
                                   ),

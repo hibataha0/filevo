@@ -7034,20 +7034,20 @@ class S {
     );
   }
 
-  /// `Upload Multiple Files`
+  /// `Upload Files`
   String get uploadMultipleFiles {
     return Intl.message(
-      'Upload Multiple Files',
+      'Upload Files',
       name: 'uploadMultipleFiles',
       desc: '',
       args: [],
     );
   }
 
-  /// `Select multiple individual files`
+  /// `Select individual files`
   String get uploadMultipleFilesSubtitle {
     return Intl.message(
-      'Select multiple individual files',
+      'Select individual files',
       name: 'uploadMultipleFilesSubtitle',
       desc: '',
       args: [],
@@ -9856,6 +9856,86 @@ class S {
       name: 'accessDeniedOrFileAlreadyAccessed',
       desc: '',
       args: [],
+    );
+  }
+
+  /// `Cannot remove this item because it is part of a shared folder.`
+  String get cannotRemoveSubItemFromRoom {
+    return Intl.message(
+      'Cannot remove this item because it is part of a shared folder.',
+      name: 'cannotRemoveSubItemFromRoom',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `The folder will be removed from all rooms automatically upon deletion.`
+  String get folderWillBeRemovedFromAllRooms {
+    return Intl.message(
+      'The folder will be removed from all rooms automatically upon deletion.',
+      name: 'folderWillBeRemovedFromAllRooms',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `⚠️ This folder is shared in room: {roomName}`
+  String folderSharedInRoom(String roomName) {
+    return Intl.message(
+      '⚠️ This folder is shared in room: $roomName',
+      name: 'folderSharedInRoom',
+      desc: '',
+      args: [roomName],
+    );
+  }
+
+  /// `⚠️ This folder is shared in {count} rooms: {roomNames}`
+  String folderSharedInMultipleRooms(int count, String roomNames) {
+    return Intl.message(
+      '⚠️ This folder is shared in $count rooms: $roomNames',
+      name: 'folderSharedInMultipleRooms',
+      desc: '',
+      args: [count, roomNames],
+    );
+  }
+
+  /// ` {count} files were restored with the folder.`
+  String filesRestoredWithFolder(int count) {
+    return Intl.message(
+      ' $count files were restored with the folder.',
+      name: 'filesRestoredWithFolder',
+      desc: '',
+      args: [count],
+    );
+  }
+
+  /// `The file will be removed from all rooms automatically upon deletion.`
+  String get fileWillBeRemovedFromAllRooms {
+    return Intl.message(
+      'The file will be removed from all rooms automatically upon deletion.',
+      name: 'fileWillBeRemovedFromAllRooms',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `⚠️ This file is shared in room: {roomName}`
+  String fileSharedInRoom(String roomName) {
+    return Intl.message(
+      '⚠️ This file is shared in room: $roomName',
+      name: 'fileSharedInRoom',
+      desc: '',
+      args: [roomName],
+    );
+  }
+
+  /// `⚠️ This file is shared in {count} rooms: {roomNames}`
+  String fileSharedInMultipleRooms(int count, String roomNames) {
+    return Intl.message(
+      '⚠️ This file is shared in $count rooms: $roomNames',
+      name: 'fileSharedInMultipleRooms',
+      desc: '',
+      args: [count, roomNames],
     );
   }
 }

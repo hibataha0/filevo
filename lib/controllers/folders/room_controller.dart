@@ -836,6 +836,43 @@ class RoomController with ChangeNotifier {
     }
   }
 
+  /// ✅ إخفاء ملف من الغرفة (للملفات داخل مجلدات مشتركة)
+  Future<bool> excludeFileFromRoom({
+    required String roomId,
+    required String fileId,
+  }) async {
+    setLoading(true);
+    setError(null);
+
+    try {
+      final response = await _service.excludeFileFromRoom(
+        roomId: roomId,
+        fileId: fileId,
+      );
+
+      if (response['room'] != null || response['message'] != null) {
+        // ✅ تحديث الغرفة في القائمة
+        final index = rooms.indexWhere(
+          (room) => room['_id']?.toString() == roomId.toString(),
+        );
+        if (index != -1 && index < rooms.length) {
+          rooms[index] =
+              response['room'] as Map<String, dynamic>? ?? rooms[index];
+          notifyListeners();
+        }
+        return true;
+      }
+
+      setError(response['message'] ?? 'Failed to exclude file from room');
+      return false;
+    } catch (e) {
+      setError(e.toString());
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  }
+
   /// ✅ Remove folder from room
   Future<bool> unshareFolderFromRoom({
     required String roomId,
@@ -864,6 +901,43 @@ class RoomController with ChangeNotifier {
       }
 
       setError(response['message'] ?? 'Failed to remove folder from room');
+      return false;
+    } catch (e) {
+      setError(e.toString());
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  /// ✅ إخفاء مجلد من الغرفة (للمجلدات داخل مجلدات مشتركة)
+  Future<bool> excludeFolderFromRoom({
+    required String roomId,
+    required String folderId,
+  }) async {
+    setLoading(true);
+    setError(null);
+
+    try {
+      final response = await _service.excludeFolderFromRoom(
+        roomId: roomId,
+        folderId: folderId,
+      );
+
+      if (response['room'] != null || response['message'] != null) {
+        // ✅ تحديث الغرفة في القائمة
+        final index = rooms.indexWhere(
+          (room) => room['_id']?.toString() == roomId.toString(),
+        );
+        if (index != -1 && index < rooms.length) {
+          rooms[index] =
+              response['room'] as Map<String, dynamic>? ?? rooms[index];
+          notifyListeners();
+        }
+        return true;
+      }
+
+      setError(response['message'] ?? 'Failed to exclude folder from room');
       return false;
     } catch (e) {
       setError(e.toString());
@@ -1066,7 +1140,7 @@ class RoomController with ChangeNotifier {
         parentFolderId: parentFolderId,
       );
 
-      if (response['message'] != null) {
+      if (response['success'] == true) {
         return true;
       }
 
@@ -1096,7 +1170,7 @@ class RoomController with ChangeNotifier {
         parentFolderId: parentFolderId,
       );
 
-      if (response['message'] != null) {
+      if (response['success'] == true) {
         return true;
       }
 

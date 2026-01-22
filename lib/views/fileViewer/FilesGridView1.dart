@@ -758,8 +758,11 @@ class _FilesGridState extends State<FilesGrid> {
   Future<void> _saveFileFromRoom(Map<String, dynamic> file) async {
     if (widget.roomId == null) return;
 
-    final fileId = file['originalData']?['_id'] ?? file['fileId'];
-    if (fileId == null) {
+    final fileId = (file['fileId'] ??
+            file['_id'] ??
+            file['originalData']?['_id'])
+        .toString();
+    if (fileId == 'null' || fileId.isEmpty) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -874,6 +877,29 @@ class _FilesGridState extends State<FilesGrid> {
         context,
         listen: false,
       );
+
+      // ✅ تحديد إذا كان الملف مشير بشكل مباشر للغرفة أو هو ملف داخل مجلد مشترك
+      bool isDirectlyShared = false;
+      if (_roomData != null && _roomData!['files'] != null) {
+        final roomFiles = _roomData!['files'] as List;
+        isDirectlyShared = roomFiles.any((f) {
+          final fId = f['file'] is Map ? f['file']['_id'] : f['file'];
+          return fId.toString() == fileId.toString();
+        });
+      }
+
+      if (!isDirectlyShared) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('⚠️ ${S.of(context).cannotRemoveSubItemFromRoom}'),
+              backgroundColor: AppColors.warning,
+            ),
+          );
+        }
+        return;
+      }
+
       final success = await roomController.unshareFileFromRoom(
         roomId: widget.roomId!,
         fileId: fileId,

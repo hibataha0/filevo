@@ -152,10 +152,14 @@ class ApiEndpoints {
       '$_basePath/rooms/$roomId/files/$fileId/view';
   static String unshareFileFromRoom(String roomId, String fileId) =>
       '$_basePath/rooms/$roomId/files/$fileId';
+  static String excludeFileFromRoom(String roomId, String fileId) =>
+      '$_basePath/rooms/$roomId/files/$fileId/exclude'; // ✅ إخفاء ملف من الروم (للملفات داخل مجلدات مشتركة)
   static String shareFolderWithRoom(String roomId) =>
       '$_basePath/rooms/$roomId/share-folder';
   static String unshareFolderFromRoom(String roomId, String folderId) =>
       '$_basePath/rooms/$roomId/folders/$folderId';
+  static String excludeFolderFromRoom(String roomId, String folderId) =>
+      '$_basePath/rooms/$roomId/folders/$folderId/exclude'; // ✅ إخفاء مجلد من الروم (للمجلدات داخل مجلدات مشتركة)
   static String roomComments(String roomId) =>
       '$_basePath/rooms/$roomId/comments';
   static String deleteComment(String roomId, String commentId) =>

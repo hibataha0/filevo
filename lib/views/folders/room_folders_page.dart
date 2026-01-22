@@ -146,17 +146,17 @@ class _RoomFoldersPageState extends State<RoomFoldersPage> {
 
         if (folderId == null || folderId.isEmpty) return;
 
-        // ✅ محاولة جلب تفاصيل المجلد العادية أولاً (أكثر دقة للحماية)
-        // ✅ getFolderDetails يعيد معلومات الحماية الصحيحة دائماً
+        // ✅ محاولة جلب تفاصيل المجلد المشترك في الروم أولاً (لأننا في صفحة الروم)
+        // ✅ هذا يتطابق مع منطق _showFolderInfo الذي يعمل بشكل صحيح
         Map<String, dynamic>? details;
         try {
-          details = await folderController.getFolderDetails(
+          details = await folderController.getSharedFolderDetailsInRoom(
             folderId: folderId,
           );
         } catch (e) {
-          // ✅ إذا فشل، حاول جلب تفاصيل المجلد المشترك في الروم كبديل
+          // ✅ إذا فشل، حاول جلب تفاصيل المجلد العادية كبديل
           try {
-            details = await folderController.getSharedFolderDetailsInRoom(
+            details = await folderController.getFolderDetails(
               folderId: folderId,
             );
           } catch (e2) {
@@ -174,6 +174,7 @@ class _RoomFoldersPageState extends State<RoomFoldersPage> {
 
           // ✅ تحديث الـ cache مع معلومات الحماية
           if (mounted) {
+            print('📥 [RoomFoldersPage] Data Loaded for $folderId: filesCount=$filesCount, size=$size');
             setState(() {
               _folderDetailsCache[folderId] = {
                 'filesCount': filesCount ?? 0,
@@ -337,10 +338,26 @@ class _RoomFoldersPageState extends State<RoomFoldersPage> {
           folderData['_id']?.toString() ??
           (folderIdRef is String ? folderIdRef : folderIdRef?.toString());
 
+      print('🔍 [RoomFoldersPage] Build List - FolderId: $folderId');
+      
       // ✅ استخدام تفاصيل المجلد من الـ cache إذا كانت موجودة
       final cachedDetails = _folderDetailsCache[folderId];
-      final filesCount =
-          cachedDetails?['filesCount'] ?? folderData['filesCount'] ?? 0;
+      if (cachedDetails != null) {
+          print('   ✅ Cache HIT: $cachedDetails');
+      } else {
+          print('   ❌ Cache MISS');
+          print('   📄 Raw FolderData filesCount: ${folderData['filesCount']}');
+      }
+
+      dynamic rawFilesCount = cachedDetails?['filesCount'] ?? folderData['filesCount'] ?? folderData['fileCount'];
+      int filesCount = 0;
+      if (rawFilesCount != null) {
+        if (rawFilesCount is int) filesCount = rawFilesCount;
+        else if (rawFilesCount is String) filesCount = int.tryParse(rawFilesCount) ?? 0;
+        else if (rawFilesCount is num) filesCount = rawFilesCount.toInt();
+      }
+      print('   🔢 Final filesCount: $filesCount');
+
       final size = cachedDetails?['size'] ?? folderData['size'] ?? 0;
 
       final createdAt = folderData['createdAt'];
@@ -623,6 +640,12 @@ class _RoomFoldersPageState extends State<RoomFoldersPage> {
         },
         onDownloadFolderFromRoomTap: (item) async {
           // ✅ تحميل المجلد من الغرفة
+          // ✅ دائماً استخدم التحميل العادي للمجلدات حتى لو كنا في روم
+          // لضمان عمل التحميل بشكل صحيح للمجلدات التي قد لا يدعمها endpoint الرومات
+          FolderActionsService.downloadFolder(context, item);
+        },
+        onSaveFolderFromRoomTap: (item) async {
+          // ✅ حفظ المجلد من الغرفة إلى حسابي
           final itemData = item['itemData'] as Map<String, dynamic>?;
           if (itemData != null) {
             final folderId = itemData['folderId'] as String?;
@@ -630,16 +653,10 @@ class _RoomFoldersPageState extends State<RoomFoldersPage> {
                 itemData['folderName'] as String? ?? S.of(context).folder;
 
             if (folderId != null && folderId.isNotEmpty) {
-              final roomController = Provider.of<RoomController>(
-                context,
-                listen: false,
-              );
-              FolderActionsService.downloadRoomFolder(
-                context,
-                roomController,
-                widget.roomId,
-                folderId,
-                folderName,
+              _saveFolderFromRoom(folderId, folderName);
+            } else {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text(S.of(context).folderIdNotAvailable)),
               );
             }
           }

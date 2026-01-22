@@ -84,26 +84,15 @@ class _FileDetailsPageState extends State<FileDetailsPage> {
       if (mounted) {
         setState(() {
           fileData = data?['file'];
-          // ✅ Log للتحقق من البيانات
-          print('📦 File data loaded: ${fileData?.keys.toList()}');
-          if (widget.roomId != null) {
-            print('🏠 Room ID: ${widget.roomId}');
-            print('👤 Shared by: ${fileData?['sharedBy']}');
-            print('📅 Last modified: ${fileData?['lastModified']}');
-            print('📁 Path: ${fileData?['path']}');
-            // ✅ إذا لم يكن path موجوداً، نحتاج لجلب تفاصيل الملف العادية للحصول على path
-            if (fileData?['path'] == null ||
-                fileData!['path'].toString().isEmpty) {
-              print(
-                '⚠️ Path not found in shared file details, fetching regular file details...',
-              );
-              // ✅ جلب path من تفاصيل الملف العادية
-              WidgetsBinding.instance.addPostFrameCallback((_) {
-                _loadFilePathFromRegularDetails();
-              });
-            }
-          }
+          print('📦 File data loaded: ${fileData != null ? fileData!.keys.toList() : "null"}');
         });
+      }
+
+      // ✅ حالة خاصة: إذا كان roomId موجوداً ولكن لم نجد البيانات أو الـ path مفقود
+      if (widget.roomId != null && (fileData == null || fileData?['path'] == null || fileData!['path'].toString().isEmpty)) {
+        print('⚠️ File data or path missing in room details, attempting regular details fetch...');
+        // ✅ جلب التفاصيل العادية مباشرة لضمان اكتمال البيانات قبل إغلاق حالة التحميل
+        await _loadFilePathFromRegularDetails();
       }
 
       // إذا كان الفيديو، إنشاء الثمبنيل
@@ -164,13 +153,18 @@ class _FileDetailsPageState extends State<FileDetailsPage> {
         token: token,
       );
 
-      if (data != null &&
-          data['file'] != null &&
-          data['file']['path'] != null) {
-        if (mounted && fileData != null) {
+      if (data != null && data['file'] != null) {
+        if (mounted) {
           setState(() {
-            fileData!['path'] = data['file']['path'];
-            print('✅ Path loaded from regular details: ${fileData!['path']}');
+            if (fileData == null) {
+              // ✅ إذا كان fileData نل، نأخذ البيانات العادية بالكامل
+              fileData = Map<String, dynamic>.from(data['file']);
+              print('✅ Full file data loaded from regular details');
+            } else {
+              // ✅ إذا كان موجوداً، نحدث فقط الـ path أو أي حقول مفقودة
+              fileData!['path'] = data['file']['path'];
+              print('✅ Path updated from regular details: ${fileData!['path']}');
+            }
           });
         }
       }

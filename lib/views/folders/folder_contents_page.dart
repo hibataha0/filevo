@@ -23,6 +23,10 @@ import 'package:path_provider/path_provider.dart';
 import 'package:http/http.dart' as http;
 import 'package:filevo/dialogs/folder_protection_dialogs.dart';
 import 'package:filevo/views/folders/starred_folders_page_helpers.dart';
+import 'package:filevo/controllers/folders/room_controller.dart';
+import 'package:filevo/views/fileViewer/folder_actions_service.dart';
+import 'package:filevo/views/folders/room_comments_page.dart';
+import 'package:filevo/utils/room_permissions.dart';
 
 class FolderContentsPage extends StatefulWidget {
   final String folderId;
@@ -116,7 +120,7 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
       final pageToLoad = resetPage
           ? 1
           : (loadMore ? currentPage + 1 : currentPage);
-      
+
       // ✅ إذا كان المجلد مشترك في الروم، أرسل roomId كـ query parameter
       final result = await folderController.getFolderContents(
         folderId: widget.folderId,
@@ -126,38 +130,44 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
       );
 
       if (!mounted) return;
-      
+
       // ✅ التحقق من خطأ 403 (مجلد محمي) - فقط للمجلدات غير المشتركة في الروم
       // ✅ المجلدات المشتركة في الروم يتم التحقق منها في RoomFoldersPage قبل الفتح
       if (result == null && folderController.errorMessage != null) {
         final errorMessage = folderController.errorMessage!.toLowerCase();
-        if (errorMessage.contains('403') || 
-            errorMessage.contains('protected') || 
+        if (errorMessage.contains('403') ||
+            errorMessage.contains('protected') ||
             errorMessage.contains('verify access') ||
             errorMessage.contains('access denied')) {
-          print('🔐 [FolderContentsPage] Protected folder detected (403), requesting password...');
-          
+          print(
+            '🔐 [FolderContentsPage] Protected folder detected (403), requesting password...',
+          );
+
           // ✅ جلب معلومات المجلد للتحقق من نوع الحماية
           try {
             final folderDetails = await folderController.getFolderDetails(
               folderId: widget.folderId,
             );
-            
+
             String protectionType = 'password'; // ✅ افتراضي: password
             bool isProtected = true; // ✅ إذا حصل 403، المجلد محمي بالتأكيد
-            
+
             if (folderDetails != null && folderDetails['folder'] != null) {
-              final folderData = folderDetails['folder'] as Map<String, dynamic>;
+              final folderData =
+                  folderDetails['folder'] as Map<String, dynamic>;
               isProtected = folderData['isProtected'] == true;
-              protectionType = folderData['protectionType']?.toString() ?? 'password';
-              
+              protectionType =
+                  folderData['protectionType']?.toString() ?? 'password';
+
               print('🔐 [FolderContentsPage] Folder protection info:');
               print('   - isProtected: $isProtected');
               print('   - protectionType: $protectionType');
             } else {
-              print('⚠️ [FolderContentsPage] Could not get folder details, using default: password');
+              print(
+                '⚠️ [FolderContentsPage] Could not get folder details, using default: password',
+              );
             }
-            
+
             // ✅ طلب كلمة السر (حتى لو لم نتمكن من جلب نوع الحماية)
             final verifyResult = await showVerifyFolderAccessDialog(
               context,
@@ -165,7 +175,7 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
               widget.folderName,
               protectionType,
             );
-            
+
             // ✅ إذا تم التحقق بنجاح، إعادة المحاولة
             if (verifyResult['success'] == true && mounted) {
               print('✅ [FolderContentsPage] Password verified, retrying...');
@@ -181,7 +191,9 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
               return;
             }
           } catch (verifyError) {
-            print('❌ [FolderContentsPage] Error verifying folder access: $verifyError');
+            print(
+              '❌ [FolderContentsPage] Error verifying folder access: $verifyError',
+            );
             // ✅ حتى في حالة الخطأ، حاول طلب كلمة السر (افتراضي: password)
             try {
               final verifyResult = await showVerifyFolderAccessDialog(
@@ -190,16 +202,20 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
                 widget.folderName,
                 'password', // ✅ افتراضي: password
               );
-              
+
               if (verifyResult['success'] == true && mounted) {
-                print('✅ [FolderContentsPage] Password verified (fallback), retrying...');
+                print(
+                  '✅ [FolderContentsPage] Password verified (fallback), retrying...',
+                );
                 await _loadFolderContents(resetPage: true);
                 return;
               }
             } catch (e) {
-              print('❌ [FolderContentsPage] Error in fallback verification: $e');
+              print(
+                '❌ [FolderContentsPage] Error in fallback verification: $e',
+              );
             }
-            
+
             if (mounted) {
               Navigator.pop(context);
             }
@@ -207,15 +223,15 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
           }
         }
       }
-      
+
       List<Map<String, dynamic>> newContents = [];
 
       if (result != null) {
         if (result['contents'] != null) {
           newContents = List<Map<String, dynamic>>.from(result['contents']);
-          
+
           // ✅ نعرض جميع المجلدات الفرعية بما فيها المحمية (يتم طلب كلمة السر عند فتحها)
-          
+
           newContents.sort((a, b) {
             final aType = a['type'] as String?;
             final bType = b['type'] as String?;
@@ -228,7 +244,7 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
             result['subfolders'] ?? [],
           );
           final files = List<Map<String, dynamic>>.from(result['files'] ?? []);
-          
+
           // ✅ نعرض جميع المجلدات الفرعية بما فيها المحمية (يتم طلب كلمة السر عند فتحها)
           newContents = [
             ...subfolders.map((f) => {...f, 'type': 'folder'}),
@@ -288,11 +304,13 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
     } catch (e) {
       // ✅ التحقق من خطأ 403 (مجلد محمي)
       final errorString = e.toString();
-      if (errorString.contains('403') || 
-          errorString.contains('protected') || 
+      if (errorString.contains('403') ||
+          errorString.contains('protected') ||
           errorString.contains('verify access')) {
-        print('🔐 [FolderContentsPage] Protected folder detected (403), requesting password...');
-        
+        print(
+          '🔐 [FolderContentsPage] Protected folder detected (403), requesting password...',
+        );
+
         // ✅ جلب معلومات المجلد للتحقق من نوع الحماية
         try {
           final folderController = Provider.of<FolderController>(
@@ -302,12 +320,13 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
           final folderDetails = await folderController.getFolderDetails(
             folderId: widget.folderId,
           );
-          
+
           if (folderDetails != null && folderDetails['folder'] != null) {
             final folderData = folderDetails['folder'] as Map<String, dynamic>;
             final isProtected = folderData['isProtected'] == true;
-            final protectionType = folderData['protectionType']?.toString() ?? 'none';
-            
+            final protectionType =
+                folderData['protectionType']?.toString() ?? 'none';
+
             if (isProtected && protectionType != 'none') {
               // ✅ طلب كلمة السر
               final result = await showVerifyFolderAccessDialog(
@@ -316,7 +335,7 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
                 widget.folderName,
                 protectionType,
               );
-              
+
               // ✅ إذا تم التحقق بنجاح، إعادة المحاولة
               if (result['success'] == true && mounted) {
                 print('✅ [FolderContentsPage] Password verified, retrying...');
@@ -334,10 +353,12 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
             }
           }
         } catch (verifyError) {
-          print('❌ [FolderContentsPage] Error verifying folder access: $verifyError');
+          print(
+            '❌ [FolderContentsPage] Error verifying folder access: $verifyError',
+          );
         }
       }
-      
+
       if (mounted) {
         setState(() {
           isLoading = false;
@@ -348,7 +369,7 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
             content: Text(
               errorString.contains('403') || errorString.contains('protected')
                   ? S.of(context).folderProtectedVerifyPassword
-                  : S.of(context).errorLoadingFolderContents(e.toString())
+                  : S.of(context).errorLoadingFolderContents(e.toString()),
             ),
             backgroundColor: Colors.red,
           ),
@@ -362,7 +383,7 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
     if (type == 'folder') {
       final folderId = item['_id'] as String?;
       final folderName = item['name'] as String? ?? S.of(context).folder;
-      
+
       if (folderId == null) return;
 
       // ✅ التحقق من أن المجلد محمي
@@ -419,15 +440,17 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
 
   // ✅ فتح ملف من الروم باستخدام endpoint الروم
   Future<void> _openRoomFile(String fileId, Map<String, dynamic> file) async {
-    print('📥 [openRoomFile] Starting - fileId: $fileId, roomId: ${widget.roomId}');
+    print(
+      '📥 [openRoomFile] Starting - fileId: $fileId, roomId: ${widget.roomId}',
+    );
     print('📥 [openRoomFile] File data: $file');
-    
+
     if (widget.roomId == null || widget.roomId!.isEmpty) {
       print('❌ [openRoomFile] RoomId is null or empty');
       _showSnackBar(S.of(context).fileLinkUnavailable, AppColors.warning);
       return;
     }
-    
+
     if (fileId.isEmpty) {
       print('❌ [openRoomFile] FileId is empty');
       _showSnackBar(S.of(context).fileIdNotAvailable, AppColors.error);
@@ -457,37 +480,39 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
       );
 
       if (mounted) Navigator.pop(context);
-      
+
       print('📥 [openRoomFile] Response Status: ${response.statusCode}');
       print('📥 [openRoomFile] Response Headers: ${response.headers}');
 
       if (response.statusCode == 200) {
         // ✅ حفظ الملف مؤقتاً وفتحه
         // ✅ استخراج fileName من البيانات - قد يكون في name أو originalData
-        final originalData = file['originalData'] as Map<String, dynamic>? ?? file;
-        final fileName = (file['name']?.toString() ?? 
-                         file['originalName']?.toString() ??
-                         originalData['name']?.toString() ?? 
-                         S.of(context).unnamedFile);
+        final originalData =
+            file['originalData'] as Map<String, dynamic>? ?? file;
+        final fileName =
+            (file['name']?.toString() ??
+            file['originalName']?.toString() ??
+            originalData['name']?.toString() ??
+            S.of(context).unnamedFile);
         final name = fileName.toLowerCase();
         print('📥 [openRoomFile] File name: $fileName');
         print('📥 [openRoomFile] File data keys: ${file.keys.toList()}');
-        print('📥 [openRoomFile] OriginalData keys: ${originalData.keys.toList()}');
-        
+        print(
+          '📥 [openRoomFile] OriginalData keys: ${originalData.keys.toList()}',
+        );
+
         final tempDir = await getTemporaryDirectory();
         final tempFile = File('${tempDir.path}/$fileName');
         await tempFile.writeAsBytes(response.bodyBytes);
         print('📥 [openRoomFile] File saved to: ${tempFile.path}');
-        
+
         // ✅ فتح الملف حسب نوعه
         if (name.endsWith('.pdf')) {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (_) => PdfViewerPage(
-                pdfUrl: tempFile.path,
-                fileName: fileName,
-              ),
+              builder: (_) =>
+                  PdfViewerPage(pdfUrl: tempFile.path, fileName: fileName),
             ),
           );
         } else if (name.endsWith('.mp4') ||
@@ -497,9 +522,7 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
             name.endsWith('.wmv')) {
           Navigator.push(
             context,
-            MaterialPageRoute(
-              builder: (_) => VideoViewer(url: tempFile.path),
-            ),
+            MaterialPageRoute(builder: (_) => VideoViewer(url: tempFile.path)),
           );
         } else if (name.endsWith('.jpg') ||
             name.endsWith('.jpeg') ||
@@ -521,10 +544,8 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (_) => TextViewerPage(
-                filePath: tempFile.path,
-                fileName: fileName,
-              ),
+              builder: (_) =>
+                  TextViewerPage(filePath: tempFile.path, fileName: fileName),
             ),
           );
         } else if (name.endsWith('.mp3') ||
@@ -554,19 +575,22 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
       } else if (response.statusCode == 429) {
         // ✅ معالجة خطأ Rate Limiting
         print('⚠️ [openRoomFile] Rate limit exceeded (429)');
-        
+
         // ✅ محاولة استخدام endpoint العادي كبديل
         print('⚠️ [openRoomFile] Trying regular endpoint instead...');
-        
-        final originalData = file['originalData'] as Map<String, dynamic>? ?? file;
-        final fileName = (file['name']?.toString() ?? 
-                         file['originalName']?.toString() ??
-                         originalData['name']?.toString() ?? 
-                         S.of(context).unnamedFile);
+
+        final originalData =
+            file['originalData'] as Map<String, dynamic>? ?? file;
+        final fileName =
+            (file['name']?.toString() ??
+            file['originalName']?.toString() ??
+            originalData['name']?.toString() ??
+            S.of(context).unnamedFile);
         final name = fileName.toLowerCase();
-        final filePath = (file['path'] as String?) ?? (originalData['path'] as String?);
+        final filePath =
+            (file['path'] as String?) ?? (originalData['path'] as String?);
         final fileType = _getFileType(fileName);
-        
+
         String url;
         if (filePath != null && filePath.isNotEmpty) {
           url = getFileUrl(filePath);
@@ -577,44 +601,37 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
             url = "${ApiConfig.baseUrl}${ApiEndpoints.downloadFile(fileId)}";
           }
         } else {
-          _showSnackBar(
-            S.of(context).rateLimitExceeded,
-            Colors.orange,
-          );
+          _showSnackBar(S.of(context).rateLimitExceeded, Colors.orange);
           return;
         }
-        
+
         print('📂 [openRoomFile] Using regular endpoint: $url');
         try {
           await _openFileFromUrl(url, fileName, name, fileId);
         } catch (e) {
-          print('❌ [openRoomFile] Error opening file from regular endpoint: $e');
-          _showSnackBar(
-            S.of(context).rateLimitExceeded,
-            Colors.orange,
+          print(
+            '❌ [openRoomFile] Error opening file from regular endpoint: $e',
           );
+          _showSnackBar(S.of(context).rateLimitExceeded, Colors.orange);
         }
       } else if (response.statusCode == 404) {
         // ✅ الملف غير موجود في الروم مباشرة أو داخل مجلد مشترك
         // ✅ الباك إند يجب أن يتحقق من أن الملف داخل مجلد مشترك
         print('❌ [openRoomFile] File not found in room (404)');
-        
+
         try {
           final errorJson = jsonDecode(response.body);
-          final errorMessage = errorJson['message'] ?? 
-                             S.of(context).fileNotFoundInRoom;
+          final errorMessage =
+              errorJson['message'] ?? S.of(context).fileNotFoundInRoom;
           _showSnackBar(errorMessage, AppColors.error);
         } catch (e) {
-          _showSnackBar(
-            S.of(context).fileNotFoundInRoom,
-            Colors.red,
-          );
+          _showSnackBar(S.of(context).fileNotFoundInRoom, Colors.red);
         }
       } else {
         // ✅ معالجة الأخطاء الأخرى
         print('❌ [openRoomFile] Error response: ${response.statusCode}');
         print('❌ [openRoomFile] Error body: ${response.body}');
-        
+
         String errorMessage = S.of(context).failedToDownloadFile;
         try {
           final errorJson = jsonDecode(response.body);
@@ -633,17 +650,21 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
       print('❌ [openRoomFile] Stack trace: $stackTrace');
       if (mounted) {
         Navigator.pop(context);
-        _showSnackBar(
-          S.of(context).errorDownloadingFile1,
-          Colors.red,
-        );
+        _showSnackBar(S.of(context).errorDownloadingFile1, Colors.red);
       }
     }
   }
 
   // ✅ دالة مساعدة لفتح الملف من URL
-  Future<void> _openFileFromUrl(String url, String fileName, String name, String fileId) async {
-    print('🌐 [openFileFromUrl] Starting - URL: $url, fileName: $fileName, fileId: $fileId');
+  Future<void> _openFileFromUrl(
+    String url,
+    String fileName,
+    String name,
+    String fileId,
+  ) async {
+    print(
+      '🌐 [openFileFromUrl] Starting - URL: $url, fileName: $fileName, fileId: $fileId',
+    );
     _showLoadingDialog();
 
     try {
@@ -715,12 +736,18 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
                 ),
               );
             } else {
-              _showSnackBar(S.of(context).failedToLoadVideo(fullResponse.statusCode), Colors.red);
+              _showSnackBar(
+                S.of(context).failedToLoadVideo(fullResponse.statusCode),
+                Colors.red,
+              );
             }
           } catch (e) {
             if (mounted) {
               Navigator.pop(context);
-              _showSnackBar(S.of(context).errorLoadingVideoFolderContents(e.toString()), Colors.red);
+              _showSnackBar(
+                S.of(context).errorLoadingVideoFolderContents(e.toString()),
+                Colors.red,
+              );
             }
           }
         } else if (name.endsWith('.jpg') ||
@@ -789,13 +816,12 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
       } else {
         print('❌ [openFileFromUrl] Error response: ${response.statusCode}');
         print('❌ [openFileFromUrl] Error body: ${response.body}');
-        
+
         String errorMessage = S.of(context).failedToDownloadFile;
         try {
           final errorJson = jsonDecode(response.body);
-          errorMessage = errorJson['message'] ?? 
-                        errorJson['error'] ?? 
-                        errorMessage;
+          errorMessage =
+              errorJson['message'] ?? errorJson['error'] ?? errorMessage;
           print('❌ [openFileFromUrl] Error message: $errorMessage');
         } catch (e) {
           print('❌ [openFileFromUrl] Could not parse error JSON: $e');
@@ -806,10 +832,12 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
           } else if (response.statusCode == 401) {
             errorMessage = S.of(context).pleaseLoginAgain;
           } else {
-            errorMessage = S.of(context).fileUnavailableWithCode(response.statusCode.toString());
+            errorMessage = S
+                .of(context)
+                .fileUnavailableWithCode(response.statusCode.toString());
           }
         }
-        
+
         _showSnackBar(errorMessage, AppColors.error);
       }
     } catch (e, stackTrace) {
@@ -823,7 +851,11 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
   }
 
   // ✅ دالة مساعدة لفتح الملف من المسار المحلي
-  Future<void> _openFileFromPath(String filePath, String fileName, String name) async {
+  Future<void> _openFileFromPath(
+    String filePath,
+    String fileName,
+    String name,
+  ) async {
     try {
       final file = File(filePath);
       if (!await file.exists()) {
@@ -863,10 +895,8 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (_) => TextViewerPage(
-              filePath: filePath,
-              fileName: fileName,
-            ),
+            builder: (_) =>
+                TextViewerPage(filePath: filePath, fileName: fileName),
           ),
         );
       } else if (name.endsWith('.mp3') ||
@@ -879,7 +909,8 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (_) => AudioPlayerPage(audioUrl: filePath, fileName: fileName),
+            builder: (_) =>
+                AudioPlayerPage(audioUrl: filePath, fileName: fileName),
           ),
         );
       } else {
@@ -899,7 +930,10 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
       }
     } catch (e) {
       if (mounted) {
-        _showSnackBar(S.of(context).errorOpeningFile(e.toString()), AppColors.error);
+        _showSnackBar(
+          S.of(context).errorOpeningFile(e.toString()),
+          AppColors.error,
+        );
       }
     }
   }
@@ -910,29 +944,35 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
     print('📂 [handleFileTap] File path: ${file['path']}');
     print('📂 [handleFileTap] File _id: ${file['_id']}');
     print('📂 [handleFileTap] File originalData: ${file['originalData']}');
-    
+
     // ✅ استخراج البيانات من originalData إذا كانت موجودة
     final originalData = file['originalData'] as Map<String, dynamic>? ?? file;
-    
+
     // ✅ استخراج fileId - قد يكون في _id مباشرة أو في originalData
     String fileId = _extractId(file['_id']);
     if (fileId.isEmpty) {
       fileId = _extractId(originalData['_id']);
     }
-    
-    final filePath = (file['path'] as String?) ?? 
-                     (originalData['path'] as String?);
-    final originalName = (file['name'] as String?) ?? 
-                         (originalData['name'] as String?);
+
+    final filePath =
+        (file['path'] as String?) ?? (originalData['path'] as String?);
+    final originalName =
+        (file['name'] as String?) ?? (originalData['name'] as String?);
     final name = originalName?.toLowerCase() ?? '';
     final fileName = originalName ?? S.of(context).unnamedFile;
-    
-    print('📂 [handleFileTap] After extraction - fileId: $fileId, path: $filePath');
-    print('📂 [handleFileTap] originalData keys: ${originalData.keys.toList()}');
+
+    print(
+      '📂 [handleFileTap] After extraction - fileId: $fileId, path: $filePath',
+    );
+    print(
+      '📂 [handleFileTap] originalData keys: ${originalData.keys.toList()}',
+    );
     print('📂 [handleFileTap] originalData _id: ${originalData['_id']}');
-    
+
     // ✅ إذا كان المجلد مشترك في الروم، استخدم endpoint الروم
-    if (widget.roomId != null && widget.roomId!.isNotEmpty && fileId.isNotEmpty) {
+    if (widget.roomId != null &&
+        widget.roomId!.isNotEmpty &&
+        fileId.isNotEmpty) {
       print('📂 [handleFileTap] Using room endpoint for file: $fileId');
       print('📂 [handleFileTap] RoomId: ${widget.roomId}');
       print('📂 [handleFileTap] FileId: $fileId');
@@ -944,9 +984,10 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
 
     // ✅ إذا لم يكن هناك path و fileId موجود، استخدم endpoint
     String? filePathToUse = filePath;
-    
+
     // ✅ إذا لم يكن path موجوداً، حاول استخراجه من fileId (إذا كان object)
-    if ((filePathToUse == null || filePathToUse.isEmpty) && file['fileId'] != null) {
+    if ((filePathToUse == null || filePathToUse.isEmpty) &&
+        file['fileId'] != null) {
       final fileIdData = file['fileId'];
       if (fileIdData is Map<String, dynamic>) {
         filePathToUse = fileIdData['path']?.toString();
@@ -955,7 +996,7 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
     }
 
     String url;
-    
+
     // ✅ إذا كان هناك path، استخدمه
     if (filePathToUse != null && filePathToUse.isNotEmpty) {
       print('📂 [handleFileTap] Using path: $filePathToUse');
@@ -963,13 +1004,15 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
       print('📂 [handleFileTap] Generated URL from path: $url');
     } else if (fileId.isNotEmpty) {
       // ✅ إذا لم يكن path موجوداً، استخدم endpoint حسب نوع الملف
-      print('📂 [handleFileTap] No path found, using endpoint for fileId: $fileId');
+      print(
+        '📂 [handleFileTap] No path found, using endpoint for fileId: $fileId',
+      );
       final token = await StorageService.getToken();
       if (token == null) {
         _showSnackBar(S.of(context).mustLogin, Colors.red);
         return;
       }
-      
+
       // ✅ استخدام viewFile endpoint للصور والفيديو، downloadFile للملفات الأخرى
       final fileType = _getFileType(fileName);
       print('📂 [handleFileTap] File type: $fileType');
@@ -1389,15 +1432,20 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
     );
   }
 
-  Widget _buildInfoRow(String label, String value, IconData icon, Color color, [bool? isDarkMode]) {
-    final darkMode = isDarkMode ?? Theme.of(context).brightness == Brightness.dark;
+  Widget _buildInfoRow(
+    String label,
+    String value,
+    IconData icon,
+    Color color, [
+    bool? isDarkMode,
+  ]) {
+    final darkMode =
+        isDarkMode ?? Theme.of(context).brightness == Brightness.dark;
     return Container(
       margin: EdgeInsets.only(bottom: 10),
       padding: EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: darkMode 
-            ? AppColors.darkSurface 
-            : Colors.grey[50],
+        color: darkMode ? AppColors.darkSurface : Colors.grey[50],
         borderRadius: BorderRadius.circular(10),
       ),
       child: Row(
@@ -1533,6 +1581,24 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
                       ),
                       onPressed: _showFolderInfo,
                     ),
+                    //  if (widget.roomId != null)
+                    //    IconButton(
+                    //      icon: Icon(
+                    //        Icons.download_rounded,
+                    //        color: Colors.white,
+                    //        size: 22,
+                    //      ),
+                    //    onPressed: () {
+                    //      // ✅ دائماً استخدم التحميل العادي للمجلدات حتى لو كنا في روم
+                    //      // لضمان عمل التحميل بشكل صحيح للمجلدات التي قد لا يدعمها endpoint الرومات
+                    //      FolderActionsService.downloadFolder(context, {
+                    //        'folderId': widget.folderId,
+                    //        '_id': widget.folderId,
+                    //        'name': widget.folderName,
+                    //        'title': widget.folderName,
+                    //      });
+                    //    },
+                    //  ),
                     IconButton(
                       icon: Icon(Icons.share, color: Colors.white, size: 22),
                       onPressed: _showShareDialog,
@@ -1650,9 +1716,7 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
             SizedBox(height: 16),
             Text(
               S.of(context).loadingContents, // ✅ نص مترجم
-              style: TextStyle(
-                color: AppColors.getTextSecondary(isDarkMode),
-              ),
+              style: TextStyle(color: AppColors.getTextSecondary(isDarkMode)),
             ),
           ],
         ),
@@ -1665,8 +1729,8 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(
-              Icons.folder_open, 
-              size: 60, 
+              Icons.folder_open,
+              size: 60,
               color: AppColors.getTextSecondary(isDarkMode),
             ),
             SizedBox(height: 16),
@@ -1683,9 +1747,7 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
               S
                   .of(context)
                   .emptyFolderSubtitle, // ✅ "يمكنك إضافة ملفات أو مجلدات جديدة"
-              style: TextStyle(
-                color: AppColors.getTextSecondary(isDarkMode),
-              ),
+              style: TextStyle(color: AppColors.getTextSecondary(isDarkMode)),
             ),
           ],
         ),
@@ -1796,12 +1858,14 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
                 ? FilesGrid(
                     files: _convertFilesToGridFormat(files),
                     onFileTap: (file) => _handleFileTap(file),
+                    roomId: widget.roomId, // ✅ تمرير roomId للملفات المشتركة
                     onFileRemoved: () => _loadFolderContents(resetPage: true),
                     onFileUpdated: () => _loadFolderContents(resetPage: true),
                   )
                 : FilesListView(
                     items: _convertFilesToListFormat(files),
                     onItemTap: (item) => _handleFileTap(item),
+                    roomId: widget.roomId, // ✅ تمرير roomId للملفات المشتركة
                     onFileRemoved: () => _loadFolderContents(resetPage: true),
                   ),
           ],
@@ -1887,7 +1951,13 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
                   ),
                   // ✅ زر النقاط الثلاث
                   GestureDetector(
-                    onTap: () => _showNormalFolderMenu(context, folder),
+                    onTap: () {
+                      if (widget.roomId != null) {
+                        _showSharedFolderMenu(context, folder);
+                      } else {
+                        _showNormalFolderMenu(context, folder);
+                      }
+                    },
                     child: Container(
                       padding: EdgeInsets.all(4),
                       child: Icon(
@@ -1918,15 +1988,15 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
                   Container(
                     padding: EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                     decoration: BoxDecoration(
-                      color: isDarkMode 
-                          ? AppColors.darkSurface 
+                      color: isDarkMode
+                          ? AppColors.darkSurface
                           : Colors.grey[100],
                       borderRadius: BorderRadius.circular(6),
                     ),
                     child: Text(
                       '$filesCount ${S.of(context).files}', // ✅ "ملفات"
                       style: TextStyle(
-                        fontSize: 12, 
+                        fontSize: 12,
                         color: AppColors.getTextSecondary(isDarkMode),
                       ),
                     ),
@@ -1934,7 +2004,7 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
                   Text(
                     formattedSize, // ✅ عرض الحجم
                     style: TextStyle(
-                      fontSize: 12, 
+                      fontSize: 12,
                       color: AppColors.getTextSecondary(isDarkMode),
                     ),
                   ),
@@ -2007,9 +2077,7 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
                   desktop: 6.0,
                 ),
                 decoration: BoxDecoration(
-                  color: isDarkMode 
-                      ? AppColors.darkSurface 
-                      : Colors.grey[300],
+                  color: isDarkMode ? AppColors.darkSurface : Colors.grey[300],
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -2030,12 +2098,18 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
                           // ✅ التحقق من كلمة السر إذا كان المجلد محمياً
                           final folderData = folder['folderData'] ?? folder;
                           final isProtected = folderData['isProtected'] == true;
-                          final protectionType = folderData['protectionType']?.toString() ?? 'none';
+                          final protectionType =
+                              folderData['protectionType']?.toString() ??
+                              'none';
 
                           if (isProtected && protectionType != 'none') {
-                            final folderId = folder['folderId'] ?? folder['_id'];
-                            final folderName = folder['title'] ?? folder['name'] ?? S.of(context).folder;
-                            
+                            final folderId =
+                                folder['folderId'] ?? folder['_id'];
+                            final folderName =
+                                folder['title'] ??
+                                folder['name'] ??
+                                S.of(context).folder;
+
                             if (folderId != null) {
                               final result = await showVerifyFolderAccessDialog(
                                 context,
@@ -2063,12 +2137,18 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
                           // ✅ التحقق من كلمة السر إذا كان المجلد محمياً
                           final folderData = folder['folderData'] ?? folder;
                           final isProtected = folderData['isProtected'] == true;
-                          final protectionType = folderData['protectionType']?.toString() ?? 'none';
+                          final protectionType =
+                              folderData['protectionType']?.toString() ??
+                              'none';
 
                           if (isProtected && protectionType != 'none') {
-                            final folderId = folder['folderId'] ?? folder['_id'];
-                            final folderName = folder['title'] ?? folder['name'] ?? S.of(context).folder;
-                            
+                            final folderId =
+                                folder['folderId'] ?? folder['_id'];
+                            final folderName =
+                                folder['title'] ??
+                                folder['name'] ??
+                                S.of(context).folder;
+
                             if (folderId != null) {
                               final result = await showVerifyFolderAccessDialog(
                                 context,
@@ -2123,6 +2203,7 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
                         title: S.of(context).move,
                         iconColor: Colors.purple,
                         onTap: () {
+                          // This is the original onTap for 'move'
                           Navigator.pop(context);
                           // ✅ إضافة folderId إذا لم يكن موجوداً (للمجلدات الفرعية)
                           final folderWithId = {
@@ -2132,6 +2213,20 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
                             'folderData': folder['folderData'] ?? folder,
                           };
                           _showMoveFolderDialog(context, folderWithId);
+                        },
+                      ),
+
+                      // ✅ تحميل المجلد (كـ ZIP)
+                      _buildMenuItem(
+                        context,
+                        icon: Icons.download_rounded,
+                        title: S.of(context).download,
+                        iconColor: Colors.blue,
+                        onTap: () {
+                          Navigator.pop(context);
+                          // ✅ دائماً استخدم التحميل العادي للمجلدات الفرعية حتى لو كنا في روم
+                          // لضمان عمل التحميل بشكل صحيح للمجلدات العميقة التي قد لا يدعمها endpoint الرومات
+                          FolderActionsService.downloadFolder(context, folder);
                         },
                       ),
 
@@ -2161,18 +2256,22 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
                       // ✅ خط فاصل قبل الحذف
                       Divider(
                         height: 1,
-                        color: isDarkMode 
-                            ? AppColors.darkSurface 
+                        color: isDarkMode
+                            ? AppColors.darkSurface
                             : Colors.grey[300],
                       ),
 
                       // ✅ قفل/إلغاء قفل المجلد
                       _buildMenuItem(
                         context,
-                        icon: (folder['folderData'] ?? folder)['isProtected'] == true
+                        icon:
+                            (folder['folderData'] ?? folder)['isProtected'] ==
+                                true
                             ? Icons.lock_open
                             : Icons.lock,
-                        title: (folder['folderData'] ?? folder)['isProtected'] == true
+                        title:
+                            (folder['folderData'] ?? folder)['isProtected'] ==
+                                true
                             ? S.of(context).unlockFolder
                             : S.of(context).lockFolder,
                         iconColor: Colors.orange,
@@ -2192,8 +2291,8 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
                       // ✅ خط فاصل قبل الحذف
                       Divider(
                         height: 1,
-                        color: isDarkMode 
-                            ? AppColors.darkSurface 
+                        color: isDarkMode
+                            ? AppColors.darkSurface
                             : Colors.grey[300],
                       ),
 
@@ -2209,12 +2308,18 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
                           // ✅ التحقق من كلمة السر إذا كان المجلد محمياً
                           final folderData = folder['folderData'] ?? folder;
                           final isProtected = folderData['isProtected'] == true;
-                          final protectionType = folderData['protectionType']?.toString() ?? 'none';
+                          final protectionType =
+                              folderData['protectionType']?.toString() ??
+                              'none';
 
                           if (isProtected && protectionType != 'none') {
-                            final folderId = folder['folderId'] ?? folder['_id'];
-                            final folderName = folder['title'] ?? folder['name'] ?? S.of(context).folder;
-                            
+                            final folderId =
+                                folder['folderId'] ?? folder['_id'];
+                            final folderName =
+                                folder['title'] ??
+                                folder['name'] ??
+                                S.of(context).folder;
+
                             if (folderId != null) {
                               final result = await showVerifyFolderAccessDialog(
                                 context,
@@ -2258,6 +2363,373 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
     );
   }
 
+  /// ✅ عرض منيو المجلد المشترك في الروم
+  void _showSharedFolderMenu(
+    BuildContext context,
+    Map<String, dynamic> folder,
+  ) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final folderId =
+        (folder['folderId'] ?? folder['_id'] ?? folder['originalData']?['_id'])
+            .toString();
+    final folderName =
+        folder['title'] ??
+        folder['name'] ??
+        folder['originalData']?['name'] ??
+        S.of(context).folder;
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) => ConstrainedBox(
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.of(context).size.height * 0.7,
+        ),
+        child: Container(
+          decoration: BoxDecoration(
+            color: AppColors.getCardColor(isDarkMode),
+            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Handle bar
+              Container(
+                margin: EdgeInsets.only(top: 12, bottom: 8),
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: isDarkMode ? AppColors.darkSurface : Colors.grey[300],
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+
+              Flexible(
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // فتح المجلد
+                      _buildMenuItem(
+                        context,
+                        icon: Icons.open_in_new,
+                        title: S.of(context).open,
+                        onTap: () async {
+                          Navigator.pop(context);
+                          final folderData = folder['folderData'] ?? folder;
+                          final isProtected = folderData['isProtected'] == true;
+                          final protectionType =
+                              folderData['protectionType']?.toString() ??
+                              'none';
+
+                          if (isProtected && protectionType != 'none') {
+                            final result = await showVerifyFolderAccessDialog(
+                              context,
+                              folderId,
+                              folderName,
+                              protectionType,
+                            );
+                            if (result['success'] != true) return;
+                          }
+                          _handleItemTap(folder);
+                        },
+                      ),
+
+                      // عرض التفاصيل
+                      _buildMenuItem(
+                        context,
+                        icon: Icons.info_outline,
+                        title: S.of(context).viewDetails,
+                        onTap: () async {
+                          Navigator.pop(context);
+                          await _showFolderDetailsDialog(folder);
+                        },
+                      ),
+
+                      // تحميل المجلد (كـ ZIP)
+                      _buildMenuItem(
+                        context,
+                        icon: Icons.download_rounded,
+                        title: S.of(context).download,
+                        onTap: () {
+                          Navigator.pop(context);
+                          // ✅ دائماً استخدم التحميل العادي للمجلدات الفرعية حتى لو كنا في روم
+                          // لضمان عمل التحميل بشكل صحيح للمجلدات العميقة التي قد لا يدعمها endpoint الرومات
+                          FolderActionsService.downloadFolder(context, folder);
+                        },
+                      ),
+
+                      // التعليقات
+                      _buildMenuItem(
+                        context,
+                        icon: Icons.comment_outlined,
+                        title: S.of(context).comments,
+                        onTap: () {
+                          Navigator.pop(context);
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => RoomCommentsPage(
+                                roomId: widget.roomId!,
+                                targetType: 'folder',
+                                targetId: folderId,
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+
+                      // المفضلة
+                      _buildMenuItem(
+                        context,
+                        icon: folder['isStarred'] == true
+                            ? Icons.star
+                            : Icons.star_border,
+                        title: folder['isStarred'] == true
+                            ? S.of(context).folderAddedToFavorites
+                            : S.of(context).folderRemovedFromFavorites,
+                        iconColor: Colors.amber[700],
+                        onTap: () {
+                          Navigator.pop(context);
+                          final folderWithId = {
+                            ...folder,
+                            'folderId': folderId,
+                            'title': folderName,
+                          };
+                          _toggleFavorite(context, folderWithId);
+                        },
+                      ),
+
+                      Divider(height: 1),
+
+                      // حفظ إلى حسابي
+                      _buildMenuItem(
+                        context,
+                        icon: Icons.save_alt,
+                        title: S.of(context).saveToMyAccount,
+                        iconColor: Colors.green,
+                        onTap: () {
+                          Navigator.pop(context);
+                          _saveFolderFromRoom(folderId, folderName);
+                        },
+                      ),
+
+                      // إزالة من الغرفة (للمالك أو من شارك المجلد)
+                      _buildMenuItem(
+                        context,
+                        icon: Icons.remove_circle_outline,
+                        title: S.of(context).removeFolderFromRoom,
+                        iconColor: Colors.red,
+                        onTap: () {
+                          Navigator.pop(context);
+                          _removeFolderFromRoom(folder);
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              SizedBox(height: 16),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// ✅ إزالة المجلد من الغرفة
+  Future<void> _removeFolderFromRoom(Map<String, dynamic> folder) async {
+    final folderId = (folder['folderId'] ?? folder['_id']).toString();
+    final folderName =
+        folder['title'] ?? folder['name'] ?? S.of(context).folder;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(S.of(context).removeFolderFromRoom),
+        content: Text(
+          S.of(context).confirmRemoveFolderFromRoomWithName(folderName),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: Text(S.of(context).cancel),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: Text(
+              S.of(context).remove,
+              style: TextStyle(color: Colors.red),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    if (widget.roomId != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('⚠️ ${S.of(context).cannotRemoveSubItemFromRoom}'),
+          backgroundColor: AppColors.warning,
+        ),
+      );
+      return;
+    }
+
+    try {
+      final roomController = Provider.of<RoomController>(
+        context,
+        listen: false,
+      );
+      // NOTE: In FolderContentsPage, any folder being removed is a sub-folder
+      // unless we are at the root, but unsharing the root makes more sense via RoomFoldersPage.
+      // The user wants to block this.
+      final success = await roomController.unshareFolderFromRoom(
+        roomId: widget.roomId!,
+        folderId: folderId,
+      );
+
+      if (mounted) {
+        if (success) {
+          _showSnackBar(S.of(context).folderRemovedFromRoom, Colors.green);
+          _loadFolderContents(resetPage: true);
+        } else {
+          _showSnackBar(
+            roomController.errorMessage ??
+                S.of(context).failedToRemoveFolderFromRoom,
+            AppColors.error,
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        _showSnackBar(S.of(context).error(e.toString()), AppColors.error);
+      }
+    }
+  }
+
+  /// ✅ حفظ المجلد من الغرفة إلى حساب المستخدم
+  Future<void> _saveFolderFromRoom(String folderId, String folderName) async {
+    // ✅ عرض dialog لاختيار المجلد (اختياري)
+    final targetFolderId = await _showSaveFolderDialog();
+
+    try {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                CircularProgressIndicator(color: Colors.white),
+                SizedBox(width: 16),
+                Text(S.of(context).savingFolder),
+              ],
+            ),
+            duration: Duration(seconds: 60),
+          ),
+        );
+      }
+
+      final roomController = Provider.of<RoomController>(
+        context,
+        listen: false,
+      );
+      final success = await roomController.saveFolderFromRoom(
+        roomId: widget.roomId!,
+        folderId: folderId,
+        parentFolderId: targetFolderId,
+      );
+
+      if (mounted) {
+        final s = S.of(context);
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+
+        if (success) {
+          _showSnackBar(s.saveFolderSuccess(folderName), AppColors.success);
+        } else {
+          _showSnackBar(
+            roomController.errorMessage ?? s.saveFolderFailure,
+            AppColors.error,
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+        _showSnackBar(S.of(context).errorPrefix(e.toString()), AppColors.error);
+      }
+    }
+  }
+
+  /// ✅ عرض dialog لاختيار المجلد لحفظ المجلد
+  Future<String?> _showSaveFolderDialog() async {
+    return showModalBottomSheet<String?>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (modalContext) => Container(
+        height: MediaQuery.of(context).size.height * 0.7,
+        decoration: BoxDecoration(
+          color: Theme.of(context).scaffoldBackgroundColor,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: Column(
+          children: [
+            Container(
+              padding: EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Colors.green,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.save, color: Colors.white, size: 32),
+                  SizedBox(width: 16),
+                  Expanded(
+                    child: Text(
+                      S.of(context).selectDestinationFolder,
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    icon: Icon(Icons.close, color: Colors.white),
+                    onPressed: () => Navigator.pop(modalContext, null),
+                  ),
+                ],
+              ),
+            ),
+            Expanded(
+              child: Center(
+                child: Text(
+                  S.of(context).willBeSavedInRoot,
+                  style: TextStyle(color: Colors.grey),
+                ),
+              ),
+            ),
+            Padding(
+              padding: EdgeInsets.all(16),
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  minimumSize: Size(double.infinity, 50),
+                ),
+                onPressed: () {
+                  Navigator.pop(modalContext, null);
+                },
+                child: Text(S.of(context).saveToRoot),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   // ✅ أضف هذه الدالة (من FolderFileCard):
   Widget _buildMenuItem(
     BuildContext context, {
@@ -2287,11 +2759,11 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
       desktop: 20.0,
     );
 
-    final defaultIconColor = isDarkMode 
-        ? AppColors.darkTextSecondary 
+    final defaultIconColor = isDarkMode
+        ? AppColors.darkTextSecondary
         : Colors.grey[700];
-    final defaultTextColor = isDarkMode 
-        ? AppColors.getTextPrimary(isDarkMode) 
+    final defaultTextColor = isDarkMode
+        ? AppColors.getTextPrimary(isDarkMode)
         : Colors.black87;
 
     return ListTile(
@@ -2303,11 +2775,7 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
           color: (iconColor ?? defaultIconColor)!.withOpacity(0.1),
           shape: BoxShape.circle,
         ),
-        child: Icon(
-          icon, 
-          color: iconColor ?? defaultIconColor, 
-          size: iconSize,
-        ),
+        child: Icon(icon, color: iconColor ?? defaultIconColor, size: iconSize),
       ),
       title: Text(
         title,
@@ -2325,7 +2793,8 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
   Future<void> _showFolderDetailsDialog(Map<String, dynamic> folder) async {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     // ✅ الحصول على folderId من جميع الأماكن المحتملة (للمجلدات الفرعية)
-    final folderId = folder['folderId'] ?? folder['_id'] ?? folder['folderData']?['_id'];
+    final folderId =
+        folder['folderId'] ?? folder['_id'] ?? folder['folderData']?['_id'];
     if (folderId == null) return;
 
     final folderController = Provider.of<FolderController>(
@@ -2442,7 +2911,10 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
   }
 
   // ✅ أضف دالة إعادة التسمية:
-  void _showRenameDialog(BuildContext context, Map<String, dynamic> folder) async {
+  void _showRenameDialog(
+    BuildContext context,
+    Map<String, dynamic> folder,
+  ) async {
     // ✅ استخدام context من State بدلاً من context الممرر
     if (!mounted) return;
 
@@ -2453,8 +2925,9 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
 
     if (isProtected && protectionType != 'none') {
       final folderId = folder['folderId'] ?? folder['_id'];
-      final folderName = folder['title'] ?? folder['name'] ?? S.of(this.context).folder;
-      
+      final folderName =
+          folder['title'] ?? folder['name'] ?? S.of(this.context).folder;
+
       if (folderId != null) {
         final result = await showVerifyFolderAccessDialog(
           this.context,
@@ -2545,7 +3018,9 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
               final newName = nameController.text.trim();
               if (newName.isEmpty) {
                 ScaffoldMessenger.of(dialogContext).showSnackBar(
-                  SnackBar(content: Text(S.of(this.context).pleaseEnterFolderName)),
+                  SnackBar(
+                    content: Text(S.of(this.context).pleaseEnterFolderName),
+                  ),
                 );
                 return;
               }
@@ -2576,15 +3051,20 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
   }
 
   // ✅ دالة قفل/إلغاء قفل المجلد:
-  void _showProtectFolderDialog(BuildContext context, Map<String, dynamic> folder) async {
+  void _showProtectFolderDialog(
+    BuildContext context,
+    Map<String, dynamic> folder,
+  ) async {
     // ✅ استخدام context من State بدلاً من context الممرر
     if (!mounted) return;
 
     final folderData = folder['folderData'] ?? folder;
     final folderId = folder['folderId'] ?? folder['_id'];
-    final folderName = folder['title'] ?? folder['name'] ?? S.of(this.context).folder;
+    final folderName =
+        folder['title'] ?? folder['name'] ?? S.of(this.context).folder;
     final isCurrentlyProtected = folderData['isProtected'] == true;
-    final currentProtectionType = folderData['protectionType']?.toString() ?? 'none';
+    final currentProtectionType =
+        folderData['protectionType']?.toString() ?? 'none';
 
     if (folderId == null) {
       if (!mounted) return;
@@ -2618,10 +3098,13 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
   }
 
   // ✅ دالة النقل:
-  void _showMoveFolderDialog(BuildContext context, Map<String, dynamic> folder) {
+  void _showMoveFolderDialog(
+    BuildContext context,
+    Map<String, dynamic> folder,
+  ) {
     // ✅ استخدام context من State بدلاً من context الممرر
     if (!mounted) return;
-    
+
     showMoveFolderDialogHelper(
       this.context,
       folder,
@@ -2634,7 +3117,10 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
   }
 
   // ✅ دالة المفضلة:
-  void _toggleFavorite(BuildContext context, Map<String, dynamic> folder) async {
+  void _toggleFavorite(
+    BuildContext context,
+    Map<String, dynamic> folder,
+  ) async {
     final folderId = folder['folderId'] as String?;
     if (folderId == null) return;
 
