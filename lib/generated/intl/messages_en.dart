@@ -269,18 +269,6 @@ class MessageLookup extends MessageLookupByLibrary {
 
   static String m107(name) => "Select \"${name}\"";
 
-  static String m132(roomName) => "⚠️ This folder is shared in room: ${roomName}";
-
-  static String m133(count, roomNames) =>
-      "⚠️ This folder is shared in ${count} rooms: ${roomNames}";
-
-  static String m134(count) => " ${count} files were restored with the folder.";
-
-  static String m135(roomName) => "⚠️ This file is shared in room: ${roomName}";
-
-  static String m136(count, roomNames) =>
-      "⚠️ This file is shared in ${count} rooms: ${roomNames}";
-
   static String m108(count) => "Selected Users (${count})";
 
   static String m109(count) => "Shared Files (${count})";
@@ -1128,6 +1116,9 @@ class MessageLookup extends MessageLookupByLibrary {
     "fileRemovedFromRoom": MessageLookupByLibrary.simpleMessage(
       "File removed from room successfully",
     ),
+    "fileRemovedFromRoomView": MessageLookupByLibrary.simpleMessage(
+      "File removed from room view",
+    ),
     "fileReplacedSuccessfully": MessageLookupByLibrary.simpleMessage(
       "✅ File replaced successfully",
     ),
@@ -1560,20 +1551,6 @@ class MessageLookup extends MessageLookupByLibrary {
     "moveFolderToRootNoParent": MessageLookupByLibrary.simpleMessage(
       "Move folder to root (no parent folder)",
     ),
-    "cannotRemoveSubItemFromRoom": MessageLookupByLibrary.simpleMessage(
-      "Cannot remove this item because it is part of a shared folder.",
-    ),
-    "folderWillBeRemovedFromAllRooms": MessageLookupByLibrary.simpleMessage(
-      "The folder will be removed from all rooms automatically upon deletion.",
-    ),
-    "folderSharedInRoom": m132,
-    "folderSharedInMultipleRooms": m133,
-    "filesRestoredWithFolder": m134,
-    "fileWillBeRemovedFromAllRooms": MessageLookupByLibrary.simpleMessage(
-      "The file will be removed from all rooms automatically upon deletion.",
-    ),
-    "fileSharedInRoom": m135,
-    "fileSharedInMultipleRooms": m136,
     "moveToRoot": MessageLookupByLibrary.simpleMessage("Move to root"),
     "moveToRootDescription": MessageLookupByLibrary.simpleMessage(
       "Move folder to main folder",

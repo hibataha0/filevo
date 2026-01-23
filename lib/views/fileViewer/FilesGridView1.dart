@@ -883,33 +883,28 @@ class _FilesGridState extends State<FilesGrid> {
       if (_roomData != null && _roomData!['files'] != null) {
         final roomFiles = _roomData!['files'] as List;
         isDirectlyShared = roomFiles.any((f) {
-          final fId = f['file'] is Map ? f['file']['_id'] : f['file'];
+          final fId = f['fileId'] is Map ? f['fileId']['_id'] : f['fileId'];
           return fId.toString() == fileId.toString();
         });
       }
 
-      if (!isDirectlyShared) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('⚠️ ${S.of(context).cannotRemoveSubItemFromRoom}'),
-              backgroundColor: AppColors.warning,
-            ),
-          );
-        }
-        return;
-      }
-
-      final success = await roomController.unshareFileFromRoom(
-        roomId: widget.roomId!,
-        fileId: fileId,
-      );
+      final success = isDirectlyShared
+          ? await roomController.unshareFileFromRoom(
+              roomId: widget.roomId!,
+              fileId: fileId,
+            )
+          : await roomController.excludeFileFromRoom(
+              roomId: widget.roomId!,
+              fileId: fileId,
+            );
 
       if (mounted) {
         if (success) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('✅ ${S.of(context).fileRemovedFromRoom}'),
+              content: Text(isDirectlyShared
+                  ? '✅ ${S.of(context).fileRemovedFromRoom}'
+                  : '✅ ${S.of(context).fileRemovedFromRoomView}'),
               backgroundColor: Colors.green,
             ),
           );

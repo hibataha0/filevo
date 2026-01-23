@@ -53,6 +53,7 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
   bool hasMore = true;
   List<Map<String, dynamic>> contents = [];
   bool isLoading = false;
+  int _totalItems = 0; // ✅ تخزين العدد الإجمالي للملفات
 
   FolderController? _folderController;
   int _lastRefreshTrigger = 0;
@@ -280,6 +281,7 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
 
             final totalItems =
                 result?['totalItems'] as int? ?? newContents.length;
+            _totalItems = totalItems; // ✅ تحديث المتغير العام
             final pagination = result?['pagination'] as Map<String, dynamic>?;
             if (pagination != null) {
               hasMore = pagination['hasNext'] ?? false;
@@ -1390,7 +1392,7 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
               ),
               _buildInfoRow(
                 S.of(context).filesCount, // ✅ "عدد الملفات"
-                '${folder['filesCount'] ?? 0}',
+                '${_totalItems > 0 ? _totalItems : (folder['totalItems'] ?? folder['filesCount'] ?? 0)}',
                 Icons.insert_drive_file,
                 Colors.orange,
                 isDarkMode,
@@ -2480,26 +2482,7 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
                         },
                       ),
 
-                      // المفضلة
-                      _buildMenuItem(
-                        context,
-                        icon: folder['isStarred'] == true
-                            ? Icons.star
-                            : Icons.star_border,
-                        title: folder['isStarred'] == true
-                            ? S.of(context).folderAddedToFavorites
-                            : S.of(context).folderRemovedFromFavorites,
-                        iconColor: Colors.amber[700],
-                        onTap: () {
-                          Navigator.pop(context);
-                          final folderWithId = {
-                            ...folder,
-                            'folderId': folderId,
-                            'title': folderName,
-                          };
-                          _toggleFavorite(context, folderWithId);
-                        },
-                      ),
+
 
                       Divider(height: 1),
 
@@ -2569,25 +2552,12 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
 
     if (confirmed != true) return;
 
-    if (widget.roomId != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('⚠️ ${S.of(context).cannotRemoveSubItemFromRoom}'),
-          backgroundColor: AppColors.warning,
-        ),
-      );
-      return;
-    }
-
     try {
       final roomController = Provider.of<RoomController>(
         context,
         listen: false,
       );
-      // NOTE: In FolderContentsPage, any folder being removed is a sub-folder
-      // unless we are at the root, but unsharing the root makes more sense via RoomFoldersPage.
-      // The user wants to block this.
-      final success = await roomController.unshareFolderFromRoom(
+      final success = await roomController.excludeFolderFromRoom(
         roomId: widget.roomId!,
         folderId: folderId,
       );
@@ -2868,7 +2838,7 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
               ),
               _buildInfoRow(
                 S.of(context).filesCount, // ✅ "عدد الملفات"
-                '${folderData['filesCount'] ?? 0}',
+                '${_totalItems > 0 ? _totalItems : (folderData['totalItems'] ?? folderData['filesCount'] ?? 0)}',
                 Icons.insert_drive_file,
                 Colors.orange,
                 isDarkMode,

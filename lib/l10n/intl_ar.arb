@@ -1905,53 +1905,5 @@
       }
     }
   },
-  "cannotRemoveSubItemFromRoom": "لا يمكن إزالة هذا العنصر لأنه جزء من مجلد مشترك.",
-  "folderWillBeRemovedFromAllRooms": "سيتم إزالة المجلد من جميع الغرف تلقائياً عند الحذف.",
-  "folderSharedInRoom": "⚠️ هذا المجلد مشارك في غرفة: {roomName}",
-  "@folderSharedInRoom": {
-    "placeholders": {
-      "roomName": {
-        "type": "String"
-      }
-    }
-  },
-  "folderSharedInMultipleRooms": "⚠️ هذا المجلد مشارك في {count} غرفة: {roomNames}",
-  "@folderSharedInMultipleRooms": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      },
-      "roomNames": {
-        "type": "String"
-      }
-    }
-  },
-  "filesRestoredWithFolder": " تم استعادة {count} ملف مع المجلد.",
-  "@filesRestoredWithFolder": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "fileWillBeRemovedFromAllRooms": "سيتم إزالة الملف من جميع الغرف تلقائياً عند الحذف.",
-  "fileSharedInRoom": "⚠️ هذا الملف مشارك في غرفة: {roomName}",
-  "@fileSharedInRoom": {
-    "placeholders": {
-      "roomName": {
-        "type": "String"
-      }
-    }
-  },
-  "fileSharedInMultipleRooms": "⚠️ هذا الملف مشارك في {count} غرفة: {roomNames}",
-  "@fileSharedInMultipleRooms": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      },
-      "roomNames": {
-        "type": "String"
-      }
-    }
-  }
+  "fileRemovedFromRoomView": "تمت إزالة الملف من عرض الغرفة"
 }

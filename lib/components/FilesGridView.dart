@@ -163,6 +163,10 @@ void _showFolderInfo(BuildContext context, Map<String, dynamic> folder, {String?
   }
 
   final folderData = folderDetails['folder'] as Map<String, dynamic>;
+  
+  // ✅ استخدام totalItems (مجموع المجلدات والملفات المباشرة)
+  // كبديل إذا كان filesCount المرجع من الباك إند هو 0
+  final int displayCount = folderData['totalItems'] ?? folderData['filesCount'] ?? 0;
 
   if (!context.mounted) return;
 
@@ -233,7 +237,7 @@ void _showFolderInfo(BuildContext context, Map<String, dynamic> folder, {String?
                     'files',
                     '📄',
                     S.of(context).filesCount,
-                    '${folderData['filesCount'] ?? 0}',
+                    '$displayCount',
                   ),
                   _buildDetailItem(
                     context,
@@ -1784,30 +1788,23 @@ void _handleSharedFileMenuAction(
                     });
                   }
 
-                  if (!isDirectlyShared) {
-                    if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(
-                            '⚠️ ${S.of(context).cannotRemoveSubItemFromRoom}',
-                          ),
-                          backgroundColor: AppColors.warning,
-                        ),
-                      );
-                    }
-                    return;
-                  }
-
-                  final success = await roomController.unshareFileFromRoom(
-                    roomId: roomId,
-                    fileId: fileId,
-                  );
+                  final success = isDirectlyShared
+                      ? await roomController.unshareFileFromRoom(
+                          roomId: roomId,
+                          fileId: fileId,
+                        )
+                      : await roomController.excludeFileFromRoom(
+                          roomId: roomId,
+                          fileId: fileId,
+                        );
 
                   if (context.mounted) {
                     if (success) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
-                          content: Text('✅ ${S.of(context).fileRemovedFromRoom}'),
+                          content: Text(isDirectlyShared
+                              ? '✅ ${S.of(context).fileRemovedFromRoom}'
+                              : '✅ تمت إزالة الملف من عرض الغرفة'),
                           backgroundColor: Colors.green,
                         ),
                       );

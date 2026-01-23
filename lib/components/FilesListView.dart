@@ -1252,21 +1252,7 @@ class _FilesListViewState extends State<FilesListView> {
                         },
                       ),
 
-                      // المفضلة
-                      _buildBottomSheetItem(
-                        context,
-                        icon: folder['isStarred'] == true
-                            ? Icons.star
-                            : Icons.star_border,
-                        title: folder['isStarred'] == true
-                            ? S.of(context).removeFromFavorites
-                            : S.of(context).addToFavorites,
-                        iconColor: Colors.amber[700],
-                        onTap: () {
-                          Navigator.pop(context);
-                          _toggleFavorite(context, folder);
-                        },
-                      ),
+
 
                       const Divider(height: 1),
 
@@ -1339,24 +1325,15 @@ class _FilesListViewState extends State<FilesListView> {
                 });
               }
 
-              if (!isDirectlyShared) {
-                if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        '⚠️ ${S.of(context).cannotRemoveSubItemFromRoom}',
-                      ),
-                      backgroundColor: AppColors.warning,
-                    ),
-                  );
-                }
-                return;
-              }
-
-              final success = await roomController.unshareFolderFromRoom(
-                roomId: widget.roomId!,
-                folderId: folderId,
-              );
+              final success = isDirectlyShared
+                  ? await roomController.unshareFolderFromRoom(
+                      roomId: widget.roomId!,
+                      folderId: folderId,
+                    )
+                  : await roomController.excludeFolderFromRoom(
+                      roomId: widget.roomId!,
+                      folderId: folderId,
+                    );
 
               if (mounted) {
                 if (success) {
@@ -1756,34 +1733,29 @@ class _FilesListViewState extends State<FilesListView> {
       if (_roomData != null && _roomData!['files'] != null) {
         final roomFiles = _roomData!['files'] as List;
         isDirectlyShared = roomFiles.any((f) {
-          final fId = f['file'] is Map ? f['file']['_id'] : f['file'];
+          final fId = f['fileId'] is Map ? f['fileId']['_id'] : f['fileId'];
           return fId.toString() == fileId.toString();
         });
       }
 
-      if (!isDirectlyShared) {
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('⚠️ ${S.of(context).cannotRemoveSubItemFromRoom}'),
-              backgroundColor: AppColors.warning,
-            ),
-          );
-        }
-        return;
-      }
-
-      final success = await roomController.unshareFileFromRoom(
-        roomId: widget.roomId!,
-        fileId: fileId,
-      );
+      final success = isDirectlyShared
+          ? await roomController.unshareFileFromRoom(
+              roomId: widget.roomId!,
+              fileId: fileId,
+            )
+          : await roomController.excludeFileFromRoom(
+              roomId: widget.roomId!,
+              fileId: fileId,
+            );
 
       if (!context.mounted) return;
 
       if (success) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('✅ ${S.of(context).fileRemovedFromRoom}'),
+            content: Text(isDirectlyShared
+                ? '✅ ${S.of(context).fileRemovedFromRoom}'
+                : '✅ ${S.of(context).fileRemovedFromRoomView}'),
             backgroundColor: Colors.green,
           ),
         );
@@ -1886,6 +1858,10 @@ class _FilesListViewState extends State<FilesListView> {
     }
 
     final folderData = folderDetails['folder'] as Map<String, dynamic>;
+    
+    // ✅ استخدام totalItems (مجموع المجلدات والملفات المباشرة)
+    // كبديل إذا كان filesCount المرجع من الباك إند هو 0
+    final int displayCount = folderData['totalItems'] ?? folderData['filesCount'] ?? 0;
 
     if (!context.mounted) return;
 
@@ -1956,7 +1932,7 @@ class _FilesListViewState extends State<FilesListView> {
                       'files',
                       '📄',
                       S.of(context).filesCount,
-                      '${folderData['filesCount'] ?? 0}',
+                      '$displayCount',
                     ),
                     _buildDetailItem(
                       context,

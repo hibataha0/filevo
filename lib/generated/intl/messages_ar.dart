@@ -259,18 +259,6 @@ class MessageLookup extends MessageLookupByLibrary {
 
   static String m107(name) => "اختيار \"${name}\"";
 
-  static String m132(roomName) => "⚠️ هذا المجلد مشارك في غرفة: ${roomName}";
-
-  static String m133(count, roomNames) =>
-      "⚠️ هذا المجلد مشارك في ${count} غرفة: ${roomNames}";
-
-  static String m134(count) => " تم استعادة ${count} ملف مع المجلد.";
-
-  static String m135(roomName) => "⚠️ هذا الملف مشارك في غرفة: ${roomName}";
-
-  static String m136(count, roomNames) =>
-      "⚠️ هذا الملف مشارك في ${count} غرفة: ${roomNames}";
-
   static String m108(count) => "Selected Users (${count})";
 
   static String m109(count) => "الملفات المشتركة (${count})";
@@ -1059,6 +1047,9 @@ class MessageLookup extends MessageLookupByLibrary {
     "fileRemovedFromRoom": MessageLookupByLibrary.simpleMessage(
       "تم إزالة الملف من الغرفة بنجاح",
     ),
+    "fileRemovedFromRoomView": MessageLookupByLibrary.simpleMessage(
+      "تمت إزالة الملف من عرض الغرفة",
+    ),
     "fileReplacedSuccessfully": MessageLookupByLibrary.simpleMessage(
       "✅ تم استبدال الملف بنجاح",
     ),
@@ -1745,20 +1736,6 @@ class MessageLookup extends MessageLookupByLibrary {
     "removeAllHighlights": MessageLookupByLibrary.simpleMessage(
       "إزالة جميع التظليلات",
     ),
-    "cannotRemoveSubItemFromRoom": MessageLookupByLibrary.simpleMessage(
-      "لا يمكن إزالة هذا العنصر لأنه جزء من مجلد مشترك.",
-    ),
-    "folderWillBeRemovedFromAllRooms": MessageLookupByLibrary.simpleMessage(
-      "سيتم إزالة المجلد من جميع الغرف تلقائياً عند الحذف.",
-    ),
-    "folderSharedInRoom": m132,
-    "folderSharedInMultipleRooms": m133,
-    "filesRestoredWithFolder": m134,
-    "fileWillBeRemovedFromAllRooms": MessageLookupByLibrary.simpleMessage(
-      "سيتم إزالة الملف من جميع الغرف تلقائياً عند الحذف.",
-    ),
-    "fileSharedInRoom": m135,
-    "fileSharedInMultipleRooms": m136,
     "removeFileFromRoom": MessageLookupByLibrary.simpleMessage(
       "إزالة الملف من الروم",
     ),

@@ -754,24 +754,7 @@ class FolderFileCard extends StatelessWidget {
                 },
               ),
 
-            if (onFavoriteTap != null) ...[
-              Divider(
-                height: 1,
-                color: isDarkMode ? AppColors.darkSurface : Colors.grey[300],
-              ),
-              _buildMenuItem(
-                context,
-                icon: isStarred ? Icons.star : Icons.star_border,
-                title: isStarred
-                    ? S.of(context).folderAddedToFavorites
-                    : S.of(context).folderRemovedFromFavorites,
-                iconColor: Colors.amber[700],
-                onTap: () {
-                  Navigator.pop(context);
-                  onFavoriteTap?.call();
-                },
-              ),
-            ],
+
 
             if (onSaveTap != null)
               _buildMenuItem(

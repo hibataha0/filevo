@@ -1767,53 +1767,5 @@
   },
   "noPermissionToAccessFile": "You do not have permission to access this file",
   "accessDeniedOrFileAlreadyAccessed": "Access denied or file already accessed",
-  "cannotRemoveSubItemFromRoom": "Cannot remove this item because it is part of a shared folder.",
-  "folderWillBeRemovedFromAllRooms": "The folder will be removed from all rooms automatically upon deletion.",
-  "folderSharedInRoom": "⚠️ This folder is shared in room: {roomName}",
-  "@folderSharedInRoom": {
-    "placeholders": {
-      "roomName": {
-        "type": "String"
-      }
-    }
-  },
-  "folderSharedInMultipleRooms": "⚠️ This folder is shared in {count} rooms: {roomNames}",
-  "@folderSharedInMultipleRooms": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      },
-      "roomNames": {
-        "type": "String"
-      }
-    }
-  },
-  "filesRestoredWithFolder": " {count} files were restored with the folder.",
-  "@filesRestoredWithFolder": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "fileWillBeRemovedFromAllRooms": "The file will be removed from all rooms automatically upon deletion.",
-  "fileSharedInRoom": "⚠️ This file is shared in room: {roomName}",
-  "@fileSharedInRoom": {
-    "placeholders": {
-      "roomName": {
-        "type": "String"
-      }
-    }
-  },
-  "fileSharedInMultipleRooms": "⚠️ This file is shared in {count} rooms: {roomNames}",
-  "@fileSharedInMultipleRooms": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      },
-      "roomNames": {
-        "type": "String"
-      }
-    }
-  }
+  "fileRemovedFromRoomView": "File removed from room view"
 }
