@@ -191,11 +191,16 @@ class AuthService {
   // ✅ التحقق من كود البريد الإلكتروني
   Future<Map<String, dynamic>> verifyEmailCode({
     required String email,
+    required String? userId,
     required String verificationCode,
   }) async {
     final result = await _apiService.post(
       ApiEndpoints.verifyEmail,
-      body: {'email': email, 'verificationCode': verificationCode},
+      body: {
+        'email': email,
+        'userId': userId,
+        'verificationCode': verificationCode,
+      },
     );
 
     print('📧 Verify Email Code Response: $result');

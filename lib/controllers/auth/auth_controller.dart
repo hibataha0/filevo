@@ -1,5 +1,6 @@
 import 'package:filevo/services/storage_service.dart';
 import 'package:filevo/services/user_cache_service.dart';
+import 'package:filevo/services/notification_service.dart'; // ✅ إضافة خدمة الإشعارات
 import 'package:flutter/material.dart';
 import 'package:filevo/services/auth_service.dart';
 import 'package:filevo/generated/l10n.dart';
@@ -13,12 +14,14 @@ class AuthController extends ChangeNotifier {
   String? _successMessage;
   bool _needsEmailVerification = false;
   String? _unverifiedEmail;
+  String? _unverifiedUserId; // ✅ إضافة حقل لحفظ معرف المستخدم غير المفعل
 
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
   String? get successMessage => _successMessage;
   bool get needsEmailVerification => _needsEmailVerification;
   String? get unverifiedEmail => _unverifiedEmail;
+  String? get unverifiedUserId => _unverifiedUserId; // ✅ getter للمعرف
 
   Future<bool> login({
     required String emailOrUsername,
@@ -29,6 +32,7 @@ class AuthController extends ChangeNotifier {
     _setError(null);
     _needsEmailVerification = false;
     _unverifiedEmail = null;
+    _unverifiedUserId = null; // ✅ تعيين المعرف للقيمة null عند كل محاولة تسجيل دخول
 
     print('AuthController: Attempting login...');
     final result = await _authService.login(
@@ -54,9 +58,14 @@ class AuthController extends ChangeNotifier {
       print('🧹 [Step 3/5] Deleting old userId...');
       await StorageService.deleteUserId();
 
+      print("===============token221: ${result['data']['data']['token']}");
+      print("===============userId221: ${result['data']['data']['email']}");
+
+      print('result ${result.toString()}');
+
       // ✅ 2. حفظ التوكن الجديد
-      if (result['token'] != null) {
-        final newToken = result['token'] as String;
+      if (result["data"]["data"]["token"] != null) {
+        final newToken = result["data"]["data"]["token"] as String;
         print('💾 [Step 4/5] Saving new token (length: ${newToken.length})...');
         await StorageService.saveToken(newToken);
 
@@ -75,6 +84,18 @@ class AuthController extends ChangeNotifier {
       }
 
       print('✅ AuthController: Login process completed successfully!');
+
+      // ✅ تحديث الـ FCM Token للسيرفر بعد تسجيل الدخول
+      print('🔍 [AuthController] Checking for FCM Token...');
+      final fcmToken = await StorageService.getFCMToken();
+      print('================🔍 [AuthController] FCM Token found: $fcmToken');
+      if (fcmToken != null) {
+        print('📱 [AuthController] Updating FCM Token on server...');
+        await NotificationService().updateTokenOnServer(fcmToken);
+      } else {
+        print('⚠️ [AuthController] No FCM Token found in storage to update');
+      }
+
       return true;
     } else {
       final errorMsg =
@@ -82,7 +103,15 @@ class AuthController extends ChangeNotifier {
           result['message'] as String? ??
           (context != null ? S.of(context).unknownError : 'حدث خطأ غير معروف');
 
-      if (result['requiresVerification'] == true ||
+      final errorData = result['data'] as Map<String, dynamic>?;
+
+      if (errorData != null && errorData['isVerified'] == false) {
+        _needsEmailVerification = true;
+        _unverifiedEmail = emailOrUsername;
+        _unverifiedUserId = errorData['userId']?.toString() ?? errorData['_id']?.toString(); // ✅ جلب المعرف من الرد
+        print('AuthController: Account needs email verification (from isVerified flag)');
+        print('AuthController: Unverified email: $_unverifiedEmail, UserId: $_unverifiedUserId');
+      } else if (result['requiresVerification'] == true ||
           errorMsg.contains('تفعيل') ||
           errorMsg.contains('emailVerified') ||
           errorMsg.contains('email verification') ||
@@ -91,11 +120,12 @@ class AuthController extends ChangeNotifier {
         _unverifiedEmail =
             result['email'] as String? ??
             (emailOrUsername.contains('@') ? emailOrUsername : null);
+        _unverifiedUserId = result['userId']?.toString() ?? result['data']?['userId']?.toString(); // ✅ جلب المعرف
         if (_unverifiedEmail == null) {
           _unverifiedEmail = emailOrUsername;
         }
-        print('AuthController: Account needs email verification');
-        print('AuthController: Unverified email: $_unverifiedEmail');
+        print('AuthController: Account needs email verification (from fallback check)');
+        print('AuthController: Unverified email: $_unverifiedEmail, UserId: $_unverifiedUserId');
       }
 
       print('AuthController: Login failed: $errorMsg');
@@ -144,6 +174,7 @@ class AuthController extends ChangeNotifier {
 
   Future<bool> verifyEmailCode({
     required String email,
+    required String? userId, // ✅ إضافة userId هنا
     required String verificationCode,
     BuildContext? context,
   }) async {
@@ -151,9 +182,10 @@ class AuthController extends ChangeNotifier {
     _setError(null);
     _setSuccess(null);
 
-    print('AuthController: Verifying email code...');
+    print('AuthController: Verifying email code for UserId: $userId...');
     final result = await _authService.verifyEmailCode(
       email: email,
+      userId: userId, // ✅ تمرير userId للخدمة
       verificationCode: verificationCode,
     );
     _setLoading(false);
@@ -163,6 +195,13 @@ class AuthController extends ChangeNotifier {
     if (result['success'] == true) {
       if (result['token'] != null) {
         await StorageService.saveToken(result['token']);
+
+        // ✅ تحديث الـ FCM Token للسيرفر بعد التفعيل الناجح (لأنه يعتبر تسجيل دخول)
+        final fcmToken = await StorageService.getFCMToken();
+        if (fcmToken != null) {
+          print('📱 [AuthController] Updating FCM Token after verification...');
+          await NotificationService().updateTokenOnServer(fcmToken);
+        }
       }
       _setSuccess(
         result['message'] ??
@@ -249,6 +288,7 @@ class AuthController extends ChangeNotifier {
     _successMessage = null;
     _needsEmailVerification = false;
     _unverifiedEmail = null;
+    _unverifiedUserId = null;
     notifyListeners();
   }
 

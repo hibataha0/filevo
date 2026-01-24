@@ -52,6 +52,10 @@ dependencies:
   flutter_windowmanager: ^0.2.0
   local_auth: ^2.1.8
   socket_io_client: ^2.0.3+1
+  #firebase packages
+  firebase_core: ^4.4.0
+  firebase_messaging: ^16.1.1
+  flutter_local_notifications: ^19.5.0
 
 dev_dependencies:
   flutter_test:
@@ -80,28 +84,28 @@ flutter_intl:
 flutter_native_splash:
   # الصورة اللي بتظهر في شاشة البداية (الوضع العادي)
   image: assets/images/FilevoBackground.jpeg
-  
+
   # لون الخلفية (أبيض للوضع العادي)
   color: "#FFFFFF"
-  
+
   # لون الخلفية للوضع المظلم (أسود داكن)
   color_dark: "#0A0E27"
-  
+
   # الصورة للوضع المظلم
   image_dark: assets/images/FilevoBackgroundDark.jpeg
-  
+
   # تفعيل fullscreen (ملء الشاشة)
   fullscreen: true
-  
+
   # دعم Android
   android: true
-  
+
   # دعم iOS
   ios: true
-  
+
   # دعم Web
   web: false
-  
+
   # Android 12+ (splash screen API الجديد)
   android_12:
     image: assets/images/FilevoBackground.jpeg

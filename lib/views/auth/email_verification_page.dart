@@ -80,6 +80,7 @@ class _EmailVerificationPageState extends State<EmailVerificationPage> {
     final authController = Provider.of<AuthController>(context, listen: false);
     final success = await authController.verifyEmailCode(
       email: widget.email,
+      userId: widget.userId, // ✅ تمرير المعرف المخزن في الـ widget
       verificationCode: code,
     );
 

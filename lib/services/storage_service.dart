@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 class StorageService {
   static const String _tokenKey = 'auth_token';
   static const String _userIdKey = 'user_id';
+  static const String _fcmTokenKey = 'fcm_token';
   static const String _folderViewModeKey = 'folder_view_is_grid';
 
   // حفظ الـ token
@@ -41,6 +42,28 @@ class StorageService {
       return token;
     } catch (e) {
       print('❌ [StorageService] Error retrieving token: $e');
+      return null;
+    }
+  }
+
+  // حفظ الـ FCM token
+  static Future<void> saveFCMToken(String token) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_fcmTokenKey, token);
+      print('✅ [StorageService] FCM Token saved locally');
+    } catch (e) {
+      print('❌ [StorageService] Error saving FCM token: $e');
+    }
+  }
+
+  // استرجاع الـ FCM token
+  static Future<String?> getFCMToken() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      return prefs.getString(_fcmTokenKey);
+    } catch (e) {
+      print('❌ [StorageService] Error retrieving FCM token: $e');
       return null;
     }
   }

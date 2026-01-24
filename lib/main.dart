@@ -19,14 +19,33 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
 import 'package:filevo/services/storage_service.dart'; // ✅ إضافة خدمة التخزين
+import 'package:filevo/services/notification_service.dart'; // ✅ إضافة خدمة الإشعارات
+import 'package:filevo/utils/notification_navigation.dart'; // ✅ إضافة التنقل للإشعارات
 import 'package:filevo/generated/l10n.dart';
 import 'package:filevo/constants/app_colors.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart'; // ✅ إضافة Splash Screen
+import 'package:firebase_core/firebase_core.dart'; // ✅ إضافة مكتبة Firebase Core
 
 void main() async {
+  print('🚀 [Main] Starting application...');
   // ✅ تهيئة Flutter مع الحفاظ على Splash Screen
   WidgetsBinding widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
   FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
+
+  // ✅ تهيئة Firebase
+  try {
+    await Firebase.initializeApp();
+    print('✅ Firebase initialized successfully');
+  } catch (e) {
+    print('❌ Error initializing Firebase: $e');
+  }
+
+  // ✅ تهيئة خدمة الإشعارات
+  try {
+    await NotificationService().initialize();
+  } catch (e) {
+    print('❌ Error initializing NotificationService: $e');
+  }
 
   runApp(DevicePreview(enabled: !kReleaseMode, builder: (context) => MyApp()));
 }
@@ -186,6 +205,7 @@ class _MyAppState extends State<MyApp> {
             '🎨 Building MaterialApp with theme: ${themeController.isDarkMode ? "Dark" : "Light"}',
           );
           return MaterialApp(
+            navigatorKey: NotificationNavigation.navigatorKey,
             locale: _locale ?? const Locale('en'),
             localizationsDelegates: const [
               S.delegate,

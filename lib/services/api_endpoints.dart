@@ -111,6 +111,7 @@ class ApiEndpoints {
   // User endpoints
   static const String getMe = '$_basePath/users/getMe';
   static const String updateMe = '$_basePath/users/updateMe';
+  static const String updateFCMToken = '$_basePath/users/update-fcm-token';
   static const String changeMyPassword = '$_basePath/users/changeMyPassword';
   static const String deleteMe = '$_basePath/users/deleteMe';
   static const String verifyEmailChange =

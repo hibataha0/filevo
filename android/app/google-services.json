@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "77008841371",
+    "project_id": "filevo-ac373",
+    "storage_bucket": "filevo-ac373.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:77008841371:android:45bcaa2644a96182eb743e",
+        "android_client_info": {
+          "package_name": "com.example.filevo"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCjcRviYkAftebZVMtdP_iGPWSNKMkuRTc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

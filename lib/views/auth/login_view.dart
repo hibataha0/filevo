@@ -77,8 +77,10 @@ class _LoginPageState extends State<LoginPage> {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) =>
-                  EmailVerificationPage(email: auth.unverifiedEmail!),
+              builder: (context) => EmailVerificationPage(
+                email: auth.unverifiedEmail!,
+                userId: auth.unverifiedUserId,
+              ),
             ),
           );
         } else {

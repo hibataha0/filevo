@@ -208,6 +208,29 @@ class UserService {
     return result;
   }
 
+  /// تحديث الـ FCM Token الخاص بالأجهزة للإشعارات
+  Future<Map<String, dynamic>> updateFCMToken({
+    required String fcmToken,
+  }) async {
+    final token = await StorageService.getToken();
+    if (token == null) {
+      return {
+        'success': false,
+        'error': 'لا يوجد token. يرجى تسجيل الدخول',
+      };
+    }
+
+    final result = await _apiService.put(
+      ApiEndpoints.updateFCMToken,
+      body: {
+        'fcmToken': fcmToken,
+      },
+      token: token,
+    );
+
+    return result;
+  }
+
   /// رفع صورة البروفايل
   Future<Map<String, dynamic>> uploadProfileImage({
     required File imageFile,
