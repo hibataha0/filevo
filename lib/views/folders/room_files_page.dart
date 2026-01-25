@@ -116,6 +116,21 @@ class _RoomFilesPageState extends State<RoomFilesPage> {
           );
         }
       });
+
+      // ✅ الاستماع لحدث new_folder (لعرض تنبيه فقط)
+      _socketService.onNewFolder((data) {
+        if (!mounted) return;
+        final folder = data['folder'] as Map<String, dynamic>?;
+        if (folder != null && data['roomId'] == widget.roomId) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('📂 ${S.of(context).newFolderShared(folder['name'] ?? S.of(context).folder)}'),
+              backgroundColor: AppColors.getPrimary(Theme.of(context).brightness == Brightness.dark),
+              duration: Duration(seconds: 3),
+            ),
+          );
+        }
+      });
     });
   }
 
@@ -274,7 +289,7 @@ class _RoomFilesPageState extends State<RoomFilesPage> {
                 imageUrl: tempFile.path,
                 roomId: widget.roomId,
                 fileId: fileId,
-                //isOneTimeShare: isOneTimeShare,
+                isOneTimeShare: isOneTimeShare,
               ),
             ),
           );
@@ -668,6 +683,7 @@ class _RoomFilesPageState extends State<RoomFilesPage> {
                 imageUrl: url,
                 roomId: widget.roomId,
                 fileId: fileId,
+                isOneTimeShare: isOneTimeShare,
               ),
             ),
           );

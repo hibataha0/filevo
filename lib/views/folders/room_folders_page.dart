@@ -102,6 +102,21 @@ class _RoomFoldersPageState extends State<RoomFoldersPage> {
           );
         }
       });
+
+      // ✅ الاستماع لحدث new_file (لعرض تنبيه فقط)
+      _socketService.onNewFile((data) {
+        if (!mounted) return;
+        final file = data['file'] as Map<String, dynamic>?;
+        if (file != null && data['roomId'] == widget.roomId) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('📁 ${S.of(context).newFileShared(file['name'] ?? S.of(context).file)}'),
+              backgroundColor: AppColors.getPrimary(Theme.of(context).brightness == Brightness.dark),
+              duration: Duration(seconds: 3),
+            ),
+          );
+        }
+      });
     });
   }
 

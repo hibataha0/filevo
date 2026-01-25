@@ -513,8 +513,11 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (_) =>
-                  PdfViewerPage(pdfUrl: tempFile.path, fileName: fileName),
+              builder: (_) => PdfViewerPage(
+                pdfUrl: tempFile.path,
+                fileName: fileName,
+                isOneTimeShare: file['isOneTimeShare'] == true,
+              ),
             ),
           );
         } else if (name.endsWith('.mp4') ||
@@ -524,7 +527,10 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
             name.endsWith('.wmv')) {
           Navigator.push(
             context,
-            MaterialPageRoute(builder: (_) => VideoViewer(url: tempFile.path)),
+            MaterialPageRoute(builder: (_) => VideoViewer(
+              url: tempFile.path,
+              isOneTimeShare: file['isOneTimeShare'] == true,
+            )),
           );
         } else if (name.endsWith('.jpg') ||
             name.endsWith('.jpeg') ||
@@ -539,6 +545,7 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
                 imageUrl: tempFile.path,
                 fileId: fileId,
                 roomId: widget.roomId,
+                isOneTimeShare: file['isOneTimeShare'] == true,
               ),
             ),
           );

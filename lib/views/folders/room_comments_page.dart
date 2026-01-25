@@ -9,6 +9,7 @@ import 'package:pull_to_refresh/pull_to_refresh.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:intl/intl.dart';
 import 'package:filevo/constants/app_colors.dart';
+import 'package:filevo/services/socket_service.dart';
 
 class RoomCommentsPage extends StatefulWidget {
   final String roomId;
@@ -37,6 +38,7 @@ class _RoomCommentsPageState extends State<RoomCommentsPage> {
   final RefreshController _refreshController = RefreshController(
     initialRefresh: false,
   );
+  final SocketService _socketService = SocketService();
 
   @override
   void initState() {
@@ -55,6 +57,45 @@ class _RoomCommentsPageState extends State<RoomCommentsPage> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadRoomData();
       _loadComments();
+      _setupSocketListeners();
+    });
+  }
+
+  /// ✅ إعداد مستمعي socket.io للتعليقات
+  void _setupSocketListeners() {
+    _socketService.connect().then((_) {
+      // الانضمام للروم
+      _socketService.joinRoom(widget.roomId);
+
+      // الاستماع للتعليقات الجديدة
+      _socketService.onNewComment((data) {
+        if (!mounted) return;
+
+        final comment = data['comment'] as Map<String, dynamic>?;
+        final roomId = data['roomId'] as String?;
+
+        if (roomId != widget.roomId || comment == null) return;
+
+        print('💬 [RoomCommentsPage] New comment received via socket: ${comment['content']}');
+
+        // التحقق إذا كان التعليق يخص الملف/المجلد المحدد حالياً (إذا وجد)
+        if (_selectedTargetId.isNotEmpty && _selectedTargetType != 'room') {
+          final targetIdFromSocket = (comment['targetId'] ?? comment['fileId'] ?? comment['folderId'])?.toString();
+          if (targetIdFromSocket != _selectedTargetId) {
+            print('   Skipping comment: target mismatch ($targetIdFromSocket != $_selectedTargetId)');
+            return;
+          }
+        }
+
+        // إضافة التعليق للقائمة إذا لم يكن موجوداً
+        setState(() {
+          final exists = comments.any((c) => c['_id'] == comment['_id']);
+          if (!exists) {
+            // نضعه في البداية أو النهاية حسب ترتيب القائمة
+            comments.insert(0, comment); 
+          }
+        });
+      });
     });
   }
 
@@ -74,6 +115,8 @@ class _RoomCommentsPageState extends State<RoomCommentsPage> {
 
   @override
   void dispose() {
+    _socketService.leaveRoom(widget.roomId);
+    _socketService.removeAllListeners();
     _commentController.dispose();
     _refreshController.dispose();
     super.dispose();

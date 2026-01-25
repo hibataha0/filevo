@@ -262,10 +262,7 @@ class _FoldersPageState extends State<FoldersPage>
           return;
         }
         print('🏷️ [FoldersView] Searching by tag: $tag');
-        result = await _fileSearchService.searchByTags(
-          tag: tag,
-          limit: 50,
-        );
+        result = await _fileSearchService.searchByTags(tag: tag, limit: 50);
       } else {
         result = await _fileSearchService.smartSearch(
           query: query,
@@ -289,7 +286,8 @@ class _FoldersPageState extends State<FoldersPage>
           // ✅ searchByTags يرسل: { _id, name, ... } مباشرة أيضاً
           final file = Map<String, dynamic>.from(r);
           file['type'] = file['type'] ?? 'file';
-          file['searchType'] = file['searchType'] ?? (query.startsWith('#') ? 'tags' : 'text');
+          file['searchType'] =
+              file['searchType'] ?? (query.startsWith('#') ? 'tags' : 'text');
           file['relevanceScore'] = file['relevanceScore'] ?? 0.0;
           if (file['_id'] == null && file['id'] != null) {
             file['_id'] = file['id'];
@@ -749,7 +747,7 @@ class _FoldersPageState extends State<FoldersPage>
     }
 
     _speech.listen(
-      localeId: "ar",
+      // localeId: "ar",
       onResult: (result) {
         if (mounted) {
           setState(() {
@@ -780,7 +778,6 @@ class _FoldersPageState extends State<FoldersPage>
     });
   }
 
-
   Widget? _buildSuffixIcons() {
     final hasText = _searchController.text.isNotEmpty;
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
@@ -791,10 +788,10 @@ class _FoldersPageState extends State<FoldersPage>
         children: [
           IconButton(
             icon: Icon(
-              Icons.mic_none, 
-              color: isDarkMode 
-                  ? AppColors.darkTextSecondary 
-                  : Colors.grey[500]!, 
+              Icons.mic_none,
+              color: isDarkMode
+                  ? AppColors.darkTextSecondary
+                  : Colors.grey[500]!,
               size: 20,
             ),
             onPressed: _startListening,
@@ -804,10 +801,10 @@ class _FoldersPageState extends State<FoldersPage>
           ),
           IconButton(
             icon: Icon(
-              Icons.clear, 
-              color: isDarkMode 
-                  ? AppColors.darkTextSecondary 
-                  : Colors.grey[500]!, 
+              Icons.clear,
+              color: isDarkMode
+                  ? AppColors.darkTextSecondary
+                  : Colors.grey[500]!,
               size: 20,
             ),
             onPressed: () {
@@ -834,10 +831,8 @@ class _FoldersPageState extends State<FoldersPage>
 
     return IconButton(
       icon: Icon(
-        Icons.mic_none, 
-        color: isDarkMode 
-            ? AppColors.darkTextSecondary 
-            : Colors.grey[500]!, 
+        Icons.mic_none,
+        color: isDarkMode ? AppColors.darkTextSecondary : Colors.grey[500]!,
         size: 20,
       ),
       onPressed: _startListening,
@@ -863,9 +858,7 @@ class _FoldersPageState extends State<FoldersPage>
               right: 16,
               bottom: 12,
             ),
-            decoration: BoxDecoration(
-              color: AppColors.getAppBar(isDarkMode),
-            ),
+            decoration: BoxDecoration(color: AppColors.getAppBar(isDarkMode)),
             child: Column(
               children: [
                 // شريط البحث والأزرار
@@ -875,7 +868,7 @@ class _FoldersPageState extends State<FoldersPage>
                       child: Container(
                         height: 50,
                         decoration: BoxDecoration(
-                          color: isDarkMode 
+                          color: isDarkMode
                               ? Colors.white.withOpacity(0.1)
                               : Color(0xFFF5F5F5).withOpacity(0.2),
                           borderRadius: BorderRadius.circular(10),
@@ -892,15 +885,15 @@ class _FoldersPageState extends State<FoldersPage>
                           decoration: InputDecoration(
                             hintText: S.of(context).searchHint,
                             hintStyle: TextStyle(
-                              color: isDarkMode 
-                                  ? AppColors.darkTextSecondary 
+                              color: isDarkMode
+                                  ? AppColors.darkTextSecondary
                                   : Colors.grey[500]!,
                               fontSize: 16,
                             ),
                             prefixIcon: Icon(
                               Icons.search,
-                              color: isDarkMode 
-                                  ? AppColors.darkTextSecondary 
+                              color: isDarkMode
+                                  ? AppColors.darkTextSecondary
                                   : Colors.grey[500]!,
                               size: 22,
                             ),
@@ -914,9 +907,9 @@ class _FoldersPageState extends State<FoldersPage>
                             fillColor: Colors.transparent,
                           ),
                           style: TextStyle(
-                            color: isDarkMode 
-                                ? AppColors.darkTextPrimary 
-                                : Colors.white, 
+                            color: isDarkMode
+                                ? AppColors.darkTextPrimary
+                                : Colors.white,
                             fontSize: 16,
                           ),
                         ),
@@ -1053,7 +1046,7 @@ class _FoldersPageState extends State<FoldersPage>
               child: Container(
                 margin: EdgeInsets.symmetric(horizontal: 16),
                 decoration: BoxDecoration(
-                  color: isDarkMode 
+                  color: isDarkMode
                       ? Colors.white.withOpacity(0.05)
                       : Colors.white.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(12),
@@ -1061,16 +1054,16 @@ class _FoldersPageState extends State<FoldersPage>
                 child: TabBar(
                   controller: _tabController!,
                   indicator: BoxDecoration(
-                    color: isDarkMode 
-                        ? AppColors.darkSurface 
+                    color: isDarkMode
+                        ? AppColors.darkSurface
                         : Colors.grey[300]!.withOpacity(0.3),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  labelColor: isDarkMode 
-                      ? AppColors.darkTextPrimary 
+                  labelColor: isDarkMode
+                      ? AppColors.darkTextPrimary
                       : Colors.white,
-                  unselectedLabelColor: isDarkMode 
-                      ? AppColors.darkTextSecondary 
+                  unselectedLabelColor: isDarkMode
+                      ? AppColors.darkTextSecondary
                       : Colors.white70,
                   labelStyle: TextStyle(
                     fontSize: 15,
@@ -2077,17 +2070,17 @@ class _FoldersPageState extends State<FoldersPage>
   Map<String, dynamic> _extractFileData(Map<String, dynamic> file) {
     final originalData = file['originalData'] ?? file;
     // ✅ محاولة الحصول على path من عدة أماكن
-    final filePath = (file['path'] as String?) ?? 
-                     (originalData['path'] as String?);
+    final filePath =
+        (file['path'] as String?) ?? (originalData['path'] as String?);
     final fileId =
         file['_id']?.toString() ??
         file['id']?.toString() ??
         originalData['_id']?.toString() ??
         originalData['id']?.toString();
     final originalName =
-        file['originalName'] ?? 
-        file['name'] ?? 
-        originalData['name'] ?? 
+        file['originalName'] ??
+        file['name'] ??
+        originalData['name'] ??
         S.of(context).unnamedFile;
 
     return {
@@ -2119,7 +2112,10 @@ class _FoldersPageState extends State<FoldersPage>
       // ✅ لأن viewFile endpoint قد لا يعمل إذا لم يكن path موجوداً
       // ✅ استخدام ApiConfig.baseUrl مباشرة (يحتوي على /api/v1)
       final downloadPath = ApiEndpoints.downloadFile(fileId);
-      return {'url': "${ApiConfig.baseUrl}$downloadPath", 'useDownloadEndpoint': true};
+      return {
+        'url': "${ApiConfig.baseUrl}$downloadPath",
+        'useDownloadEndpoint': true,
+      };
     } else if (filePath != null && filePath.isNotEmpty) {
       return {
         'url': _getFileUrlForSearch(filePath),

@@ -6,6 +6,7 @@ import 'package:photo_view/photo_view.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:filevo/views/folders/room_comments_page.dart';
 import 'package:filevo/services/storage_service.dart';
+import 'package:filevo/services/screen_protection_service.dart'; // ✅ إضافة missing import
 import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
 
@@ -13,12 +14,14 @@ class ImageViewer extends StatefulWidget {
   final String imageUrl;
   final String? roomId; // معرف الغرفة للتعليقات
   final String? fileId; // معرف الملف للتعليقات
+  final bool isOneTimeShare; // ✅ إضافة missing field
 
   const ImageViewer({
     Key? key,
     required this.imageUrl,
     this.roomId,
     this.fileId,
+    this.isOneTimeShare = false, // ✅ للملفات المشتركة لمرة واحدة
   }) : super(key: key);
 
   @override
@@ -35,9 +38,23 @@ class _ImageViewerState extends State<ImageViewer> {
   @override
   void initState() {
     super.initState();
+    // ✅ تفعيل الحماية من السكرين شوت والريكورد للملفات المشتركة لمرة واحدة
+    if (widget.isOneTimeShare) {
+      ScreenProtectionService.enableProtection();
+    }
     _photoViewController = PhotoViewController();
     _checkImageUrl();
     _loadImageWithToken();
+  }
+
+  @override
+  void dispose() {
+    // ✅ إلغاء تفعيل الحماية عند إغلاق المشاهد
+    if (widget.isOneTimeShare) {
+      ScreenProtectionService.disableProtection();
+    }
+    _photoViewController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadImageWithToken() async {
@@ -392,11 +409,5 @@ class _ImageViewerState extends State<ImageViewer> {
         ),
       ),
     );
-  }
-
-  @override
-  void dispose() {
-    _photoViewController.dispose();
-    super.dispose();
   }
 }
