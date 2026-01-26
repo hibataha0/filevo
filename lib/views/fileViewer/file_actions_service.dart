@@ -64,14 +64,14 @@ class FileActionsService {
       print('⚠️ [FileActionsService] No roomId provided');
     }
 
-    final result = await Navigator.push<bool>(
+    final result = await Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => EditFilePage(file: fileWithRoomId),
       ),
     );
-    // ✅ إرجاع true إذا تم تحديث الملف، false إذا لم يتم تحديثه
-    return result ?? false;
+    // ✅ إرجاع true إذا تم تحديث الملف (أي كانت النتيجة غير null)، false إذا لم يتم
+    return result != null;
   }
 
   /// تعديل metadata فقط (Dialog قديم - محفوظ للتوافق)

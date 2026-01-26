@@ -888,32 +888,64 @@ class FileService {
         print('🔐 [FileService] Converted to safe text file');
       }
 
-      final url = "$_apiBase${ApiEndpoints.updateFileContent(fileId)}";
-      final request = http.MultipartRequest("PUT", Uri.parse(url));
+      
+      final isTextFile = _isTextFile(originalFileName);
+      
+      http.Response response;
+      
+      if (isTextFile) {
+         final url = "$_apiBase${ApiEndpoints.updateFileText(fileId)}";
+         print('📝 [FileService] Detected text file, sending content as JSON to $url');
+         final content = await fileToUpload.readAsString();
+         
+         response = await http.put(
+            Uri.parse(url),
+            headers: {
+              'Authorization': 'Bearer $token',
+              'Content-Type': 'application/json',
+            },
+            body: jsonEncode({
+              'content': content,
+              if (replaceMode != null) 'replaceMode': replaceMode,
+            }),
+         ).timeout(
+            const Duration(minutes: 2),
+            onTimeout: () {
+              throw Exception('انتهت مهلة الاتصال. يرجى المحاولة مرة أخرى.');
+            },
+         );
+      } else {
+          // ✅ للملفات الأخرى (صور) نستخدم endpoint الصور
+          final url = "$_apiBase${ApiEndpoints.updateFileImage(fileId)}";
+          print('📝 [FileService] Detected binary file, sending as Multipart to $url');
+          final request = http.MultipartRequest("PUT", Uri.parse(url));
 
-      request.headers['Authorization'] = 'Bearer $token';
-      request.headers['Connection'] = 'keep-alive';
+          request.headers['Authorization'] = 'Bearer $token';
+          request.headers['Connection'] = 'keep-alive';
 
-      // ✅ إضافة الملف (الآمن)
-      request.files.add(await http.MultipartFile.fromPath('file', fileToUpload.path));
+          // ✅ حسب الbackend: memoryUpload.single("image")
+          // إذن الحقل يجب أن يكون اسمه 'image'
+          request.files.add(await http.MultipartFile.fromPath('image', fileToUpload.path));
 
-      // ✅ إضافة replaceMode إذا كان محدداً (للملفات غير النصية)
-      if (replaceMode != null) {
-        request.fields['replaceMode'] = replaceMode.toString();
+          // ✅ إضافة replaceMode إذا كان محدداً
+          if (replaceMode != null) {
+            request.fields['replaceMode'] = replaceMode.toString();
+          }
+
+          print('📤 [FileService] Sending request to: $url');
+          final streamedResponse = await request.send().timeout(
+            const Duration(minutes: 5),
+            onTimeout: () {
+              throw Exception('انتهت مهلة الاتصال. يرجى المحاولة مرة أخرى.');
+            },
+          );
+          response = await http.Response.fromStream(streamedResponse);
       }
 
-      print('📤 [FileService] Sending request to: $url');
-      final response = await request.send().timeout(
-        const Duration(minutes: 5),
-        onTimeout: () {
-          throw Exception('انتهت مهلة الاتصال. يرجى المحاولة مرة أخرى.');
-        },
-      );
-
-      final responseBody = await response.stream.bytesToString();
-
       print('📥 [FileService] Response status: ${response.statusCode}');
-      print('📥 [FileService] Response body: $responseBody');
+      print('📥 [FileService] Response body: ${response.body}');
+      
+      final responseBody = response.body;
 
       // ✅ معالجة خطأ 429 (Too Many Requests)
       if (response.statusCode == 429) {
@@ -1873,5 +1905,10 @@ class FileService {
         'error': 'خطأ في جلب المساحة الإجمالية: ${e.toString()}',
       };
     }
+  }
+
+  bool _isTextFile(String fileName) {
+    final ext = fileName.split('.').last.toLowerCase();
+    return ['txt', 'json', 'xml', 'md', 'csv', 'html', 'css', 'js', 'dart', 'yaml', 'yml'].contains(ext);
   }
 }

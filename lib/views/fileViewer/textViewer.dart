@@ -348,99 +348,26 @@ class _TextViewerPageState extends State<TextViewerPage> {
         }
 
         if (saveOption == 'replace') {
-          // ✅ استبدال النسخة الحالية (زي الصور بالضبط: رفع جديد + حذف القديم)
-          try {
-            final token = await StorageService.getToken();
-            if (token == null) return;
-
-            // 1. الحصول على parentFolderId
-            String? parentFolderId;
-            try {
-              final fileService = FileService();
-              final details = await fileService.getFileDetails(
-                fileId: widget.fileId!,
-                token: token,
-              );
-              if (details != null && details['file'] != null) {
-                parentFolderId = details['file']['parentFolderId'];
-              }
-            } catch (e) {
-              print('⚠️ Could not get parent folder ID: $e');
-            }
-
-            if (!mounted) return;
-            final fileController = Provider.of<FileController>(
-              context,
-              listen: false,
-            );
-
-            // 2. رفع الملف الجديد
-            final uploadSuccess = await fileController.uploadSingleFile(
-              file: file,
-              token: token,
-              parentFolderId: parentFolderId,
-            );
-
-            if (uploadSuccess) {
-              // 3. حذف الملف القديم
-              final deleteResult = await fileController.deleteFile(
-                fileId: widget.fileId!,
-                token: token,
-              );
-
-              if (mounted) {
-                if (deleteResult['success'] == true) {
-                  // ✅ نجاح الرفع والحذف
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        '✅ ${S.of(context).fileReplacedSuccessfully}',
-                      ),
-                      backgroundColor: Colors.green,
-                      duration: Duration(seconds: 2),
-                    ),
-                  );
-                  // ✅ إغلاق العارض لأن الملف القديم (ID) لم يعد موجوداً
-                  Navigator.pop(context, true);
-                } else {
-                  // ✅ نجح الرفع ولكن فشل الحذف
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        '⚠️ ${S.of(context).fileUploadedButDeleteFailed}',
-                      ),
-                      backgroundColor: Colors.orange,
-                      duration: Duration(seconds: 4),
-                    ),
-                  );
-                  // نغلق أيضاً ليعود للقائمة ويرى الملفين (القديم والجديد)
-                  Navigator.pop(context, true);
-                }
-              }
-            } else {
-              // ❌ فشل الرفع
-              if (mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      fileController.errorMessage ??
-                          S.of(context).failedToUploadFile,
-                    ),
-                    backgroundColor: Colors.red,
-                  ),
-                );
-              }
-            }
-          } catch (e) {
-            print('❌ Error in replace flow: $e');
-            if (mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
+          // ✅ استبدال النسخة الحالية (In-Place Update)
+          // نستخدم _uploadUpdatedFile التي تقوم بكل العمل (تحديث + إعادة تحميل)
+          final success = await _uploadUpdatedFile(file, replaceMode: true);
+          
+          if (success && mounted) {
+             // تم التحديث بنجاح، نغلق الصفحة أو نبقى حسب الرغبة
+             // هنا سنعرض رسالة وبقاء في الصفحة لأن المحتوى تحدث
+             ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: Text('${S.of(context).errorOccurred(e.toString())}'),
-                  backgroundColor: Colors.red,
+                  content: Text('✅ ${S.of(context).fileReplacedSuccessfully}'),
+                  backgroundColor: Colors.green,
+                  duration: Duration(seconds: 2),
                 ),
-              );
-            }
+             );
+             // ✅ إغلاق المحرر بعد النجاح
+             WidgetsBinding.instance.addPostFrameCallback((_) {
+               if (mounted) {
+                 Navigator.pop(context, file);
+               }
+             });
           }
         } else if (saveOption == 'new') {
           final uploadSuccess = await _uploadAsNewFile(file);

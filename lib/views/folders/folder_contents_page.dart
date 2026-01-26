@@ -1876,6 +1876,7 @@ class _FolderContentsPageState extends State<FolderContentsPage> {
                     onItemTap: (item) => _handleFileTap(item),
                     roomId: widget.roomId, // ✅ تمرير roomId للملفات المشتركة
                     onFileRemoved: () => _loadFolderContents(resetPage: true),
+                    onFileUpdated: () => _loadFolderContents(resetPage: true),
                   ),
           ],
 

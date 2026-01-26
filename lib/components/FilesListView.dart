@@ -24,6 +24,7 @@ class FilesListView extends StatefulWidget {
   final void Function()? onFileRemoved;
   final void Function(Map<String, dynamic>)? onRoomDetailsTap;
   final void Function(Map<String, dynamic>)? onRoomEditTap;
+  final VoidCallback? onFileUpdated; // ✅ callback عند تحديث ملف
 
   const FilesListView({
     Key? key,
@@ -35,6 +36,7 @@ class FilesListView extends StatefulWidget {
     this.onFileRemoved,
     this.onRoomDetailsTap,
     this.onRoomEditTap,
+    this.onFileUpdated,
   }) : super(key: key);
 
   @override
@@ -993,15 +995,12 @@ class _FilesListViewState extends State<FilesListView> {
                 '🔄 [FilesListView] onFileRemoved is null: ${widget.onFileRemoved == null}',
               );
               if (updated == true) {
-                print(
-                  '✅ [FilesListView] File updated, calling onFileRemoved callback',
-                );
-                if (widget.onFileRemoved != null) {
+                // ✅ استدعاء onFileUpdated إذا كان موجوداً
+                if (widget.onFileUpdated != null) {
+                  widget.onFileUpdated!();
+                } else if (widget.onFileRemoved != null) {
+                  // ✅ fallback to onFileRemoved if onFileUpdated is not provided
                   widget.onFileRemoved!();
-                } else {
-                  print(
-                    '⚠️ [FilesListView] onFileRemoved is null, cannot refresh',
-                  );
                 }
               } else {
                 print('❌ [FilesListView] File not updated, skipping refresh');

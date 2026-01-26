@@ -2370,63 +2370,44 @@ class _EditFilePageState extends State<EditFilePage> {
         );
 
         if (saveOption == 'replace') {
-          // ✅ استبدال النسخة الحالية: حسب طلب المستخدم، نستخدم طريقة "رفع جديد + حذف قديم"
-          // ✅ هذه الطريقة تعمل مع الصور والنصوص وكل شيء، لكنها تغير الـ ID
-          print('📝 [EditFilePage] Replacing file using Upload New + Delete Old');
+          // ✅ استبدال النسخة الحالية باستخدام الـ Endpoint المخصص لذلك (In-Place Update)
+          // ✅ هذا يحافظ على الـ File ID والمشاركات
+          print('📝 [EditFilePage] Replacing file content (In-Place Update)');
 
-          // 1. رفع الملف الجديد
-          final uploadSuccess = await fileController.uploadSingleFile(
+          final updateSuccess = await fileController.updateFileContent(
+            fileId: fileId,
             file: _editedFile!,
             token: token,
-            parentFolderId: originalData['parentFolderId'],
+            replaceMode: true, // ✅ تأكيد وضع الاستبدال
           );
 
-          if (uploadSuccess) {
-            // 2. حذف الملف القديم
-            final deleteResult = await fileController.deleteFile(
-              fileId: fileId,
-              token: token,
-            );
-
-            if (deleteResult['success'] == true) {
-              // ✅ مسح cache الصور في Flutter
-              PaintingBinding.instance.imageCache.clear();
-              PaintingBinding.instance.imageCache.clearLiveImages();
-              print('✅ [EditFilePage] Image cache cleared');
-
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(S.of(context).fileReplacedSuccessfully),
-                  backgroundColor: Colors.green,
-                ),
-              );
-              Navigator.pop(context, true);
-              return;
-            } else {
-              // رفعنا الجديد لكن فشل حذف القديم
-               ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    '${S.of(context).fileUploadedButDeleteFailed} ${fileController.errorMessage ?? S.of(context).unknownError}',
-                  ),
-                  backgroundColor: Colors.orange,
-                ),
-              );
-            }
-          } else {
-             // فشل رفع الملف الجديد
-            String errorMessage = fileController.errorMessage ??
-                S.of(context).fileUpdateFailed;
-            
-             // ✅ معالجة خطأ rate limiting (429)
-            if (errorMessage.contains('429') ||
-                errorMessage.toLowerCase().contains('too many requests')) {
-              errorMessage = 'تم إرسال طلبات كثيرة. يرجى الانتظار قليلاً والمحاولة مرة أخرى';
-            }
+          if (updateSuccess) {
+            // ✅ مسح cache الصور في Flutter
+            PaintingBinding.instance.imageCache.clear();
+            PaintingBinding.instance.imageCache.clearLiveImages();
+            print('✅ [EditFilePage] Image cache cleared');
 
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: Text(errorMessage),
+                content: Text(S.of(context).fileReplacedSuccessfully),
+                backgroundColor: Colors.green,
+              ),
+            );
+            // ✅ إرجاع الملف المعدل (تأجيل الخروج لتجنب تعارض الـ Navigator)
+            if (mounted) {
+               WidgetsBinding.instance.addPostFrameCallback((_) {
+                 if (mounted) {
+                   Navigator.pop(context, _editedFile);
+                 }
+               });
+            }
+          } else {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  fileController.errorMessage ??
+                      S.of(context).failedToUploadFile,
+                ),
                 backgroundColor: Colors.red,
               ),
             );

@@ -85,6 +85,10 @@ class ApiEndpoints {
   static String updateFile(String fileId) => "$_basePath/files/$fileId";
   static String updateFileContent(String fileId) =>
       "$_basePath/files/$fileId/content"; // ✅ تحديث محتوى الملف
+  static String updateFileText(String fileId) =>
+      "$_basePath/files/$fileId/text"; // ✅ تحديث نص الملف
+  static String updateFileImage(String fileId) =>
+      "$_basePath/files/$fileId/image"; // ✅ تحديث صورة الملف (حسب كود الباك إند)
   static String moveFile(String fileId) =>
       "$_basePath/files/$fileId/move"; // ✅ نقل ملف من مجلد إلى آخر
   static String deleteFile(String fileId) => "$_basePath/files/$fileId";
