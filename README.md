@@ -30,38 +30,8 @@ Filevo is a mobile cloud storage application developed as a graduation project. 
 ### Database
 - MongoDB
 
-### Storage
-- Firebase Storage (أو AWS S3 إذا هذا المستخدم)
 
-## 📸 Screenshots
 
-| Login | Home |
-|-------|------|
-| ![](screenshots/login.png) | ![](screenshots/home.png) |
-
-| Upload | Profile |
-|--------|---------|
-| ![](screenshots/upload.png) | ![](screenshots/profile.png) |
-
-## 🚀 Getting Started
-
-### Clone the repository
-
-```bash
-git clone https://github.com/hibataha0/filevo.git
-```
-
-### Install dependencies
-
-```bash
-flutter pub get
-```
-
-### Run
-
-```bash
-flutter run
-```
 
 ## 📂 Project Structure
 
